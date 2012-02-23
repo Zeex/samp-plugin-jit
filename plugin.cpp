@@ -33,6 +33,14 @@ using namespace sampjit;
 
 static std::map<AMX*, Jitter*> jitters;
 
+// This implementation of amx_GetAddr can accept ANY amx_addr, even out of the data section.
+static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	*phys_addr = reinterpret_cast<cell*>(amx->base + hdr->dat + amx_addr);
+	return AMX_ERR_NONE;
+}
+
+// amx_Exec_JIT compiles a public function (if needed) and runs the generated JIT code.
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	if (index >= -1) {
 		std::map<AMX*, Jitter*>::iterator iterator = jitters.find(amx);
@@ -50,7 +58,7 @@ static void Hook(void *from, void *to) {
 	// Write the JMP opcode.
 	*((unsigned char*)from) = 0xE9;
 
-	// Write the address (relative to the nex instruction).
+	// Write the address (relative to the next instruction).
 	*((int*)((int)from + 1)) = ((int)to - ((int)from + 5));
 }
 
@@ -61,6 +69,8 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec], 
 	                 (void*)amx_Exec_JIT);
+	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr], 
+	                 (void*)amx_GetAddr_JIT);
 	return true;
 }
 

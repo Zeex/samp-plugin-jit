@@ -57,7 +57,9 @@ private:
 
 class Jitter {
 	friend class JitFunction;
-public:	
+public:
+	typedef cell (CDECL *PublicFunction)();
+
 	Jitter(AMX *amx);
 	~Jitter();
 
