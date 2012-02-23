@@ -785,17 +785,62 @@ void JitFunction::main() {
 		case OP_JUMP_PRI:
 			OBSOLETE;
 			break;
-		case OP_SWITCH: // offset
+		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
 			// is passed as an offset from CIP) and jump to the associated
-			// the address in the matching record.
-			NOT_IMPLEMENTED;
+			// the address in the matching record.			
+			
+			struct case_record {
+				cell value;    // case value
+				cell address;  // address to jump to (absolute)				
+			} *case_table;		
+
+			// Get pointer to the start of the case table.
+			case_table = reinterpret_cast<case_record*>(oper + sizeof(cell));
+
+			// The number of cases follows the CASETBL opcode (which follows the SWITCH).
+			int num_cases = *(reinterpret_cast<cell*>(oper) + 1);
+
+			// Get minimum and maximum values.
+			cell *min_value = 0;
+			cell *max_value = 0;
+			for (int i = 0; i < num_cases; i++) {
+				cell *value = &case_table[i + 1].value;
+				if (min_value == 0 || *value < *min_value) {
+					min_value = value;
+				}
+				if (max_value == 0 || *value > *max_value) {
+					max_value = value;
+				}
+			}
+
+			// Get address of the "default" record.
+			cell default_addr = case_table[0].address - code;
+
+			// Check if the value in eax is in the allowed range.
+			// If not, jump to the default case (i.e. no match).
+			cmp(eax, *min_value);
+			jl(GetLabelName(default_addr));
+			cmp(eax, *max_value);
+			jg(GetLabelName(default_addr));
+
+			// OK now subsequently compare eax with each of values and jump 
+			// to the associated code piece when found a match.
+			for (int i = 0; i < num_cases; i++) {
+				cmp(eax, case_table[i + 1].value);
+				je(GetLabelName(case_table[i + 1].address - code));
+			}
+
+			// No match found - jump to the default case.
+			jmp(GetLabelName(default_addr));
+
+			cip++;
 			break;
+		}
 		case OP_CASETBL: // ...
 			// A variable number of case records follows this opcode, where
-			// each record takes two cells. See the notes below for details
-			// on the case table lay-out.
-			NOT_IMPLEMENTED;
+			// each record takes two cells.
+			cip += 2 * oper + 2;
 			break;
 		case OP_SWAP_PRI:
 			// [STK] = PRI and PRI = [STK]
