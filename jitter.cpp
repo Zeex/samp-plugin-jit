@@ -756,8 +756,6 @@ void JitFunction::main() {
 		case OP_SYSREQ_C: // index
 		case OP_SYSREQ_D: // address
 			// call system service
-			lea(eax, dword_ptr[esp - data]);
-			mov(dword_ptr[reinterpret_cast<int>(&amx->stk)], ecx);
 			push(esp);
 			push(reinterpret_cast<int>(amx));
 			switch (opcode) {
@@ -875,50 +873,47 @@ int Jitter::CallPublicFunction(int index, cell *retval) {
 	// that a runtime error occured (e.g. array index out of bounds).
 	amx_->error = AMX_ERR_NONE;
 
+	ucell address = GetPublicAddress(amx_, index);
+	if (address == 0) {
+		amx_->error = AMX_ERR_INDEX;
+		goto exit;
+	}
+
 	// paramcount is the number of arguments passed to the public.
 	int paramcount = amx_->paramcount;
 	int parambytes = paramcount * sizeof(cell);
-
-	// Push parambytes (this is usually done by amx_Exec).
-	amx_->stk -= sizeof(cell);
-	*reinterpret_cast<cell*>(data_ + amx_->stk) = parambytes;
-
-	// Save STK to reset after the call.
-	cell reset_stk = amx_->stk;
-
-	// Get pointer to AMX stack bottom.
-	cell *amx_stack = reinterpret_cast<cell*>(data_ + amx_->stk);
 	
-	static void *start;
-	ucell address = GetPublicAddress(amx_, index);
-	start = GetFunction(address)->GetCode();
-
-	// Switch to AMX stack.
-	void *real_stack = 0;
+	// Copy paramters to the physical stack.
+	cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
 	#if defined _MSC_VER
-		__asm mov dword ptr [real_stack], esp
-		__asm mov esp, dword ptr [amx_stack]
+		for (int i = paramcount - 1; i >= 0; --i) {
+			cell arg = args[i];
+			__asm push dword ptr [arg]
+		}
+		__asm push dword ptr [parambytes]
 	#elif defined __GNUC__
 		// TODO
 	#else
 		#error Unsupported compiler
 	#endif
 
-	// Call the function.	
-	*retval = ((cell (CDECL *)())start)();
+	// Call the function.
+	void *start = GetFunction(address)->GetCode();
+	*retval = ((PublicFunction)start)();
 
-	// Switch back to process' stack.
+	// Pop parameters.
 	#if defined _MSC_VER
-		__asm mov esp, dword ptr [real_stack]
+		__asm add esp, dword ptr [parambytes]
+		__asm add esp, 4
 	#elif defined __GNUC__
 		// TODO
 	#else
 		#error Unsupported compiler
 	#endif
 
+exit:
 	// Reset STK and parameter count.
-	amx_->stk = reset_stk;
-	amx_->stk += parambytes + sizeof(cell);
+	amx_->stk += parambytes;
 	amx_->paramcount = 0;
 
 	return amx_->error;
