@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -118,9 +118,9 @@ void JitFunction::main() {
 			mov(eax, dword_ptr[eax + data]);
 			break;
 		case OP_LODB_I: // number
-			// PRI = “number” bytes from [PRI] (read 1/2/4 bytes)			
+			// PRI = “number” bytes from [PRI] (read 1/2/4 bytes)
 			switch (oper) {
-			case 1:				
+			case 1:
 				xor(eax, eax);
 				mov(al, byte_ptr[eax + data]);
 			case 2:
@@ -202,7 +202,7 @@ void JitFunction::main() {
 		case OP_STRB_I: // number
 			// “number” bytes at [ALT] = PRI (write 1/2/4 bytes)
 			switch (oper) {
-			case 1:				
+			case 1:
 				xor(ebx, ebx);
 				mov(byte_ptr[ebx + data], al);
 			case 2:
@@ -333,7 +333,7 @@ void JitFunction::main() {
 			// STK = STK + [STK]
 			// The RETN instruction removes a specified number of bytes
 			// from the stack. The value to adjust STK with must be
-			// pushed prior to the call.			
+			// pushed prior to the call.
 			pop(ebp);
 			ret();
 			break;
@@ -788,12 +788,12 @@ void JitFunction::main() {
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
 			// is passed as an offset from CIP) and jump to the associated
-			// the address in the matching record.			
-			
+			// the address in the matching record.
+
 			struct case_record {
 				cell value;    // case value
-				cell address;  // address to jump to (absolute)				
-			} *case_table;		
+				cell address;  // address to jump to (absolute)
+			} *case_table;
 
 			// Get pointer to the start of the case table.
 			case_table = reinterpret_cast<case_record*>(oper + sizeof(cell));
@@ -824,7 +824,7 @@ void JitFunction::main() {
 			cmp(eax, *max_value);
 			jg(GetLabelName(default_addr));
 
-			// OK now subsequently compare eax with each of values and jump 
+			// OK now subsequently compare eax with each of values and jump
 			// to the associated code piece when found a match.
 			for (int i = 0; i < num_cases; i++) {
 				cmp(eax, case_table[i + 1].value);
@@ -890,7 +890,7 @@ Jitter::Jitter(AMX *amx)
 }
 
 Jitter::~Jitter() {
-	for (ProcMap::const_iterator iterator = proc_map_.begin(); 
+	for (ProcMap::const_iterator iterator = proc_map_.begin();
 			iterator != proc_map_.end(); ++iterator) {
 		delete iterator->second;
 	}
@@ -914,49 +914,50 @@ JitFunction *Jitter::AssembleFunction(ucell address) {
 }
 
 int Jitter::CallPublicFunction(int index, cell *retval) {
-	// Some instructions may set a non-zero error code to indicate 
+	// Some instructions may set a non-zero error code to indicate
 	// that a runtime error occured (e.g. array index out of bounds).
 	amx_->error = AMX_ERR_NONE;
-
-	ucell address = GetPublicAddress(amx_, index);
-	if (address == 0) {
-		amx_->error = AMX_ERR_INDEX;
-		goto exit;
-	}
 
 	// paramcount is the number of arguments passed to the public.
 	int paramcount = amx_->paramcount;
 	int parambytes = paramcount * sizeof(cell);
-	
-	// Copy paramters to the physical stack.
-	cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
-	#if defined _MSC_VER
-		for (int i = paramcount - 1; i >= 0; --i) {
-			cell arg = args[i];
-			__asm push dword ptr [arg]
-		}
-		__asm push dword ptr [parambytes]
-	#elif defined __GNUC__
-		// TODO
-	#else
-		#error Unsupported compiler
-	#endif
 
-	// Call the function.
-	void *start = GetFunction(address)->GetCode();
-	*retval = ((PublicFunction)start)();
+	ucell address = GetPublicAddress(amx_, index);
+	if (address == 0) {
+		amx_->error = AMX_ERR_INDEX;
+	} else {
+		// Copy paramters to the physical stack.
+		cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
+		#if defined _MSC_VER
+			for (int i = paramcount - 1; i >= 0; --i) {
+				cell arg = args[i];
+				__asm push dword ptr [arg]
+			}
+			__asm push dword ptr [parambytes]
+		#elif defined __GNUC__
+			for (int i = paramcount - 1; i >= 0; --i) {
+				__asm__ __volatile__ ("pushl %0" :: "r"(args[i]) :);
+			}
+			__asm__ __volatile__ ("pushl %0" :: "r"(parambytes) :);
+		#else
+			#error Unsupported compiler
+		#endif
 
-	// Pop parameters.
-	#if defined _MSC_VER
-		__asm add esp, dword ptr [parambytes]
-		__asm add esp, 4
-	#elif defined __GNUC__
-		// TODO
-	#else
-		#error Unsupported compiler
-	#endif
+		// Call the function.
+		void *start = GetFunction(address)->GetCode();
+		*retval = ((PublicFunction)start)();
 
-exit:
+		// Pop parameters.
+		#if defined _MSC_VER
+			__asm add esp, dword ptr [parambytes]
+			__asm add esp, 4
+		#elif defined __GNUC__
+			// TODO
+		#else
+			#error Unsupported compiler
+		#endif
+	}
+
 	// Reset STK and parameter count.
 	amx_->stk += parambytes;
 	amx_->paramcount = 0;
@@ -965,7 +966,7 @@ exit:
 }
 
 void Jitter::DumpCode(std::ostream &stream) const {
-	for (ProcMap::const_iterator iterator = proc_map_.begin(); 
+	for (ProcMap::const_iterator iterator = proc_map_.begin();
 			iterator != proc_map_.end(); ++iterator) {
 		JitFunction *fn = iterator->second;
 		stream.write(reinterpret_cast<char*>(fn->GetCode()), fn->GetCodeSize());
