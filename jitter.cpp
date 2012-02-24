@@ -248,13 +248,47 @@ void JitFunction::main() {
 			// PRI is set to the current value of any of the special registers.
 			// The index parameter must be: 0=COD, 1=DAT, 2=HEA,
 			// 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
-			NOT_IMPLEMENTED;
+			switch (oper) {
+			case 0:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->cod)]);
+				break;
+			case 1:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->dat)]);
+				break;
+			case 2:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->hea)]);
+				break;
+			case 3:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->stp)]);
+				break;
+			case 4:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->stk)]);
+				break;
+			case 5:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->frm)]);
+				break;
+			case 6:
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->cip)]);
+				break;
+			}
+			cip++;
 			break;
 		case OP_SCTRL: // index
 			// set the indexed special registers to the value in PRI.
 			// The index parameter must be: 2=HEA, 4=STK, 5=FRM,
 			// 6=CIP
-			NOT_IMPLEMENTED;
+			switch (oper) {
+			case 2:
+				mov(dword_ptr[reinterpret_cast<int>(&amxhdr->hea)], eax);
+				break;
+			case 4:
+				mov(dword_ptr[reinterpret_cast<int>(&amx->stk)], eax);
+				break;
+			case 5:
+				mov(dword_ptr[reinterpret_cast<int>(&amx->frm)], eax);
+				break;
+			}
+			cip++;
 			break;
 		case OP_MOVE_PRI:
 			// PRI = ALT
