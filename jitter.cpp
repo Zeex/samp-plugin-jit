@@ -36,9 +36,6 @@
 #include "port.h"
 #include "utils.h"
 
-#define NOT_IMPLEMENTED assert(0 && "Not implemented")
-#define OBSOLETE        assert(0 && "Obsolete instruction")
-
 namespace sampjit {
 
 JitFunction::JitFunction(Jitter *jitter, ucell address)
@@ -311,7 +308,7 @@ void JitFunction::main() {
 			push(ebx);
 			break;
 		case OP_PUSH_R: // value
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_PUSH_C: // value
 			// [STK] = value, STK = STK - cell size
@@ -385,7 +382,7 @@ void JitFunction::main() {
 			cip++;
 			break;
 		case OP_CALL_PRI:
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_JUMP: // offset
 			// CIP = CIP + offset (jump to the address relative from
@@ -394,7 +391,7 @@ void JitFunction::main() {
 			cip++;
 			break;
 		case OP_JREL: // offset
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_JZER: // offset
 			// if PRI == 0 then CIP = CIP + offset
@@ -777,7 +774,7 @@ void JitFunction::main() {
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
-			NOT_IMPLEMENTED;
+			cip++;
 			break;
 		case OP_BOUNDS: // value
 			// Abort execution if PRI > value or if PRI < 0.
@@ -785,7 +782,7 @@ void JitFunction::main() {
 			break;
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
-			NOT_IMPLEMENTED;
+			cip++;
 			break;
 		case OP_SYSREQ_C: // index
 		case OP_SYSREQ_D: // address
@@ -805,19 +802,19 @@ void JitFunction::main() {
 			cip++;
 			break;
 		case OP_FILE: // size ord name
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_LINE: // line ord
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_SYMBOL: // size offset flag name
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_SRANGE: // level size
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_JUMP_PRI:
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
@@ -894,7 +891,7 @@ void JitFunction::main() {
 			// no-operation, for code alignment
 			break;
 		case OP_SYMTAG: // value
-			OBSOLETE;
+			// obsolete
 			break;
 		case OP_BREAK:
 			// conditional breakpoint
