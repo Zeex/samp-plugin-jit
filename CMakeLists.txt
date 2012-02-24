@@ -50,3 +50,8 @@ else()
 			LINK_FLAGS "/DEF:${def_path}")
 	endif()
 endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set_target_properties(jit PROPERTIES
+		COMPILE_FLAGS "-fno-operator-names")
+endif()

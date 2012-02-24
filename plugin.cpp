@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -21,6 +21,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstddef>
 #include <map>
 
 #include "amx.h"
@@ -52,7 +53,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 }
 
 static void Hook(void *from, void *to) {
-	// Set write permission. 
+	// Set write permission.
 	mprotect(PAGE_ALIGN(from), PAGE_ALIGN(5), PROT_READ | PROT_WRITE | PROT_EXEC);
 
 	// Write the JMP opcode.
@@ -67,9 +68,9 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec], 
+	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec],
 	                 (void*)amx_Exec_JIT);
-	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr], 
+	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr],
 	                 (void*)amx_GetAddr_JIT);
 	return true;
 }
@@ -80,7 +81,7 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	Jitter *jitter = new Jitter(amx);
-	jitters.insert(std::make_pair(amx, jitter));	
+	jitters.insert(std::make_pair(amx, jitter));
 	return AMX_ERR_NONE;
 }
 
