@@ -22,18 +22,15 @@ if(HAVE_STDINT_H)
 endif()
 
 add_library(jit MODULE
-	amx.h
-	getch.h
-	jitasm.h
-	jitter.cpp
-	jitter.h
-	opcodes.h
+	amx/amx.h
+	amx/getch.h
+	amx/sclinux.h
+	jitasm/jitasm.h
 	plugin.cpp
+	plugin.h
 	plugincommon.h
-	port.h
-	sclinux.h
-	utils.cpp
-	utils.h
+	jit.cpp
+	jit.h
 )
 
 set_target_properties(jit PROPERTIES PREFIX "")

@@ -21,25 +21,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef SAMPJIT_JITTER_H
-#define SAMPJIT_JITTER_H
+#ifndef JIT_H
+#define JIT_H
 
 #include <iosfwd>
-#include <list>
 #include <map>
 #include <string>
 
-#include "amx.h"
-#include "jitasm.h"
+#include "amx/amx.h"
+#include "jitasm/jitasm.h"
 
-namespace sampjit {
+class JIT;
 
-class Jitter;
-
-// JitFunction represents a JIT-compiled AMX function.
-class JitFunction : public jitasm::function<void, JitFunction> {
+// JITFunction represents a JIT-compiled AMX function.
+class JITFunction : public jitasm::function<void, JITFunction> {
 public:
-	JitFunction(Jitter *jitter, ucell address);
+	JITFunction(JIT *jitter, ucell address);
 
 	void main();
 
@@ -48,20 +45,20 @@ public:
 
 private:
 	// Disable copying.
-	JitFunction(const JitFunction &);
-	JitFunction &operator=(const JitFunction &);
+	JITFunction(const JITFunction &);
+	JITFunction &operator=(const JITFunction &);
 
-	Jitter *jitter_;
-	ucell   address_;	
+	JIT *jit_;
+	ucell address_;
 };
 
-class Jitter {
-	friend class JitFunction;
+class JIT {
+	friend class JITFunction;
 public:
 	typedef cell (CDECL *PublicFunction)();
 
-	Jitter(AMX *amx);
-	~Jitter();
+	JIT(AMX *amx);
+	~JIT();
 
 	inline AMX        *GetAmx()       { return amx_; }
 	inline AMX_HEADER *GetAmxHeader() { return amxhdr_; }
@@ -73,10 +70,10 @@ public:
 	inline unsigned char *GetAmxCode() { return code_; }
 
 	// Get assembled function (and assemble if needed).
-	JitFunction *GetFunction(ucell address);
+	JITFunction *GetFunction(ucell address);
 
 	// Assemble AMX function at the specified address.
-	JitFunction *AssembleFunction(ucell address);
+	JITFunction *AssembleFunction(ucell address);
 
 	// Call a public function (and assemble if needed).
 	// In contrast to CallFunction(), this method also copies the arguments
@@ -92,8 +89,8 @@ public:
 
 private:
 	// Disable copying.
-	Jitter(const Jitter &);
-	Jitter &operator=(const Jitter &);
+	JIT(const JIT &);
+	JIT &operator=(const JIT &);
 
 private:
 	AMX        *amx_;
@@ -103,10 +100,8 @@ private:
 	unsigned char *code_;
 
 	// proc_map_ maps AMX funtions to their JIT equivalents.
-	typedef std::map<ucell, JitFunction*> ProcMap;
+	typedef std::map<ucell, JITFunction*> ProcMap;
 	ProcMap proc_map_;
 };
 
-} // namespace sampjit
-
-#endif // !SAMPJIT_JITTER_H
+#endif // !JIT_H
