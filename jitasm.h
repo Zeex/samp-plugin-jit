@@ -65,12 +65,12 @@
 	#endif
 #endif
 
-#include <cstdio>
 #include <string>
 #include <deque>
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <stdio.h>
 #include <string.h>
 
 #if defined(JITASM_WIN)
