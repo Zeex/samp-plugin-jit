@@ -29,30 +29,211 @@
 #include <sstream>
 #include <string>
 
-#include "amx.h"
-#include "jitasm.h"
-#include "jitter.h"
-#include "opcodes.h"
-#include "port.h"
-#include "utils.h"
+#include "jit.h"
 
-namespace sampjit {
+#if defined _MSC_VER
+	#if !defined CDECL
+		#define CDECL __cdecl
+	#endif
+	#if !defined STDCALL
+		#define STDCALL __stdcall
+	#endif
+#elif defined __GNUC__
+	#if !defined CDECL
+		#define CDECL __attribute__((cdecl))
+	#endif
+	#if !defined STDCALL
+		#define STDCALL __attribte((stdcall));
+	#endif
+#endif
 
-JitFunction::JitFunction(Jitter *jitter, ucell address)
-	: jitasm::function<void, JitFunction>()
-	, jitter_(jitter)
+// Opcode list from amx.c.
+enum AmxOpcode {
+	OP_NONE, /* invalid opcode */
+	OP_LOAD_PRI,
+	OP_LOAD_ALT,
+	OP_LOAD_S_PRI,
+	OP_LOAD_S_ALT,
+	OP_LREF_PRI,
+	OP_LREF_ALT,
+	OP_LREF_S_PRI,
+	OP_LREF_S_ALT,
+	OP_LOAD_I,
+	OP_LODB_I,
+	OP_CONST_PRI,
+	OP_CONST_ALT,
+	OP_ADDR_PRI,
+	OP_ADDR_ALT,
+	OP_STOR_PRI,
+	OP_STOR_ALT,
+	OP_STOR_S_PRI,
+	OP_STOR_S_ALT,
+	OP_SREF_PRI,
+	OP_SREF_ALT,
+	OP_SREF_S_PRI,
+	OP_SREF_S_ALT,
+	OP_STOR_I,
+	OP_STRB_I,
+	OP_LIDX,
+	OP_LIDX_B,
+	OP_IDXADDR,
+	OP_IDXADDR_B,
+	OP_ALIGN_PRI,
+	OP_ALIGN_ALT,
+	OP_LCTRL,
+	OP_SCTRL,
+	OP_MOVE_PRI,
+	OP_MOVE_ALT,
+	OP_XCHG,
+	OP_PUSH_PRI,
+	OP_PUSH_ALT,
+	OP_PUSH_R,
+	OP_PUSH_C,
+	OP_PUSH,
+	OP_PUSH_S,
+	OP_POP_PRI,
+	OP_POP_ALT,
+	OP_STACK,
+	OP_HEAP,
+	OP_PROC,
+	OP_RET,
+	OP_RETN,
+	OP_CALL,
+	OP_CALL_PRI,
+	OP_JUMP,
+	OP_JREL,
+	OP_JZER,
+	OP_JNZ,
+	OP_JEQ,
+	OP_JNEQ,
+	OP_JLESS,
+	OP_JLEQ,
+	OP_JGRTR,
+	OP_JGEQ,
+	OP_JSLESS,
+	OP_JSLEQ,
+	OP_JSGRTR,
+	OP_JSGEQ,
+	OP_SHL,
+	OP_SHR,
+	OP_SSHR,
+	OP_SHL_C_PRI,
+	OP_SHL_C_ALT,
+	OP_SHR_C_PRI,
+	OP_SHR_C_ALT,
+	OP_SMUL,
+	OP_SDIV,
+	OP_SDIV_ALT,
+	OP_UMUL,
+	OP_UDIV,
+	OP_UDIV_ALT,
+	OP_ADD,
+	OP_SUB,
+	OP_SUB_ALT,
+	OP_AND,
+	OP_OR,
+	OP_XOR,
+	OP_NOT,
+	OP_NEG,
+	OP_INVERT,
+	OP_ADD_C,
+	OP_SMUL_C,
+	OP_ZERO_PRI,
+	OP_ZERO_ALT,
+	OP_ZERO,
+	OP_ZERO_S,
+	OP_SIGN_PRI,
+	OP_SIGN_ALT,
+	OP_EQ,
+	OP_NEQ,
+	OP_LESS,
+	OP_LEQ,
+	OP_GRTR,
+	OP_GEQ,
+	OP_SLESS,
+	OP_SLEQ,
+	OP_SGRTR,
+	OP_SGEQ,
+	OP_EQ_C_PRI,
+	OP_EQ_C_ALT,
+	OP_INC_PRI,
+	OP_INC_ALT,
+	OP_INC,
+	OP_INC_S,
+	OP_INC_I,
+	OP_DEC_PRI,
+	OP_DEC_ALT,
+	OP_DEC,
+	OP_DEC_S,
+	OP_DEC_I,
+	OP_MOVS,
+	OP_CMPS,
+	OP_FILL,
+	OP_HALT,
+	OP_BOUNDS,
+	OP_SYSREQ_PRI,
+	OP_SYSREQ_C,
+	OP_FILE, /* obsolete */
+	OP_LINE, /* obsolete */
+	OP_SYMBOL, /* obsolete */
+	OP_SRANGE, /* obsolete */
+	OP_JUMP_PRI,
+	OP_SWITCH,
+	OP_CASETBL,
+	OP_SWAP_PRI,
+	OP_SWAP_ALT,
+	OP_PUSH_ADR,
+	OP_NOP,
+	OP_SYSREQ_D,
+	OP_SYMTAG, /* obsolete */
+	OP_BREAK,
+};
+
+static ucell GetPublicAddress(AMX *amx, cell index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
+	int num_publics = (hdr->natives - hdr->publics) / hdr->defsize;
+
+	if (index == -1) {
+		return hdr->cip;
+	}
+
+	if (index < 0 || index >= num_publics) {
+		return 0;
+	}
+
+	return publics[index].address;
+}
+
+static ucell GetNativeAddress(AMX *amx, cell index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
+	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	if (index < 0 || index >= num_natives) {
+		return 0;
+	}
+
+	return natives[index].address;
+}
+
+JITFunction::JITFunction(JIT *jitter, ucell address)
+	: jitasm::function<void, JITFunction>()
+	, jit_(jitter)
 	, address_(address)
 {
 }
 
-void JitFunction::main() {
+void JITFunction::main() {
 	bool seen_proc = false; // whether we've seen the PROC opcode
 
-	AMX *amx = jitter_->GetAmx();
-	AMX_HEADER *amxhdr = jitter_->GetAmxHeader();
+	AMX *amx = jit_->GetAmx();
+	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
 
-	cell data = reinterpret_cast<cell>(jitter_->GetAmxData());
-	cell code = reinterpret_cast<cell>(jitter_->GetAmxCode());
+	cell data = reinterpret_cast<cell>(jit_->GetAmxData());
+	cell code = reinterpret_cast<cell>(jit_->GetAmxCode());
 
 	cell code_size = data - code;
 	cell *cip = reinterpret_cast<cell*>(code + address_);
@@ -375,7 +556,7 @@ void JitFunction::main() {
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			mov(ecx, reinterpret_cast<int>(jitter_->GetFunction(oper - code)->GetCode()));
+			mov(ecx, reinterpret_cast<int>(jit_->GetFunction(oper - code)->GetCode()));
 			call(ecx);
 			add(esp, dword_ptr[esp]);
 			add(esp, 4);
@@ -902,17 +1083,17 @@ void JitFunction::main() {
 	}
 }
 
-void JitFunction::SetLabel(cell address, const std::string &tag) {
+void JITFunction::SetLabel(cell address, const std::string &tag) {
 	L(GetLabelName(address));
 }
 
-std::string JitFunction::GetLabelName(cell address, const std::string &tag) const {
+std::string JITFunction::GetLabelName(cell address, const std::string &tag) const {
 	std::stringstream ss;
 	ss << address << tag;
 	return ss.str();
 }
 
-Jitter::Jitter(AMX *amx)
+JIT::JIT(AMX *amx)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx_->base))
 	, data_(amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat)
@@ -920,31 +1101,31 @@ Jitter::Jitter(AMX *amx)
 {
 }
 
-Jitter::~Jitter() {
+JIT::~JIT() {
 	for (ProcMap::const_iterator iterator = proc_map_.begin();
 			iterator != proc_map_.end(); ++iterator) {
 		delete iterator->second;
 	}
 }
 
-JitFunction *Jitter::GetFunction(ucell address) {
+JITFunction *JIT::GetFunction(ucell address) {
 	ProcMap::const_iterator iterator = proc_map_.find(address);
 	if (iterator != proc_map_.end()) {
 		return iterator->second;
 	} else {
-		JitFunction *fn = AssembleFunction(address);
+		JITFunction *fn = AssembleFunction(address);
 		proc_map_.insert(std::make_pair(address, fn)).second;
 		return fn;
 	}
 }
 
-JitFunction *Jitter::AssembleFunction(ucell address) {
-	JitFunction *fn = new JitFunction(this, address);
+JITFunction *JIT::AssembleFunction(ucell address) {
+	JITFunction *fn = new JITFunction(this, address);
 	fn->Assemble();
 	return fn;
 }
 
-int Jitter::CallPublicFunction(int index, cell *retval) {
+int JIT::CallPublicFunction(int index, cell *retval) {
 	// Some instructions may set a non-zero error code to indicate
 	// that a runtime error occured (e.g. array index out of bounds).
 	amx_->error = AMX_ERR_NONE;
@@ -996,12 +1177,10 @@ int Jitter::CallPublicFunction(int index, cell *retval) {
 	return amx_->error;
 }
 
-void Jitter::DumpCode(std::ostream &stream) const {
+void JIT::DumpCode(std::ostream &stream) const {
 	for (ProcMap::const_iterator iterator = proc_map_.begin();
 			iterator != proc_map_.end(); ++iterator) {
-		JitFunction *fn = iterator->second;
+		JITFunction *fn = iterator->second;
 		stream.write(reinterpret_cast<char*>(fn->GetCode()), fn->GetCodeSize());
 	}
 }
-
-} // namespace sampjit
