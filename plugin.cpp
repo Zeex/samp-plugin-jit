@@ -26,6 +26,7 @@
 
 #include "jit.h"
 #include "plugin.h"
+#include "pluginversion.h"
 
 #if defined LINUX
 	#include <sys/mman.h>
@@ -65,6 +66,9 @@
 	#define PAGE_ALIGN(x) (void*)(((int)x + sysconf(_SC_PAGESIZE) - 1) & ~(sysconf(_SC_PAGESIZE) - 1))
 #endif
 
+typedef void (*logprintf_t)(const char *format, ...);
+static logprintf_t logprintf;
+
 static std::map<AMX*, JIT*> jits;
 
 // This implementation of amx_GetAddr can accept ANY amx_addr, even out of the data section.
@@ -101,10 +105,15 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
+	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
+
 	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec],
 	                 (void*)amx_Exec_JIT);
 	Hook(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr],
 	                 (void*)amx_GetAddr_JIT);
+
+	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
+
 	return true;
 }
 
