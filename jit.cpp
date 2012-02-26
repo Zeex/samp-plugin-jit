@@ -296,7 +296,7 @@ void JITFunction::main() {
 			mov(eax, dword_ptr[eax + data]);
 			break;
 		case OP_LODB_I: // number
-			// PRI = “number” bytes from [PRI] (read 1/2/4 bytes)
+			// PRI = ï¿½numberï¿½ bytes from [PRI] (read 1/2/4 bytes)
 			switch (oper) {
 			case 1:
 				xor(eax, eax);
@@ -378,7 +378,7 @@ void JITFunction::main() {
 			mov(dword_ptr[ebx + data], eax);
 			break;
 		case OP_STRB_I: // number
-			// “number” bytes at [ALT] = PRI (write 1/2/4 bytes)
+			// ï¿½numberï¿½ bytes at [ALT] = PRI (write 1/2/4 bytes)
 			switch (oper) {
 			case 1:
 				xor(ebx, ebx);
@@ -1036,14 +1036,15 @@ void JITFunction::main() {
 			cmp(eax, *max_value);
 			jg(GetLabelName(default_addr));
 
-			// OK now subsequently compare eax with each of values and jump
-			// to the associated code piece when found a match.
+			// OK now sequentially compare eax with each value.
+			// This is pretty slow so I probably should optimize
+			// this in future...
 			for (int i = 0; i < num_cases; i++) {
 				cmp(eax, case_table[i + 1].value);
 				je(GetLabelName(case_table[i + 1].address - code));
 			}
 
-			// No match found - jump to the default case.
+			// No match found - go for default case.
 			jmp(GetLabelName(default_addr));
 
 			cip++;
