@@ -921,12 +921,20 @@ void JITFunction::main() {
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			lea(esi, dword_ptr[data + eax]); // source
-			lea(edi, dword_ptr[data + ecx]); // destination
-			push(ecx);                       // save ECX
-			mov(ecx, oper / 4);              // count
-			rep_movsd(edi, esi, ecx);        // move dwords from EDI to ESI repeatedly ECX times
-			pop(ecx);                        // restore ECX
+			lea(esi, dword_ptr[data + eax]);
+			lea(edi, dword_ptr[data + ecx]);
+			push(ecx);
+			if (oper % 4 == 0) {
+				mov(ecx, oper / 4);
+				rep_movsd(edi, esi, ecx);
+			} else if (oper % 2 == 0) {
+				mov(ecx, oper / 2);
+				rep_movsw(edi, esi, ecx);
+			} else {
+				mov(ecx, oper);
+				rep_movsb(edi, esi, ecx); 
+			}
+			pop(ecx);
 			cip++;
 			break;
 		case OP_CMPS: // number
