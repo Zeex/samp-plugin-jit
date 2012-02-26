@@ -1147,12 +1147,16 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	if (address == 0) {
 		amx_->error = AMX_ERR_INDEX;
 	} else {
+		// Get pointer to native code buffer.
+		void *start = GetFunction(address)->GetCode();
+
 		// Copy paramters to the physical stack.
 		cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
 		#if defined COMPILER_MSVC
 			for (int i = paramcount - 1; i >= 0; --i) {
-				cell arg = args[i];
-				__asm push dword ptr [arg]
+				__asm mov eax, dword ptr [i]
+				__asm mov ebx, dword ptr [args]
+				__asm push dword ptr [ebx + eax * 4]
 			}
 			__asm push dword ptr [parambytes]
 		#elif defined COMPILER_GCC
@@ -1162,8 +1166,7 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 			__asm__ __volatile__ ("pushl %0" :: "r"(parambytes) :);
 		#endif
 
-		// Call the function.
-		static void *start = GetFunction(address)->GetCode();
+		// Call the function.		
 		*retval = ((PublicFunction)start)();
 
 		// Pop parameters.
