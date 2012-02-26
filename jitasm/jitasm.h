@@ -2251,6 +2251,13 @@ struct Frontend
 	void cmpsd()		{AppendInstr(I_CMPS_D, 0xA7, 0, Dummy(RW(edi)), Dummy(RW(esi)));}
 #ifdef JITASM64
 	void cmpsq()		{AppendInstr(I_CMPS_Q, 0xA7, E_REXW_PREFIX, Dummy(RW(rdi)), Dummy(RW(rsi)));}
+#else
+	void rep_cmpsb()	{rep_cmpsb(zdi, zsi, zcx);}
+	void rep_cmpsw()	{rep_cmpsw(zdi, zsi, zcx);}
+	void rep_cmpsd()	{rep_cmpsd(zdi, zsi, zcx);}
+	void rep_cmpsb(const Reg& dst, const Reg& src, const Reg& count)	{AppendInstr(I_CMPS_B, 0xA6, E_REP_PREFIX, Dummy(RW(dst), zdi), Dummy(RW(src), zsi), Dummy(RW(count), ecx));}
+	void rep_cmpsw(const Reg& dst, const Reg& src, const Reg& count)	{AppendInstr(I_CMPS_W, 0xA7, E_REP_PREFIX | E_OPERAND_SIZE_PREFIX, Dummy(RW(dst), zdi), Dummy(RW(src), zsi), Dummy(RW(count), ecx));}
+	void rep_cmpsd(const Reg& dst, const Reg& src, const Reg& count)	{AppendInstr(I_CMPS_D, 0xA7, E_REP_PREFIX, Dummy(RW(dst), zdi), Dummy(RW(src), zsi), Dummy(RW(count), ecx));}
 #endif
 	void cmpxchg(const Reg8& dst, const Reg8& src, const Reg8& cmpx)	{AppendInstr(I_CMPXCHG, 0x0FB0, 0, R(src), RW(dst), Dummy(RW(cmpx),al));}
 	void cmpxchg(const Mem8& dst, const Reg8& src, const Reg8& cmpx)	{AppendInstr(I_CMPXCHG, 0x0FB0, 0, R(src), RW(dst), Dummy(RW(cmpx),al));}
