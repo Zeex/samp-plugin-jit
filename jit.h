@@ -76,11 +76,6 @@ public:
 	JITFunction *AssembleFunction(ucell address);
 
 	// Call a public function (and assemble if needed).
-	// In contrast to CallFunction(), this method also copies the arguments
-	// pushed to the AMX stack with amx_Push() and friends to the physical
-	// stack (including paramcount) prior to the call.
-	// The index must be a valid non-negative index of the publics table
-	// and -1 for main().
 	int CallPublicFunction(int index, cell *retval);
 
 	// Output generated code to a stream.
