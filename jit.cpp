@@ -932,7 +932,7 @@ void JITFunction::main() {
 				rep_movsw(edi, esi, ecx);
 			} else {
 				mov(ecx, oper);
-				rep_movsb(edi, esi, ecx); 
+				rep_movsb(edi, esi, ecx);
 			}
 			pop(ecx);
 			cip++;
@@ -1155,39 +1155,43 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 		void *start = GetFunction(address)->GetCode();
 
 		// Copy parameters from AMX stack and call the function.
-		cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
+		cell *params = reinterpret_cast<cell*>(data_ + amx_->stk);
 		#if defined COMPILER_MSVC
 			__asm push esi
 			__asm push edi
 			for (int i = paramcount - 1; i >= 0; --i) {
 				__asm mov eax, dword ptr [i]
-				__asm mov ecx, dword ptr [args]
+				__asm mov ecx, dword ptr [params]
 				__asm push dword ptr [ecx + eax * 4]
 			}
 			__asm push dword ptr [parambytes]
 			__asm call dword ptr [start]
+			__asm mov ecx, dword ptr [retval]
+			__asm mov dword ptr [ecx], eax
 			__asm add esp, dword ptr [parambytes]
 			__asm add esp, 4
 			__asm pop edi
 			__asm pop esi
 		#elif defined COMPILER_GCC
 			__asm__ __volatile__ (
-				"pushl %%esi\n"
-				"pushl %%edi\n"
-				: : : );
+				"pushl %%esi;"
+				"pushl %%edi;"
+					: : : "%esp");
 			for (int i = paramcount - 1; i >= 0; --i) {
 				__asm__ __volatile__ (
-					"pushl %0"
-					: : "r"(args[i]) : );
+					"pushl %0;"
+						: : "r"(params[i]) : "%esp");
 			}
 			__asm__ __volatile__ (
-				"pushl %0\n"
-				"calll *%1\n"
-				"addl %0, %%esp\n"
-				"addl $4, %%esp\n"
-				"popl %%edi\n"
-				"popl %%esi\n"
-				: : "r"(parambytes), "r"(start) : );
+				"pushl %1;"
+				"calll *%2;"
+				"movl %%eax, (%0);"
+					: : "r"(retval), "r"(parambytes), "r"(start) : "%eax", "%ecx", "%edx");
+			__asm__ __volatile__ (
+				"addl %0, %%esp;"
+				"popl %%edi;"
+				"popl %%esi;"
+					: : "r"(parambytes + 4) : "%esp");
 		#endif
 	}
 
