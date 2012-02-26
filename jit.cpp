@@ -699,10 +699,9 @@ void JITFunction::main() {
 			break;
 		case OP_SDIV_ALT:
 			// PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
-			mov(ecx, eax);
-			mov(eax, ebx);
+			xchg(eax, ebx);
 			xor(edx, edx);
-			idiv(ecx);
+			idiv(ebx);
 			mov(ebx, edx);
 			break;
 		case OP_UMUL:
@@ -718,10 +717,9 @@ void JITFunction::main() {
 			break;
 		case OP_UDIV_ALT:
 			// PRI = ALT / PRI (unsigned divide), ALT = ALT mod PRI
-			mov(ecx, eax);
-			mov(eax, ebx);
+			xchg(eax, ebx);
 			xor(edx, edx);
-			div(ecx);
+			div(ebx);
 			mov(ebx, edx);
 			break;
 		case OP_ADD:
