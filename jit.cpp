@@ -941,12 +941,14 @@ void JITFunction::main() {
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			lea(esi, dword_ptr[data + eax]);
-			lea(edi, dword_ptr[data + ecx]);
-			push(ecx);
-			mov(ecx, oper);
-			rep_cmpsb(edi, esi, ecx);
-			pop(ecx);
+			push(oper);                      // push "number"
+			lea(edx, dword_ptr[ecx + data]);
+			push(edx);                       // push "ptr2"
+			lea(edx, dword_ptr[eax + data]);
+			push(edx);                       // push "ptr1"
+			mov(edx, cell(std::memcmp));
+			call(edx);                       // memcmp(ptr1, ptr2, number)
+			add(esp, 12);
 			cip++;
 			break;
 		case OP_FILL: // number
