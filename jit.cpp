@@ -1150,44 +1150,44 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 		// Get pointer to native code buffer.
 		void *start = GetFunction(address)->GetCode();
 
-		// Copy paramters to the physical stack.
+		// Copy parameters from AMX stack and call the function.
 		cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
 		#if defined COMPILER_MSVC
+			__asm push ebx
+			__asm push esi
+			__asm push edi
 			for (int i = paramcount - 1; i >= 0; --i) {
 				__asm mov eax, dword ptr [i]
 				__asm mov ebx, dword ptr [args]
 				__asm push dword ptr [ebx + eax * 4]
 			}
 			__asm push dword ptr [parambytes]
+			__asm call dword ptr [start]
+			__asm add esp, dword ptr [parambytes]
+			__asm add esp, 4
+			__asm pop edi
+			__asm pop esi
+			__asm pop ebx
 		#elif defined COMPILER_GCC
+			__asm__ __volatile__ (
+				"pushl %%ebx\n"
+				"pushl %%esi\n"
+				"pushl %%edi\n"
+				: : : );
 			for (int i = paramcount - 1; i >= 0; --i) {
 				__asm__ __volatile__ (
 					"pushl %0"
-					:
-					: "r"(args[i])
-					: );
+					: : "r"(args[i]) : );
 			}
 			__asm__ __volatile__ (
-				"pushl %0"
-				:
-				: "r"(parambytes)
-				: );
-		#endif
-
-		// Call the function.
-		*retval = ((PublicFunction)start)();
-
-		// Pop parameters.
-		#if defined COMPILER_MSVC
-			__asm add esp, dword ptr [parambytes]
-			__asm add esp, 4
-		#elif defined COMPILER_GCC
-			__asm__ __volatile__ (
+				"pushl %0\n"
+				"calll *%1\n"
 				"addl %0, %%esp\n"
-				"addl $4, %%esp"
-				:
-				: "r"(parambytes)
-				: );
+				"addl $4, %%esp\n"
+				"popl %%edi\n"
+				"popl %%esi\n"
+				"popl %%ebx\n"
+				: : "r"(parambytes), "r"(start) : );
 		#endif
 	}
 
