@@ -751,8 +751,7 @@ void JITFunction::main() {
 			break;
 		case OP_NOT:
 			// PRI = !PRI
-			//test(eax, eax);
-			cmp(eax, 0);
+			test(eax, eax);
 			setz(cl);
 			movzx(eax, cl);
 			break;
