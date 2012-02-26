@@ -55,8 +55,6 @@ private:
 class JIT {
 	friend class JITFunction;
 public:
-	typedef cell (CDECL *PublicFunction)();
-
 	JIT(AMX *amx);
 	~JIT();
 
