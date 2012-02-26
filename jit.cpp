@@ -921,28 +921,24 @@ void JITFunction::main() {
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			push(oper);                      // push "number"
-			lea(edx, dword_ptr[eax + data]);
-			push(edx);                       // push "source"
-			lea(edx, dword_ptr[ecx + data]);
-			push(edx);                       // push "dest"
-			mov(edx, cell(std::memcpy));
-			call(edx);                       // memcpy(dest, source, number)
-			add(esp, 12);
+			lea(esi, dword_ptr[data + eax]); // source
+			lea(edi, dword_ptr[data + ecx]); // destination
+			push(ecx);                       // save ECX
+			mov(ecx, oper / 4);              // count
+			rep_movsd(edi, esi, ecx);        // move dwords from EDI to ESI repeatedly ECX times
+			pop(ecx);                        // restore ECX
 			cip++;
 			break;
 		case OP_CMPS: // number
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			push(oper);                      // push "number"
-			lea(edx, dword_ptr[ecx + data]);
-			push(edx);                       // push "ptr2"
-			lea(edx, dword_ptr[eax + data]);
-			push(edx);                       // push "ptr1"
-			mov(edx, cell(std::memcmp));
-			call(edx);                       // memcmp(ptr1, ptr2, number)
-			add(esp, 12);
+			lea(esi, dword_ptr[data + eax]); // source
+			lea(edi, dword_ptr[data + ecx]); // destination
+			push(ecx);                       // save ECX
+			mov(ecx, oper / 4);              // count
+			rep_cmpsd(edi, esi, ecx);        // compare repeatedly
+			pop(ecx);                        // restore ECX
 			cip++;
 			break;
 		case OP_FILL: // number
