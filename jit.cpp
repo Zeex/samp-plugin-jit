@@ -32,13 +32,21 @@
 #include "jit.h"
 
 #if defined _MSC_VER
+	#define COMPILER_MSVC
+#elif defined __GNUC__
+	#define COMPILER_GCC
+#else
+	#error Unsupported compiler
+#endif
+
+#if defined COMPILER_MSVC
 	#if !defined CDECL
 		#define CDECL __cdecl
 	#endif
 	#if !defined STDCALL
 		#define STDCALL __stdcall
 	#endif
-#elif defined __GNUC__
+#elif defined COMPILER_GCC
 	#if !defined CDECL
 		#define CDECL __attribute__((cdecl))
 	#endif
@@ -1141,19 +1149,17 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	} else {
 		// Copy paramters to the physical stack.
 		cell *args = reinterpret_cast<cell*>(data_ + amx_->stk);
-		#if defined _MSC_VER
+		#if defined COMPILER_MSVC
 			for (int i = paramcount - 1; i >= 0; --i) {
 				cell arg = args[i];
 				__asm push dword ptr [arg]
 			}
 			__asm push dword ptr [parambytes]
-		#elif defined __GNUC__
+		#elif defined COMPILER_GCC
 			for (int i = paramcount - 1; i >= 0; --i) {
 				__asm__ __volatile__ ("pushl %0" :: "r"(args[i]) :);
 			}
 			__asm__ __volatile__ ("pushl %0" :: "r"(parambytes) :);
-		#else
-			#error Unsupported compiler
 		#endif
 
 		// Call the function.
@@ -1161,13 +1167,11 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 		*retval = ((PublicFunction)start)();
 
 		// Pop parameters.
-		#if defined _MSC_VER
+		#if defined COMPILER_MSVC
 			__asm add esp, dword ptr [parambytes]
 			__asm add esp, 4
-		#elif defined __GNUC__
+		#elif defined COMPILER_GCC
 			// TODO
-		#else
-			#error Unsupported compiler
 		#endif
 	}
 
