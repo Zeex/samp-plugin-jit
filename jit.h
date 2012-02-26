@@ -79,7 +79,6 @@ public:
 	int CallPublicFunction(int index, cell *retval);
 
 	// Output generated code to a stream.
-	// The code includes only those functions that were actually called.
 	void DumpCode(std::ostream &stream) const;
 
 private:
