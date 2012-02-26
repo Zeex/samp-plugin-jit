@@ -1157,7 +1157,7 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 		#endif
 
 		// Call the function.
-		void *start = GetFunction(address)->GetCode();
+		static void *start = GetFunction(address)->GetCode();
 		*retval = ((PublicFunction)start)();
 
 		// Pop parameters.
