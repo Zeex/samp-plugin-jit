@@ -1161,12 +1161,20 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 			__asm push dword ptr [parambytes]
 		#elif defined COMPILER_GCC
 			for (int i = paramcount - 1; i >= 0; --i) {
-				__asm__ __volatile__ ("pushl %0" :: "r"(args[i]) :);
+				__asm__ __volatile__ (
+					"pushl %0"
+					:
+					: "r"(args[i])
+					: );
 			}
-			__asm__ __volatile__ ("pushl %0" :: "r"(parambytes) :);
+			__asm__ __volatile__ (
+				"pushl %0"
+				:
+				: "r"(parambytes)
+				: );
 		#endif
 
-		// Call the function.		
+		// Call the function.
 		*retval = ((PublicFunction)start)();
 
 		// Pop parameters.
@@ -1174,7 +1182,12 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 			__asm add esp, dword ptr [parambytes]
 			__asm add esp, 4
 		#elif defined COMPILER_GCC
-			// TODO
+			__asm__ __volatile__ (
+				"addl %0, %%esp\n"
+				"addl $4, %%esp"
+				:
+				: "r"(parambytes)
+				: );
 		#endif
 	}
 
