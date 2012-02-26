@@ -524,7 +524,7 @@ void JITFunction::main() {
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			//lea(ebx, dword_ptr[esp - data]); <- DO NOT UNCOMMENT THIS
+			lea(ebx, dword_ptr[esp - data]);
 			add(esp, oper);
 			cip++;
 			break;
