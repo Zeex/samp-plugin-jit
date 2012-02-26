@@ -1157,21 +1157,27 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 		// Copy parameters from AMX stack and call the function.
 		cell *params = reinterpret_cast<cell*>(data_ + amx_->stk);
 		#if defined COMPILER_MSVC
-			__asm push esi
-			__asm push edi
-			for (int i = paramcount - 1; i >= 0; --i) {
-				__asm mov eax, dword ptr [i]
-				__asm mov ecx, dword ptr [params]
-				__asm push dword ptr [ecx + eax * 4]
+			__asm {
+				push esi
+				push edi
 			}
-			__asm push dword ptr [parambytes]
-			__asm call dword ptr [start]
-			__asm mov ecx, dword ptr [retval]
-			__asm mov dword ptr [ecx], eax
-			__asm add esp, dword ptr [parambytes]
-			__asm add esp, 4
-			__asm pop edi
-			__asm pop esi
+			for (int i = paramcount - 1; i >= 0; --i) {
+				__asm {
+					mov eax, dword ptr [i]
+					mov ecx, dword ptr [params]
+					push dword ptr [ecx + eax * 4]
+				}
+			}
+			__asm {
+				push dword ptr [parambytes]
+				call dword ptr [start]
+				mov ecx, dword ptr [retval]
+				mov dword ptr [ecx], eax
+				add esp, dword ptr [parambytes]
+				add esp, 4
+				pop edi
+				pop esi
+			}
 		#elif defined COMPILER_GCC
 			__asm__ __volatile__ (
 				"pushl %%esi;"
