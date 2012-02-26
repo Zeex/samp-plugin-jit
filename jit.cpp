@@ -732,9 +732,10 @@ void JITFunction::main() {
 			break;
 		case OP_SUB_ALT:
 			// PRI = ALT - PRI
-			mov(ecx, ebx);
-			sub(ecx, eax);
-			mov(eax, ecx);
+			// or:
+			// PRI = -(PRI - ALT)
+			sub(eax, ebx);
+			neg(eax);
 			break;
 		case OP_AND:
 			// PRI = PRI & ALT
