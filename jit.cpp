@@ -941,12 +941,12 @@ void JITFunction::main() {
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			lea(esi, dword_ptr[data + eax]); // source
-			lea(edi, dword_ptr[data + ecx]); // destination
-			push(ecx);                       // save ECX
-			mov(ecx, oper / 4);              // count
-			rep_cmpsd(edi, esi, ecx);        // compare repeatedly
-			pop(ecx);                        // restore ECX
+			lea(esi, dword_ptr[data + eax]);
+			lea(edi, dword_ptr[data + ecx]);
+			push(ecx);
+			mov(ecx, oper);
+			rep_cmpsb(edi, esi, ecx);
+			pop(ecx);
 			cip++;
 			break;
 		case OP_FILL: // number
