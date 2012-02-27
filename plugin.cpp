@@ -89,15 +89,18 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	return AMX_ERR_NONE;
 }
 
-static void Hook(void *from, void *to) {
+static void Hook(void *src, void *dst) {
 	// Set write permission.
-	mprotect(PAGE_ALIGN(from), PAGE_ALIGN(5), PROT_READ | PROT_WRITE | PROT_EXEC);
+	mprotect(PAGE_ALIGN(src), PAGE_ALIGN(5), PROT_READ | PROT_WRITE | PROT_EXEC);
 
 	// Write the JMP opcode.
-	*((unsigned char*)from) = 0xE9;
+	static const uint8_t JMP_rel32 = 0xE9;
+	*reinterpret_cast<uint8_t*>(src) = JMP_rel32;
 
-	// Write the address (relative to the next instruction).
-	*((int*)((int)from + 1)) = ((int)to - ((int)from + 5));
+	// Write the address (which is relative to next instruction).
+	int32_t src_addr = reinterpret_cast<int32_t>(src);
+	int32_t dst_addr = reinterpret_cast<int32_t>(dst);
+	*reinterpret_cast<int32_t*>(src_addr + 1) = dst_addr - (src_addr + 5);
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
