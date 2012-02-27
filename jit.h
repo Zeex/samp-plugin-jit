@@ -53,7 +53,6 @@ private:
 };
 
 class JIT {
-	friend class JITFunction;
 public:
 	JIT(AMX *amx);
 	~JIT();
