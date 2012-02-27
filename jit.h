@@ -27,9 +27,25 @@
 #include <iosfwd>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "amx/amx.h"
 #include "jitasm/jitasm.h"
+
+class Instruction {
+public:
+	Instruction(cell *ip) : ip_(ip) {}
+
+	cell *GetIP() const 
+		{ return ip_; }
+	cell GetOpcode() const 
+		{ return *ip_; }
+	cell GetOperand(unsigned int index = 0u) const
+		{ return *(ip_ + 1 + index); }
+
+private:
+	cell *ip_;
+};
 
 class JIT;
 
@@ -65,6 +81,9 @@ public:
 
 	// Get pointer to start of AMX code section.
 	inline unsigned char *GetAmxCode() { return code_; }
+
+	// Turn raw AMX code into a sequence of Instructions.
+	void ParseFunctionCode(ucell address, std::vector<Instruction> &instructions) const;
 
 	// Get assembled function (and assemble if needed).
 	JITFunction *GetFunction(ucell address);
