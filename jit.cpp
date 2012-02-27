@@ -227,6 +227,19 @@ static ucell GetNativeAddress(AMX *amx, cell index) {
 	return natives[index].address;
 }
 
+static const char *GetNativeName(AMX *amx, cell index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
+	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	if (index < 0 || index >= num_natives) {
+		return 0;
+	}
+
+	return reinterpret_cast<char*>(amx->base + natives[index].nameofs);
+}
+
 JITFunction::JITFunction(JIT *jitter, ucell address)
 	: jitasm::function<void, JITFunction>()
 	, jit_(jitter)
@@ -905,9 +918,74 @@ void JITFunction::main() {
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
 			break;
-		case OP_SYSREQ_C: // index
-		case OP_SYSREQ_D: // address
+		case OP_SYSREQ_C:   // index
+		case OP_SYSREQ_D: { // address
 			// call system service
+
+			// Replace calls to floating point natives with corresponding
+			// x86 floating point instructions.
+			if (instr.GetOpcode() == OP_SYSREQ_C) {
+				std::string name = GetNativeName(amx, instr.GetOperand());
+				if (name == "floatabs") {
+					fld(dword_ptr[esp + 4]);
+					fabs();
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatadd") {
+					fld(dword_ptr[esp + 4]);
+					fadd(dword_ptr[esp + 8]);
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatsub") {
+					fld(dword_ptr[esp + 4]);
+					fsub(dword_ptr[esp + 8]);
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatmul") {
+					fld(dword_ptr[esp + 4]);
+					fmul(dword_ptr[esp + 8]);
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatdiv") {
+					fld(dword_ptr[esp + 4]);
+					fdiv(dword_ptr[esp + 8]);
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatsqroot") {
+					fld(dword_ptr[esp + 4]);
+					fsqrt();
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatsin") {
+					fld(dword_ptr[esp + 4]);
+					fsin();
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				if (name == "floatcos") {
+					fld(dword_ptr[esp + 4]);
+					fcos();
+					fstp(dword_ptr[esp]);
+					mov(eax, dword_ptr[esp]);
+					goto special_native;
+				}
+				goto ordinary_native;
+			}
+
+		ordinary_native:
 			push(esp);
 			push(reinterpret_cast<int>(amx));
 			switch (instr.GetOpcode()) {
@@ -920,7 +998,10 @@ void JITFunction::main() {
 			}
 			call(edx);
 			add(esp, 8);
+
+		special_native:
 			break;
+		}
 		case OP_FILE: // size ord name
 			// obsolete
 			break;
