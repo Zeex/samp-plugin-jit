@@ -9292,9 +9292,9 @@ struct function_cdecl<void, Derived, detail::ArgNone, detail::ArgNone, detail::A
 	operator FuncPtr() { return (FuncPtr)GetCode(); }
 	void InternalMain() {static_cast<Derived *>(this)->naked_main();}
 	void naked_main() {
-		//Prolog();
+		Prolog();
 		static_cast<Derived *>(this)->main();
-		//Epilog();
+		Epilog();
 	}
 };
 
