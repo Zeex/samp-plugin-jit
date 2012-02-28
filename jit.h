@@ -99,6 +99,10 @@ public:
 	// Same as CallFunction() but for publics.
 	int CallPublicFunction(int index, cell *retval);
 
+	// Call a native function. This method is currently used only for sysreq.pri.
+	// The sysreq.c and sysreq.d instructions invoke natives directly.
+	cell CallNativeFunction(int index, cell *params);
+
 	// Output generated code to a stream.
 	void DumpCode(std::ostream &stream) const;
 

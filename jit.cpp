@@ -201,6 +201,10 @@ static cell STDCALL CallFunction(JIT *jit, ucell address, cell *params) {
 	return jit->CallFunction(address, params);
 }
 
+static cell STDCALL CallNativeFunction(JIT *jit, int index, cell *params) {
+	return jit->CallNativeFunction(index, params);
+}
+
 static ucell GetPublicAddress(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
@@ -926,6 +930,11 @@ void JITFunction::main() {
 			break;
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
+			push(esp);
+			push(eax);
+			push(reinterpret_cast<int>(jit_));
+			mov(edx, reinterpret_cast<int>(::CallNativeFunction));
+			call(edx);
 			break;
 		case OP_SYSREQ_C:   // index
 		case OP_SYSREQ_D: { // address
@@ -1225,6 +1234,11 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	amx_->paramcount = 0;
 
 	return amx_->error;
+}
+
+cell JIT::CallNativeFunction(int index, cell *params) {
+	AMX_NATIVE native = reinterpret_cast<AMX_NATIVE>(GetNativeAddress(amx_, index));
+	return native(amx_, params);
 }
 
 void JIT::DumpCode(std::ostream &stream) const {
