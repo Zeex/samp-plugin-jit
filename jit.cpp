@@ -552,7 +552,7 @@ void JITFunction::main() {
 			if (fn != 0) {
 				// The target function has been compiled.
 				mov(edx, reinterpret_cast<int>(fn->GetCode()));
-			} else { 
+			} else {
 				// The current function calls itself directly or indirectly.
 				push(esp);
 				push(fn_addr);
@@ -1156,7 +1156,7 @@ JITFunction *JIT::GetFunction(ucell address) {
 		return iterator->second;
 	} else {
 		proc_map_[address] = 0;
-		JITFunction *fn = new JITFunction(this, address);		
+		JITFunction *fn = new JITFunction(this, address);
 		fn->Assemble();
 		proc_map_[address] = fn;
 		return fn;
@@ -1199,7 +1199,7 @@ cell JIT::CallFunction(ucell address, cell *params) {
 			"pushl %%esi;"
 			"pushl %%edi;"
 				: : : "%esp");
-		for (int i = paramcount; i >= 1; --i) {
+		for (int i = paramcount; i >= 0; --i) {
 			__asm__ __volatile__ (
 				"pushl %0;"
 					: : "r"(params[i]) : "%esp");
@@ -1254,7 +1254,7 @@ void JIT::DumpCode(std::ostream &stream) const {
 	}
 }
 
-void JIT::ParseFunctionCode(ucell address, std::vector<Instruction> &instructions) const {	
+void JIT::ParseFunctionCode(ucell address, std::vector<Instruction> &instructions) const {
 	cell *cip = reinterpret_cast<cell*>(code_ + address);
 	bool seen_proc = false;
 
@@ -1270,7 +1270,7 @@ void JIT::ParseFunctionCode(ucell address, std::vector<Instruction> &instruction
 		}
 
 		switch (opcode) {
-		// Instructions with one operand.		
+		// Instructions with one operand.
 		case OP_LOAD_PRI:
 		case OP_LOAD_ALT:
 		case OP_LOAD_S_PRI:
