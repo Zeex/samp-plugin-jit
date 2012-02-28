@@ -268,10 +268,11 @@ void JITFunction::naked_main() {
 
 	for (std::size_t i = 0; i < instructions.size(); i++) {
 		Instruction &instr = instructions[i];
+		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
 
 		// Label this instruction so we can refer to it when
 		// doing jumps...
-		SetLabel(reinterpret_cast<cell>(instr.GetIP()) - code);
+		SetLabel(cip);
 
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
@@ -571,7 +572,7 @@ void JITFunction::naked_main() {
 		case OP_JUMP: // offset
 			// CIP = CIP + offset (jump to the address relative from
 			// the current position)
-			jmp(GetLabelName(instr.GetOperand() - code));
+			jmp(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JREL: // offset
 			// obsolete
@@ -579,62 +580,62 @@ void JITFunction::naked_main() {
 		case OP_JZER: // offset
 			// if PRI == 0 then CIP = CIP + offset
 			cmp(eax, 0);
-			jz(GetLabelName(instr.GetOperand() - code));
+			jz(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JNZ: // offset
 			// if PRI != 0 then CIP = CIP + offset
 			cmp(eax, 0);
-			jnz(GetLabelName(instr.GetOperand() - code));
+			jnz(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JEQ: // offset
 			// if PRI == ALT then CIP = CIP + offset
 			cmp(eax, ecx);
-			je(GetLabelName(instr.GetOperand() - code));
+			je(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JNEQ: // offset
 			// if PRI != ALT then CIP = CIP + offset
 			cmp(eax, ecx);
-			jne(GetLabelName(instr.GetOperand() - code));
+			jne(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JLESS: // offset
 			// if PRI < ALT then CIP = CIP + offset (unsigned)
 			cmp(eax, ecx);
-			jb(GetLabelName(instr.GetOperand() - code));
+			jb(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JLEQ: // offset
 			// if PRI <= ALT then CIP = CIP + offset (unsigned)
 			cmp(eax, ecx);
-			jbe(GetLabelName(instr.GetOperand() - code));
+			jbe(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JGRTR: // offset
 			// if PRI > ALT then CIP = CIP + offset (unsigned)
 			cmp(eax, ecx);
-			ja(GetLabelName(instr.GetOperand() - code));
+			ja(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JGEQ: // offset
 			// if PRI >= ALT then CIP = CIP + offset (unsigned)
 			cmp(eax, ecx);
-			jae(GetLabelName(instr.GetOperand() - code));
+			jae(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSLESS: // offset
 			// if PRI < ALT then CIP = CIP + offset (signed)
 			cmp(eax, ecx);
-			jl(GetLabelName(instr.GetOperand() - code));
+			jl(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSLEQ: // offset
 			// if PRI <= ALT then CIP = CIP + offset (signed)
 			cmp(eax, ecx);
-			jle(GetLabelName(instr.GetOperand() - code));
+			jle(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSGRTR: // offset
 			// if PRI > ALT then CIP = CIP + offset (signed)
 			cmp(eax, ecx);
-			jg(GetLabelName(instr.GetOperand() - code));
+			jg(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSGEQ: // offset
 			// if PRI >= ALT then CIP = CIP + offset (signed)
 			cmp(eax, ecx);
-			jge(GetLabelName(instr.GetOperand() - code));
+			jge(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_SHL:
 			// PRI = PRI << ALT
@@ -1078,20 +1079,20 @@ void JITFunction::naked_main() {
 			// Check if the value in eax is in the allowed range.
 			// If not, jump to the default case (i.e. no match).
 			cmp(eax, *min_value);
-			jl(GetLabelName(default_addr));
+			jl(GetLabel(default_addr));
 			cmp(eax, *max_value);
-			jg(GetLabelName(default_addr));
+			jg(GetLabel(default_addr));
 
 			// OK now sequentially compare eax with each value.
 			// This is pretty slow so I probably should optimize
 			// this in future...
 			for (int i = 0; i < num_cases; i++) {
 				cmp(eax, case_table[i + 1].value);
-				je(GetLabelName(case_table[i + 1].address - code));
+				je(GetLabel(case_table[i + 1].address - code));
 			}
 
 			// No match found - go for default case.
-			jmp(GetLabelName(default_addr));
+			jmp(GetLabel(default_addr));
 			break;
 		}
 		case OP_CASETBL: // ...
@@ -1127,10 +1128,10 @@ void JITFunction::naked_main() {
 }
 
 void JITFunction::SetLabel(cell address, const std::string &tag) {
-	L(GetLabelName(address));
+	L(GetLabel(address));
 }
 
-std::string JITFunction::GetLabelName(cell address, const std::string &tag) const {
+std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
 	std::stringstream ss;
 	ss << address << tag;
 	return ss.str();
