@@ -540,23 +540,30 @@ void JITFunction::main() {
 			pop(ebp);
 			ret();
 			break;
-		case OP_CALL: // offset
+		case OP_CALL: { // offset
 			// [STK] = CIP + 5, STK = STK - cell size
 			// CIP = CIP + offset
 			// The CALL instruction jumps to an address after storing the
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			push(esp);
-			push(instr.GetOperand() - code);
-			push(reinterpret_cast<int>(jit_));
-			mov(edx, reinterpret_cast<int>(::CallFunction));
+			ucell fn_addr = instr.GetOperand() - code;
+			JITFunction *fn = jit_->GetFunction(fn_addr);
+			if (fn != 0) {
+				// The target function has been compiled.
+				mov(edx, reinterpret_cast<int>(fn->GetCode()));
+			} else { 
+				// The current function calls itself directly or indirectly.
+				push(esp);
+				push(fn_addr);
+				push(reinterpret_cast<int>(jit_));
+				mov(edx, reinterpret_cast<int>(::CallFunction));
+			}
 			call(edx);
-			//mov(edx, reinterpret_cast<int>(jit_->GetFunction(instr.GetOperand() - code)->GetCode()));
-			//call(edx);
 			add(esp, dword_ptr[esp]);
 			add(esp, 4);
 			break;
+		}
 		case OP_CALL_PRI:
 			// obsolete
 			break;
@@ -1148,16 +1155,12 @@ JITFunction *JIT::GetFunction(ucell address) {
 	if (iterator != proc_map_.end()) {
 		return iterator->second;
 	} else {
-		JITFunction *fn = AssembleFunction(address);
-		proc_map_.insert(std::make_pair(address, fn)).second;
+		proc_map_[address] = 0;
+		JITFunction *fn = new JITFunction(this, address);		
+		fn->Assemble();
+		proc_map_[address] = fn;
 		return fn;
 	}
-}
-
-JITFunction *JIT::AssembleFunction(ucell address) {
-	JITFunction *fn = new JITFunction(this, address);
-	fn->Assemble();
-	return fn;
 }
 
 cell JIT::CallFunction(ucell address, cell *params) {
@@ -1165,7 +1168,9 @@ cell JIT::CallFunction(ucell address, cell *params) {
 	int paramcount = parambytes / sizeof(cell);
 
 	// Get pointer to assembled native code.
-	void *start = GetFunction(address)->GetCode();
+	JITFunction *fn = GetFunction(address);
+	assert(fn != 0);
+	void *start = fn->GetCode();
 
 	// Copy parameters from AMX stack and call the function.
 	cell return_value;
