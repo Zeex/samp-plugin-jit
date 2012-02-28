@@ -56,7 +56,7 @@ public:
 
 	void naked_main();
 
-	void SetLabel(cell address, const std::string &tag = std::string());
+	void PutLabel(cell address, const std::string &tag = std::string());
 	std::string GetLabel(cell address, const std::string &tag = std::string()) const;
 
 private:
