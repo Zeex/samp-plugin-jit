@@ -272,7 +272,7 @@ void JITFunction::naked_main() {
 
 		// Label this instruction so we can refer to it when
 		// doing jumps...
-		SetLabel(cip);
+		PutLabel(cip);
 
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
@@ -1127,7 +1127,7 @@ void JITFunction::naked_main() {
 	}
 }
 
-void JITFunction::SetLabel(cell address, const std::string &tag) {
+void JITFunction::PutLabel(cell address, const std::string &tag) {
 	L(GetLabel(address, tag));
 }
 
