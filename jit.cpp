@@ -255,7 +255,7 @@ JITFunction::JITFunction(JIT *jitter, ucell address)
 {
 }
 
-void JITFunction::main() {
+void JITFunction::naked_main() {
 	AMX *amx = jit_->GetAmx();
 	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
 
@@ -263,7 +263,7 @@ void JITFunction::main() {
 	cell code = reinterpret_cast<cell>(jit_->GetAmxCode());
 
 	std::vector<Instruction> instructions;
-	jit_->ParseFunctionCode(address_, instructions);
+	jit_->AnalyzeFunction(address_, instructions);
 
 	for (std::size_t i = 0; i < instructions.size(); i++) {
 		Instruction &instr = instructions[i];
@@ -1254,7 +1254,7 @@ void JIT::DumpCode(std::ostream &stream) const {
 	}
 }
 
-void JIT::ParseFunctionCode(ucell address, std::vector<Instruction> &instructions) const {
+void JIT::AnalyzeFunction(ucell address, std::vector<Instruction> &instructions) const {
 	cell *cip = reinterpret_cast<cell*>(code_ + address);
 	bool seen_proc = false;
 
