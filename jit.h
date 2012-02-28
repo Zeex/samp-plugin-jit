@@ -88,9 +88,6 @@ public:
 	// Get assembled function (and assemble if needed).
 	JITFunction *GetFunction(ucell address);
 
-	// Assemble AMX function at the specified address.
-	JITFunction *AssembleFunction(ucell address);
-
 	// Call a function (and assemble if needed).
 	// The arguments passed to the function are copied from the AMX stack 
 	// onto the real stack.
