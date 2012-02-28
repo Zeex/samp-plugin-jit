@@ -223,7 +223,7 @@ static ucell GetPublicAddress(AMX *amx, cell index) {
 	return publics[index].address;
 }
 
-static ucell GetNativeAddress(AMX *amx, cell index) {
+static ucell GetNativeAddress(AMX *amx, int index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
@@ -236,7 +236,7 @@ static ucell GetNativeAddress(AMX *amx, cell index) {
 	return natives[index].address;
 }
 
-static const char *GetNativeName(AMX *amx, cell index) {
+static const char *GetNativeName(AMX *amx, int index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
@@ -247,6 +247,21 @@ static const char *GetNativeName(AMX *amx, cell index) {
 	}
 
 	return reinterpret_cast<char*>(amx->base + natives[index].nameofs);
+}
+
+static int GetNativeIndex(AMX *amx, ucell address) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
+	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	for (int i = 0; i < num_natives; i++) {
+		if (natives[i].address == address) {
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 JITFunction::JITFunction(JIT *jitter, ucell address)
@@ -265,6 +280,8 @@ void JITFunction::naked_main() {
 
 	std::vector<Instruction> instructions;
 	jit_->AnalyzeFunction(address_, instructions);
+
+	RegisterNativeOverrides();
 
 	for (std::size_t i = 0; i < instructions.size(); i++) {
 		Instruction &instr = instructions[i];
@@ -949,66 +966,27 @@ void JITFunction::naked_main() {
 		case OP_SYSREQ_D: { // address
 			// call system service
 
-			// Replace calls to floating point natives with corresponding
-			// x86 floating point instructions.
-			if (instr.GetOpcode() == OP_SYSREQ_C) {
-				std::string name = GetNativeName(amx, instr.GetOperand());
-				if (name == "floatabs") {
-					fld(dword_ptr[esp + 4]);
-					fabs();
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
+			std::string native_name;
+			switch (instr.GetOpcode()) {
+				case OP_SYSREQ_C:
+					native_name = GetNativeName(amx, instr.GetOperand());
+					break;
+				case OP_SYSREQ_D: {
+					int index = GetNativeIndex(amx, instr.GetOperand());
+					if (index != -1) {
+						native_name = GetNativeName(amx, index);
+					}
+					break;
 				}
-				if (name == "floatadd") {
-					fld(dword_ptr[esp + 4]);
-					fadd(dword_ptr[esp + 8]);
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
-				if (name == "floatsub") {
-					fld(dword_ptr[esp + 4]);
-					fsub(dword_ptr[esp + 8]);
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
-				if (name == "floatmul") {
-					fld(dword_ptr[esp + 4]);
-					fmul(dword_ptr[esp + 8]);
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
-				if (name == "floatdiv") {
-					fld(dword_ptr[esp + 4]);
-					fdiv(dword_ptr[esp + 8]);
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
-				if (name == "floatsqroot") {
-					fld(dword_ptr[esp + 4]);
-					fsqrt();
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
-				if (name == "floatsin") {
-					fld(dword_ptr[esp + 4]);
-					fsin();
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
-				if (name == "floatcos") {
-					fld(dword_ptr[esp + 4]);
-					fcos();
-					fstp(dword_ptr[esp]);
-					mov(eax, dword_ptr[esp]);
-					goto special_native;
-				}
+			}
+
+			// Replace calls to various natives with their optimized equivalents.
+			std::map<std::string, NativeOverride>::const_iterator it 
+					= native_overrides_.find(native_name);
+			if (it != native_overrides_.end()) {
+				(*this.*(it->second))();
+				goto special_native;
+			} else {
 				goto ordinary_native;
 			}
 
@@ -1016,12 +994,12 @@ void JITFunction::naked_main() {
 			push(esp);
 			push(reinterpret_cast<int>(amx));
 			switch (instr.GetOpcode()) {
-			case OP_SYSREQ_C:
-				mov(edx, GetNativeAddress(amx, instr.GetOperand()));
-				break;
-			case OP_SYSREQ_D:
-				mov(edx, instr.GetOperand());
-				break;
+				case OP_SYSREQ_C:
+					mov(edx, GetNativeAddress(amx, instr.GetOperand()));
+					break;
+				case OP_SYSREQ_D:
+					mov(edx, instr.GetOperand());
+					break;
 			}
 			call(edx);
 			add(esp, 8);
@@ -1135,6 +1113,73 @@ std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
 	std::stringstream ss;
 	ss << address << tag;
 	return ss.str();
+}
+
+void JITFunction::RegisterNativeOverrides() {
+	// Floating point
+	JIT_OVERRIDE_NATIVE(floatabs);
+	JIT_OVERRIDE_NATIVE(floatadd);
+	JIT_OVERRIDE_NATIVE(floatsub);
+	JIT_OVERRIDE_NATIVE(floatmul);
+	JIT_OVERRIDE_NATIVE(floatdiv);
+	JIT_OVERRIDE_NATIVE(floatsqroot);
+	JIT_OVERRIDE_NATIVE(floatsin);
+	JIT_OVERRIDE_NATIVE(floatcos);
+}
+
+void JITFunction::native_floatabs() {
+	fld(dword_ptr[esp + 4]);
+	fabs();
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatadd() {
+	fld(dword_ptr[esp + 4]);
+	fadd(dword_ptr[esp + 8]);
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatsub() {
+	fld(dword_ptr[esp + 4]);
+	fsub(dword_ptr[esp + 8]);
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatmul() {
+	fld(dword_ptr[esp + 4]);
+	fmul(dword_ptr[esp + 8]);
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatdiv() {
+	fld(dword_ptr[esp + 4]);
+	fdiv(dword_ptr[esp + 8]);
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatsqroot() {
+	fld(dword_ptr[esp + 4]);
+	fsqrt();
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatsin() {
+	fld(dword_ptr[esp + 4]);
+	fsin();
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+}
+
+void JITFunction::native_floatcos() {
+	fld(dword_ptr[esp + 4]);
+	fcos();
+	fstp(dword_ptr[esp]);
 }
 
 JIT::JIT(AMX *amx)
