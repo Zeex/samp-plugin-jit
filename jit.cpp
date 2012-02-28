@@ -1180,6 +1180,7 @@ void JITFunction::native_floatcos() {
 	fld(dword_ptr[esp + 4]);
 	fcos();
 	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
 }
 
 JIT::JIT(AMX *amx)
