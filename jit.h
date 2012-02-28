@@ -47,6 +47,9 @@ private:
 	cell *ip_;
 };
 
+#define JIT_OVERRIDE_NATIVE(name) \
+	do { native_overrides_[#name] = &JITFunction::native_##name; } while (false);
+
 class JIT;
 
 // JITFunction represents a JIT-compiled AMX function.
@@ -56,16 +59,34 @@ public:
 
 	void naked_main();
 
+private:
 	void PutLabel(cell address, const std::string &tag = std::string());
 	std::string GetLabel(cell address, const std::string &tag = std::string()) const;
+
+private:
+	void RegisterNativeOverrides();
+
+	// Floating point natives
+	void native_floatabs();
+	void native_floatadd();
+	void native_floatsub();
+	void native_floatmul();
+	void native_floatdiv();
+	void native_floatsqroot();
+	void native_floatsin();
+	void native_floatcos();	
 
 private:
 	// Disable copying.
 	JITFunction(const JITFunction &);
 	JITFunction &operator=(const JITFunction &);
 
+private:
 	JIT *jit_;
 	ucell address_;
+
+	typedef void (JITFunction::*NativeOverride)();
+	std::map<std::string, NativeOverride> native_overrides_;
 };
 
 class JIT {
