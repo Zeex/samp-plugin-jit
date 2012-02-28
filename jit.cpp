@@ -29,6 +29,7 @@
 #include <sstream>
 #include <string>
 
+#include "amx/amx.h"
 #include "jit.h"
 
 #if defined _MSC_VER
