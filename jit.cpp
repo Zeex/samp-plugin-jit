@@ -197,6 +197,10 @@ enum Opcode {
 	OP_BREAK,
 };
 
+static cell STDCALL CallFunction(JIT *jit, ucell address, cell *params) {
+	return jit->CallFunction(address, params);
+}
+
 static ucell GetPublicAddress(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
@@ -539,8 +543,13 @@ void JITFunction::main() {
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			mov(edx, reinterpret_cast<int>(jit_->GetFunction(instr.GetOperand() - code)->GetCode()));
+			push(esp);
+			push(instr.GetOperand() - code);
+			push(reinterpret_cast<int>(jit_));
+			mov(edx, reinterpret_cast<int>(::CallFunction));
 			call(edx);
+			//mov(edx, reinterpret_cast<int>(jit_->GetFunction(instr.GetOperand() - code)->GetCode()));
+			//call(edx);
 			add(esp, dword_ptr[esp]);
 			add(esp, 4);
 			break;
@@ -1142,71 +1151,77 @@ JITFunction *JIT::AssembleFunction(ucell address) {
 	return fn;
 }
 
+cell JIT::CallFunction(ucell address, cell *params) {
+	int parambytes = params[0];
+	int paramcount = parambytes / sizeof(cell);
+
+	// Get pointer to assembled native code.
+	void *start = GetFunction(address)->GetCode();
+
+	// Copy parameters from AMX stack and call the function.
+	cell return_value;
+	#if defined COMPILER_MSVC
+		__asm {
+			push esi
+			push edi
+		}
+		for (int i = paramcount; i >= 0; --i) {
+			__asm {
+				mov eax, dword ptr [i]
+				mov ecx, dword ptr [params]
+				push dword ptr [ecx + eax * 4]
+			}
+		}
+		__asm {
+			call dword ptr [start]
+			mov dword ptr [return_value], eax
+			add esp, dword ptr [parambytes]
+			add esp, 4
+			pop edi
+			pop esi
+		}
+	#elif defined COMPILER_GCC
+		__asm__ __volatile__ (
+			"pushl %%esi;"
+			"pushl %%edi;"
+				: : : "%esp");
+		for (int i = paramcount; i >= 1; --i) {
+			__asm__ __volatile__ (
+				"pushl %0;"
+					: : "r"(params[i]) : "%esp");
+		}
+		__asm__ __volatile__ (
+			"calll *%1;"
+			"movl %%eax, %0;"
+				: "=r"(return_value) : "r"(start) : "%eax", "%ecx", "%edx");
+		__asm__ __volatile__ (
+			"addl %0, %%esp;"
+			"popl %%edi;"
+			"popl %%esi;"
+				: : "r"(parambytes + 4) : "%esp");
+	#endif
+
+	return return_value;
+}
+
 int JIT::CallPublicFunction(int index, cell *retval) {
 	// Some instructions may set a non-zero error code to indicate
 	// that a runtime error occured (e.g. array index out of bounds).
 	amx_->error = AMX_ERR_NONE;
 
-	// paramcount is the number of arguments passed to the public.
-	int paramcount = amx_->paramcount;
-	int parambytes = paramcount * sizeof(cell);
+	amx_->stk -= sizeof(cell);
+	cell *params = reinterpret_cast<cell*>(data_ + amx_->stk);
+	params[0] = amx_->paramcount * sizeof(cell);
 
 	ucell address = GetPublicAddress(amx_, index);
 	if (address == 0) {
 		amx_->error = AMX_ERR_INDEX;
 	} else {
-		// Get pointer to native code buffer.
-		void *start = GetFunction(address)->GetCode();
-
-		// Copy parameters from AMX stack and call the function.
-		cell *params = reinterpret_cast<cell*>(data_ + amx_->stk);
-		#if defined COMPILER_MSVC
-			__asm {
-				push esi
-				push edi
-			}
-			for (int i = paramcount - 1; i >= 0; --i) {
-				__asm {
-					mov eax, dword ptr [i]
-					mov ecx, dword ptr [params]
-					push dword ptr [ecx + eax * 4]
-				}
-			}
-			__asm {
-				push dword ptr [parambytes]
-				call dword ptr [start]
-				mov ecx, dword ptr [retval]
-				mov dword ptr [ecx], eax
-				add esp, dword ptr [parambytes]
-				add esp, 4
-				pop edi
-				pop esi
-			}
-		#elif defined COMPILER_GCC
-			__asm__ __volatile__ (
-				"pushl %%esi;"
-				"pushl %%edi;"
-					: : : "%esp");
-			for (int i = paramcount - 1; i >= 0; --i) {
-				__asm__ __volatile__ (
-					"pushl %0;"
-						: : "r"(params[i]) : "%esp");
-			}
-			__asm__ __volatile__ (
-				"pushl %1;"
-				"calll *%2;"
-				"movl %%eax, (%0);"
-					: : "r"(retval), "r"(parambytes), "r"(start) : "%eax", "%ecx", "%edx");
-			__asm__ __volatile__ (
-				"addl %0, %%esp;"
-				"popl %%edi;"
-				"popl %%esi;"
-					: : "r"(parambytes + 4) : "%esp");
-		#endif
+		*retval = CallFunction(address, params);
 	}
 
 	// Reset STK and parameter count.
-	amx_->stk += parambytes;
+	amx_->stk += (amx_->paramcount + 1) * sizeof(cell);
 	amx_->paramcount = 0;
 
 	return amx_->error;

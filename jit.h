@@ -91,7 +91,12 @@ public:
 	// Assemble AMX function at the specified address.
 	JITFunction *AssembleFunction(ucell address);
 
-	// Call a public function (and assemble if needed).
+	// Call a function (and assemble if needed).
+	// The arguments passed to the function are copied from the AMX stack 
+	// onto the real stack.
+	cell CallFunction(ucell address, cell *params);
+
+	// Same as CallFunction() but for publics.
 	int CallPublicFunction(int index, cell *retval);
 
 	// Output generated code to a stream.
