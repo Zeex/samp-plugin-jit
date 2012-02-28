@@ -909,7 +909,7 @@ void JITFunction::naked_main() {
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			push(instr.GetOperand());                      // push "number"
+			push(instr.GetOperand());        // push "number"
 			lea(edx, dword_ptr[ecx + data]);
 			push(edx);                       // push "ptr2"
 			lea(edx, dword_ptr[eax + data]);
@@ -922,13 +922,13 @@ void JITFunction::naked_main() {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-			push(instr.GetOperand());                    // push "number"
-			push(eax);                     // push "value"
-			lea(edx, dword_ptr[ecx + data]);
-			push(edx);                     // push "ptr"
-			mov(edx, cell(std::memset));
-			call(edx);                     // memcmp(ptr, value, number)
-			add(esp, 12);
+				push(ecx);                    // save ECX (ALT)
+				mov(edx, ecx);
+				mov(ecx, instr.GetOperand() / sizeof(cell)); // count
+			PutLabel(cip, "fill");
+				mov(dword_ptr[data + edx + ecx*sizeof(cell) - sizeof(cell)], eax);
+			loop(GetLabel(cip, "fill"));
+				pop(ecx);                     // restore ECX (ALT)
 			break;
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
