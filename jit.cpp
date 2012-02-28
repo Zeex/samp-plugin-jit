@@ -1128,7 +1128,7 @@ void JITFunction::naked_main() {
 }
 
 void JITFunction::SetLabel(cell address, const std::string &tag) {
-	L(GetLabel(address));
+	L(GetLabel(address, tag));
 }
 
 std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
