@@ -54,7 +54,7 @@ class JITFunction : public jitasm::function<void, JITFunction> {
 public:
 	JITFunction(JIT *jitter, ucell address);
 
-	void main();
+	void naked_main();
 
 	void SetLabel(cell address, const std::string &tag = std::string());
 	std::string GetLabelName(cell address, const std::string &tag = std::string()) const;
@@ -83,7 +83,7 @@ public:
 	inline unsigned char *GetAmxCode() { return code_; }
 
 	// Turn raw AMX code into a sequence of Instructions.
-	void ParseFunctionCode(ucell address, std::vector<Instruction> &instructions) const;
+	void AnalyzeFunction(ucell address, std::vector<Instruction> &instructions) const;
 
 	// Get assembled function (and assemble if needed).
 	JITFunction *GetFunction(ucell address);
