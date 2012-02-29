@@ -90,6 +90,7 @@ private:
 };
 
 class JIT {
+	friend class JITFunction;
 public:
 	JIT(AMX *amx);
 	~JIT();
@@ -136,7 +137,9 @@ private:
 	unsigned char *data_;
 	unsigned char *code_;
 
-	// proc_map_ maps AMX funtions to their JIT equivalents.
+	void *halt_ebp_;
+	void *halt_esp_;
+
 	typedef std::map<ucell, JITFunction*> ProcMap;
 	ProcMap proc_map_;
 };
