@@ -1150,60 +1150,76 @@ void JITFunction::RegisterNativeOverrides() {
 	JIT_OVERRIDE_NATIVE(floatcos);
 }
 
-void JITFunction::native_floatabs() {
+void JITFunction::native_floatabs() {	
 	fld(dword_ptr[esp + 4]);
 	fabs();
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatadd() {
 	fld(dword_ptr[esp + 4]);
 	fadd(dword_ptr[esp + 8]);
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatsub() {
 	fld(dword_ptr[esp + 4]);
 	fsub(dword_ptr[esp + 8]);
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatmul() {
 	fld(dword_ptr[esp + 4]);
 	fmul(dword_ptr[esp + 8]);
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatdiv() {
 	fld(dword_ptr[esp + 4]);
 	fdiv(dword_ptr[esp + 8]);
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatsqroot() {
 	fld(dword_ptr[esp + 4]);
 	fsqrt();
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatsin() {
 	fld(dword_ptr[esp + 4]);
 	fsin();
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 void JITFunction::native_floatcos() {
 	fld(dword_ptr[esp + 4]);
 	fcos();
+	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
 }
 
 JIT::JIT(AMX *amx)
