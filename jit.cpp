@@ -950,9 +950,32 @@ void JITFunction::naked_main() {
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
+			mov(dword_ptr[reinterpret_cast<int>(&amx->error)], instr.GetOperand());
+			mov(esp, dword_ptr[reinterpret_cast<int>(&jit_->halt_esp_)]);
+			mov(ebp, dword_ptr[reinterpret_cast<int>(&jit_->halt_ebp_)]);
+			ret();
 			break;
 		case OP_BOUNDS: // value
 			// Abort execution if PRI > value or if PRI < 0.
+
+			// Check aginst the upper bound.
+			cmp(eax, instr.GetOperand());
+			jg(GetLabel(cip, "out"));
+
+			// Check if non-negative.
+			cmp(eax, 0);
+			jl(GetLabel(cip, "out"));
+			jmp(GetLabel(cip, "ok"));
+
+			// Issue an out-of-bounds error and halt.
+			PutLabel(cip, "out");
+			mov(dword_ptr[reinterpret_cast<int>(&amx->error)], AMX_ERR_BOUNDS);
+			mov(esp, dword_ptr[reinterpret_cast<int>(&jit_->halt_esp_)]);
+			mov(ebp, dword_ptr[reinterpret_cast<int>(&jit_->halt_ebp_)]);
+			ret();
+
+			// Everything is OK.
+			PutLabel(cip, "ok");
 			break;
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
@@ -981,7 +1004,7 @@ void JITFunction::naked_main() {
 			}
 
 			// Replace calls to various natives with their optimized equivalents.
-			std::map<std::string, NativeOverride>::const_iterator it 
+			std::map<std::string, NativeOverride>::const_iterator it
 					= native_overrides_.find(native_name);
 			if (it != native_overrides_.end()) {
 				(*this.*(it->second))();
@@ -1235,6 +1258,10 @@ cell JIT::CallFunction(ucell address, cell *params) {
 			}
 		}
 		__asm {
+			mov eax, dword ptr [this]
+			lea ecx, dword ptr [esp - 4]
+			mov dword ptr [eax].halt_esp_, ecx
+			mov dword ptr [eax].halt_ebp_, ebp
 			call dword ptr [start]
 			mov dword ptr [return_value], eax
 			add esp, dword ptr [parambytes]
@@ -1253,9 +1280,18 @@ cell JIT::CallFunction(ucell address, cell *params) {
 					: : "r"(params[i]) : "%esp");
 		}
 		__asm__ __volatile__ (
+			"leal -4(%%esp), %%eax;"
+			"movl %%eax, (%0);"
+			"movl %%ebp, (%1);"
+				:
+				: "r"(&halt_esp_), "r"(&halt_ebp_)
+				: "%eax");
+		__asm__ __volatile__ (
 			"calll *%1;"
 			"movl %%eax, %0;"
-				: "=r"(return_value) : "r"(start) : "%eax", "%ecx", "%edx");
+				: "=r"(return_value)
+				: "r"(start)
+				: "%eax", "%ecx", "%edx");
 		__asm__ __volatile__ (
 			"addl %0, %%esp;"
 			"popl %%edi;"
@@ -1274,6 +1310,9 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	amx_->stk -= sizeof(cell);
 	cell *params = reinterpret_cast<cell*>(data_ + amx_->stk);
 	params[0] = amx_->paramcount * sizeof(cell);
+
+	amx_->reset_hea = amx_->hea;
+	amx_->reset_stk = amx_->stk;
 
 	ucell address = GetPublicAddress(amx_, index);
 	if (address == 0) {
