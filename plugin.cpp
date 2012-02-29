@@ -34,6 +34,10 @@
 	#include <Windows.h> 
 #endif
 
+using namespace jit;
+
+typedef void (*logprintf_t)(const char *format, ...);
+
 #if defined WIN32
 	#define PAGE_ALIGN(x) (x)
 
@@ -66,7 +70,6 @@
 	#define PAGE_ALIGN(x) (void*)(((int)x + sysconf(_SC_PAGESIZE) - 1) & ~(sysconf(_SC_PAGESIZE) - 1))
 #endif
 
-typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
 static std::map<AMX*, JIT*> jits;
@@ -125,14 +128,14 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	JIT *jitter = new JIT(amx);
-	jits.insert(std::make_pair(amx, jitter));
+	JIT *jit = new JIT(amx);
+	jits.insert(std::make_pair(amx, jit));
 	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	JIT *jitter = jits[amx];
+	JIT *jit = jits[amx];
 	jits.erase(amx);
-	delete jitter;
+	delete jit;
 	return AMX_ERR_NONE;
 }
