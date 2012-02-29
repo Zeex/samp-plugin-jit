@@ -32,6 +32,12 @@
 #include "amx/amx.h"
 #include "jit.h"
 
+#if defined _WIN32 || defined WIN32 || defined __WIN32__
+	#define OS_WIN32
+#elif defined __linux__ || defined linux || defined __linux
+	#define OS_LINUX
+#endif
+
 #if defined _MSC_VER
 	#define COMPILER_MSVC
 #elif defined __GNUC__
@@ -56,153 +62,11 @@
 	#endif
 #endif
 
-// Opcode list from amx.c.
-enum Opcode {
-	OP_NONE, /* invalid opcode */
-	OP_LOAD_PRI,
-	OP_LOAD_ALT,
-	OP_LOAD_S_PRI,
-	OP_LOAD_S_ALT,
-	OP_LREF_PRI,
-	OP_LREF_ALT,
-	OP_LREF_S_PRI,
-	OP_LREF_S_ALT,
-	OP_LOAD_I,
-	OP_LODB_I,
-	OP_CONST_PRI,
-	OP_CONST_ALT,
-	OP_ADDR_PRI,
-	OP_ADDR_ALT,
-	OP_STOR_PRI,
-	OP_STOR_ALT,
-	OP_STOR_S_PRI,
-	OP_STOR_S_ALT,
-	OP_SREF_PRI,
-	OP_SREF_ALT,
-	OP_SREF_S_PRI,
-	OP_SREF_S_ALT,
-	OP_STOR_I,
-	OP_STRB_I,
-	OP_LIDX,
-	OP_LIDX_B,
-	OP_IDXADDR,
-	OP_IDXADDR_B,
-	OP_ALIGN_PRI,
-	OP_ALIGN_ALT,
-	OP_LCTRL,
-	OP_SCTRL,
-	OP_MOVE_PRI,
-	OP_MOVE_ALT,
-	OP_XCHG,
-	OP_PUSH_PRI,
-	OP_PUSH_ALT,
-	OP_PUSH_R,
-	OP_PUSH_C,
-	OP_PUSH,
-	OP_PUSH_S,
-	OP_POP_PRI,
-	OP_POP_ALT,
-	OP_STACK,
-	OP_HEAP,
-	OP_PROC,
-	OP_RET,
-	OP_RETN,
-	OP_CALL,
-	OP_CALL_PRI,
-	OP_JUMP,
-	OP_JREL,
-	OP_JZER,
-	OP_JNZ,
-	OP_JEQ,
-	OP_JNEQ,
-	OP_JLESS,
-	OP_JLEQ,
-	OP_JGRTR,
-	OP_JGEQ,
-	OP_JSLESS,
-	OP_JSLEQ,
-	OP_JSGRTR,
-	OP_JSGEQ,
-	OP_SHL,
-	OP_SHR,
-	OP_SSHR,
-	OP_SHL_C_PRI,
-	OP_SHL_C_ALT,
-	OP_SHR_C_PRI,
-	OP_SHR_C_ALT,
-	OP_SMUL,
-	OP_SDIV,
-	OP_SDIV_ALT,
-	OP_UMUL,
-	OP_UDIV,
-	OP_UDIV_ALT,
-	OP_ADD,
-	OP_SUB,
-	OP_SUB_ALT,
-	OP_AND,
-	OP_OR,
-	OP_XOR,
-	OP_NOT,
-	OP_NEG,
-	OP_INVERT,
-	OP_ADD_C,
-	OP_SMUL_C,
-	OP_ZERO_PRI,
-	OP_ZERO_ALT,
-	OP_ZERO,
-	OP_ZERO_S,
-	OP_SIGN_PRI,
-	OP_SIGN_ALT,
-	OP_EQ,
-	OP_NEQ,
-	OP_LESS,
-	OP_LEQ,
-	OP_GRTR,
-	OP_GEQ,
-	OP_SLESS,
-	OP_SLEQ,
-	OP_SGRTR,
-	OP_SGEQ,
-	OP_EQ_C_PRI,
-	OP_EQ_C_ALT,
-	OP_INC_PRI,
-	OP_INC_ALT,
-	OP_INC,
-	OP_INC_S,
-	OP_INC_I,
-	OP_DEC_PRI,
-	OP_DEC_ALT,
-	OP_DEC,
-	OP_DEC_S,
-	OP_DEC_I,
-	OP_MOVS,
-	OP_CMPS,
-	OP_FILL,
-	OP_HALT,
-	OP_BOUNDS,
-	OP_SYSREQ_PRI,
-	OP_SYSREQ_C,
-	OP_FILE, /* obsolete */
-	OP_LINE, /* obsolete */
-	OP_SYMBOL, /* obsolete */
-	OP_SRANGE, /* obsolete */
-	OP_JUMP_PRI,
-	OP_SWITCH,
-	OP_CASETBL,
-	OP_SWAP_PRI,
-	OP_SWAP_ALT,
-	OP_PUSH_ADR,
-	OP_NOP,
-	OP_SYSREQ_D,
-	OP_SYMTAG, /* obsolete */
-	OP_BREAK,
-};
-
-static cell STDCALL CallFunction(JIT *jit, ucell address, cell *params) {
+static cell STDCALL CallFunction(jit::JIT *jit, ucell address, cell *params) {
 	return jit->CallFunction(address, params);
 }
 
-static cell STDCALL CallNativeFunction(JIT *jit, int index, cell *params) {
+static cell STDCALL CallNativeFunction(jit::JIT *jit, int index, cell *params) {
 	return jit->CallNativeFunction(index, params);
 }
 
@@ -215,11 +79,9 @@ static ucell GetPublicAddress(AMX *amx, cell index) {
 	if (index == -1) {
 		return hdr->cip;
 	}
-
 	if (index < 0 || index >= num_publics) {
 		return 0;
 	}
-
 	return publics[index].address;
 }
 
@@ -232,7 +94,6 @@ static ucell GetNativeAddress(AMX *amx, int index) {
 	if (index < 0 || index >= num_natives) {
 		return 0;
 	}
-
 	return natives[index].address;
 }
 
@@ -245,7 +106,6 @@ static const char *GetNativeName(AMX *amx, int index) {
 	if (index < 0 || index >= num_natives) {
 		return 0;
 	}
-
 	return reinterpret_cast<char*>(amx->base + natives[index].nameofs);
 }
 
@@ -260,9 +120,10 @@ static int GetNativeIndex(AMX *amx, ucell address) {
 			return i;
 		}
 	}
-
 	return -1;
 }
+
+namespace jit {
 
 JITFunction::JITFunction(JIT *jitter, ucell address)
 	: jitasm::function<void, JITFunction>()
@@ -278,13 +139,13 @@ void JITFunction::naked_main() {
 	cell data = reinterpret_cast<cell>(jit_->GetAmxData());
 	cell code = reinterpret_cast<cell>(jit_->GetAmxCode());
 
-	std::vector<Instruction> instructions;
+	std::vector<AmxInstr> instructions;
 	jit_->AnalyzeFunction(address_, instructions);
 
 	RegisterNativeOverrides();
 
 	for (std::size_t i = 0; i < instructions.size(); i++) {
-		Instruction &instr = instructions[i];
+		AmxInstr &instr = instructions[i];
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
 
 		// Label this instruction so we can refer to it when
@@ -939,13 +800,13 @@ void JITFunction::naked_main() {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-				push(ecx);                    // save ECX (ALT)
-				mov(edx, ecx);
-				mov(ecx, instr.GetOperand() / sizeof(cell)); // count
+			push(ecx);
+			mov(edx, ecx);
+			mov(ecx, instr.GetOperand() / sizeof(cell));
 			PutLabel(cip, "fill");
-				mov(dword_ptr[data + edx + ecx*sizeof(cell) - sizeof(cell)], eax);
+			mov(dword_ptr[data + edx + ecx*sizeof(cell) - sizeof(cell)], eax);
 			loop(GetLabel(cip, "fill"));
-				pop(ecx);                     // restore ECX (ALT)
+			pop(ecx);
 			break;
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
@@ -1138,8 +999,11 @@ std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
 	return ss.str();
 }
 
+#define JIT_OVERRIDE_NATIVE(name) \
+	do { native_overrides_[#name] = &JITFunction::native_##name; } while (false);
+
 void JITFunction::RegisterNativeOverrides() {
-	// Floating point
+	// Floating point natives
 	JIT_OVERRIDE_NATIVE(floatabs);
 	JIT_OVERRIDE_NATIVE(floatadd);
 	JIT_OVERRIDE_NATIVE(floatsub);
@@ -1357,12 +1221,12 @@ void JIT::DumpCode(std::ostream &stream) const {
 	}
 }
 
-void JIT::AnalyzeFunction(ucell address, std::vector<Instruction> &instructions) const {
+void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) const {
 	cell *cip = reinterpret_cast<cell*>(code_ + address);
 	bool seen_proc = false;
 
 	while (cip < reinterpret_cast<cell*>(data_)) {
-		Opcode opcode = static_cast<Opcode>(*cip);
+		AmxOpcode opcode = static_cast<AmxOpcode>(*cip);
 
 		if (opcode == OP_PROC) {
 			// Start of function body...
@@ -1528,3 +1392,5 @@ void JIT::AnalyzeFunction(ucell address, std::vector<Instruction> &instructions)
 		}
 	}
 }
+
+} // namespace jit
