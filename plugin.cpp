@@ -51,8 +51,8 @@ static JIT *GetJIT(AMX *amx) {
 static void DeleteJIT(AMX *amx) {
 	JITMap::iterator it = jit_map.find(amx);
 	if (it != jit_map.end()) {
-		jit_map.erase(it);
 		delete it->second;
+		jit_map.erase(it);		
 	}
 }
 
