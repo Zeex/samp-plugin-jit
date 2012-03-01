@@ -56,14 +56,12 @@ static void DeleteJIT(AMX *amx) {
 	}
 }
 
-// This implementation of amx_GetAddr can accept ANY amx_addr, even out of the data section.
 static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	*phys_addr = reinterpret_cast<cell*>(amx->base + hdr->dat + amx_addr);
 	return AMX_ERR_NONE;
 }
 
-// amx_Exec_JIT compiles a public function (if needed) and runs the generated JIT code.
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	if (index != AMX_EXEC_CONT) {
 		return GetJIT(amx)->CallPublicFunction(index, retval);
