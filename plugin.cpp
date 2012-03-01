@@ -85,7 +85,9 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-	// nothing
+	for (JITMap::iterator it = jit_map.begin(); it != jit_map.end(); ++it) {
+		delete it->second;
+	}
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
