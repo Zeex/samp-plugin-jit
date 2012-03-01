@@ -314,7 +314,7 @@ void JITFunction::naked_main() {
 				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->dat)]);
 				break;
 			case 2:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->hea)]);
+				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->hea)]);
 				break;
 			case 3:
 				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->stp)]);
@@ -336,7 +336,7 @@ void JITFunction::naked_main() {
 			// 6=CIP
 			switch (instr.GetOperand()) {
 			case 2:
-				mov(dword_ptr[reinterpret_cast<int>(&amxhdr->hea)], eax);
+				mov(dword_ptr[reinterpret_cast<int>(&amx->hea)], eax);
 				break;
 			case 4:
 				mov(dword_ptr[reinterpret_cast<int>(&amx->stk)], eax);
