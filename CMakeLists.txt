@@ -64,8 +64,10 @@ else()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
+	append(COMPILE_FLAGS "-m32")
 	append(COMPILE_FLAGS "-fno-operator-names")
 	append(COMPILE_FLAGS "-Wno-attributes")
+	append(LINK_FLAGS "-m32")
 endif()
 
 set_target_properties(jit PROPERTIES 
