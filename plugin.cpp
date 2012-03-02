@@ -67,7 +67,7 @@ typedef void (*logprintf_t)(const char *format, ...);
 	}
 
 #else
-	#define PAGE_ALIGN(x) (void*)(((int)x + sysconf(_SC_PAGESIZE) - 1) & ~(sysconf(_SC_PAGESIZE) - 1))
+	#define PAGE_ALIGN(x) (((int)x + sysconf(_SC_PAGESIZE) - 1) & ~(sysconf(_SC_PAGESIZE) - 1))
 #endif
 
 static logprintf_t logprintf;
@@ -94,7 +94,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 
 static void Hook(void *src, void *dst) {
 	// Set write permission.
-	mprotect(PAGE_ALIGN(src), PAGE_ALIGN(5), PROT_READ | PROT_WRITE | PROT_EXEC);
+	mprotect((void*)PAGE_ALIGN(src), PAGE_ALIGN(5), PROT_READ | PROT_WRITE | PROT_EXEC);
 
 	// Write the JMP opcode.
 	static const uint8_t JMP_rel32 = 0xE9;
