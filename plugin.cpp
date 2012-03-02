@@ -32,10 +32,29 @@
 using namespace jit;
 
 typedef void (*logprintf_t)(const char *format, ...);
-
 static logprintf_t logprintf;
 
-static std::map<AMX*, JIT*> jits;
+typedef std::map<AMX*, JIT*> JITMap;
+static JITMap jit_map;
+
+static JIT *GetJIT(AMX *amx) {
+	JITMap::const_iterator it = jit_map.find(amx);
+	if (it == jit_map.end()) {
+		JIT *jit = new JIT(amx);
+		jit_map.insert(std::make_pair(amx, jit));
+		return jit;
+	} else {
+		return it->second;
+	}
+}
+
+static void DeleteJIT(AMX *amx) {
+	JITMap::iterator it = jit_map.find(amx);
+	if (it != jit_map.end()) {
+		jit_map.erase(it);
+		delete it->second;
+	}
+}
 
 // This implementation of amx_GetAddr can accept ANY amx_addr, even out of the data section.
 static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
@@ -47,10 +66,7 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 // amx_Exec_JIT compiles a public function (if needed) and runs the generated JIT code.
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	if (index >= -1) {
-		std::map<AMX*, JIT*>::iterator iterator = jits.find(amx);
-		if (iterator != jits.end()) {
-			return iterator->second->CallPublicFunction(index, retval);
-		}
+		GetJIT(amx)->CallPublicFunction(index, retval);
 	}
 	return AMX_ERR_NONE;
 }
@@ -75,14 +91,10 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	JIT *jit = new JIT(amx);
-	jits.insert(std::make_pair(amx, jit));
 	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	JIT *jit = jits[amx];
-	jits.erase(amx);
-	delete jit;
+	DeleteJIT(amx);
 	return AMX_ERR_NONE;
 }
