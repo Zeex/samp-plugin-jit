@@ -110,8 +110,6 @@ private:
 	void native_floatmul();
 	void native_floatdiv();
 	void native_floatsqroot();
-	void native_floatsin();
-	void native_floatcos();	
 
 private:
 	// Disable copying.
