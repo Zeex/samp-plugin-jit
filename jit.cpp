@@ -58,7 +58,7 @@
 		#define CDECL __attribute__((cdecl))
 	#endif
 	#if !defined STDCALL
-		#define STDCALL __attribute__((stdcall));
+		#define STDCALL __attribute__((stdcall))
 	#endif
 #endif
 

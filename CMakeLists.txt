@@ -9,6 +9,9 @@ set(JIT_VERSION_STRING "0.1.2")
 
 include(CheckIncludeFile)
 
+include_directories("./")
+include_directories("./amx")
+
 check_include_file(alloca.h HAVE_ALLOCA_H)
 if(HAVE_ALLOCA_H)
 	add_definitions(-DHAVE_ALLOCA_H)
