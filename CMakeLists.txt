@@ -34,12 +34,14 @@ add_library(jit MODULE
 	amx/getch.h
 	amx/sclinux.h
 	jitasm/jitasm.h
+	jit.cpp
+	jit.h
+	jump-x86.cpp
+	jump-x86.h
 	plugin.cpp
 	plugin.h
 	plugin.rc
 	plugincommon.h
-	jit.cpp
-	jit.h
 )
 
 set_target_properties(jit PROPERTIES PREFIX "")
