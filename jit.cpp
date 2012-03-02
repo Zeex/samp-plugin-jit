@@ -1010,8 +1010,6 @@ void JITFunction::RegisterNativeOverrides() {
 	JIT_OVERRIDE_NATIVE(floatmul);
 	JIT_OVERRIDE_NATIVE(floatdiv);
 	JIT_OVERRIDE_NATIVE(floatsqroot);
-	JIT_OVERRIDE_NATIVE(floatsin);
-	JIT_OVERRIDE_NATIVE(floatcos);
 }
 
 void JITFunction::native_floatabs() {	
@@ -1062,24 +1060,6 @@ void JITFunction::native_floatdiv() {
 void JITFunction::native_floatsqroot() {
 	fld(dword_ptr[esp + 4]);
 	fsqrt();
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
-}
-
-void JITFunction::native_floatsin() {
-	fld(dword_ptr[esp + 4]);
-	fsin();
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
-}
-
-void JITFunction::native_floatcos() {
-	fld(dword_ptr[esp + 4]);
-	fcos();
 	sub(esp, 4);
 	fstp(dword_ptr[esp]);
 	mov(eax, dword_ptr[esp]);
