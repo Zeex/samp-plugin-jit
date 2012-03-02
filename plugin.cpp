@@ -65,7 +65,7 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 
 // amx_Exec_JIT compiles a public function (if needed) and runs the generated JIT code.
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-	if (index >= -1) {
+	if (index != AMX_EXEC_CONT) {
 		GetJIT(amx)->CallPublicFunction(index, retval);
 	}
 	return AMX_ERR_NONE;
