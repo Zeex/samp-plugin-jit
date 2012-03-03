@@ -37,24 +37,7 @@ static logprintf_t logprintf;
 typedef std::map<AMX*, JIT*> JITMap;
 static JITMap jit_map;
 
-static JIT *GetJIT(AMX *amx) {
-	JITMap::const_iterator it = jit_map.find(amx);
-	if (it == jit_map.end()) {
-		JIT *jit = new JIT(amx);
-		jit_map.insert(std::make_pair(amx, jit));
-		return jit;
-	} else {
-		return it->second;
-	}
-}
-
-static void DeleteJIT(AMX *amx) {
-	JITMap::iterator it = jit_map.find(amx);
-	if (it != jit_map.end()) {
-		delete it->second;
-		jit_map.erase(it);		
-	}
-}
+static void **ppPluginData;
 
 static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
@@ -64,7 +47,10 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	if (index != AMX_EXEC_CONT) {
-		return GetJIT(amx)->CallPublicFunction(index, retval);
+		JITMap::const_iterator it = jit_map.find(amx);
+		if (it != jit_map.end()) {
+			return it->second->CallPublicFunction(index, retval);
+		}
 	}
 	return AMX_ERR_NONE;
 }
@@ -74,13 +60,9 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
+	ppPluginData = ppData;
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
-
-	new JumpX86(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec], (void*)amx_Exec_JIT);
-	new JumpX86(((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr], (void*)amx_GetAddr_JIT);
-
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
-
 	return true;
 }
 
@@ -91,10 +73,19 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+	new JumpX86(((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec], (void*)amx_Exec_JIT);
+	new JumpX86(((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr], (void*)amx_GetAddr_JIT);
+
+	jit_map.insert(std::make_pair(amx, new JIT(amx)));
+
 	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	DeleteJIT(amx);
+	JITMap::iterator it = jit_map.find(amx);
+	if (it != jit_map.end()) {
+		delete it->second;
+		jit_map.erase(it);		
+	}
 	return AMX_ERR_NONE;
 }
