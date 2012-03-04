@@ -69,7 +69,8 @@ enum AmxOpcode {
 	OP_FILE,         OP_LINE,         OP_SYMBOL,       OP_SRANGE,
 	OP_JUMP_PRI,     OP_SWITCH,       OP_CASETBL,      OP_SWAP_PRI,
 	OP_SWAP_ALT,     OP_PUSH_ADR,     OP_NOP,          OP_SYSREQ_D,
-	OP_SYMTAG,       OP_BREAK
+	OP_SYMTAG,       OP_BREAK,
+	NUM_AMX_OPCODES
 };
 
 class AmxInstr {
