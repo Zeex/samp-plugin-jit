@@ -26,9 +26,9 @@
 #include <map>
 
 #include "jit.h"
+#include "jit-version.h"
 #include "jump-x86.h"
 #include "plugin.h"
-#include "pluginversion.h"
 
 using namespace jit;
 
@@ -89,7 +89,9 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
-	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
+
+	logprintf("  JIT plugin v%s is OK.", JIT_VERSION_STRING);
+
 	return true;
 }
 
