@@ -52,7 +52,7 @@ if(UNIX)
 	set_target_properties(jit PROPERTIES COMPILE_FLAGS "-fno-operator-names")
 elseif(WIN32)
 	if(MSVC)
-		set_target_properties(jit PROPERTIES LINK_FLAGS "/DEF:plugin.def")
+		set_target_properties(jit PROPERTIES LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin.def")
 	endif()
 endif()
 
