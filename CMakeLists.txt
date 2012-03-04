@@ -49,20 +49,11 @@ set_target_properties(jit PROPERTIES PREFIX "")
 
 if(UNIX)
 	add_definitions(-DLINUX)
-else()
-	set(def_path "${jit_SOURCE_DIR}/plugin.def")
-	if(MINGW)
-		set_target_properties(jit PROPERTIES
-			LINK_FLAGS "-Wl,--kill-at --def ${def_path}")
-	elseif(MSVC)
-		set_target_properties(jit PROPERTIES
-			LINK_FLAGS "/DEF:${def_path}")
+	set_target_properties(jit PROPERTIES COMPILE_FLAGS "-fno-operator-names")
+elseif(WIN32)
+	if(MSVC)
+		set_target_properties(jit PROPERTIES LINK_FLAGS "/DEF:plugin.def")
 	endif()
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX)
-	set_target_properties(jit PROPERTIES
-		COMPILE_FLAGS "-fno-operator-names")
 endif()
 
 file(WRITE "pluginversion.h" 
