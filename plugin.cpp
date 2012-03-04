@@ -22,6 +22,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstddef>
+#include <fstream>
 #include <map>
 
 #include "jit.h"
@@ -31,13 +32,20 @@
 
 using namespace jit;
 
+extern void *pAMXFunctions;
+
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
 typedef std::map<AMX*, JIT*> JITMap;
 static JITMap jit_map;
 
-static void **ppPluginData;
+static JumpX86 amx_Exec_hook;
+static JumpX86 amx_GetAddr_hook;
+
+#if defined __GNUC__
+	static cell *opcode_list = 0;
+#endif
 
 static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
@@ -46,35 +54,74 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 }
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-	if (index != AMX_EXEC_CONT) {
-		JITMap::const_iterator it = jit_map.find(amx);
-		if (it != jit_map.end()) {
-			return it->second->CallPublicFunction(index, retval);
+	#if defined __GNUC__
+		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
+			// amx_BrowseRelocate() wants the opcode list.
+			assert(opcode_list != 0);
+			*retval = reinterpret_cast<cell>(opcode_list);
+			return AMX_ERR_NONE;
+		}
+	#endif
+	return jit_map[amx]->CallPublicFunction(index, retval);
+}
+
+#if defined __GNUC__
+	static void UnrelocateOpcodes(AMX *amx, cell *opcode_list) {
+		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+		cell *code = reinterpret_cast<cell*>(amx->base + hdr->cod);
+		cell *data = reinterpret_cast<cell*>(amx->base + hdr->dat);
+
+		for (cell *cip = code; cip < data; cip++) {
+			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
+				if (opcode_list[i] == *cip) {
+					*cip = i;
+				}
+			}
 		}
 	}
-	return AMX_ERR_NONE;
-}
+#endif
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-	ppPluginData = ppData;
+	pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
+	// Delete all JIT instances.
 	for (JITMap::iterator it = jit_map.begin(); it != jit_map.end(); ++it) {
 		delete it->second;
 	}
 }
 
+
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	new JumpX86(((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec], (void*)amx_Exec_JIT);
-	new JumpX86(((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_GetAddr], (void*)amx_GetAddr_JIT);
+	#if defined __GNUC__
+		// Get opcode list before we hook amx_Exec().
+		if (opcode_list == 0) {
+			amx->flags |= AMX_FLAG_BROWSE;
+			amx_Exec(amx, reinterpret_cast<cell*>(&opcode_list), 0);
+			amx->flags &= ~AMX_FLAG_BROWSE;
+		}
+		UnrelocateOpcodes(amx, opcode_list);
+	#endif
+
+	if (!amx_Exec_hook.IsInstalled()) {
+		amx_Exec_hook.Install(
+			((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
+			(void*)amx_Exec_JIT);
+	}
+	if (!amx_GetAddr_hook.IsInstalled()) {
+		amx_GetAddr_hook.Install(
+			((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_GetAddr], 
+			(void*)amx_GetAddr_JIT);
+	}
 
 	jit_map.insert(std::make_pair(amx, new JIT(amx)));
 
