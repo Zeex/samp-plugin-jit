@@ -33,7 +33,6 @@ add_library(jit MODULE
 	amx/amx.h
 	amx/getch.h
 	amx/sclinux.h
-	amxplugin.cpp
 	jitasm/jitasm.h
 	jit.cpp
 	jit.h
