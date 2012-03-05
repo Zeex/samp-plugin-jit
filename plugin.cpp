@@ -99,12 +99,12 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 
 	if (!amx_Exec_hook.IsInstalled()) {
 		amx_Exec_hook.Install(
-			amx_Exec,
+			(void*)amx_Exec,
 			(void*)amx_Exec_JIT);
 	}
 	if (!amx_GetAddr_hook.IsInstalled()) {
 		amx_GetAddr_hook.Install(
-			amx_GetAddr,
+			(void*)amx_GetAddr,
 			(void*)amx_GetAddr_JIT);
 	}
 
