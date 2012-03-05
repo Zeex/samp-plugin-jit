@@ -129,7 +129,7 @@ private:
 class JIT {
 	friend class JITFunction;
 public:
-	JIT(AMX *amx);
+	JIT(AMX *amx, cell *opcode_list);
 	~JIT();
 
 	inline AMX        *GetAmx()       { return amx_; }
@@ -160,7 +160,7 @@ public:
 	cell CallNativeFunction(int index, cell *params);
 
 	// Output generated code to a stream.
-	void DumpCode(std::ostream &stream) const;
+	void DumpCode(std::ostream &stream) const;	
 
 private:
 	// Disable copying.
@@ -173,6 +173,8 @@ private:
 
 	unsigned char *data_;
 	unsigned char *code_;
+
+	cell *opcode_list_;
 
 	void *halt_ebp_;
 	void *halt_esp_;

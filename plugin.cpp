@@ -43,9 +43,7 @@ static JITMap jit_map;
 static JumpX86 amx_Exec_hook;
 static JumpX86 amx_GetAddr_hook;
 
-#if defined __GNUC__
-	static cell *opcode_list = 0;
-#endif
+static cell *opcode_list = 0;
 
 static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
@@ -57,30 +55,13 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
 			// amx_BrowseRelocate() wants the opcode list.
-			assert(opcode_list != 0);
-			*retval = reinterpret_cast<cell>(opcode_list);
+			assert(::opcode_list != 0);
+			*retval = reinterpret_cast<cell>(::opcode_list);
 			return AMX_ERR_NONE;
 		}
 	#endif
 	return jit_map[amx]->CallPublicFunction(index, retval);
 }
-
-#if defined __GNUC__
-	static void UnrelocateOpcodes(AMX *amx, cell *opcode_list) {
-		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-		cell *code = reinterpret_cast<cell*>(amx->base + hdr->cod);
-		cell *data = reinterpret_cast<cell*>(amx->base + hdr->dat);
-
-		for (cell *cip = code; cip < data; cip++) {
-			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
-				if (opcode_list[i] == *cip) {
-					*cip = i;
-				}
-			}
-		}
-	}
-#endif
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
@@ -100,16 +81,14 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 	}
 }
 
-
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	#if defined __GNUC__
 		// Get opcode list before we hook amx_Exec().
-		if (opcode_list == 0) {
+		if (::opcode_list == 0) {
 			amx->flags |= AMX_FLAG_BROWSE;
 			amx_Exec(amx, reinterpret_cast<cell*>(&opcode_list), 0);
 			amx->flags &= ~AMX_FLAG_BROWSE;
-		}
-		UnrelocateOpcodes(amx, opcode_list);
+		}		
 	#endif
 
 	if (!amx_Exec_hook.IsInstalled()) {
@@ -123,7 +102,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			(void*)amx_GetAddr_JIT);
 	}
 
-	jit_map.insert(std::make_pair(amx, new JIT(amx)));
+	jit_map.insert(std::make_pair(amx, new JIT(amx, ::opcode_list)));
 
 	return AMX_ERR_NONE;
 }
