@@ -1227,7 +1227,7 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 		if (opcode_list_ != 0) {
 			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
 				if (opcode_list_[i] == opcode) {
-					opcode = i;
+					*cip = opcode = i;
 					break;
 				}
 			}
