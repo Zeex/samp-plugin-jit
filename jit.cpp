@@ -1081,11 +1081,12 @@ void JITFunction::native_floatlog() {
 	add(esp, 4);
 }
 
-JIT::JIT(AMX *amx)
+JIT::JIT(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx_->base))
 	, data_(amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat)
 	, code_(amx_->base + amxhdr_->cod)
+	, opcode_list_(opcode_list)
 {
 }
 
@@ -1221,7 +1222,16 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 	bool seen_proc = false;
 
 	while (cip < reinterpret_cast<cell*>(data_)) {
-		AmxOpcode opcode = static_cast<AmxOpcode>(*cip);
+		cell opcode = *cip;
+
+		if (opcode_list_ != 0) {
+			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
+				if (opcode_list_[i] == opcode) {
+					opcode = i;
+					break;
+				}
+			}
+		}
 
 		if (opcode == OP_PROC) {
 			// Start of function body...
