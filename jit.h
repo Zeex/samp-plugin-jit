@@ -75,17 +75,18 @@ enum AmxOpcode {
 
 class AmxInstr {
 public:
-	AmxInstr(cell *ip) : ip_(ip) {}
+	AmxInstr(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
 
-	inline cell *GetIP() const 
+	inline const cell *GetIP() const
 		{ return ip_; }
 	inline AmxOpcode GetOpcode() const 
-		{ return static_cast<AmxOpcode>(*ip_); }
+		{ return opcode_; }
 	inline cell GetOperand(unsigned int index = 0u) const
 		{ return *(ip_ + 1 + index); }
 
 private:
-	cell *ip_;
+	AmxOpcode opcode_;
+	const cell *ip_;
 };
 
 class JIT;
