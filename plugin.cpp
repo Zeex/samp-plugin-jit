@@ -32,7 +32,7 @@
 
 using namespace jit;
 
-extern void *pAMXFunctions;
+static void **amx_exports;
 
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
@@ -68,7 +68,7 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-	pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
+	::amx_exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
@@ -82,6 +82,12 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+	typedef int (AMXAPI *amx_Exec_t)(AMX *amx, cell *retval, int index);
+	amx_Exec_t amx_Exec = (amx_Exec_t)(::amx_exports)[PLUGIN_AMX_EXPORT_Exec];
+
+	typedef int (AMXAPI *amx_GetAddr_t)(AMX *amx, cell amx_addr, cell **phys_addr);
+	amx_GetAddr_t amx_GetAddr = (amx_GetAddr_t)(::amx_exports)[PLUGIN_AMX_EXPORT_GetAddr];
+
 	#if defined __GNUC__
 		// Get opcode list before we hook amx_Exec().
 		if (::opcode_list == 0) {
@@ -93,12 +99,12 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 
 	if (!amx_Exec_hook.IsInstalled()) {
 		amx_Exec_hook.Install(
-			((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
+			amx_Exec,
 			(void*)amx_Exec_JIT);
 	}
 	if (!amx_GetAddr_hook.IsInstalled()) {
 		amx_GetAddr_hook.Install(
-			((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_GetAddr], 
+			amx_GetAddr,
 			(void*)amx_GetAddr_JIT);
 	}
 
