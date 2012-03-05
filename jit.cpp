@@ -1218,7 +1218,7 @@ void JIT::DumpCode(std::ostream &stream) const {
 }
 
 void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) const {
-	cell *cip = reinterpret_cast<cell*>(code_ + address);
+	const cell *cip = reinterpret_cast<cell*>(code_ + address);
 	bool seen_proc = false;
 
 	while (cip < reinterpret_cast<cell*>(data_)) {
@@ -1227,7 +1227,7 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 		if (opcode_list_ != 0) {
 			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
 				if (opcode_list_[i] == opcode) {
-					*cip = opcode = i;
+					opcode = i;
 					break;
 				}
 			}
@@ -1240,6 +1240,8 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 			}
 			seen_proc = true;
 		}
+
+		instructions.push_back(AmxInstr(static_cast<AmxOpcode>(opcode), cip));
 
 		switch (opcode) {
 		// Instructions with one operand.
@@ -1314,8 +1316,7 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 		case OP_SYSREQ_C:
 		case OP_PUSH_ADR:
 		case OP_SYSREQ_D:
-		case OP_SWITCH:
-			instructions.push_back(cip);
+		case OP_SWITCH:			
 			cip += 2;
 			break;
 
@@ -1379,13 +1380,11 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 		case OP_SWAP_ALT:
 		case OP_NOP:
 		case OP_BREAK:
-			instructions.push_back(cip);
 			cip++;
 			break;
 
 		// Special instructions.
 		case OP_CASETBL: {
-			instructions.push_back(cip);
 			cip++;
 			int num = *cip++;
 			cip += 2 * num + 1;
