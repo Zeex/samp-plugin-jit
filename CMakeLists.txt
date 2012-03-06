@@ -48,10 +48,15 @@ set_target_properties(jit PROPERTIES PREFIX "")
 
 if(UNIX)
 	add_definitions(-DLINUX)
-	set_target_properties(jit PROPERTIES COMPILE_FLAGS "-fno-operator-names")
+	set_target_properties(jit PROPERTIES 
+		COMPILE_FLAGS "-m32 -fno-operator-names -Wno-attributes"
+		LINK_FLAGS    "-m32"
+	)		
 elseif(WIN32)
 	if(MSVC)
-		set_target_properties(jit PROPERTIES LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin.def")
+		set_target_properties(jit PROPERTIES 
+			LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin.def"
+		)
 	endif()
 endif()
 
