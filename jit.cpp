@@ -139,13 +139,13 @@ void JITFunction::naked_main() {
 	cell data = reinterpret_cast<cell>(jit_->GetAmxData());
 	cell code = reinterpret_cast<cell>(jit_->GetAmxCode());
 
-	std::vector<AmxInstr> instructions;
+	std::vector<AmxInstruction> instructions;
 	jit_->AnalyzeFunction(address_, instructions);
 
 	RegisterNativeOverrides();
 
 	for (std::size_t i = 0; i < instructions.size(); i++) {
-		AmxInstr &instr = instructions[i];
+		AmxInstruction &instr = instructions[i];
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
 
 		// Label this instruction so we can refer to it when
@@ -1217,7 +1217,7 @@ void JIT::DumpCode(std::ostream &stream) const {
 	}
 }
 
-void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) const {
+void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstruction> &instructions) const {
 	const cell *cip = reinterpret_cast<cell*>(code_ + address);
 	bool seen_proc = false;
 
@@ -1241,7 +1241,7 @@ void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) co
 			seen_proc = true;
 		}
 
-		instructions.push_back(AmxInstr(static_cast<AmxOpcode>(opcode), cip));
+		instructions.push_back(AmxInstruction(static_cast<AmxOpcode>(opcode), cip));
 
 		switch (opcode) {
 		// Instructions with one operand.
