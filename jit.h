@@ -94,7 +94,7 @@ class JIT;
 // JITFunction represents a JIT-compiled AMX function.
 class JITFunction : public jitasm::function<void, JITFunction> {
 public:
-	JITFunction(JIT *jitter, ucell address);
+	JITFunction(JIT *jitter, cell address);
 
 	void naked_main();
 
@@ -121,7 +121,7 @@ private:
 
 private:
 	JIT *jit_;
-	ucell address_;
+	cell address_;
 
 	typedef void (JITFunction::*NativeOverride)();
 	std::map<std::string, NativeOverride> native_overrides_;
@@ -143,15 +143,15 @@ public:
 	inline unsigned char *GetAmxCode() { return code_; }
 
 	// Turn raw AMX code into a sequence of AmxInstructions.
-	void AnalyzeFunction(ucell address, std::vector<AmxInstruction> &instructions) const;
+	void AnalyzeFunction(cell address, std::vector<AmxInstruction> &instructions) const;
 
 	// Get assembled function (and assemble if needed).
-	JITFunction *GetFunction(ucell address);
+	JITFunction *GetFunction(cell address);
 
 	// Call a function (and assemble if needed).
 	// The arguments passed to the function are copied from the AMX stack 
 	// onto the real stack.
-	cell CallFunction(ucell address, cell *params);
+	cell CallFunction(cell address, cell *params);
 
 	// Same as CallFunction() but for publics.
 	int CallPublicFunction(int index, cell *retval);
@@ -180,7 +180,7 @@ private:
 	void *halt_ebp_;
 	void *halt_esp_;
 
-	typedef std::map<ucell, JITFunction*> ProcMap;
+	typedef std::map<cell, JITFunction*> ProcMap;
 	ProcMap proc_map_;
 };
 
