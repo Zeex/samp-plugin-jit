@@ -73,9 +73,9 @@ enum AmxOpcode {
 	NUM_AMX_OPCODES
 };
 
-class AmxInstr {
+class AmxInstruction {
 public:
-	AmxInstr(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
+	AmxInstruction(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
 
 	inline const cell *GetIP() const
 		{ return ip_; }
@@ -142,8 +142,8 @@ public:
 	// Get pointer to start of AMX code section.
 	inline unsigned char *GetAmxCode() { return code_; }
 
-	// Turn raw AMX code into a sequence of AmxInstr's.
-	void AnalyzeFunction(ucell address, std::vector<AmxInstr> &instructions) const;
+	// Turn raw AMX code into a sequence of AmxInstructions.
+	void AnalyzeFunction(ucell address, std::vector<AmxInstruction> &instructions) const;
 
 	// Get assembled function (and assemble if needed).
 	JITFunction *GetFunction(ucell address);
