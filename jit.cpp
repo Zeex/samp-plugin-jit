@@ -62,7 +62,7 @@
 	#endif
 #endif
 
-static cell STDCALL CallFunction(jit::JIT *jit, ucell address, cell *params) {
+static cell STDCALL CallFunction(jit::JIT *jit, cell address, cell *params) {
 	return jit->CallFunction(address, params);
 }
 
@@ -70,7 +70,7 @@ static cell STDCALL CallNativeFunction(jit::JIT *jit, int index, cell *params) {
 	return jit->CallNativeFunction(index, params);
 }
 
-static ucell GetPublicAddress(AMX *amx, cell index) {
+static cell GetPublicAddress(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
@@ -85,7 +85,7 @@ static ucell GetPublicAddress(AMX *amx, cell index) {
 	return publics[index].address;
 }
 
-static ucell GetNativeAddress(AMX *amx, int index) {
+static cell GetNativeAddress(AMX *amx, int index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
@@ -109,7 +109,7 @@ static const char *GetNativeName(AMX *amx, int index) {
 	return reinterpret_cast<char*>(amx->base + natives[index].nameofs);
 }
 
-static int GetNativeIndex(AMX *amx, ucell address) {
+static int GetNativeIndex(AMX *amx, cell address) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
@@ -125,7 +125,7 @@ static int GetNativeIndex(AMX *amx, ucell address) {
 
 namespace jit {
 
-JITFunction::JITFunction(JIT *jitter, ucell address)
+JITFunction::JITFunction(JIT *jitter, cell address)
 	: jitasm::function<void, JITFunction>()
 	, jit_(jitter)
 	, address_(address)
@@ -427,7 +427,7 @@ void JITFunction::naked_main() {
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			ucell fn_addr = instr.GetOperand() - code;
+			cell fn_addr = instr.GetOperand() - code;
 			JITFunction *fn = jit_->GetFunction(fn_addr);
 			if (fn != 0) {
 				// The target function has been compiled.
@@ -1097,7 +1097,7 @@ JIT::~JIT() {
 	}
 }
 
-JITFunction *JIT::GetFunction(ucell address) {
+JITFunction *JIT::GetFunction(cell address) {
 	ProcMap::const_iterator iterator = proc_map_.find(address);
 	if (iterator != proc_map_.end()) {
 		return iterator->second;
@@ -1110,7 +1110,7 @@ JITFunction *JIT::GetFunction(ucell address) {
 	}
 }
 
-cell JIT::CallFunction(ucell address, cell *params) {
+cell JIT::CallFunction(cell address, cell *params) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
@@ -1190,7 +1190,7 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	amx_->reset_hea = amx_->hea;
 	amx_->reset_stk = amx_->stk;
 
-	ucell address = GetPublicAddress(amx_, index);
+	cell address = GetPublicAddress(amx_, index);
 	if (address == 0) {
 		amx_->error = AMX_ERR_INDEX;
 	} else {
@@ -1217,7 +1217,7 @@ void JIT::DumpCode(std::ostream &stream) const {
 	}
 }
 
-void JIT::AnalyzeFunction(ucell address, std::vector<AmxInstruction> &instructions) const {
+void JIT::AnalyzeFunction(cell address, std::vector<AmxInstruction> &instructions) const {
 	const cell *cip = reinterpret_cast<cell*>(code_ + address);
 	bool seen_proc = false;
 
