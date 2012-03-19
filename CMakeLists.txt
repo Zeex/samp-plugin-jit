@@ -4,8 +4,8 @@ project(jit)
 
 set(JIT_VERSION_MAJOR  0)
 set(JIT_VERSION_MINOR  1)
-set(JIT_VERSION_PATCH  3)
-set(JIT_VERSION_STRING "0.1.3")
+set(JIT_VERSION_PATCH  4)
+set(JIT_VERSION_STRING "0.1.4")
 
 include(CheckIncludeFile)
 
