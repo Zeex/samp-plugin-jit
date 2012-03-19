@@ -106,6 +106,7 @@ private:
 	void RegisterNativeOverrides();
 
 	// Floating point natives
+	void native_float();
 	void native_floatabs();
 	void native_floatadd();
 	void native_floatsub();
