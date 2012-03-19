@@ -1004,6 +1004,7 @@ std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
 
 void JITFunction::RegisterNativeOverrides() {
 	// Floating point natives
+	JIT_OVERRIDE_NATIVE(float);
 	JIT_OVERRIDE_NATIVE(floatabs);
 	JIT_OVERRIDE_NATIVE(floatadd);
 	JIT_OVERRIDE_NATIVE(floatsub);
@@ -1013,7 +1014,15 @@ void JITFunction::RegisterNativeOverrides() {
 	JIT_OVERRIDE_NATIVE(floatlog);
 }
 
-void JITFunction::native_floatabs() {	
+void JITFunction::native_float() {
+	fild(dword_ptr[esp + 4]);
+	sub(esp, 4);
+	fstp(dword_ptr[esp]);
+	mov(eax, dword_ptr[esp]);
+	add(esp, 4);
+}
+
+void JITFunction::native_floatabs() {
 	fld(dword_ptr[esp + 4]);
 	fabs();
 	sub(esp, 4);
