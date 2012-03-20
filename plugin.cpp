@@ -24,11 +24,21 @@
 #include <cstddef>
 #include <fstream>
 #include <map>
+#include <string>
 
 #include "jit.h"
 #include "jump-x86.h"
 #include "plugin.h"
 #include "pluginversion.h"
+
+#ifdef WIN32
+	#include <Windows.h>
+#else
+	#ifndef _GNU_SOURCE
+		#define _GNU_SOURCE 1 // for dladdr()
+	#endif
+	#include <dlfcn.h> 
+#endif
 
 using namespace jit;
 
@@ -63,13 +73,47 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	return jit_map[amx]->CallPublicFunction(index, retval);
 }
 
+static std::string GetModuleNameBySymbol(void *symbol) {
+	char module[FILENAME_MAX] = "";
+	if (symbol != 0) {
+		#ifdef WIN32
+			MEMORY_BASIC_INFORMATION mbi;
+			VirtualQuery(symbol, &mbi, sizeof(mbi));
+			GetModuleFileName((HMODULE)mbi.AllocationBase, module, FILENAME_MAX);
+		#else
+			Dl_info info;
+			dladdr(symbol, &info);
+			strcpy(module, info.dli_fname);
+		#endif
+	}	
+	return std::string(module);
+}
+
+static std::string GetFileName(const std::string &path) {
+	std::string::size_type lastSep = path.find_last_of("/\\");
+	if (lastSep != std::string::npos) {
+		return path.substr(lastSep + 1);
+	}
+	return path;
+}
+
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-	::amx_exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
+	::amx_exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
+	
+	void *funAddr = JumpX86::GetTargetAddress(::amx_exports[PLUGIN_AMX_EXPORT_Exec]);
+	if (funAddr != 0) {
+		std::string module = GetFileName(GetModuleNameBySymbol(funAddr));
+		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
+			logprintf("  JIT must be loaded before %s", module.c_str());
+			return false;
+		}
+	}
+
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
@@ -83,10 +127,10 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	typedef int (AMXAPI *amx_Exec_t)(AMX *amx, cell *retval, int index);
-	amx_Exec_t amx_Exec = (amx_Exec_t)(::amx_exports)[PLUGIN_AMX_EXPORT_Exec];
+	amx_Exec_t amx_Exec = (amx_Exec_t)::amx_exports[PLUGIN_AMX_EXPORT_Exec];
 
 	typedef int (AMXAPI *amx_GetAddr_t)(AMX *amx, cell amx_addr, cell **phys_addr);
-	amx_GetAddr_t amx_GetAddr = (amx_GetAddr_t)(::amx_exports)[PLUGIN_AMX_EXPORT_GetAddr];
+	amx_GetAddr_t amx_GetAddr = (amx_GetAddr_t)::amx_exports[PLUGIN_AMX_EXPORT_GetAddr];
 
 	#if defined __GNUC__
 		// Get opcode list before we hook amx_Exec().
