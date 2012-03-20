@@ -517,15 +517,15 @@ void JITFunction::naked_main() {
 			break;
 		case OP_SHL:
 			// PRI = PRI << ALT
-			shl(eax, bl);
+			shl(eax, cl);
 			break;
 		case OP_SHR:
 			// PRI = PRI >> ALT (without sign extension)
-			shr(eax, bl);
+			shr(eax, cl);
 			break;
 		case OP_SSHR:
 			// PRI = PRI >> ALT with sign extension
-			sar(eax, bl);
+			sar(eax, cl);
 			break;
 		case OP_SHL_C_PRI: // value
 			// PRI = PRI << value
@@ -650,7 +650,7 @@ void JITFunction::naked_main() {
 			break;
 		case OP_SIGN_ALT:
 			// sign extent the byte in ALT to a cell
-			movsx(ecx, bl);
+			movsx(ecx, cl);
 			break;
 		case OP_EQ:
 			// PRI = PRI == ALT ? 1 : 0
