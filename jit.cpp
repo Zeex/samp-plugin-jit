@@ -1203,7 +1203,10 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	if (address == 0) {
 		amx_->error = AMX_ERR_INDEX;
 	} else {
-		*retval = CallFunction(address, params);
+		cell retval_ = CallFunction(address, params);
+		if (retval != 0) {
+			*retval = retval_;
+		}
 	}
 
 	// Reset STK and parameter count.
