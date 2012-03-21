@@ -89,6 +89,11 @@ private:
 	const cell *ip_;
 };
 
+class UnsupportedInstructionError {
+public:
+	UnsupportedInstructionError(const AmxInstruction &instr);
+};
+
 class JIT;
 
 // JITFunction represents a JIT-compiled AMX function.
@@ -128,6 +133,12 @@ private:
 	std::map<std::string, NativeOverride> native_overrides_;
 };
 
+enum JITError {
+	JIT_NO_ERROR,
+	JIT_UNSUPPORTED_INSTRUCTION,
+	JIT_INVALID_INSTRUCTION
+};
+
 class JIT {
 	friend class JITFunction;
 public:
@@ -152,7 +163,7 @@ public:
 	// Call a function (and assemble if needed).
 	// The arguments passed to the function are copied from the AMX stack 
 	// onto the real stack.
-	cell CallFunction(cell address, cell *params);
+	void CallFunction(cell address, cell *params,cell *retval);
 
 	// Same as CallFunction() but for publics.
 	int CallPublicFunction(int index, cell *retval);
@@ -162,7 +173,18 @@ public:
 	cell CallNativeFunction(int index, cell *params);
 
 	// Output generated code to a stream.
-	void DumpCode(std::ostream &stream) const;	
+	void DumpCode(std::ostream &stream) const;
+
+	// Get/set/clear error code.
+	inline JITError GetError() const { 
+		return error_; 
+	}
+	inline void SetError(JITError error) const { 
+		error_ = error; 
+	}
+	inline void ClearError() const { 
+		error_ = JIT_NO_ERROR; 
+	}
 
 private:
 	// Disable copying.
@@ -183,6 +205,8 @@ private:
 
 	typedef std::map<cell, JITFunction*> ProcMap;
 	ProcMap proc_map_;
+
+	mutable JITError error_;
 };
 
 } // namespace jit

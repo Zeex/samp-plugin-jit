@@ -61,6 +61,18 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	return AMX_ERR_NONE;
 }
 
+const char *GetPublicName(AMX *amx, int index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
+	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
+		return reinterpret_cast<char*>(amx->base + publics[index].nameofs);
+	} else if (index == AMX_EXEC_MAIN) {
+		return "main";
+	}
+	return 0;
+}
+
+
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
@@ -70,7 +82,32 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			return AMX_ERR_NONE;
 		}
 	#endif
-	return jit_map[amx]->CallPublicFunction(index, retval);
+
+	JIT *jit = jit_map[amx];
+	jit->ClearError();
+
+	int retcode = jit->CallPublicFunction(index, retval);
+
+	if (jit->GetError() != JIT_NO_ERROR) {
+		const char *public_name = GetPublicName(amx, index);
+		if (public_name == 0) {
+			public_name = "<UnknownPublic>";
+		}
+		switch (jit->GetError()) {
+			case JIT_UNSUPPORTED_INSTRUCTION:
+				logprintf("[jit] Error: Unssupported instruction encountered while compiling \"%s\"",
+						GetPublicName(amx, index));
+				break;
+			case JIT_INVALID_INSTRUCTION:
+				logprintf("[jit] Error: Invalid instruction encountered while compiling \"%s\"",
+						GetPublicName(amx, index));
+				break;
+			default:
+				break;
+		}
+	}
+
+	return retcode;
 }
 
 static std::string GetModuleNameBySymbol(void *symbol) {

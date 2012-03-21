@@ -63,7 +63,9 @@
 #endif
 
 static cell STDCALL CallFunction(jit::JIT *jit, cell address, cell *params) {
-	return jit->CallFunction(address, params);
+	cell retval;
+	jit->CallFunction(address, params, &retval);
+	return retval;
 }
 
 static cell STDCALL CallNativeFunction(jit::JIT *jit, int index, cell *params) {
@@ -323,7 +325,8 @@ void JITFunction::naked_main() {
 				lea(eax, dword_ptr[ebp - data]);
 				break;
 			default:
-				break;
+				jit_->error_ = JIT_UNSUPPORTED_INSTRUCTION;
+				return;
 			}
 			break;
 		case OP_SCTRL: // index
@@ -341,7 +344,8 @@ void JITFunction::naked_main() {
 				lea(ebp, dword_ptr[eax + data]);
 				break;
 			default:
-				break;
+				jit_->error_ = JIT_UNSUPPORTED_INSTRUCTION;
+				return;
 			}
 			break;
 		case OP_MOVE_PRI:
@@ -1117,17 +1121,23 @@ JITFunction *JIT::GetFunction(cell address) {
 	}
 }
 
-cell JIT::CallFunction(cell address, cell *params) {
+void JIT::CallFunction(cell address, cell *params, cell *retval) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
 	// Get pointer to assembled native code.
 	JITFunction *fn = GetFunction(address);
 	assert(fn != 0);
+
+	// Check for compile errors.
+	if (GetError() != JIT_NO_ERROR) {
+		return;
+	}
+
 	void *start = fn->GetCode();
 
 	// Copy parameters from AMX stack and call the function.
-	cell return_value;
+	cell retval_;
 	#if defined COMPILER_MSVC
 		__asm {
 			push esi
@@ -1146,7 +1156,7 @@ cell JIT::CallFunction(cell address, cell *params) {
 			mov dword ptr [eax].halt_esp_, ecx
 			mov dword ptr [eax].halt_ebp_, ebp
 			call dword ptr [start]
-			mov dword ptr [return_value], eax
+			mov dword ptr [retval_], eax
 			add esp, dword ptr [parambytes]
 			add esp, 4
 			pop edi
@@ -1172,7 +1182,7 @@ cell JIT::CallFunction(cell address, cell *params) {
 		__asm__ __volatile__ (
 			"calll *%1;"
 			"movl %%eax, %0;"
-				: "=r"(return_value)
+				: "=r"(retval_)
 				: "r"(start)
 				: "%eax", "%ecx", "%edx");
 		__asm__ __volatile__ (
@@ -1182,7 +1192,9 @@ cell JIT::CallFunction(cell address, cell *params) {
 				: : "r"(parambytes + 4) : "%esp");
 	#endif
 
-	return return_value;
+	if (retval != 0) {
+		*retval = retval_;
+	}
 }
 
 int JIT::CallPublicFunction(int index, cell *retval) {
@@ -1201,10 +1213,7 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	if (address == 0) {
 		amx_->error = AMX_ERR_INDEX;
 	} else {
-		cell retval_ = CallFunction(address, params);
-		if (retval != 0) {
-			*retval = retval_;
-		}
+		CallFunction(address, params, retval);
 	}
 
 	// Reset STK and parameter count.
@@ -1402,7 +1411,8 @@ void JIT::AnalyzeFunction(cell address, std::vector<AmxInstruction> &instruction
 		}
 
 		default:
-			assert(0);
+			error_ = JIT_INVALID_INSTRUCTION;
+			return;
 		}
 	}
 }
