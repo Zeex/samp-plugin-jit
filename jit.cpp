@@ -316,17 +316,13 @@ void JITFunction::naked_main() {
 			case 2:
 				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->hea)]);
 				break;
-			case 3:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->stp)]);
-				break;
 			case 4:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->stk)]);
+				lea(eax, dword_ptr[esp - data]);
 				break;
 			case 5:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->frm)]);
+				lea(eax, dword_ptr[ebp - data]);
 				break;
-			case 6:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->cip)]);
+			default:
 				break;
 			}
 			break;
@@ -339,10 +335,12 @@ void JITFunction::naked_main() {
 				mov(dword_ptr[reinterpret_cast<int>(&amx->hea)], eax);
 				break;
 			case 4:
-				mov(dword_ptr[reinterpret_cast<int>(&amx->stk)], eax);
+				lea(esp, dword_ptr[eax + data]);
 				break;
 			case 5:
-				mov(dword_ptr[reinterpret_cast<int>(&amx->frm)], eax);
+				lea(ebp, dword_ptr[eax + data]);
+				break;
+			default:
 				break;
 			}
 			break;
