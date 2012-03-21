@@ -6588,7 +6588,7 @@ namespace compiler
 		{
 			initialize(f.instrs_.size());
 			size_t block_idx = 0;
-			for (size_t instr_idx = 0; instr_idx < f.instrs_.size(); ++instr_idx) {
+			for (size_t instr_idx = 0; instr_idx < f.instrs_.size() && block_idx < blocks_.size(); ++instr_idx) {
 				BasicBlock *cur_block = blocks_[block_idx];
 				InstrID instr_id = f.instrs_[instr_idx].GetID();
 				if (Frontend::IsJump(instr_id) || instr_id == I_RET || instr_id == I_IRET) {
