@@ -89,11 +89,6 @@ private:
 	const cell *ip_;
 };
 
-class UnsupportedInstructionError {
-public:
-	UnsupportedInstructionError(const AmxInstruction &instr);
-};
-
 class JIT;
 
 // JITFunction represents a JIT-compiled AMX function.
