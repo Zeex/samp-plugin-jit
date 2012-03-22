@@ -123,9 +123,7 @@ public:
 	inline void *GetCode() const { return code_; }
 
 private:
-	void Label(AsmJit::Assembler &as, cell address, const std::string &tag = "");
-	AsmJit::Label &UnboundLabel(AsmJit::Assembler &as, cell address, const std::string &tag = "");
-	const AsmJit::Label &GetLabel(cell address, const std::string &tag = "") const;	
+	AsmJit::Label &L(AsmJit::Assembler &as, cell address, const std::string &tag = "");
 
 protected:
 	// Code snippets

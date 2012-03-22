@@ -168,7 +168,10 @@ JITFunction::JITFunction(JIT *jit, cell address)
 
 	for (std::size_t i = 0; i < instructions.size(); i++) {
 		AMXInstruction &instr = instructions[i];
+
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
+		as.bind(L(as, cip));
+
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
 			// PRI = [address]
@@ -467,7 +470,7 @@ JITFunction::JITFunction(JIT *jit, cell address)
 		case OP_JUMP: // offset
 			// CIP = CIP + offset (jump to the address relative from
 			// the current position)
-			as.jmp(GetLabel(instr.GetOperand() - code));
+			as.jmp(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JREL: // offset
 			// obsolete
@@ -475,62 +478,62 @@ JITFunction::JITFunction(JIT *jit, cell address)
 		case OP_JZER: // offset
 			// if PRI == 0 then CIP = CIP + offset
 			as.cmp(eax, 0);
-			as.jz(GetLabel(instr.GetOperand() - code));
+			as.jz(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JNZ: // offset
 			// if PRI != 0 then CIP = CIP + offset
 			as.cmp(eax, 0);
-			as.jnz(GetLabel(instr.GetOperand() - code));
+			as.jnz(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JEQ: // offset
 			// if PRI == ALT then CIP = CIP + offset
 			as.cmp(eax, ecx);
-			as.je(GetLabel(instr.GetOperand() - code));
+			as.je(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JNEQ: // offset
 			// if PRI != ALT then CIP = CIP + offset
 			as.cmp(eax, ecx);
-			as.jne(GetLabel(instr.GetOperand() - code));
+			as.jne(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JLESS: // offset
 			// if PRI < ALT then CIP = CIP + offset (unsigned)
 			as.cmp(eax, ecx);
-			as.jb(GetLabel(instr.GetOperand() - code));
+			as.jb(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JLEQ: // offset
 			// if PRI <= ALT then CIP = CIP + offset (unsigned)
 			as.cmp(eax, ecx);
-			as.jbe(GetLabel(instr.GetOperand() - code));
+			as.jbe(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JGRTR: // offset
 			// if PRI > ALT then CIP = CIP + offset (unsigned)
 			as.cmp(eax, ecx);
-			as.ja(GetLabel(instr.GetOperand() - code));
+			as.ja(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JGEQ: // offset
 			// if PRI >= ALT then CIP = CIP + offset (unsigned)
 			as.cmp(eax, ecx);
-			as.jae(GetLabel(instr.GetOperand() - code));
+			as.jae(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JSLESS: // offset
 			// if PRI < ALT then CIP = CIP + offset (signed)
 			as.cmp(eax, ecx);
-			as.jl(GetLabel(instr.GetOperand() - code));
+			as.jl(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JSLEQ: // offset
 			// if PRI <= ALT then CIP = CIP + offset (signed)
 			as.cmp(eax, ecx);
-			as.jle(GetLabel(instr.GetOperand() - code));
+			as.jle(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JSGRTR: // offset
 			// if PRI > ALT then CIP = CIP + offset (signed)
 			as.cmp(eax, ecx);
-			as.jg(GetLabel(instr.GetOperand() - code));
+			as.jg(L(as, instr.GetOperand() - code));
 			break;
 		case OP_JSGEQ: // offset
 			// if PRI >= ALT then CIP = CIP + offset (signed)
 			as.cmp(eax, ecx);
-			as.jge(GetLabel(instr.GetOperand() - code));
+			as.jge(L(as, instr.GetOperand() - code));
 			break;
 		case OP_SHL:
 			// PRI = PRI << ALT
@@ -813,18 +816,20 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			as.call(edx);                       // memcmp(ptr1, ptr2, number)
 			as.add(esp, 12);
 			break;
-		case OP_FILL: // number
+		case OP_FILL: { // number
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
+			AsmJit::Label &L_loop = L(as, cip, "loop");
 			as.lea(edi, dword_ptr(ecx, data));                      // memory start
 			as.lea(esi, dword_ptr(ecx, data + instr.GetOperand())); // memory end
-			Label(as, cip, "loop");
+			as.bind(L_loop);
 				as.mov(dword_ptr(edi), eax);
 				as.add(edi, sizeof(cell));
 				as.cmp(edi, esi);
-			as.jl(GetLabel(cip, "loop")); // if edi < esi fill next cell
+			as.jl(L_loop); // if edi < esi fill next cell
 			break;
+		}
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
@@ -832,13 +837,13 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			break;
 		case OP_BOUNDS: { // value
 			// Abort execution if PRI > value or_ if PRI < 0.
-			AsmJit::Label &L_halt = UnboundLabel(as, cip, "halt");
-			AsmJit::Label &L_good = UnboundLabel(as, cip, "good");
+			AsmJit::Label &L_halt = L(as, cip, "halt");
+			AsmJit::Label &L_good = L(as, cip, "good");
 				as.cmp(eax, instr.GetOperand());
-			as.jg(GetLabel(cip, "halt"));
+			as.jg(L_halt);
 				as.cmp(eax, 0);
-				as.jl(GetLabel(cip, "halt"));
-				as.jmp(GetLabel(cip, "good"));
+				as.jl(L_halt);
+				as.jmp(L_good);
 			as.bind(L_halt);
 				halt(as, AMX_ERR_BOUNDS);
 			as.bind(L_good);
@@ -947,20 +952,20 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			// Check if the value in eax is in the allowed range.
 			// If not, jump to the default case (i.e. no match).
 			as.cmp(eax, *min_value);
-			as.jl(GetLabel(default_addr));
+			as.jl(L(as, default_addr));
 			as.cmp(eax, *max_value);
-			as.jg(GetLabel(default_addr));
+			as.jg(L(as, default_addr));
 
 			// OK now sequentially compare eax with each value.
 			// This is pretty slow so I probably should optimize
 			// this in future...
 			for (int i = 0; i < num_cases; i++) {
 				as.cmp(eax, case_table[i + 1].value);
-				as.je(GetLabel(case_table[i + 1].address - code));
+				as.je(L(as, case_table[i + 1].address - code));
 			}
 
 			// No match found - go for default case.
-			as.jmp(GetLabel(default_addr));
+			as.jmp(L(as, default_addr));
 			break;
 		}
 		case OP_CASETBL: // ...
@@ -991,8 +996,7 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			break;
 		default:
 			throw InvalidInstructionError(instr);
-		}
-		Label(as, cip);
+		}		
 	}
 
 	code_ = as.make();
@@ -1004,26 +1008,16 @@ JITFunction::~JITFunction() {
 	}
 }
 
-void JITFunction::Label(AsmJit::Assembler &as, cell address, const std::string &tag) {
-	std::pair<LabelMap::iterator, bool> where = 
-			labels_.insert(std::make_pair(TaggedAddress(address, tag), as.newLabel()));
-	as.bind(where.first->second);
-}
-
-AsmJit::Label &JITFunction::UnboundLabel(AsmJit::Assembler &as, cell address, const std::string &tag) {	
-	std::pair<LabelMap::iterator, bool> where = 
-			labels_.insert(std::make_pair(TaggedAddress(address, tag), as.newLabel()));
-	return where.first->second;
-}
-
-const AsmJit::Label &JITFunction::GetLabel(cell address, const std::string &tag) const {
+AsmJit::Label &JITFunction::L(AsmJit::Assembler &as, cell address, const std::string &tag) {
 	static AsmJit::Label NonExistentLabel;
-	LabelMap::const_iterator iterator = labels_.find(TaggedAddress(address, tag));
+	LabelMap::iterator iterator = labels_.find(TaggedAddress(address, tag));
 	if (iterator != labels_.end()) {
 		return iterator->second;
+	} else {
+		std::pair<LabelMap::iterator, bool> where = 
+				labels_.insert(std::make_pair(TaggedAddress(address, tag), as.newLabel()));
+		return where.first->second;
 	}
-	assert(0);
-	return NonExistentLabel;
 }
 
 void JITFunction::halt(AsmJit::Assembler &as, cell code) {
