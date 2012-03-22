@@ -34,7 +34,7 @@
 
 namespace jit {
 
-enum AmxOpcode {
+enum AMXOpcode {
 	OP_NONE,         OP_LOAD_PRI,     OP_LOAD_ALT,     OP_LOAD_S_PRI,
 	OP_LOAD_S_ALT,   OP_LREF_PRI,     OP_LREF_ALT,     OP_LREF_S_PRI,
 	OP_LREF_S_ALT,   OP_LOAD_I,       OP_LODB_I,       OP_CONST_PRI,
@@ -73,19 +73,19 @@ enum AmxOpcode {
 	NUM_AMX_OPCODES
 };
 
-class AmxInstruction {
+class AMXInstruction {
 public:
-	AmxInstruction(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
+	AMXInstruction(AMXOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
 
 	inline const cell *GetIP() const
 		{ return ip_; }
-	inline AmxOpcode GetOpcode() const 
+	inline AMXOpcode GetOpcode() const 
 		{ return opcode_; }
 	inline cell GetOperand(unsigned int index = 0u) const
 		{ return *(ip_ + 1 + index); }
 
 private:
-	AmxOpcode opcode_;
+	AMXOpcode opcode_;
 	const cell *ip_;
 };
 
@@ -154,7 +154,7 @@ public:
 	inline unsigned char *GetAmxCode() { return code_; }
 
 	// Turn raw AMX code into a sequence of AmxInstructions.
-	void AnalyzeFunction(cell address, std::vector<AmxInstruction> &instructions) const;
+	void AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const;
 
 	// Get assembled function (and assemble if needed).
 	JITFunction *GetFunction(cell address);
