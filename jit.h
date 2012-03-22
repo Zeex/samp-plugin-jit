@@ -29,8 +29,10 @@
 #include <string>
 #include <vector>
 
+#include <AsmJit/Assembler.h>
+#include <AsmJit/Operand.h>
+
 #include "amx/amx.h"
-#include "jitasm/jitasm.h"
 
 namespace jit {
 
@@ -91,33 +93,57 @@ private:
 
 class JIT;
 
-// JITFunction represents a JIT-compiled AMX function.
-class JITFunction : public jitasm::function<void, JITFunction> {
+class TaggedAddress {
 public:
-	JITFunction(JIT *jitter, cell address);
+	TaggedAddress(cell address, std::string tag = std::string())
+		: address_(address), tag_(tag)
+	{}
 
-	void naked_main();
+	inline cell GetAddress() const { return address_; }
+	inline std::string GetTag() const { return tag_; }
 
 private:
-	void PutLabel(cell address, const std::string &tag = std::string());
-	std::string GetLabel(cell address, const std::string &tag = std::string()) const;
+	ucell address_;
+	std::string tag_;
+};
+
+inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
+	if (left.GetAddress() != right.GetAddress()) {
+		return left.GetAddress() < right.GetAddress();
+	}
+	return left.GetTag() < right.GetTag();
+}
+
+// JITFunction represents a JIT-compiled AMX function.
+class JITFunction {
+public:
+	JITFunction(JIT *jit, cell address);
+	~JITFunction();
+
+	inline void *GetCode() const { return code_; }
 
 private:
+	void Label(AsmJit::Assembler &as, cell address, const std::string &tag = "");
+	AsmJit::Label &UnboundLabel(AsmJit::Assembler &as, cell address, const std::string &tag = "");
+	const AsmJit::Label &GetLabel(cell address, const std::string &tag = "") const;	
+
+protected:
 	// Code snippets
-	void halt(cell code);
+	void halt(AsmJit::Assembler &as, cell code);
 
-private:
+protected:
+	// Native overrides
 	void RegisterNativeOverrides();
 
 	// Floating point natives
-	void native_float();
-	void native_floatabs();
-	void native_floatadd();
-	void native_floatsub();
-	void native_floatmul();
-	void native_floatdiv();
-	void native_floatsqroot();
-	void native_floatlog();
+	void native_float(AsmJit::Assembler &as);
+	void native_floatabs(AsmJit::Assembler &as);
+	void native_floatadd(AsmJit::Assembler &as);
+	void native_floatsub(AsmJit::Assembler &as);
+	void native_floatmul(AsmJit::Assembler &as);
+	void native_floatdiv(AsmJit::Assembler &as);
+	void native_floatsqroot(AsmJit::Assembler &as);
+	void native_floatlog(AsmJit::Assembler &as);
 
 private:
 	// Disable copying.
@@ -128,11 +154,16 @@ private:
 	JIT *jit_;
 	cell address_;
 
-	typedef void (JITFunction::*NativeOverride)();
+	typedef void (JITFunction::*NativeOverride)(AsmJit::Assembler &as);
 	std::map<std::string, NativeOverride> native_overrides_;
+
+	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
+	LabelMap labels_;
+
+	void *code_;
 };
 
-struct JITError {};
+class JITError {};
 
 class InstructionError : public JITError {
 public:
@@ -184,9 +215,6 @@ public:
 	// Call a native function. This method is currently used only for sysreq.pri.
 	// The sysreq.c and sysreq.d instructions invoke natives directly.
 	cell CallNativeFunction(int index, cell *params);
-
-	// Output generated code to a stream.
-	void DumpCode(std::ostream &stream) const;
 
 private:
 	// Disable copying.

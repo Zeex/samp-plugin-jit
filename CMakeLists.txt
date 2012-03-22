@@ -29,11 +29,16 @@ if(HAVE_STDINT_H)
 	add_definitions(-DHAVE_STDINT_H)
 endif()
 
+set(ASMJIT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/AsmJit")
+set(ASMJIT_BUILD_LIBRARY TRUE)
+add_definitions(-DASMJIT_API=)
+include_directories(${ASMJIT_DIR})
+add_subdirectory(AsmJit)
+
 add_library(jit MODULE
 	amx/amx.h
 	amx/getch.h
 	amx/sclinux.h
-	jitasm/jitasm.h
 	jit.cpp
 	jit.h
 	jump-x86.cpp
@@ -43,6 +48,8 @@ add_library(jit MODULE
 	plugin.rc
 	plugincommon.h
 )
+
+target_link_libraries(jit AsmJit)
 
 set_target_properties(jit PROPERTIES PREFIX "")
 
