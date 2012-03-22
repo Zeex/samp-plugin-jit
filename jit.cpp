@@ -162,7 +162,7 @@ JITFunction::JITFunction(JIT *jit, cell address)
 	using AsmJit::ax;
 	using AsmJit::al;
 	using AsmJit::cx;
-	using AsmJit::cl;	
+	using AsmJit::cl;
 
 	AsmJit::Assembler as;
 
@@ -801,13 +801,13 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			// Compare memory blocks at [PRI] and_ [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			as.push(instr.GetOperand());        // push "number"
+			as.push(instr.GetOperand());
 			as.lea(edx, dword_ptr(ecx, data));
-			as.push(edx);                       // push "ptr2"
+			as.push(edx);
 			as.lea(edx, dword_ptr(eax, data));
-			as.push(edx);                       // push "ptr1"
-			as.mov(edx, cell(std::memcmp));
-			as.call(edx);                       // memcmp(ptr1, ptr2, number)
+			as.push(edx);
+			as.call(reinterpret_cast<void*>(std::memcmp));
+			as.call(edx);
 			as.add(esp, 12);
 			break;
 		case OP_FILL: { // number
@@ -848,13 +848,11 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			as.push(esp);
 			as.push(eax);
 			as.push(reinterpret_cast<int>(jit_));
-			as.mov(edx, reinterpret_cast<int>(::CallNativeFunction));
-			as.call(edx);
+			as.call(reinterpret_cast<void*>(::CallNativeFunction));
 			break;
 		case OP_SYSREQ_C:   // index
 		case OP_SYSREQ_D: { // address
 			// call system service
-
 			std::string native_name;
 			switch (instr.GetOpcode()) {
 				case OP_SYSREQ_C:
@@ -868,7 +866,6 @@ JITFunction::JITFunction(JIT *jit, cell address)
 					break;
 				}
 			}
-
 			// Replace calls to various natives with their optimized equivalents.
 			std::map<std::string, NativeOverride>::const_iterator it
 					= native_overrides_.find(native_name);
@@ -878,21 +875,18 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			} else {
 				goto ordinary_native;
 			}
-
 		ordinary_native:
 			as.push(esp);
 			as.push(reinterpret_cast<int>(amx));
 			switch (instr.GetOpcode()) {
-				case OP_SYSREQ_C:
-					as.mov(edx, GetNativeAddress(amx, instr.GetOperand()));
+				case OP_SYSREQ_C:					
+					as.call(reinterpret_cast<void*>(GetNativeAddress(amx, instr.GetOperand())));
 					break;
 				case OP_SYSREQ_D:
-					as.mov(edx, instr.GetOperand());
+					as.call(reinterpret_cast<void*>(instr.GetOperand()));
 					break;
 			}
-			as.call(edx);
 			as.add(esp, 8);
-
 		special_native:
 			break;
 		}
@@ -1148,7 +1142,7 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 	JITFunction *fn = GetFunction(address);
 	void *start = fn->GetCode();
 
-	// Copy parameters from AMX stack and_ call the function.
+	// Copy parameters from AMX stack and call the function.
 	cell retval_;
 	#if defined COMPILER_MSVC
 		__asm {
