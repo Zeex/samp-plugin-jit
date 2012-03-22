@@ -813,31 +813,17 @@ void JITFunction::naked_main() {
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
-			mov(dword_ptr[reinterpret_cast<int>(&amx->error)], instr.GetOperand());
-			mov(esp, dword_ptr[reinterpret_cast<int>(&jit_->halt_esp_)]);
-			mov(ebp, dword_ptr[reinterpret_cast<int>(&jit_->halt_ebp_)]);
-			ret();
+			halt(instr.GetOperand());
 			break;
 		case OP_BOUNDS: // value
 			// Abort execution if PRI > value or if PRI < 0.
-
-			// Check aginst the upper bound.
 			cmp(eax, instr.GetOperand());
 			jg(GetLabel(cip, "out"));
-
-			// Check if non-negative.
 			cmp(eax, 0);
 			jl(GetLabel(cip, "out"));
 			jmp(GetLabel(cip, "ok"));
-
-			// Issue an out-of-bounds error and halt.
 			PutLabel(cip, "out");
-			mov(dword_ptr[reinterpret_cast<int>(&amx->error)], AMX_ERR_BOUNDS);
-			mov(esp, dword_ptr[reinterpret_cast<int>(&jit_->halt_esp_)]);
-			mov(ebp, dword_ptr[reinterpret_cast<int>(&jit_->halt_ebp_)]);
-			ret();
-
-			// Everything is OK.
+			halt(AMX_ERR_BOUNDS);
 			PutLabel(cip, "ok");
 			break;
 		case OP_SYSREQ_PRI:
@@ -999,6 +985,13 @@ std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
 	std::stringstream ss;
 	ss << address << tag;
 	return ss.str();
+}
+
+void JITFunction::halt(cell code) {
+	mov(dword_ptr[reinterpret_cast<int>(&jit_->GetAmx()->error)], code);
+	mov(esp, dword_ptr[reinterpret_cast<int>(&jit_->halt_esp_)]);
+	mov(ebp, dword_ptr[reinterpret_cast<int>(&jit_->halt_ebp_)]);
+	ret();
 }
 
 #define JIT_OVERRIDE_NATIVE(name) \

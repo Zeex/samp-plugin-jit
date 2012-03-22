@@ -108,6 +108,10 @@ private:
 	std::string GetLabel(cell address, const std::string &tag = std::string()) const;
 
 private:
+	// Code snippets
+	void halt(cell code);
+
+private:
 	void RegisterNativeOverrides();
 
 	// Floating point natives
