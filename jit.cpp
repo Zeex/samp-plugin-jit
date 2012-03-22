@@ -1,14 +1,14 @@
 // Copyright (c) 2012, Sergey Zolotarev
 // All rights reserved.
 //
-// Redistribution and use in source and binary forms, with or without
+// Redistribution and_ use in source and_ binary forms, with or_ without
 // modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer.
+//    list of conditions and_ the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
-//    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution.
+//    this list of conditions and_ the following disclaimer in the documentation
+//    and_/or_ other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -29,8 +29,10 @@
 #include <sstream>
 #include <string>
 
-#include "amx/amx.h"
+#include <AsmJit/AsmJit.h>
+
 #include "jit.h"
+#include "amx/amx.h"
 
 #if defined _WIN32 || defined WIN32 || defined __WIN32__
 	#define OS_WIN32
@@ -127,14 +129,11 @@ static int GetNativeIndex(AMX *amx, cell address) {
 
 namespace jit {
 
-JITFunction::JITFunction(JIT *jitter, cell address)
-	: jitasm::function<void, JITFunction>()
-	, jit_(jitter)
+JITFunction::JITFunction(JIT *jit, cell address)
+	: jit_(jit)
 	, address_(address)
+	, code_(0)
 {
-}
-
-void JITFunction::naked_main() {
 	AMX *amx = jit_->GetAmx();
 	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
 
@@ -146,163 +145,182 @@ void JITFunction::naked_main() {
 
 	RegisterNativeOverrides();
 
+	using AsmJit::byte_ptr;
+	using AsmJit::byte_ptr_abs;
+	using AsmJit::word_ptr;
+	using AsmJit::word_ptr_abs;
+	using AsmJit::dword_ptr;
+	using AsmJit::dword_ptr_abs;
+	
+	using AsmJit::eax;
+	using AsmJit::ecx;
+	using AsmJit::edx;
+	using AsmJit::esi;
+	using AsmJit::edi;
+	using AsmJit::ebp;
+	using AsmJit::esp;
+	using AsmJit::ax;
+	using AsmJit::al;
+	using AsmJit::cx;
+	using AsmJit::cl;	
+
+	AsmJit::Assembler as;
+
 	for (std::size_t i = 0; i < instructions.size(); i++) {
 		AMXInstruction &instr = instructions[i];
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
-
-		// Label this instruction so we can refer to it when
-		// doing jumps...
-		PutLabel(cip);
-
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
 			// PRI = [address]
-			mov(eax, dword_ptr[data + instr.GetOperand()]);
+			as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
 			break;
 		case OP_LOAD_ALT: // address
 			// PRI = [address]
-			mov(ecx, dword_ptr[data + instr.GetOperand()]);
+			as.mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
 			break;
 		case OP_LOAD_S_PRI: // offset
 			// PRI = [FRM + offset]
-			mov(eax, dword_ptr[ebp + instr.GetOperand()]);
+			as.mov(eax, dword_ptr(ebp, instr.GetOperand()));
 			break;
 		case OP_LOAD_S_ALT: // offset
 			// ALT = [FRM + offset]
-			mov(ecx, dword_ptr[ebp + instr.GetOperand()]);
+			as.mov(ecx, dword_ptr(ebp, instr.GetOperand()));
 			break;
 		case OP_LREF_PRI: // address
 			// PRI = [ [address] ]
-			mov(edx, dword_ptr[data + instr.GetOperand()]);
-			mov(eax, dword_ptr[edx + data]);
+			as.mov(edx, dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
+			as.mov(eax, dword_ptr(edx, data));
 			break;
 		case OP_LREF_ALT: // address
 			// ALT = [ [address] ]
-			mov(edx, dword_ptr[data + instr.GetOperand()]);
-			mov(ecx, dword_ptr[edx + data]);
+			as.mov(edx, dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
+			as.mov(ecx, dword_ptr(edx, data));
 			break;
 		case OP_LREF_S_PRI: // offset
 			// PRI = [ [FRM + offset] ]
-			mov(edx, dword_ptr[ebp + instr.GetOperand()]);
-			mov(eax, dword_ptr[edx + data]);
+			as.mov(edx, dword_ptr(ebp, instr.GetOperand()));
+			as.mov(eax, dword_ptr(edx, data));
 			break;
 		case OP_LREF_S_ALT: // offset
 			// PRI = [ [FRM + offset] ]
-			mov(edx, dword_ptr[ebp + instr.GetOperand()]);
-			mov(ecx, dword_ptr[edx + data]);
+			as.mov(edx, dword_ptr(ebp, instr.GetOperand()));
+			as.mov(ecx, dword_ptr(edx, data));
 			break;
 		case OP_LOAD_I:
 			// PRI = [PRI] (full cell)
-			mov(eax, dword_ptr[eax + data]);
+			as.mov(eax, dword_ptr(eax, data));
 			break;
 		case OP_LODB_I: // number
 			// PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
 			switch (instr.GetOperand()) {
 			case 1:
-				xor(eax, eax);
-				mov(al, byte_ptr[eax + data]);
+				as.xor_(eax, eax);
+				as.mov(al, byte_ptr(eax, data));
 			case 2:
-				xor(eax, eax);
-				mov(ax, word_ptr[eax + data]);
+				as.xor_(eax, eax);
+				as.mov(ax, word_ptr(eax, data));
 			default:
-				mov(eax, dword_ptr[eax + data]);
+				as.mov(eax, dword_ptr(eax, data));
 			}
 			break;
 		case OP_CONST_PRI: // value
 			// PRI = value
-			mov(eax, instr.GetOperand());
+			as.mov(eax, instr.GetOperand());
 			break;
 		case OP_CONST_ALT: // value
 			// ALT = value
-			mov(ecx, instr.GetOperand());
+			as.mov(ecx, instr.GetOperand());
 			break;
 		case OP_ADDR_PRI: // offset
 			// PRI = FRM + offset
-			lea(eax, dword_ptr[instr.GetOperand() - data + ebp]);
+			as.lea(eax, dword_ptr(ebp, instr.GetOperand() - data));
 			break;
 		case OP_ADDR_ALT: // offset
 			// ALT = FRM + offset
-			lea(ecx, dword_ptr[instr.GetOperand() - data + ebp]);
+			as.lea(ecx, dword_ptr(ebp, instr.GetOperand() - data));
 			break;
 		case OP_STOR_PRI: // address
 			// [address] = PRI
-			mov(dword_ptr[data + instr.GetOperand()], eax);
+			as.mov(dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())), eax);
 			break;
 		case OP_STOR_ALT: // address
 			// [address] = ALT
-			mov(dword_ptr[data + instr.GetOperand()], ecx);
+			as.mov(dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())), ecx);
 			break;
 		case OP_STOR_S_PRI: // offset
 			// [FRM + offset] = ALT
-			mov(dword_ptr[ebp + instr.GetOperand()], eax);
+			as.mov(dword_ptr(ebp, instr.GetOperand()), eax);
 			break;
 		case OP_STOR_S_ALT: // offset
 			// [FRM + offset] = ALT
-			mov(dword_ptr[ebp + instr.GetOperand()], ecx);
+			as.mov(dword_ptr(ebp, instr.GetOperand()), ecx);
 			break;
 		case OP_SREF_PRI: // address
 			// [ [address] ] = PRI
-			mov(edx, dword_ptr[data + instr.GetOperand()]);
-			mov(dword_ptr[edx + data], eax);
+			as.mov(edx, dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
+			as.mov(dword_ptr(edx, data), eax);
 			break;
 		case OP_SREF_ALT: // address
 			// [ [address] ] = ALT
-			mov(edx, dword_ptr[data + instr.GetOperand()]);
-			mov(dword_ptr[edx + data], ecx);
+			as.mov(edx, dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
+			as.mov(dword_ptr(edx, data), ecx);
 			break;
 		case OP_SREF_S_PRI: // offset
 			// [ [FRM + offset] ] = PRI
-			mov(edx, dword_ptr[ebp + instr.GetOperand()]);
-			mov(dword_ptr[edx + data], eax);
+			as.mov(edx, dword_ptr(ebp, instr.GetOperand()));
+			as.mov(dword_ptr(edx, data), eax);
 			break;
 		case OP_SREF_S_ALT: // offset
 			// [ [FRM + offset] ] = ALT
-			mov(edx, dword_ptr[ebp + instr.GetOperand()]);
-			mov(dword_ptr[edx + data], ecx);
+			as.mov(edx, dword_ptr(ebp, instr.GetOperand()));
+			as.mov(dword_ptr(edx, data), ecx);
 			break;
 		case OP_STOR_I:
 			// [ALT] = PRI (full cell)
-			mov(dword_ptr[ecx + data], eax);
+			as.mov(dword_ptr(ecx, data), eax);
 			break;
 		case OP_STRB_I: // number
 			// "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
 			switch (instr.GetOperand()) {
 			case 1:
-				xor(ecx, ecx);
-				mov(byte_ptr[ecx + data], al);
+				as.xor_(ecx, ecx);
+				as.mov(byte_ptr(ecx, data), al);
 			case 2:
-				xor(ecx, ecx);
-				mov(word_ptr[ecx + data], ax);
+				as.xor_(ecx, ecx);
+				as.mov(word_ptr(ecx, data), ax);
 			default:
-				mov(dword_ptr[ecx + data], eax);
+				as.mov(dword_ptr(ecx, data), eax);
 			}
 			break;
 		case OP_LIDX:
 			// PRI = [ ALT + (PRI x cell size) ]
-			mov(eax, dword_ptr[ecx + (eax * sizeof(cell)) + data]);
+			as.mov(edx, eax);
+			as.imul(edx, sizeof(cell));
+			as.mov(eax, dword_ptr(ecx, edx, data));
 			break;
 		case OP_LIDX_B: // shift
 			// PRI = [ ALT + (PRI << shift) ]
-			mov(edx, eax);
-			shl(edx, static_cast<unsigned char>(instr.GetOperand()));
-			mov(eax, dword_ptr[ecx + edx + data]);
+			as.mov(edx, eax);
+			as.shl(edx, static_cast<unsigned char>(instr.GetOperand()));
+			as.mov(eax, dword_ptr(ecx, edx, data));
 			break;
 		case OP_IDXADDR:
 			// PRI = ALT + (PRI x cell size) (calculate indexed address)
-			lea(eax, dword_ptr[ecx + (eax * sizeof(cell))]);
+			as.imul(eax, sizeof(cell));
+			as.lea(eax, dword_ptr(ecx, eax));
 			break;
 		case OP_IDXADDR_B: // shift
 			// PRI = ALT + (PRI << shift) (calculate indexed address)
-			shl(eax, static_cast<unsigned char>(instr.GetOperand()));
-			lea(eax, dword_ptr[ecx + eax]);
+			as.shl(eax, static_cast<unsigned char>(instr.GetOperand()));
+			as.lea(eax, dword_ptr(ecx, eax));
 			break;
 		case OP_ALIGN_PRI: // number
 			// Little Endian: PRI ^= cell size - number
-			xor(eax, sizeof(cell) - instr.GetOperand());
+			as.xor_(eax, sizeof(cell) - instr.GetOperand());
 			break;
 		case OP_ALIGN_ALT: // number
 			// Little Endian: ALT ^= cell size - number
-			xor(ecx, sizeof(cell) - instr.GetOperand());
+			as.xor_(ecx, sizeof(cell) - instr.GetOperand());
 			break;
 		case OP_LCTRL: // index
 			// PRI is set to the current value of any of the special registers.
@@ -310,19 +328,19 @@ void JITFunction::naked_main() {
 			// 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
 			switch (instr.GetOperand()) {
 			case 0:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->cod)]);
+				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amxhdr->cod)));
 				break;
 			case 1:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amxhdr->dat)]);
+				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amxhdr->dat)));
 				break;
 			case 2:
-				mov(eax, dword_ptr[reinterpret_cast<int>(&amx->hea)]);
+				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)));
 				break;
 			case 4:
-				lea(eax, dword_ptr[esp - data]);
+				as.lea(eax, dword_ptr(esp, -data));
 				break;
 			case 5:
-				lea(eax, dword_ptr[ebp - data]);
+				as.lea(eax, dword_ptr(ebp, -data));
 				break;
 			default:
 				throw UnsupportedInstructionError(instr);
@@ -334,13 +352,13 @@ void JITFunction::naked_main() {
 			// 6=CIP
 			switch (instr.GetOperand()) {
 			case 2:
-				mov(dword_ptr[reinterpret_cast<int>(&amx->hea)], eax);
+				as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), eax);
 				break;
 			case 4:
-				lea(esp, dword_ptr[eax + data]);
+				as.lea(esp, dword_ptr(eax, data));
 				break;
 			case 5:
-				lea(ebp, dword_ptr[eax + data]);
+				as.lea(ebp, dword_ptr(eax, data));
 				break;
 			default:
 				throw UnsupportedInstructionError(instr);
@@ -348,67 +366,67 @@ void JITFunction::naked_main() {
 			break;
 		case OP_MOVE_PRI:
 			// PRI = ALT
-			mov(eax, ecx);
+			as.mov(eax, ecx);
 			break;
 		case OP_MOVE_ALT:
 			// ALT = PRI
-			mov(ecx, eax);
+			as.mov(ecx, eax);
 			break;
 		case OP_XCHG:
-			// Exchange PRI and ALT
-			xchg(eax, ecx);
+			// Exchange PRI and_ ALT
+			as.xchg(eax, ecx);
 			break;
 		case OP_PUSH_PRI:
 			// [STK] = PRI, STK = STK - cell size
-			push(eax);
+			as.push(eax);
 			break;
 		case OP_PUSH_ALT:
 			// [STK] = ALT, STK = STK - cell size
-			push(ecx);
+			as.push(ecx);
 			break;
 		case OP_PUSH_R: // value
 			// obsolete
 			break;
 		case OP_PUSH_C: // value
 			// [STK] = value, STK = STK - cell size
-			push(instr.GetOperand());
+			as.push(instr.GetOperand());
 			break;
 		case OP_PUSH: // address
 			// [STK] = [address], STK = STK - cell size
-			push(dword_ptr[instr.GetOperand() + data]);
+			as.push(dword_ptr_abs(reinterpret_cast<void*>(instr.GetOperand() + data)));
 			break;
 		case OP_PUSH_S: // offset
 			// [STK] = [FRM + offset], STK = STK - cell size
-			push(dword_ptr[ebp + instr.GetOperand()]);
+			as.push(dword_ptr(ebp, instr.GetOperand()));
 			break;
 		case OP_POP_PRI:
 			// STK = STK + cell size, PRI = [STK]
-			pop(eax);
+			as.pop(eax);
 			break;
 		case OP_POP_ALT:
 			// STK = STK + cell size, ALT = [STK]
-			pop(ecx);
+			as.pop(ecx);
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			lea(ecx, dword_ptr[esp - data]);
-			add(esp, instr.GetOperand());
+			as.lea(ecx, dword_ptr(esp, -data));
+			as.add(esp, instr.GetOperand());
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
-			mov(ecx, dword_ptr[reinterpret_cast<int>(&amx->hea)]);
-			add(dword_ptr[reinterpret_cast<int>(&amx->hea)], instr.GetOperand());
+			as.mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)));
+			as.add(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), instr.GetOperand());
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
-			push(ebp);
-			mov(ebp, esp);
+			as.push(ebp);
+			as.mov(ebp, esp);
 			break;
 		case OP_RET:
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
-			pop(ebp);
-			ret();
+			as.pop(ebp);
+			as.ret();
 			break;
 		case OP_RETN:
 			// FRM = [STK], STK = STK + cell size,
@@ -417,8 +435,8 @@ void JITFunction::naked_main() {
 			// The RETN instruction removes a specified number of bytes
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
-			pop(ebp);
-			ret();
+			as.pop(ebp);
+			as.ret();
 			break;
 		case OP_CALL: { // offset
 			// [STK] = CIP + 5, STK = STK - cell size
@@ -431,17 +449,16 @@ void JITFunction::naked_main() {
 			JITFunction *fn = jit_->GetFunction(fn_addr);
 			if (fn != 0) {
 				// The target function has been compiled.
-				mov(edx, reinterpret_cast<int>(fn->GetCode()));
+				as.call(fn->GetCode());
 			} else {
-				// The current function calls itself directly or indirectly.
-				push(esp);
-				push(fn_addr);
-				push(reinterpret_cast<int>(jit_));
-				mov(edx, reinterpret_cast<int>(::CallFunction));
+				// The current function calls itself directly or_ indirectly.
+				as.push(esp);
+				as.push(fn_addr);
+				as.push(reinterpret_cast<int>(jit_));
+				as.call(reinterpret_cast<void*>(::CallFunction));
 			}
-			call(edx);
-			add(esp, dword_ptr[esp]);
-			add(esp, 4);
+			as.add(esp, dword_ptr(esp));
+			as.add(esp, 4);
 			break;
 		}
 		case OP_CALL_PRI:
@@ -450,387 +467,390 @@ void JITFunction::naked_main() {
 		case OP_JUMP: // offset
 			// CIP = CIP + offset (jump to the address relative from
 			// the current position)
-			jmp(GetLabel(instr.GetOperand() - code));
+			as.jmp(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JREL: // offset
 			// obsolete
 			break;
 		case OP_JZER: // offset
 			// if PRI == 0 then CIP = CIP + offset
-			cmp(eax, 0);
-			jz(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, 0);
+			as.jz(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JNZ: // offset
 			// if PRI != 0 then CIP = CIP + offset
-			cmp(eax, 0);
-			jnz(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, 0);
+			as.jnz(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JEQ: // offset
 			// if PRI == ALT then CIP = CIP + offset
-			cmp(eax, ecx);
-			je(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.je(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JNEQ: // offset
 			// if PRI != ALT then CIP = CIP + offset
-			cmp(eax, ecx);
-			jne(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jne(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JLESS: // offset
 			// if PRI < ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			jb(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jb(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JLEQ: // offset
 			// if PRI <= ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			jbe(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jbe(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JGRTR: // offset
 			// if PRI > ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			ja(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.ja(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JGEQ: // offset
 			// if PRI >= ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			jae(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jae(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSLESS: // offset
 			// if PRI < ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jl(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jl(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSLEQ: // offset
 			// if PRI <= ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jle(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jle(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSGRTR: // offset
 			// if PRI > ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jg(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jg(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_JSGEQ: // offset
 			// if PRI >= ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jge(GetLabel(instr.GetOperand() - code));
+			as.cmp(eax, ecx);
+			as.jge(GetLabel(instr.GetOperand() - code));
 			break;
 		case OP_SHL:
 			// PRI = PRI << ALT
-			shl(eax, cl);
+			as.shl(eax, cl);
 			break;
 		case OP_SHR:
 			// PRI = PRI >> ALT (without sign extension)
-			shr(eax, cl);
+			as.shr(eax, cl);
 			break;
 		case OP_SSHR:
 			// PRI = PRI >> ALT with sign extension
-			sar(eax, cl);
+			as.sar(eax, cl);
 			break;
 		case OP_SHL_C_PRI: // value
 			// PRI = PRI << value
-			shl(eax, static_cast<unsigned char>(instr.GetOperand()));
+			as.shl(eax, static_cast<unsigned char>(instr.GetOperand()));
 			break;
 		case OP_SHL_C_ALT: // value
 			// ALT = ALT << value
-			shl(ecx, static_cast<unsigned char>(instr.GetOperand()));
+			as.shl(ecx, static_cast<unsigned char>(instr.GetOperand()));
 			break;
 		case OP_SHR_C_PRI: // value
 			// PRI = PRI >> value (without sign extension)
-			shr(eax, static_cast<unsigned char>(instr.GetOperand()));
+			as.shr(eax, static_cast<unsigned char>(instr.GetOperand()));
 			break;
 		case OP_SHR_C_ALT: // value
 			// PRI = PRI >> value (without sign extension)
-			shl(ecx, static_cast<unsigned char>(instr.GetOperand()));
+			as.shl(ecx, static_cast<unsigned char>(instr.GetOperand()));
 			break;
 		case OP_SMUL:
 			// PRI = PRI * ALT (signed multiply)
-			xor(edx, edx);
-			imul(ecx);
+			as.xor_(edx, edx);
+			as.imul(ecx);
 			break;
 		case OP_SDIV:
 			// PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
-			xor(edx, edx);
-			idiv(ecx);
-			mov(ecx, edx);
+			as.xor_(edx, edx);
+			as.idiv(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_SDIV_ALT:
 			// PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
-			xchg(eax, ecx);
-			xor(edx, edx);
-			idiv(ecx);
-			mov(ecx, edx);
+			as.xchg(eax, ecx);
+			as.xor_(edx, edx);
+			as.idiv(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_UMUL:
 			// PRI = PRI * ALT (unsigned multiply)
-			xor(edx, edx);
-			mul(ecx);
+			as.xor_(edx, edx);
+			as.mul(ecx);
 			break;
 		case OP_UDIV:
 			// PRI = PRI / ALT (unsigned divide), ALT = PRI mod ALT
-			xor(edx, edx);
-			div(ecx);
-			mov(ecx, edx);
+			as.xor_(edx, edx);
+			as.div(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_UDIV_ALT:
 			// PRI = ALT / PRI (unsigned divide), ALT = ALT mod PRI
-			xchg(eax, ecx);
-			xor(edx, edx);
-			div(ecx);
-			mov(ecx, edx);
+			as.xchg(eax, ecx);
+			as.xor_(edx, edx);
+			as.div(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_ADD:
 			// PRI = PRI + ALT
-			add(eax, ecx);
+			as.add(eax, ecx);
 			break;
 		case OP_SUB:
 			// PRI = PRI - ALT
-			sub(eax, ecx);
+			as.sub(eax, ecx);
 			break;
 		case OP_SUB_ALT:
 			// PRI = ALT - PRI
-			// or:
+			// or_:
 			// PRI = -(PRI - ALT)
-			sub(eax, ecx);
-			neg(eax);
+			as.sub(eax, ecx);
+			as.neg(eax);
 			break;
 		case OP_AND:
 			// PRI = PRI & ALT
-			and(eax, ecx);
+			as.and_(eax, ecx);
 			break;
 		case OP_OR:
 			// PRI = PRI | ALT
-			or(eax, ecx);
+			as.or_(eax, ecx);
 			break;
 		case OP_XOR:
 			// PRI = PRI ^ ALT
-			xor(eax, ecx);
+			as.xor_(eax, ecx);
 			break;
 		case OP_NOT:
 			// PRI = !PRI
-			test(eax, eax);
-			setz(cl);
-			movzx(eax, cl);
+			as.test(eax, eax);
+			as.setz(cl);
+			as.movzx(eax, cl);
 			break;
 		case OP_NEG:
 			// PRI = -PRI
-			neg(eax);
+			as.neg(eax);
 			break;
 		case OP_INVERT:
 			// PRI = ~PRI
-			not(eax);
+			as.not_(eax);
 			break;
 		case OP_ADD_C: // value
 			// PRI = PRI + value
-			add(eax, instr.GetOperand());
+			as.add(eax, instr.GetOperand());
 			break;
 		case OP_SMUL_C: // value
 			// PRI = PRI * value
-			imul(eax, instr.GetOperand());
+			as.imul(eax, instr.GetOperand());
 			break;
 		case OP_ZERO_PRI:
 			// PRI = 0
-			xor(eax, eax);
+			as.xor_(eax, eax);
 			break;
 		case OP_ZERO_ALT:
 			// ALT = 0
-			xor(ecx, ecx);
+			as.xor_(ecx, ecx);
 			break;
 		case OP_ZERO: // address
 			// [address] = 0
-			mov(dword_ptr[instr.GetOperand() + data], 0);
+			as.mov(dword_ptr_abs(reinterpret_cast<void*>(instr.GetOperand() + data)), 0);
 			break;
 		case OP_ZERO_S: // offset
 			// [FRM + offset] = 0
-			mov(dword_ptr[ebp + instr.GetOperand()], 0);
+			as.mov(dword_ptr(ebp, instr.GetOperand()), 0);
 			break;
 		case OP_SIGN_PRI:
 			// sign extent the byte in PRI to a cell
-			movsx(eax, al);
+			as.movsx(eax, al);
 			break;
 		case OP_SIGN_ALT:
 			// sign extent the byte in ALT to a cell
-			movsx(ecx, cl);
+			as.movsx(ecx, cl);
 			break;
 		case OP_EQ:
 			// PRI = PRI == ALT ? 1 : 0
-			cmp(eax, ecx);
-			sete(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.sete(al);
+			as.movzx(eax, al);
 			break;
 		case OP_NEQ:
 			// PRI = PRI != ALT ? 1 : 0
-			cmp(eax, ecx);
-			setne(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setne(al);
+			as.movzx(eax, al);
 			break;
 		case OP_LESS:
 			// PRI = PRI < ALT ? 1 : 0 (unsigned)
-			cmp(eax, ecx);
-			setb(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setb(al);
+			as.movzx(eax, al);
 			break;
 		case OP_LEQ:
 			// PRI = PRI <= ALT ? 1 : 0 (unsigned)
-			cmp(eax, ecx);
-			setbe(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setbe(al);
+			as.movzx(eax, al);
 			break;
 		case OP_GRTR:
 			// PRI = PRI > ALT ? 1 : 0 (unsigned)
-			cmp(eax, ecx);
-			seta(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.seta(al);
+			as.movzx(eax, al);
 			break;
 		case OP_GEQ:
 			// PRI = PRI >= ALT ? 1 : 0 (unsigned)
-			cmp(eax, ecx);
-			setae(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setae(al);
+			as.movzx(eax, al);
 			break;
 		case OP_SLESS:
 			// PRI = PRI < ALT ? 1 : 0 (signed)
-			cmp(eax, ecx);
-			setl(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setl(al);
+			as.movzx(eax, al);
 			break;
 		case OP_SLEQ:
 			// PRI = PRI <= ALT ? 1 : 0 (signed)
-			cmp(eax, ecx);
-			setle(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setle(al);
+			as.movzx(eax, al);
 			break;
 		case OP_SGRTR:
 			// PRI = PRI > ALT ? 1 : 0 (signed)
-			cmp(eax, ecx);
-			setg(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setg(al);
+			as.movzx(eax, al);
 			break;
 		case OP_SGEQ:
 			// PRI = PRI >= ALT ? 1 : 0 (signed)
-			cmp(eax, ecx);
-			setge(al);
-			movzx(eax, al);
+			as.cmp(eax, ecx);
+			as.setge(al);
+			as.movzx(eax, al);
 			break;
 		case OP_EQ_C_PRI: // value
 			// PRI = PRI == value ? 1 : 0
-			cmp(eax, instr.GetOperand());
-			sete(al);
-			movzx(eax, al);
+			as.cmp(eax, instr.GetOperand());
+			as.sete(al);
+			as.movzx(eax, al);
 			break;
 		case OP_EQ_C_ALT: // value
 			// PRI = ALT == value ? 1 : 0
-			cmp(ecx, instr.GetOperand());
-			sete(al);
-			movzx(eax, al);
+			as.cmp(ecx, instr.GetOperand());
+			as.sete(al);
+			as.movzx(eax, al);
 			break;
 		case OP_INC_PRI:
 			// PRI = PRI + 1
-			inc(eax);
+			as.inc(eax);
 			break;
 		case OP_INC_ALT:
 			// ALT = ALT + 1
-			inc(ecx);
+			as.inc(ecx);
 			break;
 		case OP_INC: // address
 			// [address] = [address] + 1
-			inc(dword_ptr[data + instr.GetOperand()]);
+			as.inc(dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
 			break;
 		case OP_INC_S: // offset
 			// [FRM + offset] = [FRM + offset] + 1
-			inc(dword_ptr[ebp + instr.GetOperand()]);
+			as.inc(dword_ptr(ebp, instr.GetOperand()));
 			break;
 		case OP_INC_I:
 			// [PRI] = [PRI] + 1
-			inc(dword_ptr[eax + data]);
+			as.inc(dword_ptr(eax, data));
 			break;
 		case OP_DEC_PRI:
 			// PRI = PRI - 1
-			dec(eax);
+			as.dec(eax);
 			break;
 		case OP_DEC_ALT:
 			// ALT = ALT - 1
-			dec(ecx);
+			as.dec(ecx);
 			break;
 		case OP_DEC: // address
 			// [address] = [address] - 1
-			dec(dword_ptr[data + instr.GetOperand()]);
+			as.dec(dword_ptr_abs(reinterpret_cast<void*>(data + instr.GetOperand())));
 			break;
 		case OP_DEC_S: // offset
 			// [FRM + offset] = [FRM + offset] - 1
-			dec(dword_ptr[ebp + instr.GetOperand()]);
+			as.dec(dword_ptr(ebp, instr.GetOperand()));
 			break;
 		case OP_DEC_I:
 			// [PRI] = [PRI] - 1
-			dec(dword_ptr[eax + data]);
+			as.dec(dword_ptr(eax, data));
 			break;
 		case OP_MOVS: // number
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			lea(esi, dword_ptr[data + eax]);
-			lea(edi, dword_ptr[data + ecx]);
-			push(ecx);
+			as.lea(esi, dword_ptr(eax, data));
+			as.lea(edi, dword_ptr(ecx, data));
+			as.push(ecx);
 			if (instr.GetOperand() % 4 == 0) {
-				mov(ecx, instr.GetOperand() / 4);
-				rep_movsd(edi, esi, ecx);
+				as.mov(ecx, instr.GetOperand() / 4);
+				as.rep_movsd();
 			} else if (instr.GetOperand() % 2 == 0) {
-				mov(ecx, instr.GetOperand() / 2);
-				rep_movsw(edi, esi, ecx);
+				as.mov(ecx, instr.GetOperand() / 2);
+				as.rep_movsw();
 			} else {
-				mov(ecx, instr.GetOperand());
-				rep_movsb(edi, esi, ecx);
+				as.mov(ecx, instr.GetOperand());
+				as.rep_movsb();
 			}
-			pop(ecx);
+			as.pop(ecx);
 			break;
 		case OP_CMPS: // number
-			// Compare memory blocks at [PRI] and [ALT]. The parameter
+			// Compare memory blocks at [PRI] and_ [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			push(instr.GetOperand());        // push "number"
-			lea(edx, dword_ptr[ecx + data]);
-			push(edx);                       // push "ptr2"
-			lea(edx, dword_ptr[eax + data]);
-			push(edx);                       // push "ptr1"
-			mov(edx, cell(std::memcmp));
-			call(edx);                       // memcmp(ptr1, ptr2, number)
-			add(esp, 12);
+			as.push(instr.GetOperand());        // push "number"
+			as.lea(edx, dword_ptr(ecx, data));
+			as.push(edx);                       // push "ptr2"
+			as.lea(edx, dword_ptr(eax, data));
+			as.push(edx);                       // push "ptr1"
+			as.mov(edx, cell(std::memcmp));
+			as.call(edx);                       // memcmp(ptr1, ptr2, number)
+			as.add(esp, 12);
 			break;
 		case OP_FILL: // number
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-			push(ecx);
-			mov(edx, ecx);
-			mov(ecx, instr.GetOperand() / sizeof(cell));
-			PutLabel(cip, "fill");
-			mov(dword_ptr[data + edx + ecx*sizeof(cell) - sizeof(cell)], eax);
-			loop(GetLabel(cip, "fill"));
-			pop(ecx);
+			as.lea(edi, dword_ptr(ecx, data));                      // memory start
+			as.lea(esi, dword_ptr(ecx, data + instr.GetOperand())); // memory end
+			Label(as, cip, "loop");
+				as.mov(dword_ptr(edi), eax);
+				as.add(edi, sizeof(cell));
+				as.cmp(edi, esi);
+			as.jl(GetLabel(cip, "loop")); // if edi < esi fill next cell
 			break;
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
-			halt(instr.GetOperand());
+			halt(as, instr.GetOperand());
 			break;
-		case OP_BOUNDS: // value
-			// Abort execution if PRI > value or if PRI < 0.
-			cmp(eax, instr.GetOperand());
-			jg(GetLabel(cip, "out"));
-			cmp(eax, 0);
-			jl(GetLabel(cip, "out"));
-			jmp(GetLabel(cip, "ok"));
-			PutLabel(cip, "out");
-			halt(AMX_ERR_BOUNDS);
-			PutLabel(cip, "ok");
+		case OP_BOUNDS: { // value
+			// Abort execution if PRI > value or_ if PRI < 0.
+			AsmJit::Label &L_halt = UnboundLabel(as, cip, "halt");
+			AsmJit::Label &L_good = UnboundLabel(as, cip, "good");
+				as.cmp(eax, instr.GetOperand());
+			as.jg(GetLabel(cip, "halt"));
+				as.cmp(eax, 0);
+				as.jl(GetLabel(cip, "halt"));
+				as.jmp(GetLabel(cip, "good"));
+			as.bind(L_halt);
+				halt(as, AMX_ERR_BOUNDS);
+			as.bind(L_good);
 			break;
+		}
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
-			push(esp);
-			push(eax);
-			push(reinterpret_cast<int>(jit_));
-			mov(edx, reinterpret_cast<int>(::CallNativeFunction));
-			call(edx);
+			as.push(esp);
+			as.push(eax);
+			as.push(reinterpret_cast<int>(jit_));
+			as.mov(edx, reinterpret_cast<int>(::CallNativeFunction));
+			as.call(edx);
 			break;
 		case OP_SYSREQ_C:   // index
 		case OP_SYSREQ_D: { // address
@@ -854,25 +874,25 @@ void JITFunction::naked_main() {
 			std::map<std::string, NativeOverride>::const_iterator it
 					= native_overrides_.find(native_name);
 			if (it != native_overrides_.end()) {
-				(*this.*(it->second))();
+				(*this.*(it->second))(as);
 				goto special_native;
 			} else {
 				goto ordinary_native;
 			}
 
 		ordinary_native:
-			push(esp);
-			push(reinterpret_cast<int>(amx));
+			as.push(esp);
+			as.push(reinterpret_cast<int>(amx));
 			switch (instr.GetOpcode()) {
 				case OP_SYSREQ_C:
-					mov(edx, GetNativeAddress(amx, instr.GetOperand()));
+					as.mov(edx, GetNativeAddress(amx, instr.GetOperand()));
 					break;
 				case OP_SYSREQ_D:
-					mov(edx, instr.GetOperand());
+					as.mov(edx, instr.GetOperand());
 					break;
 			}
-			call(edx);
-			add(esp, 8);
+			as.call(edx);
+			as.add(esp, 8);
 
 		special_native:
 			break;
@@ -894,7 +914,7 @@ void JITFunction::naked_main() {
 			break;
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
-			// is passed as an offset from CIP) and jump to the associated
+			// is passed as an offset from CIP) and_ jump to the associated
 			// the address in the matching record.
 
 			struct case_record {
@@ -908,7 +928,7 @@ void JITFunction::naked_main() {
 			// The number of cases follows the CASETBL opcode (which follows the SWITCH).
 			int num_cases = *(reinterpret_cast<cell*>(instr.GetOperand()) + 1);
 
-			// Get minimum and maximum values.
+			// Get minimum and_ maximum values.
 			cell *min_value = 0;
 			cell *max_value = 0;
 			for (int i = 0; i < num_cases; i++) {
@@ -926,21 +946,21 @@ void JITFunction::naked_main() {
 
 			// Check if the value in eax is in the allowed range.
 			// If not, jump to the default case (i.e. no match).
-			cmp(eax, *min_value);
-			jl(GetLabel(default_addr));
-			cmp(eax, *max_value);
-			jg(GetLabel(default_addr));
+			as.cmp(eax, *min_value);
+			as.jl(GetLabel(default_addr));
+			as.cmp(eax, *max_value);
+			as.jg(GetLabel(default_addr));
 
 			// OK now sequentially compare eax with each value.
 			// This is pretty slow so I probably should optimize
 			// this in future...
 			for (int i = 0; i < num_cases; i++) {
-				cmp(eax, case_table[i + 1].value);
-				je(GetLabel(case_table[i + 1].address - code));
+				as.cmp(eax, case_table[i + 1].value);
+				as.je(GetLabel(case_table[i + 1].address - code));
 			}
 
 			// No match found - go for default case.
-			jmp(GetLabel(default_addr));
+			as.jmp(GetLabel(default_addr));
 			break;
 		}
 		case OP_CASETBL: // ...
@@ -948,17 +968,17 @@ void JITFunction::naked_main() {
 			// each record takes two cells.
 			break;
 		case OP_SWAP_PRI:
-			// [STK] = PRI and PRI = [STK]
-			xchg(dword_ptr[esp], eax);
+			// [STK] = PRI and_ PRI = [STK]
+			as.xchg(dword_ptr(esp), eax);
 			break;
 		case OP_SWAP_ALT:
-			// [STK] = ALT and ALT = [STK]
-			xchg(dword_ptr[esp], ecx);
+			// [STK] = ALT and_ ALT = [STK]
+			as.xchg(dword_ptr(esp), ecx);
 			break;
 		case OP_PUSH_ADR: // offset
 			// [STK] = FRM + offset, STK = STK - cell size
-			lea(edx, dword_ptr[instr.GetOperand() - data + ebp]);
-			push(edx);
+			as.lea(edx, dword_ptr(ebp, instr.GetOperand() - data));
+			as.push(edx);
 			break;
 		case OP_NOP:
 			// no-operation, for code alignment
@@ -970,26 +990,47 @@ void JITFunction::naked_main() {
 			// conditional breakpoint
 			break;
 		default:
-			assert(0);
+			throw InvalidInstructionError(instr);
 		}
+		Label(as, cip);
+	}
+
+	code_ = as.make();
+}
+
+JITFunction::~JITFunction() {
+	if (code_ != 0) {
+		AsmJit::MemoryManager::getGlobal()->free(code_);
 	}
 }
 
-void JITFunction::PutLabel(cell address, const std::string &tag) {
-	L(GetLabel(address, tag));
+void JITFunction::Label(AsmJit::Assembler &as, cell address, const std::string &tag) {
+	std::pair<LabelMap::iterator, bool> where = 
+			labels_.insert(std::make_pair(TaggedAddress(address, tag), as.newLabel()));
+	as.bind(where.first->second);
 }
 
-std::string JITFunction::GetLabel(cell address, const std::string &tag) const {
-	std::stringstream ss;
-	ss << address << tag;
-	return ss.str();
+AsmJit::Label &JITFunction::UnboundLabel(AsmJit::Assembler &as, cell address, const std::string &tag) {	
+	std::pair<LabelMap::iterator, bool> where = 
+			labels_.insert(std::make_pair(TaggedAddress(address, tag), as.newLabel()));
+	return where.first->second;
 }
 
-void JITFunction::halt(cell code) {
-	mov(dword_ptr[reinterpret_cast<int>(&jit_->GetAmx()->error)], code);
-	mov(esp, dword_ptr[reinterpret_cast<int>(&jit_->halt_esp_)]);
-	mov(ebp, dword_ptr[reinterpret_cast<int>(&jit_->halt_ebp_)]);
-	ret();
+const AsmJit::Label &JITFunction::GetLabel(cell address, const std::string &tag) const {
+	static AsmJit::Label NonExistentLabel;
+	LabelMap::const_iterator iterator = labels_.find(TaggedAddress(address, tag));
+	if (iterator != labels_.end()) {
+		return iterator->second;
+	}
+	assert(0);
+	return NonExistentLabel;
+}
+
+void JITFunction::halt(AsmJit::Assembler &as, cell code) {
+	as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jit_->GetAmx()->error)), code);
+	as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jit_->halt_esp_)));
+	as.mov(AsmJit::ebp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jit_->halt_ebp_)));
+	as.ret();
 }
 
 #define JIT_OVERRIDE_NATIVE(name) \
@@ -1007,80 +1048,80 @@ void JITFunction::RegisterNativeOverrides() {
 	JIT_OVERRIDE_NATIVE(floatlog);
 }
 
-void JITFunction::native_float() {
-	fild(dword_ptr[esp + 4]);
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_float(AsmJit::Assembler &as) {
+	as.fild(dword_ptr(AsmJit::esp, 4));
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatabs() {
-	fld(dword_ptr[esp + 4]);
-	fabs();
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatabs(AsmJit::Assembler &as) {
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fabs();
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatadd() {
-	fld(dword_ptr[esp + 4]);
-	fadd(dword_ptr[esp + 8]);
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatadd(AsmJit::Assembler &as) {
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fadd(dword_ptr(AsmJit::esp, 8));
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatsub() {
-	fld(dword_ptr[esp + 4]);
-	fsub(dword_ptr[esp + 8]);
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatsub(AsmJit::Assembler &as) {
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fsub(dword_ptr(AsmJit::esp, 8));
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatmul() {
-	fld(dword_ptr[esp + 4]);
-	fmul(dword_ptr[esp + 8]);
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatmul(AsmJit::Assembler &as) {
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fmul(dword_ptr(AsmJit::esp, 8));
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatdiv() {
-	fld(dword_ptr[esp + 4]);
-	fdiv(dword_ptr[esp + 8]);
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatdiv(AsmJit::Assembler &as) {
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fdiv(dword_ptr(AsmJit::esp, 8));
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatsqroot() {
-	fld(dword_ptr[esp + 4]);
-	fsqrt();
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatsqroot(AsmJit::Assembler &as) {
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fsqrt();
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
-void JITFunction::native_floatlog() {
-	fld1();                   // st0 = 1.0
-	fld(dword_ptr[esp + 8]);  // st1 = st0, st0 = base
-	fyl2x();                  // st0 = 1.0 * log2(st0)
-	fld1();                   // st0 = 1.0
-	fdivrp(st1, st0);         // st0 = 1 / st0
-	fld(dword_ptr[esp + 4]);  // st1 = st0, st0 = value
-	fyl2x();                  // st0 = st1 * log2(st0)
-	sub(esp, 4);
-	fstp(dword_ptr[esp]);
-	mov(eax, dword_ptr[esp]);
-	add(esp, 4);
+void JITFunction::native_floatlog(AsmJit::Assembler &as) {
+	as.fld1();
+	as.fld(dword_ptr(AsmJit::esp, 8));
+	as.fyl2x();
+	as.fld1();
+	as.fdivrp(AsmJit::st(1));
+	as.fld(dword_ptr(AsmJit::esp, 4));
+	as.fyl2x();
+	as.sub(AsmJit::esp, 4);
+	as.fstp(dword_ptr(AsmJit::esp));
+	as.mov(AsmJit::eax, dword_ptr(AsmJit::esp));
+	as.add(AsmJit::esp, 4);
 }
 
 JIT::JIT(AMX *amx, cell *opcode_list)
@@ -1106,7 +1147,6 @@ JITFunction *JIT::GetFunction(cell address) {
 	} else {
 		proc_map_[address] = 0;
 		JITFunction *fn = new JITFunction(this, address);
-		fn->Assemble();
 		proc_map_[address] = fn;
 		return fn;
 	}
@@ -1118,11 +1158,9 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 
 	// Get pointer to assembled native code.
 	JITFunction *fn = GetFunction(address);
-	assert(fn != 0);
-
 	void *start = fn->GetCode();
 
-	// Copy parameters from AMX stack and call the function.
+	// Copy parameters from AMX stack and_ call the function.
 	cell retval_;
 	#if defined COMPILER_MSVC
 		__asm {
@@ -1202,7 +1240,7 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 		CallFunction(address, params, retval);
 	}
 
-	// Reset STK and parameter count.
+	// Reset STK and_ parameter count.
 	amx_->stk += (amx_->paramcount + 1) * sizeof(cell);
 	amx_->paramcount = 0;
 
@@ -1212,14 +1250,6 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 cell JIT::CallNativeFunction(int index, cell *params) {
 	AMX_NATIVE native = reinterpret_cast<AMX_NATIVE>(GetNativeAddress(amx_, index));
 	return native(amx_, params);
-}
-
-void JIT::DumpCode(std::ostream &stream) const {
-	for (ProcMap::const_iterator iterator = proc_map_.begin();
-			iterator != proc_map_.end(); ++iterator) {
-		JITFunction *fn = iterator->second;
-		stream.write(reinterpret_cast<char*>(fn->GetCode()), fn->GetCodeSize());
-	}
 }
 
 void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const {

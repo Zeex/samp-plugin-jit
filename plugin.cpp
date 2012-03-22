@@ -90,9 +90,9 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 		}
 		try {
 			throw;
-		} catch (const InvalidInstructionError&) {
+		} catch (const InvalidInstructionError &) {
 			logprintf("[jit] Error: Invalid instruction encountered while compiling \"%s\"", public_name);
-		} catch (const UnsupportedInstructionError&) {
+		} catch (const UnsupportedInstructionError &) {
 			logprintf("[jit] Error: Unsupported instruction encountered while compiling \"%s\"", public_name);
 		}		
 	} catch (...) {
