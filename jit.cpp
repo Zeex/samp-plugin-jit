@@ -297,25 +297,19 @@ JITFunction::JITFunction(JIT *jit, cell address)
 			break;
 		case OP_LIDX:
 			// PRI = [ ALT + (PRI x cell size) ]
-			as.mov(edx, eax);
-			as.imul(edx, sizeof(cell));
-			as.mov(eax, dword_ptr(ecx, edx, data));
+			as.mov(eax, dword_ptr(ecx, eax, 2, data));
 			break;
 		case OP_LIDX_B: // shift
 			// PRI = [ ALT + (PRI << shift) ]
-			as.mov(edx, eax);
-			as.shl(edx, static_cast<unsigned char>(instr.GetOperand()));
-			as.mov(eax, dword_ptr(ecx, edx, data));
+			as.mov(eax, dword_ptr(ecx, eax, instr.GetOperand(), data));
 			break;
 		case OP_IDXADDR:
 			// PRI = ALT + (PRI x cell size) (calculate indexed address)
-			as.imul(eax, sizeof(cell));
-			as.lea(eax, dword_ptr(ecx, eax));
+			as.lea(eax, dword_ptr(ecx, eax, 2));
 			break;
 		case OP_IDXADDR_B: // shift
 			// PRI = ALT + (PRI << shift) (calculate indexed address)
-			as.shl(eax, static_cast<unsigned char>(instr.GetOperand()));
-			as.lea(eax, dword_ptr(ecx, eax));
+			as.lea(eax, dword_ptr(ecx, eax, instr.GetOperand()));
 			break;
 		case OP_ALIGN_PRI: // number
 			// Little Endian: PRI ^= cell size - number
