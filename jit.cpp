@@ -325,8 +325,7 @@ void JITFunction::naked_main() {
 				lea(eax, dword_ptr[ebp - data]);
 				break;
 			default:
-				jit_->error_ = JIT_UNSUPPORTED_INSTRUCTION;
-				return;
+				throw UnsupportedInstructionError(instr);
 			}
 			break;
 		case OP_SCTRL: // index
@@ -344,8 +343,7 @@ void JITFunction::naked_main() {
 				lea(ebp, dword_ptr[eax + data]);
 				break;
 			default:
-				jit_->error_ = JIT_UNSUPPORTED_INSTRUCTION;
-				return;
+				throw UnsupportedInstructionError(instr);
 			}
 			break;
 		case OP_MOVE_PRI:
@@ -1122,11 +1120,6 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 	JITFunction *fn = GetFunction(address);
 	assert(fn != 0);
 
-	// Check for compile errors.
-	if (GetError() != JIT_NO_ERROR) {
-		return;
-	}
-
 	void *start = fn->GetCode();
 
 	// Copy parameters from AMX stack and call the function.
@@ -1253,7 +1246,8 @@ void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instruction
 			seen_proc = true;
 		}
 
-		instructions.push_back(AMXInstruction(static_cast<AMXOpcode>(opcode), cip));
+		AMXInstruction instr(static_cast<AMXOpcode>(opcode), cip);
+		instructions.push_back(instr);
 
 		switch (opcode) {
 		// Instructions with one operand.
@@ -1404,8 +1398,7 @@ void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instruction
 		}
 
 		default:
-			error_ = JIT_INVALID_INSTRUCTION;
-			return;
+			throw InvalidInstructionError(instr);
 		}
 	}
 }

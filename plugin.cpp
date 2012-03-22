@@ -72,7 +72,6 @@ const char *GetPublicName(AMX *amx, int index) {
 	return 0;
 }
 
-
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
@@ -82,32 +81,25 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			return AMX_ERR_NONE;
 		}
 	#endif
-
-	JIT *jit = jit_map[amx];
-	jit->ClearError();
-
-	int retcode = jit->CallPublicFunction(index, retval);
-
-	if (jit->GetError() != JIT_NO_ERROR) {
+	try {
+		return jit_map[amx]->CallPublicFunction(index, retval);
+	} catch (JITError&) {
 		const char *public_name = GetPublicName(amx, index);
 		if (public_name == 0) {
 			public_name = "<UnknownPublic>";
 		}
-		switch (jit->GetError()) {
-			case JIT_UNSUPPORTED_INSTRUCTION:
-				logprintf("[jit] Error: Unssupported instruction encountered while compiling \"%s\"",
-						GetPublicName(amx, index));
-				break;
-			case JIT_INVALID_INSTRUCTION:
-				logprintf("[jit] Error: Invalid instruction encountered while compiling \"%s\"",
-						GetPublicName(amx, index));
-				break;
-			default:
-				break;
-		}
+		try {
+			throw;
+		} catch (const InvalidInstructionError&) {
+			logprintf("[jit] Error: Invalid instruction encountered while compiling \"%s\"", public_name);
+		} catch (const UnsupportedInstructionError&) {
+			logprintf("[jit] Error: Unsupported instruction encountered while compiling \"%s\"", public_name);
+		}		
+	} catch (...) {
+		logprintf("[jit] Error: Unknown exception");
+		throw;
 	}
-
-	return retcode;
+	return AMX_ERR_NONE;
 }
 
 static std::string GetModuleNameBySymbol(void *symbol) {
