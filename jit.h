@@ -132,10 +132,24 @@ private:
 	std::map<std::string, NativeOverride> native_overrides_;
 };
 
-enum JITError {
-	JIT_NO_ERROR,
-	JIT_UNSUPPORTED_INSTRUCTION,
-	JIT_INVALID_INSTRUCTION
+struct JITError {};
+
+class InstructionError : public JITError {
+public:
+	InstructionError(const AMXInstruction &instr) : instr_(instr) {}
+	inline const AMXInstruction &instruction() const { return instr_; }
+private:
+	AMXInstruction instr_;
+};
+
+class UnsupportedInstructionError : public InstructionError {
+public:
+	UnsupportedInstructionError(const AMXInstruction &instr) : InstructionError(instr) {}
+};
+
+class InvalidInstructionError : public InstructionError {
+public:
+	InvalidInstructionError(const AMXInstruction &instr) : InstructionError(instr) {}
 };
 
 class JIT {
@@ -173,17 +187,6 @@ public:
 
 	// Output generated code to a stream.
 	void DumpCode(std::ostream &stream) const;
-
-	// Get/set/clear error code.
-	inline JITError GetError() const { 
-		return error_; 
-	}
-	inline void SetError(JITError error) const { 
-		error_ = error; 
-	}
-	inline void ClearError() const { 
-		error_ = JIT_NO_ERROR; 
-	}
 
 private:
 	// Disable copying.
