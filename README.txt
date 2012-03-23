@@ -1,6 +1,10 @@
 SA-MP JIT plugin
 ----------------
 
+This is a JIT plugin for SA-MP server. It translates AMX bytecode (the code 
+produced by Pawn compiler) to native x86 code at run time to speed up script 
+execution.
+
 New server.cfg vars:
 
   * jit_stack <size>
