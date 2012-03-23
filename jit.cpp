@@ -23,7 +23,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -1098,31 +1097,35 @@ AsmJit::Label &JITAssembler::L(cell address, const std::string &tag) {
 	}
 }
 
-JIT::JIT(AMX *amx, cell *opcode_list, std::size_t stack_size)
+void *JIT::esp_;
+StackBuffer JIT::stack_;
+int JIT::call_depth_ = 0;
+
+// static
+void JIT::SetStackSize(std::size_t stack_size) {
+	if (!stack_.IsReady()) {
+		stack_.Allocate(stack_size);
+	}
+}
+
+JIT::JIT(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx_->base))
 	, data_(amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat)
 	, code_(amx_->base + amxhdr_->cod)
 	, opcode_list_(opcode_list)
-	, esp_(0)
 	, halt_esp_(0)
 	, halt_ebp_(0)
-	, stack_(0)
-	, call_depth_(0)
 {
-	// Make our stack twice as big as AMX stack.
-	if (stack_size == 0) {
-		stack_size = 1 << 20; // 1 MB
+	if (!stack_.IsReady()) {
+		stack_.Allocate(1 << 20); // stack is 1 MB by default
 	}
-	stack_ = std::malloc(stack_size);
-	stack_top_ = reinterpret_cast<char*>(stack_) + stack_size - 4;
 }
 
 JIT::~JIT() {
 	for (ProcMap::iterator iterator = proc_map_.begin(); iterator != proc_map_.end(); ++iterator) {
 		AsmJit::MemoryManager::getGlobal()->free(iterator->second);
 	}
-	std::free(stack_);
 }
 
 void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const {
@@ -1334,10 +1337,11 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 
 	#if defined COMPILER_MSVC
 		if (++call_depth_ == 1) {
+			assert(stack_.IsReady());
+			void *stack_top = stack_.GetTop();
 			__asm {
-				mov eax, dword ptr [this]
-				mov dword ptr [eax].esp_, esp
-				mov esp, dword ptr [eax].stack_top_
+				mov dword ptr [esp_], esp
+				mov esp, dword ptr [stack_top]
 			}
 		}
 		__asm {
@@ -1365,8 +1369,7 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 		}
 		if (--call_depth_ == 0) {
 			__asm {
-				mov eax, dword ptr [this]
-				mov esp, dword ptr [eax].esp_
+				mov esp, dword ptr [esp_]
 			}
 		}
 	#elif defined COMPILER_GCC
@@ -1375,7 +1378,7 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 				"movl %%esp, %0;"
 				"movl %1, %%esp;"
 					: "=r"(esp_)
-					: "r"(stack_top_)
+					: "r"(stack_.GetTop())
 					: );
 		}
 		__asm__ __volatile__ (

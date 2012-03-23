@@ -24,6 +24,7 @@
 #ifndef JIT_H
 #define JIT_H
 
+#include <cstdlib>
 #include <iosfwd>
 #include <map>
 #include <string>
@@ -133,6 +134,46 @@ inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
 	return left.GetTag() < right.GetTag();
 }
 
+class StackBuffer {
+public:
+	StackBuffer() 
+		: ptr_(0)
+		, top_(0)
+		, size_(0)
+	{}
+
+	~StackBuffer() { Deallocate(); }
+
+	inline void Allocate(std::size_t size) {
+		if (ptr_ == 0) {
+			size_ = size;
+			ptr_ = std::malloc(size_);
+			top_ = reinterpret_cast<char*>(ptr_) + size_ - 4;
+		}
+	}
+
+	inline void Deallocate() {
+		if (ptr_ != 0) {
+			std::free(ptr_);
+			ptr_ = top_ = 0;
+			size_ = 0;
+		}
+	}
+
+	inline bool IsReady() const { return ptr_ != 0; }
+	inline void *GetTop() const { return top_; }
+	inline void *GetPtr() const { return ptr_; }
+
+private:
+	// Disable copying.
+	StackBuffer(const StackBuffer &);
+	StackBuffer &operator=(const StackBuffer &);
+
+	void *ptr_;
+	void *top_;
+	std::size_t size_;
+};
+
 class JIT;
 
 class JITAssembler : private AsmJit::Assembler {
@@ -172,37 +213,56 @@ private:
 class JIT {
 	friend class JITAssembler;
 public:
-	JIT(AMX *amx, cell *opcode_list = 0, std::size_t stack_size = 0);
-	virtual ~JIT();
+	// Set size of stack used by JIT code.
+	static void SetStackSize(std::size_t stack_size);
 
+	JIT(AMX *amx, cell *opcode_list = 0);
+	~JIT();
+	
+	// Get AMX instance associated with this JIT.
 	inline AMX        *GetAmx()       { return amx_; }
-	inline AMX_HEADER *GetAmxHeader() { return amxhdr_; }
+	inline const AMX  *GetAmx() const { return amx_; }
 
-	// Get pointer to start of AMX data section.
-	inline unsigned char *GetAmxData() { return data_; }
+	// Get pointer to AMX header.
+	inline AMX_HEADER *GetAmxHeader() { 
+		return amxhdr_; 
+	}
+	inline const AMX_HEADER *GetAmxHeader() const { 
+		return amxhdr_; 
+	}
 
-	// Get pointer to start of AMX code section.
-	inline unsigned char *GetAmxCode() { return code_; }
+	// Get pointer to AMX data segment.
+	inline const unsigned char *GetAmxData() const {
+		return data_; 
+	}
+	inline unsigned char *GetAmxData() {
+		return data_; 
+	}
 
-	// Turn raw AMX code into a sequence of AmxInstructions.
+	// Get pointer to AMX code segment.
+	inline const unsigned char *GetAmxCode() const {
+		return code_; 
+	}
+	inline unsigned char *GetAmxCode() {
+		return code_; 
+	}
+
+	// Turn raw AMX code into a sequence of AMXInstruction's.
 	void AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const;
 
-	// Compile function at a given address.
+	// Compile AMX function to machine code.
 	void *CompileFunction(cell address);
 
-	// Get pre-compiled function (and compile if needed).
+	// Get function's code (and compile if needed).
 	void *GetFunction(cell address);
 
-	// Call a function (and assemble if needed).
-	// The arguments passed to the function are copied from the AMX stack 
-	// onto the real stack.
-	void CallFunction(cell address, cell *params,cell *retval);
+	// Call a function.
+	void CallFunction(cell address, cell *params, cell *retval);
 
-	// Same as CallFunction() but for publics.
-	int CallPublicFunction(int index, cell *retval);
+	// Call a public function.
+	int  CallPublicFunction(int index, cell *retval);
 
-	// Call a native function. This method is currently used only for sysreq.pri.
-	// The sysreq.c and sysreq.d instructions invoke natives directly.
+	// Call a native function (used for SYSREQ.pri).
 	cell CallNativeFunction(int index, cell *params);
 
 private:
@@ -218,17 +278,17 @@ private:
 	unsigned char *code_;
 
 	cell *opcode_list_;
-
-	void *esp_;
+	
 	void *halt_ebp_;
 	void *halt_esp_;
 
+	// Maps AMX functions to their native code.
 	typedef std::map<cell, void*> ProcMap;
 	ProcMap proc_map_;
 
-	void *stack_;
-	void *stack_top_;
-	int call_depth_;
+	static void *esp_;
+	static StackBuffer stack_;
+	static int call_depth_;
 };
 
 } // namespace jit

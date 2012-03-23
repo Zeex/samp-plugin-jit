@@ -147,6 +147,11 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		}
 	}
 
+	std::size_t stack_size = server_cfg.GetOption("jit_stack", 0);
+	if (stack_size != 0) {
+		JIT::SetStackSize(stack_size);
+	}
+
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
@@ -185,7 +190,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			(void*)amx_GetAddr_JIT);
 	}
 
-	JIT *jit = new JIT(amx, ::opcode_list, server_cfg.GetOption("jit_stack", 0));
+	JIT *jit = new JIT(amx, ::opcode_list);
 	jit_map.insert(std::make_pair(amx, jit));
 
 	return AMX_ERR_NONE;
