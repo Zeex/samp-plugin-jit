@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 2.8)
 project(jit)
 
 set(JIT_VERSION_MAJOR  0)
-set(JIT_VERSION_MINOR  1)
-set(JIT_VERSION_PATCH  4)
-set(JIT_VERSION_STRING "0.1.4")
+set(JIT_VERSION_MINOR  2)
+set(JIT_VERSION_PATCH  0)
+set(JIT_VERSION_STRING "0.2beta")
 
 include(CheckIncludeFile)
 
