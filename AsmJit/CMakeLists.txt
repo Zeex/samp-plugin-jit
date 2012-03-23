@@ -71,13 +71,6 @@ EndIf()
 # Build AsmJit shared library?
 If(ASMJIT_BUILD_LIBRARY)
   Add_Library(AsmJit STATIC ${ASMJIT_SOURCES} ${ASMJIT_HEADERS})
-  Install(TARGETS AsmJit DESTINATION lib${LIB_SUFFIX})
-
-  # Install header files.
-  ForEach(i ${ASMJIT_HEADERS})
-    Get_Filename_Component(path ${i} PATH)
-    Install(FILES ${i} DESTINATION "include/${path}")
-  EndForEach(i)
 EndIf()
 
 # Build AsmJit test executables?
