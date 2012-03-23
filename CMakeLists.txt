@@ -39,6 +39,8 @@ add_library(jit MODULE
 	amx/amx.h
 	amx/getch.h
 	amx/sclinux.h
+	configreader.cpp
+	configreader.h
 	jit.cpp
 	jit.h
 	jump-x86.cpp
