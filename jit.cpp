@@ -464,7 +464,7 @@ void *JITAssembler::CompileFunction(cell address) {
 				push(esp);
 				push(fn_addr);
 				push(reinterpret_cast<int>(jit_));
-				mov(edx, reinterpret_cast<int>(::CallFunction));
+				call(reinterpret_cast<int>(::CallFunction));
 			}
 			add(esp, dword_ptr(esp));
 			add(esp, 4);
