@@ -1391,8 +1391,9 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	amx_->error = AMX_ERR_NONE;
 
 	amx_->stk -= sizeof(cell);
+	int paramcount = amx_->paramcount;
 	cell *params = reinterpret_cast<cell*>(data_ + amx_->stk);
-	params[0] = amx_->paramcount * sizeof(cell);
+	params[0] = paramcount * sizeof(cell);
 
 	amx_->reset_hea = amx_->hea;
 	amx_->reset_stk = amx_->stk;
@@ -1405,7 +1406,7 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	}
 
 	// Reset STK and_ parameter count.
-	amx_->stk += (amx_->paramcount + 1) * sizeof(cell);
+	amx_->stk += (paramcount + 1) * sizeof(cell);
 	amx_->paramcount = 0;
 
 	return amx_->error;
