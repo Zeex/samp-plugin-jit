@@ -1370,6 +1370,14 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 			}
 		}
 	#elif defined COMPILER_GCC
+		if (++call_depth_ == 1) {
+			__asm__ __volatile__ (
+				"movl %%esp, %0;"
+				"movl %1, %%esp;"
+					: "=r"(esp_)
+					: "r"(stack_top_)
+					: );
+		}
 		__asm__ __volatile__ (
 			"pushl %%esi;"
 			"pushl %%edi;"
@@ -1397,6 +1405,13 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 			"popl %%edi;"
 			"popl %%esi;"
 				: : "r"(parambytes + 4) : "%esp");
+		if (--call_depth_ == 0) {
+			__asm__ __volatile__ (
+				"movl %0, %%esp;"
+					:
+					: "r"(esp_)
+					: );
+		}
 	#endif
 
 	if (retval != 0) {
