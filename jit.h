@@ -133,7 +133,44 @@ inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
 	return left.GetTag() < right.GetTag();
 }
 
-class JIT : private AsmJit::Assembler {
+class JIT;
+
+class JITAssembler : private AsmJit::Assembler {
+public:
+	JITAssembler(JIT *jit);
+
+	// Compile function at a given address.
+	void *CompileFunction(cell address);
+
+private:
+	void halt(cell code);
+
+	// Floating point natives
+	void native_float();
+	void native_floatabs();
+	void native_floatadd();
+	void native_floatsub();
+	void native_floatmul();
+	void native_floatdiv();
+	void native_floatsqroot();
+	void native_floatlog();
+
+	typedef void (JITAssembler::*NativeOverride)();
+	std::map<std::string, NativeOverride> native_overrides_;
+
+private:
+	// Get the label mapped to given address.
+	AsmJit::Label &L(cell address, const std::string &tag = "");
+
+	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
+	LabelMap label_map_;
+
+private:
+	JIT *jit_;
+};
+
+class JIT {
+	friend class JITAssembler;
 public:
 	JIT(AMX *amx, cell *opcode_list = 0);
 	virtual ~JIT();
@@ -150,7 +187,7 @@ public:
 	// Turn raw AMX code into a sequence of AmxInstructions.
 	void AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const;
 
-	// Compile function at a give address.
+	// Compile function at a given address.
 	void *CompileFunction(cell address);
 
 	// Get pre-compiled function (and compile if needed).
@@ -168,29 +205,10 @@ public:
 	// The sysreq.c and sysreq.d instructions invoke natives directly.
 	cell CallNativeFunction(int index, cell *params);
 
-protected:
-	void halt(cell code);
-
-	// Floating point natives
-	void native_float();
-	void native_floatabs();
-	void native_floatadd();
-	void native_floatsub();
-	void native_floatmul();
-	void native_floatdiv();
-	void native_floatsqroot();
-	void native_floatlog();
-
-	typedef void (JIT::*NativeOverride)();
-	std::map<std::string, NativeOverride> native_overrides_;
-
 private:
 	// Disable copying.
 	JIT(const JIT &);
 	JIT &operator=(const JIT &);
-
-	// Get the label mapped to given address.
-	AsmJit::Label &L( cell address, const std::string &tag = "");
 
 private:
 	AMX        *amx_;
@@ -206,9 +224,6 @@ private:
 
 	typedef std::map<cell, void*> ProcMap;
 	ProcMap proc_map_;
-
-	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
-	LabelMap label_map_;
 };
 
 } // namespace jit
