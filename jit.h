@@ -172,7 +172,7 @@ private:
 class JIT {
 	friend class JITAssembler;
 public:
-	JIT(AMX *amx, cell *opcode_list = 0);
+	JIT(AMX *amx, cell *opcode_list = 0, std::size_t stack_size = 0);
 	virtual ~JIT();
 
 	inline AMX        *GetAmx()       { return amx_; }
@@ -219,11 +219,16 @@ private:
 
 	cell *opcode_list_;
 
+	void *esp_;
 	void *halt_ebp_;
 	void *halt_esp_;
 
 	typedef std::map<cell, void*> ProcMap;
 	ProcMap proc_map_;
+
+	void *stack_;
+	void *stack_top_;
+	int call_depth_;
 };
 
 } // namespace jit
