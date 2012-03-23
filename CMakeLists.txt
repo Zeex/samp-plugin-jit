@@ -78,6 +78,8 @@ file(WRITE "pluginversion.h"
 ")
 
 install(TARGETS jit LIBRARY DESTINATION ".")
+install(FILES README.txt DESTINATION ".")
+
 if(MSVC)
 	set(PDB_NAME "jit.pdb")
 	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
