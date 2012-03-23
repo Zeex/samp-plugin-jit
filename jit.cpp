@@ -23,6 +23,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -1097,19 +1098,31 @@ AsmJit::Label &JITAssembler::L(cell address, const std::string &tag) {
 	}
 }
 
-JIT::JIT(AMX *amx, cell *opcode_list)
+JIT::JIT(AMX *amx, cell *opcode_list, std::size_t stack_size)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx_->base))
 	, data_(amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat)
 	, code_(amx_->base + amxhdr_->cod)
 	, opcode_list_(opcode_list)
+	, esp_(0)
+	, halt_esp_(0)
+	, halt_ebp_(0)
+	, stack_(0)
+	, call_depth_(0)
 {
+	// Make our stack twice as big as AMX stack.
+	if (stack_size == 0) {
+		stack_size = 1 << 20; // 1 MB
+	}
+	stack_ = std::malloc(stack_size);
+	stack_top_ = reinterpret_cast<char*>(stack_) + stack_size - 4;
 }
 
 JIT::~JIT() {
 	for (ProcMap::iterator iterator = proc_map_.begin(); iterator != proc_map_.end(); ++iterator) {
 		AsmJit::MemoryManager::getGlobal()->free(iterator->second);
 	}
+	std::free(stack_);
 }
 
 void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const {
@@ -1316,12 +1329,17 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
-	// Get pointer to assembled native code.
 	void *start = GetFunction(address);
-
-	// Copy parameters from AMX stack and call the function.
 	cell retval_;
+
 	#if defined COMPILER_MSVC
+		if (++call_depth_ == 1) {
+			__asm {
+				mov eax, dword ptr [this]
+				mov dword ptr [eax].esp_, esp
+				mov esp, dword ptr [eax].stack_top_
+			}
+		}
 		__asm {
 			push esi
 			push edi
@@ -1344,6 +1362,12 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 			add esp, 4
 			pop edi
 			pop esi
+		}
+		if (--call_depth_ == 0) {
+			__asm {
+				mov eax, dword ptr [this]
+				mov esp, dword ptr [eax].esp_
+			}
 		}
 	#elif defined COMPILER_GCC
 		__asm__ __volatile__ (
