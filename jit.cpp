@@ -181,12 +181,7 @@ void *JITAssembler::CompileFunction(cell address) {
 	{
 		AMXInstruction &instr = *iterator;
 
-
-		static std::map<cell, bool> bound_labels;
-
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
-
-		assert(bound_labels.find(cip) == bound_labels.end());		
 		bind(L(cip));
 
 		switch (instr.GetOpcode()) {
