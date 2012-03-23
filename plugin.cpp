@@ -27,6 +27,7 @@
 #include <map>
 #include <string>
 
+#include "configreader.h"
 #include "jit.h"
 #include "jump-x86.h"
 #include "plugin.h"
@@ -55,6 +56,8 @@ static JumpX86 amx_Exec_hook;
 static JumpX86 amx_GetAddr_hook;
 
 static cell *opcode_list = 0;
+
+static ConfigReader server_cfg("server.cfg");
 
 static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
@@ -182,7 +185,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			(void*)amx_GetAddr_JIT);
 	}
 
-	jit_map.insert(std::make_pair(amx, new JIT(amx, ::opcode_list)));
+	JIT *jit = new JIT(amx, ::opcode_list, server_cfg.GetOption("jit_stack", 0));
+	jit_map.insert(std::make_pair(amx, jit));
 
 	return AMX_ERR_NONE;
 }
