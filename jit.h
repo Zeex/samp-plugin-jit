@@ -98,7 +98,7 @@ class JITError {};
 class InstructionError : public JITError {
 public:
 	InstructionError(const AMXInstruction &instr) : instr_(instr) {}
-	inline const AMXInstruction &instruction() const { return instr_; }
+	inline const AMXInstruction &GetInstruction() const { return instr_; }
 private:
 	AMXInstruction instr_;
 };
