@@ -30,6 +30,7 @@
 #include <string>
 
 #include <AsmJit/AsmJit.h>
+#include <AsmJit/MemoryManager.h>
 
 #include "jit.h"
 #include "amx/amx.h"
@@ -1302,6 +1303,12 @@ void Jitter::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instru
 		default:
 			throw InvalidInstructionError(instr);
 		}
+	}
+}
+
+Jitter::~Jitter() {
+	if (code_ != 0) {
+		AsmJit::MemoryManager::getGlobal()->free(code_);
 	}
 }
 
