@@ -174,14 +174,57 @@ private:
 	std::size_t size_;
 };
 
+// CodeMap maps AMX instructions to corresponding JIT code.
+class CodeMap {
+public:
+	CodeMap() {}
+
+	inline void Map(cell amx_ip, sysint_t native_ip) {
+		amx_map_.insert(std::make_pair(amx_ip, native_ip));
+	}
+	
+	inline void *GetInstrPtr(cell amx_ip, void *code_ptr) {
+		sysint_t native_ip = GetInstrOffset(amx_ip);
+		if (native_ip >= 0) {
+			return reinterpret_cast<void*>(reinterpret_cast<sysint_t>(code_ptr) + native_ip);
+		}
+		return 0;
+	}
+
+	inline sysint_t GetInstrOffset(cell amx_ip) {
+		AMXMapType::const_iterator iterator = amx_map_.find(amx_ip);
+		if (iterator != amx_map_.end()) {
+			return iterator->second;
+		}
+		return -1;
+	}
+
+	inline cell GetAmxInstr(sysint_t native_ip) {
+		NativeMapType::const_iterator iterator = native_map_.find(native_ip);
+		if (iterator != native_map_.end()) {
+			return iterator->second;
+		}
+		return -1;
+	}
+
+private:
+	// amx_ip => native_ip
+	typedef std::map<cell, sysint_t> AMXMapType;
+	AMXMapType amx_map_;
+
+	// native_ip => amx_ip
+	typedef std::map<cell, sysint_t> NativeMapType;
+	NativeMapType native_map_;
+};
+
 class JIT;
 
 class JITAssembler : private AsmJit::Assembler {
 public:
 	JITAssembler(JIT *jit);
 
-	// Compile function at a given address.
-	void *CompileFunction(cell address);
+	// JIT-compile function at a given address.
+	void *CompileFunction(cell address, CodeMap *code_map = 0);
 
 private:
 	void halt(cell code);
@@ -247,6 +290,11 @@ public:
 		return code_; 
 	}
 
+	// Get the code map.
+	inline const CodeMap &GetCodeMap() const {
+		return code_map_;
+	}
+
 	// Turn raw AMX code into a sequence of AMXInstruction's.
 	void AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const;
 
@@ -282,9 +330,12 @@ private:
 	void *halt_ebp_;
 	void *halt_esp_;
 
-	// Maps AMX functions to their native code.
+	// Maps AMX functions to JIT code.
 	typedef std::map<cell, void*> ProcMap;
 	ProcMap proc_map_;
+
+	// Maps AMX instructions to JIT code.
+	CodeMap code_map_;
 
 	static void *esp_;
 	static StackBuffer stack_;
