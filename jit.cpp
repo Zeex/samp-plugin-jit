@@ -444,6 +444,10 @@ void *Assembler::Assemble(cell start, cell end) {
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			pop(ebp);
+			pop(edx); // keep return address
+			add(esp, dword_ptr(esp));
+			add(esp, 4);
+			push(edx);
 			ret();
 			break;
 		case OP_CALL: { // offset
@@ -465,15 +469,11 @@ void *Assembler::Assemble(cell start, cell end) {
 				push(reinterpret_cast<int>(frontend_));
 				call(reinterpret_cast<int>(::CallFunction));
 			}
-			add(esp, dword_ptr(esp));
-			add(esp, 4);
 			break;
 		}
 		case OP_CALL_PRI:
 			// Same as CALL, the address to jump to is in PRI.
 			call(eax);
-			add(esp, dword_ptr(esp));
-			add(esp, 4);
 			break;
 
 		case OP_JUMP:
@@ -1390,8 +1390,6 @@ void Frontend::CallFunction(cell address, cell *params, cell *retval) {
 			mov dword ptr [eax].halt_ebp_, ebp
 			call dword ptr [start]
 			mov dword ptr [retval_], eax
-			add esp, dword ptr [parambytes]
-			add esp, 4
 			pop edi
 			pop esi
 		}
@@ -1432,10 +1430,11 @@ void Frontend::CallFunction(cell address, cell *params, cell *retval) {
 				: "r"(start)
 				: "%eax", "%ecx", "%edx");
 		__asm__ __volatile__ (
-			"addl %0, %%esp;"
 			"popl %%edi;"
 			"popl %%esi;"
-				: : "r"(parambytes + 4) : "%esp");
+				:
+				:
+				: );
 		if (--call_depth_ == 0) {
 			__asm__ __volatile__ (
 				"movl %0, %%esp;"
