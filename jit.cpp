@@ -1417,24 +1417,15 @@ void Frontend::CallFunction(cell address, cell *params, cell *retval) {
 					: : "r"(params[i]) : "%esp");
 		}
 		__asm__ __volatile__ (
-			"leal -4(%%esp), %%eax;"
-			"movl %%eax, (%0);"
-			"movl %%ebp, (%1);"
-				:
-				: "r"(&halt_esp_), "r"(&halt_ebp_)
-				: "%eax");
-		__asm__ __volatile__ (
-			"calll *%1;"
-			"movl %%eax, %0;"
-				: "=r"(retval_)
-				: "r"(start)
-				: "%eax", "%ecx", "%edx");
-		__asm__ __volatile__ (
+			"movl -4(%%esp), %0;"
+			"movl %%ebp, %1;"
+			"calll *%3;"
+			"movl %%eax, %2;"
 			"popl %%edi;"
 			"popl %%esi;"
-				:
-				:
-				: );
+				: "=r"(halt_esp_), "=r"(halt_ebp_), "=r"(retval_)
+				: "r"(start)
+				: "%ecx", "%edx");
 		if (--call_depth_ == 0) {
 			__asm__ __volatile__ (
 				"movl %0, %%esp;"
