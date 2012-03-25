@@ -143,7 +143,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	if (funAddr != 0) {
 		std::string module = GetFileName(GetModuleNameBySymbol(funAddr));
 		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
-			logprintf("  jit::Frontend must be loaded before %s", module.c_str());
+			logprintf("  JIT must be loaded before %s", module.c_str());
 			return false;
 		}
 	}
@@ -153,7 +153,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		jit::Frontend::SetStackSize(stack_size);
 	}
 
-	logprintf("  jit::Frontend plugin v%s is OK.", PLUGIN_VERSION_STRING);
+	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
 
