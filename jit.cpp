@@ -470,7 +470,10 @@ void *Assembler::Assemble(cell start, cell end) {
 			break;
 		}
 		case OP_CALL_PRI:
-			// obsolete
+			// Same as CALL, the address to jump to is in PRI.
+			call(eax);
+			add(esp, dword_ptr(esp));
+			add(esp, 4);
 			break;
 
 		case OP_JUMP:
