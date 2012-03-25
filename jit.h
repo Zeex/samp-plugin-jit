@@ -32,7 +32,6 @@
 #include <set>
 
 #include <AsmJit/Assembler.h>
-#include <AsmJit/MemoryManager.h>
 #include <AsmJit/Operand.h>
 
 #include "amx/amx.h"
@@ -185,7 +184,7 @@ private:
 class Jitter {
 public:
 	Jitter(AMX *amx, cell *opcode_list = 0);
-	virtual ~Jitter() {}
+	virtual ~Jitter();
 	
 	// Get AMX instance associated with this Jitter.
 	inline AMX *GetAmx() const { 
