@@ -31,6 +31,7 @@
 #include <vector>
 
 #include <AsmJit/Assembler.h>
+#include <AsmJit/MemoryManager.h>
 #include <AsmJit/Operand.h>
 
 #include "amx/amx.h"
@@ -177,8 +178,6 @@ private:
 // CodeMap maps AMX instructions to corresponding JIT code.
 class CodeMap {
 public:
-	CodeMap() {}
-
 	inline void Map(cell amx_ip, sysint_t native_ip) {
 		amx_map_.insert(std::make_pair(amx_ip, native_ip));
 	}
@@ -192,7 +191,7 @@ public:
 	}
 
 	inline sysint_t GetInstrOffset(cell amx_ip) {
-		AMXMapType::const_iterator iterator = amx_map_.find(amx_ip);
+		AmxMapType::const_iterator iterator = amx_map_.find(amx_ip);
 		if (iterator != amx_map_.end()) {
 			return iterator->second;
 		}
@@ -209,13 +208,61 @@ public:
 
 private:
 	// amx_ip => native_ip
-	typedef std::map<cell, sysint_t> AMXMapType;
-	AMXMapType amx_map_;
+	typedef std::map<cell, sysint_t> AmxMapType;
+	AmxMapType amx_map_;
 
 	// native_ip => amx_ip
-	typedef std::map<cell, sysint_t> NativeMapType;
+	typedef std::map<sysint_t, cell> NativeMapType;
 	NativeMapType native_map_;
 };
+
+class ProcMap {
+public:
+	~ProcMap() {
+		for (MapType::iterator iterator = map_.begin(); iterator != map_.end(); ++iterator) {
+			AsmJit::MemoryManager::getGlobal()->free(iterator->second);
+		}
+	}
+
+	void Map(cell codestart, cell codeend, void *native_code) {
+		ProcData data = {codestart, codeend};
+		map_.insert(std::make_pair(data, native_code));
+	}
+
+	void *GetFunctionCode(cell fn_addr) const {
+		ProcData fn_data = {fn_addr, 0};
+		MapType::const_iterator iterator = map_.find(fn_data);
+		if (iterator != map_.end()) {
+			return iterator->second;
+		}
+		return 0;
+	}
+
+	cell FindFunction(cell address) const {
+		for (MapType::const_iterator iterator = map_.begin(); iterator != map_.end(); ++iterator) {
+			const ProcData &proc = iterator->first;
+			if (address >= proc.codestart && address <= proc.codeend) {
+				return proc.codestart;
+			}
+		}
+		return 0;
+	}
+
+private:
+	struct ProcData {
+		cell codestart; // address of first instruction
+		cell codeend;   // address of last instruction
+	};
+
+	friend bool operator<(const ProcData &left, const ProcData &right);
+
+	typedef std::map<ProcData, void*> MapType;
+	MapType map_;
+};
+
+inline bool operator<(const ProcMap::ProcData &left, const ProcMap::ProcData &right) {
+	return left.codestart < right.codestart;
+}
 
 class JIT;
 
@@ -260,46 +307,39 @@ public:
 	static void SetStackSize(std::size_t stack_size);
 
 	JIT(AMX *amx, cell *opcode_list = 0);
-	~JIT();
 	
 	// Get AMX instance associated with this JIT.
-	inline AMX        *GetAmx()       { return amx_; }
-	inline const AMX  *GetAmx() const { return amx_; }
+	inline AMX *GetAmx() { 
+		return amx_; 
+	}
 
 	// Get pointer to AMX header.
 	inline AMX_HEADER *GetAmxHeader() { 
 		return amxhdr_; 
 	}
-	inline const AMX_HEADER *GetAmxHeader() const { 
-		return amxhdr_; 
-	}
 
 	// Get pointer to AMX data segment.
-	inline const unsigned char *GetAmxData() const {
-		return data_; 
-	}
 	inline unsigned char *GetAmxData() {
 		return data_; 
 	}
 
 	// Get pointer to AMX code segment.
-	inline const unsigned char *GetAmxCode() const {
-		return code_; 
-	}
 	inline unsigned char *GetAmxCode() {
 		return code_; 
 	}
 
+	// Get the procedure map.
+	inline ProcMap &GetProcMap() {
+		return proc_map_;
+	}
+
 	// Get the code map.
-	inline const CodeMap &GetCodeMap() const {
+	inline CodeMap &GetCodeMap() {
 		return code_map_;
 	}
 
 	// Turn raw AMX code into a sequence of AMXInstruction's.
 	void AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const;
-
-	// Compile AMX function to machine code.
-	void *CompileFunction(cell address);
 
 	// Get function's code (and compile if needed).
 	void *GetFunction(cell address);
@@ -330,11 +370,7 @@ private:
 	void *halt_ebp_;
 	void *halt_esp_;
 
-	// Maps AMX functions to JIT code.
-	typedef std::map<cell, void*> ProcMap;
 	ProcMap proc_map_;
-
-	// Maps AMX instructions to JIT code.
 	CodeMap code_map_;
 
 	static void *esp_;

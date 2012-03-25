@@ -30,7 +30,6 @@
 #include <string>
 
 #include <AsmJit/AsmJit.h>
-#include <AsmJit/MemoryManager.h>
 
 #include "jit.h"
 #include "amx/amx.h"
@@ -156,6 +155,10 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 
 	std::vector<AMXInstruction> instructions;
 	jit_->AnalyzeFunction(address, instructions);
+
+	// Mark this function as being compiled.
+	cell end_address = reinterpret_cast<cell>(instructions.back().GetIP()) - code;
+	jit_->GetProcMap().Map(address, end_address, 0);
 
 	using AsmJit::byte_ptr;
 	using AsmJit::byte_ptr_abs;
@@ -1003,7 +1006,9 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 		}		
 	}
 
-	return make();
+	void *fn =  make();
+	jit_->GetProcMap().Map(address, end_address, fn);
+	return fn;
 }
 
 void JITAssembler::halt(cell code) {
@@ -1123,12 +1128,6 @@ JIT::JIT(AMX *amx, cell *opcode_list)
 {
 	if (!stack_.IsReady()) {
 		stack_.Allocate(1 << 20); // stack is 1 MB by default
-	}
-}
-
-JIT::~JIT() {
-	for (ProcMap::iterator iterator = proc_map_.begin(); iterator != proc_map_.end(); ++iterator) {
-		AsmJit::MemoryManager::getGlobal()->free(iterator->second);
 	}
 }
 
@@ -1313,22 +1312,14 @@ void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instruction
 	}
 }
 
-void *JIT::CompileFunction(cell address) {
-	proc_map_[address] = 0;
-
-	JITAssembler as(this);
-	void *fn = as.CompileFunction(address, &code_map_);
-
-	proc_map_[address] = fn;
-	return fn;
-}
-
-void *JIT::GetFunction(cell address) {
-	ProcMap::const_iterator iterator = proc_map_.find(address);
-	if (iterator != proc_map_.end()) {
-		return iterator->second;
+void *JIT::GetFunction(cell address) {	
+	void *fn = proc_map_.GetFunctionCode(address);
+	if (fn != 0) {
+		return fn;
 	} else {
-		return CompileFunction(address);
+		JITAssembler as(this);
+		fn = as.CompileFunction(address, &code_map_);
+		return fn;
 	}
 }
 
