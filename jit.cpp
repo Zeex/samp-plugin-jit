@@ -64,10 +64,6 @@
 	#endif
 #endif
 
-static cell STDCALL CallNativeFunction(jit::Jitter *jit, int index, cell *params) {
-	return jit->CallNativeFunction(index, params);
-}
-
 static cell GetPublicAddress(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
@@ -864,10 +860,13 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 		}
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
-			as.push(esp);
 			as.push(eax);
-			as.push(reinterpret_cast<sysint_t>(this));
-			as.call(reinterpret_cast<void*>(::CallNativeFunction));
+			as.push(reinterpret_cast<sysint_t>(amx));
+			as.call(reinterpret_cast<void*>(GetNativeAddress));
+			as.add(esp, 8);
+			as.push(esp);
+			as.push(reinterpret_cast<sysint_t>(amx));
+			as.call(eax);
 			break;
 		case OP_SYSREQ_C:   // index
 		case OP_SYSREQ_D: { // address
@@ -1417,11 +1416,6 @@ int Jitter::CallPublicFunction(int index, cell *retval) {
 	amx_->paramcount = 0;
 
 	return amx_->error;
-}
-
-cell Jitter::CallNativeFunction(int index, cell *params) {
-	AMX_NATIVE native = reinterpret_cast<AMX_NATIVE>(GetNativeAddress(amx_, index));
-	return native(amx_, params);
 }
 
 } // namespace jit
