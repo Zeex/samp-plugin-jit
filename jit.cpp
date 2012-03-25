@@ -147,7 +147,7 @@ JITAssembler::JITAssembler(JIT *jit)
 	JIT_OVERRIDE_NATIVE(floatlog);
 }
 
-void *JITAssembler::CompileFunction(cell address) {
+void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 	AMX *amx = jit_->GetAmx();
 	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
 
@@ -183,6 +183,10 @@ void *JITAssembler::CompileFunction(cell address) {
 
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
 		bind(L(cip));
+
+		if (code_map != 0) {
+			code_map->Map(cip, getCodeSize());
+		}
 
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
@@ -1313,7 +1317,7 @@ void *JIT::CompileFunction(cell address) {
 	proc_map_[address] = 0;
 
 	JITAssembler as(this);
-	void *fn = as.CompileFunction(address);
+	void *fn = as.CompileFunction(address, &code_map_);
 
 	proc_map_[address] = fn;
 	return fn;
