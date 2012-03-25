@@ -65,6 +65,28 @@
 	#endif
 #endif
 
+#if defined COMPILER_MSVC
+	#define THROW(what)                        \
+		do {                                   \
+			if (call_depth_ > 0) {             \
+				__asm {                        \
+					mov esp, dword ptr [esp_]  \
+				}                              \
+			}                                  \
+			throw what;                        \
+		} while (false)
+#elif defined COMPILER_GCC
+	#define THROW(what)                        \
+		do {                                   \
+			if (call_depth_ > 0) {             \
+				__asm__ __volatile__ (         \
+					"movl %0, %%esp;"          \
+						: : "r"(esp_) : );     \
+			}                                  \
+			throw what;                        \
+		} while (false)
+#endif
+
 static cell GetPublicAddress(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
