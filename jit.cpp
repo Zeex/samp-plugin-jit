@@ -474,75 +474,97 @@ void *JITAssembler::Assemble(cell start, cell end, CodeMap *code_map) {
 		case OP_CALL_PRI:
 			// obsolete
 			break;
-		// jump instructions
-		case OP_JUMP: // offset
-			// CIP = CIP + offset (jump to the address relative from
-			// the current position)
-			jmp(L(instr.GetOperand() - code));
+
+		case OP_JUMP:
+		case OP_JREL:
+		case OP_JZER: 
+		case OP_JNZ:
+		case OP_JEQ:
+		case OP_JNEQ:
+		case OP_JLESS:
+		case OP_JLEQ:
+		case OP_JGRTR:
+		case OP_JGEQ:
+		case OP_JSLESS:
+		case OP_JSLEQ:
+		case OP_JSGRTR:
+		case OP_JSGEQ: {
+			cell dest = instr.GetOperand() - code;
+			AsmJit::Label &L_dest = L(dest);
+
+			switch (instr.GetOpcode()) {
+				case OP_JUMP: // offset
+					// CIP = CIP + offset (jump to the address relative from
+					// the current position)
+					jmp(L_dest);
+					break;
+				case OP_JREL: // offset
+					// obsolete
+					break;
+				case OP_JZER: // offset
+					// if PRI == 0 then CIP = CIP + offset
+					cmp(eax, 0);
+					jz(L_dest);
+					break;
+				case OP_JNZ: // offset
+					// if PRI != 0 then CIP = CIP + offset
+					cmp(eax, 0);
+					jnz(L_dest);
+					break;
+				case OP_JEQ: // offset
+					// if PRI == ALT then CIP = CIP + offset
+					cmp(eax, ecx);
+					je(L_dest);
+					break;
+				case OP_JNEQ: // offset
+					// if PRI != ALT then CIP = CIP + offset
+					cmp(eax, ecx);
+					jne(L_dest);
+					break;
+				case OP_JLESS: // offset
+					// if PRI < ALT then CIP = CIP + offset (unsigned)
+					cmp(eax, ecx);
+					jb(L_dest);
+					break;
+				case OP_JLEQ: // offset
+					// if PRI <= ALT then CIP = CIP + offset (unsigned)
+					cmp(eax, ecx);
+					jbe(L_dest);
+					break;
+				case OP_JGRTR: // offset
+					// if PRI > ALT then CIP = CIP + offset (unsigned)
+					cmp(eax, ecx);
+					ja(L_dest);
+					break;
+				case OP_JGEQ: // offset
+					// if PRI >= ALT then CIP = CIP + offset (unsigned)
+					cmp(eax, ecx);
+					jae(L_dest);
+					break;
+				case OP_JSLESS: // offset
+					// if PRI < ALT then CIP = CIP + offset (signed)
+					cmp(eax, ecx);
+					jl(L_dest);
+					break;
+				case OP_JSLEQ: // offset
+					// if PRI <= ALT then CIP = CIP + offset (signed)
+					cmp(eax, ecx);
+					jle(L_dest);
+					break;
+				case OP_JSGRTR: // offset
+					// if PRI > ALT then CIP = CIP + offset (signed)
+					cmp(eax, ecx);
+					jg(L_dest);
+					break;
+				case OP_JSGEQ: // offset
+					// if PRI >= ALT then CIP = CIP + offset (signed)
+					cmp(eax, ecx);
+					jge(L_dest);
+					break;
+			}
 			break;
-		case OP_JREL: // offset
-			// obsolete
-			break;
-		case OP_JZER: // offset
-			// if PRI == 0 then CIP = CIP + offset
-			cmp(eax, 0);
-			jz(L(instr.GetOperand() - code));
-			break;
-		case OP_JNZ: // offset
-			// if PRI != 0 then CIP = CIP + offset
-			cmp(eax, 0);
-			jnz(L(instr.GetOperand() - code));
-			break;
-		case OP_JEQ: // offset
-			// if PRI == ALT then CIP = CIP + offset
-			cmp(eax, ecx);
-			je(L(instr.GetOperand() - code));
-			break;
-		case OP_JNEQ: // offset
-			// if PRI != ALT then CIP = CIP + offset
-			cmp(eax, ecx);
-			jne(L(instr.GetOperand() - code));
-			break;
-		case OP_JLESS: // offset
-			// if PRI < ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			jb(L(instr.GetOperand() - code));
-			break;
-		case OP_JLEQ: // offset
-			// if PRI <= ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			jbe(L(instr.GetOperand() - code));
-			break;
-		case OP_JGRTR: // offset
-			// if PRI > ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			ja(L(instr.GetOperand() - code));
-			break;
-		case OP_JGEQ: // offset
-			// if PRI >= ALT then CIP = CIP + offset (unsigned)
-			cmp(eax, ecx);
-			jae(L(instr.GetOperand() - code));
-			break;
-		case OP_JSLESS: // offset
-			// if PRI < ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jl(L(instr.GetOperand() - code));
-			break;
-		case OP_JSLEQ: // offset
-			// if PRI <= ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jle(L(instr.GetOperand() - code));
-			break;
-		case OP_JSGRTR: // offset
-			// if PRI > ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jg(L(instr.GetOperand() - code));
-			break;
-		case OP_JSGEQ: // offset
-			// if PRI >= ALT then CIP = CIP + offset (signed)
-			cmp(eax, ecx);
-			jge(L(instr.GetOperand() - code));
-			break;
+		}
+
 		case OP_SHL:
 			// PRI = PRI << ALT
 			shl(eax, cl);
