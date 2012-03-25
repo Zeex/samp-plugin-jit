@@ -1154,8 +1154,11 @@ Frontend::Frontend(AMX *amx, cell *opcode_list)
 		const AmxInstruction &instr = *iterator;		
 		if (instr.GetOpcode() == OP_PROC || iterator == instrs.end() - 1) {
 			cell ip = reinterpret_cast<cell>(instr.GetIP()) - code_start;
+			if (iterator == instrs.end() - 1) {
+				ip += sizeof(cell);
+			}
 			if (fn_start != 0) {
-				proc_map_.Insert(fn_start, ip - sizeof(cell), 0);
+				proc_map_.Insert(fn_start, ip, 0);
 			}
 			fn_start = ip;
 		}
@@ -1165,7 +1168,7 @@ Frontend::Frontend(AMX *amx, cell *opcode_list)
 void Frontend::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const {
 	const cell *cip = reinterpret_cast<cell*>(code_ + start);
 
-	while (cip <= reinterpret_cast<cell*>(code_ + end)) {
+	while (cip < reinterpret_cast<cell*>(code_ + end)) {
 		cell opcode = UnrelocateOpcode(opcode_list_, *cip);
 
 		AmxInstruction instr(static_cast<AmxOpcode>(opcode), cip);

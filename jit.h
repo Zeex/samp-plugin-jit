@@ -260,7 +260,7 @@ public:
 	cell FindFunction(cell address) const {
 		for (MapType::const_iterator iterator = map_.begin(); iterator != map_.end(); ++iterator) {
 			const ProcData &proc = iterator->first;
-			if (address >= proc.codestart && address <= proc.codeend) {
+			if (address >= proc.codestart && address < proc.codeend) {
 				return proc.codestart;
 			}
 		}
