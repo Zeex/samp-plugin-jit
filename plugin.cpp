@@ -87,15 +87,19 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	try {
 		return jit->CallPublicFunction(index, retval);
 	} catch (const jit::InstructionError &e) {
-		cell ip = reinterpret_cast<cell>(e.GetInstruction().GetIP());
-		cell address = ip - reinterpret_cast<cell>(jit->GetAmxCode());
+		const jit::AmxInstruction &instr = e.GetInstruction();
+		cell address = reinterpret_cast<cell>(instr.GetIP()) 
+		             - reinterpret_cast<cell>(jit->GetAmxCode());
 		try {
 			throw;
-		} catch (const jit::InvalidInstructionError &) {
-			logprintf("[jit] Error: Invalid instruction at address %08x", address);
+		} catch (const jit::InvalidInstructionError &) {			
+			logprintf("[jit] Error: Invalid instruction at address %08x:", address);					
 		} catch (const jit::UnsupportedInstructionError &) {
-			logprintf("[jit] Error: Unsupported instruction at address %08x", address);
+			logprintf("[jit] Error: Unsupported instruction at address %08x:", address);
 		}
+		// Dump first 4 cells for debugging...
+		const cell *ip = instr.GetIP();
+		logprintf("  %08x %08x %08x %08x", *ip, *(ip + 1), *(ip + 2), *(ip + 3));
 	} catch (...) {
 		logprintf("[jit] Error: Unknown error");
 		throw;
