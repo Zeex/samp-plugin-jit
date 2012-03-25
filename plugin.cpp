@@ -47,8 +47,7 @@ static void **amx_exports;
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, jit::Frontend*> JitMap;
-static JitMap jit_map;
+static std::map<AMX*, jit::Jitter*> jitters;
 
 static JumpX86 amx_Exec_hook;
 static JumpX86 amx_GetAddr_hook;
@@ -63,17 +62,6 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 	return AMX_ERR_NONE;
 }
 
-const char *GetPublicName(AMX *amx, int index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
-	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
-		return reinterpret_cast<char*>(amx->base + publics[index].nameofs);
-	} else if (index == AMX_EXEC_MAIN) {
-		return "main";
-	}
-	return 0;
-}
-
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
@@ -83,7 +71,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			return AMX_ERR_NONE;
 		}
 	#endif
-	jit::Frontend *jit = jit_map[amx];
+	jit::Jitter *jit = jitters[amx];
 	try {
 		return jit->CallPublicFunction(index, retval);
 	} catch (const jit::InstructionError &e) {
@@ -152,7 +140,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
 	std::size_t stack_size = server_cfg.GetOption("jit_stack", 0);
 	if (stack_size != 0) {
-		jit::Frontend::SetStackSize(stack_size);
+		jit::Jitter::SetStackSize(stack_size);
 	}
 
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
@@ -160,7 +148,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-	for (JitMap::iterator it = jit_map.begin(); it != jit_map.end(); ++it) {
+	for (std::map<AMX*, jit::Jitter*>::iterator it = jitters.begin(); it != jitters.end(); ++it) {
 		delete it->second;
 	}
 }
@@ -192,17 +180,17 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			(void*)amx_GetAddr_JIT);
 	}
 
-	jit::Frontend *jit = new jit::Frontend(amx, ::opcode_list);
-	jit_map.insert(std::make_pair(amx, jit));
+	jit::Jitter *jit = new jit::Jitter(amx, ::opcode_list);
+	jitters.insert(std::make_pair(amx, jit));
 
 	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	JitMap::iterator it = jit_map.find(amx);
-	if (it != jit_map.end()) {
+	std::map<AMX*, jit::Jitter*>::iterator it = jitters.find(amx);
+	if (it != jitters.end()) {
 		delete it->second;
-		jit_map.erase(it);		
+		jitters.erase(it);		
 	}
 	return AMX_ERR_NONE;
 }

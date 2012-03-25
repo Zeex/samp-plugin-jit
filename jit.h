@@ -182,12 +182,37 @@ private:
 	std::size_t size_;
 };
 
-class CodeMap {
+class Jitter {
 public:
-	inline void Insert(cell amx_ip, sysint_t native_ip) {
-		amx_map_.insert(std::make_pair(amx_ip, native_ip));
-	}
+	Jitter(AMX *amx, cell *opcode_list = 0);
+	virtual ~Jitter() {}
 	
+	// Get AMX instance associated with this Jitter.
+	inline AMX *GetAmx() const { 
+		return amx_; 
+	}
+
+	// Get pointer to AMX header.
+	inline AMX_HEADER *GetAmxHeader() const { 
+		return reinterpret_cast<AMX_HEADER*>(GetAmx()->base); 
+	}
+
+	// Get pointer to AMX data.
+	inline unsigned char *GetAmxData() const {
+		return GetAmx()->data != 0 ? GetAmx()->data : GetAmx()->base + GetAmxHeader()->dat; 
+	}
+
+	// Get pointer to AMX code.
+	inline unsigned char *GetAmxCode() const {
+		return GetAmx()->base + GetAmxHeader()->cod; 
+	}
+
+	// Get pointer to native code buffer.
+	inline void *GetCode() const {
+		return code_;
+	}
+
+	// Get address of native code corresponding to AMX code.
 	inline void *GetInstrPtr(cell amx_ip, void *code_ptr) {
 		sysint_t native_ip = GetInstrOffset(amx_ip);
 		if (native_ip >= 0) {
@@ -196,165 +221,26 @@ public:
 		return 0;
 	}
 
+	// Get offset to native code corresponding to AMX code.
 	inline sysint_t GetInstrOffset(cell amx_ip) {
-		AmxMapType::const_iterator iterator = amx_map_.find(amx_ip);
-		if (iterator != amx_map_.end()) {
+		AmxCodeMap::const_iterator iterator = amx_code_map_.find(amx_ip);
+		if (iterator != amx_code_map_.end()) {
 			return iterator->second;
 		}
 		return -1;
 	}
 
+	// Get address of AMX code corresponding to native code.
 	inline cell GetAmxInstr(sysint_t native_ip) {
-		NativeMapType::const_iterator iterator = native_map_.find(native_ip);
-		if (iterator != native_map_.end()) {
+		NativeCodeMap::const_iterator iterator = native_code_map_.find(native_ip);
+		if (iterator != native_code_map_.end()) {
 			return iterator->second;
 		}
 		return -1;
-	}
-
-private:
-	// amx_ip => native_ip
-	typedef std::map<cell, sysint_t> AmxMapType;
-	AmxMapType amx_map_;
-
-	// native_ip => amx_ip
-	typedef std::map<sysint_t, cell> NativeMapType;
-	NativeMapType native_map_;
-};
-
-struct ProcData {
-	cell codestart; // address of first instruction
-	cell codeend;   // address of last instruction
-};
-
-static inline bool operator<(const ProcData &left, const ProcData &right) {
-	return left.codestart < right.codestart;
-}
-
-class ProcMap {
-public:
-	~ProcMap() {
-		for (MapType::iterator iterator = map_.begin(); iterator != map_.end(); ++iterator) {
-			AsmJit::MemoryManager::getGlobal()->free(iterator->second);
-		}
-	}
-
-	void Insert(cell codestart, cell codeend, void *native_code) {
-		ProcData data = {codestart, codeend};
-		map_.insert(std::make_pair(data, native_code));
-	}
-
-	const ProcData *GetFunction(cell address) const {
-		ProcData data = {address, 0};
-		MapType::const_iterator iterator = map_.find(data);
-		if (iterator != map_.end()) {
-			return &(iterator->first);
-		}
-		return 0;
-	}
-
-	void *GetFunctionCode(cell address) const {
-		ProcData data = {address, 0};
-		MapType::const_iterator iterator = map_.find(data);
-		if (iterator != map_.end()) {
-			return iterator->second;
-		}
-		return 0;
-	}
-
-	cell FindFunction(cell address) const {
-		for (MapType::const_iterator iterator = map_.begin(); iterator != map_.end(); ++iterator) {
-			const ProcData &proc = iterator->first;
-			if (address >= proc.codestart && address < proc.codeend) {
-				return proc.codestart;
-			}
-		}
-		return 0;
-	}
-
-private:
-	typedef std::map<ProcData, void*> MapType;
-	MapType map_;
-};
-
-class Frontend;
-
-class Assembler : private AsmJit::Assembler {
-public:
-	Assembler(Frontend *frontend);
-	virtual ~Assembler() ASMJIT_NOTHROW {}
-
-	// Frontend-compile function at a given address.
-	virtual void *Assemble(cell start, cell end);
-
-private:
-	void halt(cell code);
-
-	// Floating point natives
-	void native_float();
-	void native_floatabs();
-	void native_floatadd();
-	void native_floatsub();
-	void native_floatmul();
-	void native_floatdiv();
-	void native_floatsqroot();
-	void native_floatlog();
-
-	typedef void (Assembler::*NativeOverride)();
-	std::map<std::string, NativeOverride> native_overrides_;
-
-private:
-	// Get the label mapped to given address.
-	AsmJit::Label &L(cell address, const std::string &tag = "");
-
-	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
-	LabelMap label_map_;
-
-private:
-	Frontend *frontend_;
-};
-
-class Frontend {
-	friend class Assembler;
-public:
-	Frontend(AMX *amx, cell *opcode_list = 0);
-	virtual ~Frontend() {}
-	
-	// Get AMX instance associated with this Frontend.
-	inline AMX *GetAmx() { 
-		return amx_; 
-	}
-
-	// Get pointer to AMX header.
-	inline AMX_HEADER *GetAmxHeader() { 
-		return amxhdr_; 
-	}
-
-	// Get pointer to AMX data segment.
-	inline unsigned char *GetAmxData() {
-		return data_; 
-	}
-
-	// Get pointer to AMX code segment.
-	inline unsigned char *GetAmxCode() {
-		return code_; 
-	}
-
-	// Get the procedure map.
-	inline ProcMap &GetProcMap() {
-		return proc_map_;
-	}
-
-	// Get the code map.
-	inline CodeMap &GetCodeMap() {
-		return code_map_;
 	}
 
 	// Turn raw AMX code into a sequence of AmxInstruction's.
 	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
-
-	// Get function's code (and compile if needed).
-	void *GetFunction(cell address);
 
 	// Call a function.
 	virtual void CallFunction(cell address, cell *params, cell *retval);
@@ -370,27 +256,44 @@ public:
 
 private:
 	// Disable copying.
-	Frontend(const Frontend &);
-	Frontend &operator=(const Frontend &);
+	Jitter(const Jitter &);
+	Jitter &operator=(const Jitter &);
 
-	static AmxOpcode UnrelocateOpcode(cell *opcode_list, cell opcode);
+	AsmJit::Label &L(AsmJit::Assembler &as, cell address, const std::string &tag = "");
+
+	// Code snippets
+	void halt(AsmJit::Assembler &as, cell error_code);
+
+	// Native overrides for floating-point natives
+	void native_float(AsmJit::Assembler &as);
+	void native_floatabs(AsmJit::Assembler &as);
+	void native_floatadd(AsmJit::Assembler &as);
+	void native_floatsub(AsmJit::Assembler &as);
+	void native_floatmul(AsmJit::Assembler &as);
+	void native_floatdiv(AsmJit::Assembler &as);
+	void native_floatsqroot(AsmJit::Assembler &as);
+	void native_floatlog(AsmJit::Assembler &as);
 
 private:
-	AMX        *amx_;
-	AMX_HEADER *amxhdr_;
-
-	unsigned char *data_;
-	unsigned char *code_;
-
+	AMX *amx_;
 	cell *opcode_list_;
 	
 	void *halt_ebp_;
 	void *halt_esp_;
 
-	ProcMap proc_map_;
-	CodeMap code_map_;	
+	void *code_;
 
-	std::set<cell> compiling_;
+	typedef std::map<cell, sysint_t> AmxCodeMap;
+	AmxCodeMap amx_code_map_;
+
+	typedef std::map<sysint_t, cell> NativeCodeMap;
+	NativeCodeMap native_code_map_;	
+
+	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
+	LabelMap label_map_;
+
+	typedef void (Jitter::*NativeOverride)(AsmJit::Assembler &as);
+	std::map<std::string, NativeOverride> native_overrides_;
 
 	static void *esp_;
 	static StackBuffer stack_;
