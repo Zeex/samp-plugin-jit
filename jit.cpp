@@ -146,7 +146,7 @@ JITAssembler::JITAssembler(JIT *jit)
 	JIT_OVERRIDE_NATIVE(floatlog);
 }
 
-void *JITAssembler::Assemble(cell start, cell end, CodeMap *code_map) {
+void *JITAssembler::Assemble(cell start, cell end) {
 	AMX *amx = jit_->GetAmx();
 	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
 
@@ -164,9 +164,7 @@ void *JITAssembler::Assemble(cell start, cell end, CodeMap *code_map) {
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
 		bind(L(cip));
 
-		if (code_map != 0) {
-			code_map->Map(cip, getCodeSize());
-		}
+		jit_->GetCodeMap().Map(cip, getCodeSize());
 
 		using AsmJit::byte_ptr;
 		using AsmJit::word_ptr;
@@ -1350,7 +1348,7 @@ void *JIT::GetFunction(cell address) {
 	if (fn != 0) {
 		JITAssembler as(this);
 		compiling_.insert(address);
-		code = as.Assemble(fn->codestart, fn->codeend, &code_map_);
+		code = as.Assemble(fn->codestart, fn->codeend);
 		compiling_.erase(address);
 		proc_map_.Map(fn->codestart, fn->codeend, code);
 		return code;
