@@ -42,15 +42,13 @@
 	#include <dlfcn.h> 
 #endif
 
-using namespace jit;
-
 static void **amx_exports;
 
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, JIT*> JITMap;
-static JITMap jit_map;
+typedef std::map<AMX*, jit::Frontend*> JitMap;
+static JitMap jit_map;
 
 static JumpX86 amx_Exec_hook;
 static JumpX86 amx_GetAddr_hook;
@@ -85,17 +83,17 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			return AMX_ERR_NONE;
 		}
 	#endif
-	JIT *jit = jit_map[amx];
+	jit::Frontend *jit = jit_map[amx];
 	try {
 		return jit->CallPublicFunction(index, retval);
-	} catch (const InstructionError &e) {
+	} catch (const jit::InstructionError &e) {
 		cell ip = reinterpret_cast<cell>(e.GetInstruction().GetIP());
 		cell address = ip - reinterpret_cast<cell>(jit->GetAmxCode());
 		try {
 			throw;
-		} catch (const InvalidInstructionError &) {
+		} catch (const jit::InvalidInstructionError &) {
 			logprintf("[jit] Error: Invalid instruction at address %08x", address);
-		} catch (const UnsupportedInstructionError &) {
+		} catch (const jit::UnsupportedInstructionError &) {
 			logprintf("[jit] Error: Unsupported instruction at address %08x", address);
 		}
 	} catch (...) {
@@ -141,23 +139,22 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	if (funAddr != 0) {
 		std::string module = GetFileName(GetModuleNameBySymbol(funAddr));
 		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
-			logprintf("  JIT must be loaded before %s", module.c_str());
+			logprintf("  jit::Frontend must be loaded before %s", module.c_str());
 			return false;
 		}
 	}
 
 	std::size_t stack_size = server_cfg.GetOption("jit_stack", 0);
 	if (stack_size != 0) {
-		JIT::SetStackSize(stack_size);
+		jit::Frontend::SetStackSize(stack_size);
 	}
 
-	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
+	logprintf("  jit::Frontend plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-	// Delete all JIT instances.
-	for (JITMap::iterator it = jit_map.begin(); it != jit_map.end(); ++it) {
+	for (JitMap::iterator it = jit_map.begin(); it != jit_map.end(); ++it) {
 		delete it->second;
 	}
 }
@@ -189,14 +186,14 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			(void*)amx_GetAddr_JIT);
 	}
 
-	JIT *jit = new JIT(amx, ::opcode_list);
+	jit::Frontend *jit = new jit::Frontend(amx, ::opcode_list);
 	jit_map.insert(std::make_pair(amx, jit));
 
 	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	JITMap::iterator it = jit_map.find(amx);
+	JitMap::iterator it = jit_map.find(amx);
 	if (it != jit_map.end()) {
 		delete it->second;
 		jit_map.erase(it);		

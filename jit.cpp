@@ -64,13 +64,13 @@
 	#endif
 #endif
 
-static cell STDCALL CallFunction(jit::JIT *jit, cell address, cell *params) {
+static cell STDCALL CallFunction(jit::Frontend *jit, cell address, cell *params) {
 	cell retval;
 	jit->CallFunction(address, params, &retval);
 	return retval;
 }
 
-static cell STDCALL CallNativeFunction(jit::JIT *jit, int index, cell *params) {
+static cell STDCALL CallNativeFunction(jit::Frontend *jit, int index, cell *params) {
 	return jit->CallNativeFunction(index, params);
 }
 
@@ -129,42 +129,42 @@ static int GetNativeIndex(AMX *amx, cell address) {
 
 namespace jit {
 
-#define JIT_OVERRIDE_NATIVE(name) \
-	do { native_overrides_[#name] = &JITAssembler::native_##name; } while (false);
+#define OVERRIDE_NATIVE(name) \
+	do { native_overrides_[#name] = &Assembler::native_##name; } while (false);
 
-JITAssembler::JITAssembler(JIT *jit)
+Assembler::Assembler(Frontend *frontend)
 	: AsmJit::Assembler(0)
-	, jit_(jit)
+	, frontend_(frontend)
 {
-	JIT_OVERRIDE_NATIVE(float);
-	JIT_OVERRIDE_NATIVE(floatabs);
-	JIT_OVERRIDE_NATIVE(floatadd);
-	JIT_OVERRIDE_NATIVE(floatsub);
-	JIT_OVERRIDE_NATIVE(floatmul);
-	JIT_OVERRIDE_NATIVE(floatdiv);
-	JIT_OVERRIDE_NATIVE(floatsqroot);
-	JIT_OVERRIDE_NATIVE(floatlog);
+	OVERRIDE_NATIVE(float);
+	OVERRIDE_NATIVE(floatabs);
+	OVERRIDE_NATIVE(floatadd);
+	OVERRIDE_NATIVE(floatsub);
+	OVERRIDE_NATIVE(floatmul);
+	OVERRIDE_NATIVE(floatdiv);
+	OVERRIDE_NATIVE(floatsqroot);
+	OVERRIDE_NATIVE(floatlog);
 }
 
-void *JITAssembler::Assemble(cell start, cell end) {
-	AMX *amx = jit_->GetAmx();
-	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
+void *Assembler::Assemble(cell start, cell end) {
+	AMX *amx = frontend_->GetAmx();
+	AMX_HEADER *amxhdr = frontend_->GetAmxHeader();
 
-	cell code = reinterpret_cast<cell>(jit_->GetAmxCode());
-	cell data = reinterpret_cast<cell>(jit_->GetAmxData());	
+	cell code = reinterpret_cast<cell>(frontend_->GetAmxCode());
+	cell data = reinterpret_cast<cell>(frontend_->GetAmxData());	
 
-	std::vector<AMXInstruction> instrs;
-	jit_->ParseCode(start, end, instrs);
+	std::vector<AmxInstruction> instrs;
+	frontend_->ParseCode(start, end, instrs);
 
-	for (std::vector<AMXInstruction>::iterator iterator = instrs.begin(); 
+	for (std::vector<AmxInstruction>::iterator iterator = instrs.begin(); 
 			iterator != instrs.end(); ++iterator) 
 	{
-		AMXInstruction &instr = *iterator;
+		AmxInstruction &instr = *iterator;
 
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) - code;
 		bind(L(cip));
 
-		jit_->GetCodeMap().Map(cip, getCodeSize());
+		frontend_->GetCodeMap().Insert(cip, getCodeSize());
 
 		using AsmJit::byte_ptr;
 		using AsmJit::word_ptr;
@@ -454,7 +454,7 @@ void *JITAssembler::Assemble(cell start, cell end) {
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
 			cell fn_addr = instr.GetOperand() - code;
-			const void *fn = jit_->GetFunction(fn_addr);
+			const void *fn = frontend_->GetFunction(fn_addr);
 			if (fn != 0) {
 				// The target function has been compiled.
 				call(const_cast<void*>(fn));
@@ -462,7 +462,7 @@ void *JITAssembler::Assemble(cell start, cell end) {
 				// The current function calls itself directly or indirectly.
 				push(esp);
 				push(fn_addr);
-				push(reinterpret_cast<int>(jit_));
+				push(reinterpret_cast<int>(frontend_));
 				call(reinterpret_cast<int>(::CallFunction));
 			}
 			add(esp, dword_ptr(esp));
@@ -881,7 +881,7 @@ void *JITAssembler::Assemble(cell start, cell end) {
 			// call system service, service number in PRI
 			push(esp);
 			push(eax);
-			push(reinterpret_cast<int>(jit_));
+			push(reinterpret_cast<int>(frontend_));
 			call(reinterpret_cast<void*>(::CallNativeFunction));
 			break;
 		case OP_SYSREQ_C:   // index
@@ -1024,14 +1024,14 @@ void *JITAssembler::Assemble(cell start, cell end) {
 	return make();
 }
 
-void JITAssembler::halt(cell code) {
-	mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jit_->GetAmx()->error)), code);
-	mov(AsmJit::esp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jit_->halt_esp_)));
-	mov(AsmJit::ebp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jit_->halt_ebp_)));
+void Assembler::halt(cell code) {
+	mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&frontend_->GetAmx()->error)), code);
+	mov(AsmJit::esp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&frontend_->halt_esp_)));
+	mov(AsmJit::ebp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&frontend_->halt_ebp_)));
 	ret();
 }
 
-void JITAssembler::native_float() {
+void Assembler::native_float() {
 	fild(dword_ptr(AsmJit::esp, 4));
 	sub(AsmJit::esp, 4);
 	fstp(dword_ptr(AsmJit::esp));
@@ -1039,7 +1039,7 @@ void JITAssembler::native_float() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatabs() {
+void Assembler::native_floatabs() {
 	using AsmJit::dword_ptr;
 	fld(dword_ptr(AsmJit::esp, 4));
 	fabs();
@@ -1049,7 +1049,7 @@ void JITAssembler::native_floatabs() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatadd() {
+void Assembler::native_floatadd() {
 	fld(dword_ptr(AsmJit::esp, 4));
 	fadd(dword_ptr(AsmJit::esp, 8));
 	sub(AsmJit::esp, 4);
@@ -1058,7 +1058,7 @@ void JITAssembler::native_floatadd() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatsub() {
+void Assembler::native_floatsub() {
 	fld(dword_ptr(AsmJit::esp, 4));
 	fsub(dword_ptr(AsmJit::esp, 8));
 	sub(AsmJit::esp, 4);
@@ -1067,7 +1067,7 @@ void JITAssembler::native_floatsub() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatmul() {
+void Assembler::native_floatmul() {
 	fld(dword_ptr(AsmJit::esp, 4));
 	fmul(dword_ptr(AsmJit::esp, 8));
 	sub(AsmJit::esp, 4);
@@ -1076,7 +1076,7 @@ void JITAssembler::native_floatmul() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatdiv() {
+void Assembler::native_floatdiv() {
 	fld(dword_ptr(AsmJit::esp, 4));
 	fdiv(dword_ptr(AsmJit::esp, 8));
 	sub(AsmJit::esp, 4);
@@ -1085,7 +1085,7 @@ void JITAssembler::native_floatdiv() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatsqroot() {
+void Assembler::native_floatsqroot() {
 	fld(dword_ptr(AsmJit::esp, 4));
 	fsqrt();
 	sub(AsmJit::esp, 4);
@@ -1094,7 +1094,7 @@ void JITAssembler::native_floatsqroot() {
 	add(AsmJit::esp, 4);
 }
 
-void JITAssembler::native_floatlog() {
+void Assembler::native_floatlog() {
 	fld1();
 	fld(dword_ptr(AsmJit::esp, 8));
 	fyl2x();
@@ -1108,7 +1108,7 @@ void JITAssembler::native_floatlog() {
 	add(AsmJit::esp, 4);
 }
 
-AsmJit::Label &JITAssembler::L(cell address, const std::string &tag) {
+AsmJit::Label &Assembler::L(cell address, const std::string &tag) {
 	LabelMap::iterator iterator = label_map_.find(TaggedAddress(address, tag));
 	if (iterator != label_map_.end()) {
 		return iterator->second;
@@ -1119,18 +1119,18 @@ AsmJit::Label &JITAssembler::L(cell address, const std::string &tag) {
 	}
 }
 
-void *JIT::esp_;
-StackBuffer JIT::stack_;
-int JIT::call_depth_ = 0;
+void *Frontend::esp_;
+StackBuffer Frontend::stack_;
+int Frontend::call_depth_ = 0;
 
 // static
-void JIT::SetStackSize(std::size_t stack_size) {
+void Frontend::SetStackSize(std::size_t stack_size) {
 	if (!stack_.IsReady()) {
 		stack_.Allocate(stack_size);
 	}
 }
 
-JIT::JIT(AMX *amx, cell *opcode_list)
+Frontend::Frontend(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx_->base))
 	, data_(amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat)
@@ -1143,41 +1143,32 @@ JIT::JIT(AMX *amx, cell *opcode_list)
 		stack_.Allocate(1 << 20); // stack is 1 MB by default
 	}
 
-	std::vector<AMXInstruction> instrs;
+	std::vector<AmxInstruction> instrs;
 	ParseCode(0, amxhdr_->dat - amxhdr_->cod, instrs);
 
 	// Find start and end addresses of all functions.
 	cell fn_start = 0;
 	cell code_start = reinterpret_cast<cell>(code_);
-	for (std::vector<AMXInstruction>::const_iterator iterator = instrs.begin();
+	for (std::vector<AmxInstruction>::const_iterator iterator = instrs.begin();
 			iterator != instrs.end(); ++iterator) {
-		const AMXInstruction &instr = *iterator;		
+		const AmxInstruction &instr = *iterator;		
 		if (instr.GetOpcode() == OP_PROC || iterator == instrs.end() - 1) {
 			cell ip = reinterpret_cast<cell>(instr.GetIP()) - code_start;
 			if (fn_start != 0) {
-				proc_map_.Map(fn_start, ip - sizeof(cell), 0);
+				proc_map_.Insert(fn_start, ip - sizeof(cell), 0);
 			}
 			fn_start = ip;
 		}
 	}
 }
 
-void JIT::ParseCode(cell start, cell end, std::vector<AMXInstruction> &instructions) const {
+void Frontend::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const {
 	const cell *cip = reinterpret_cast<cell*>(code_ + start);
 
 	while (cip <= reinterpret_cast<cell*>(code_ + end)) {
-		cell opcode = *cip;
+		cell opcode = UnrelocateOpcode(opcode_list_, *cip);
 
-		if (opcode_list_ != 0) {
-			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
-				if (opcode_list_[i] == opcode) {
-					opcode = i;
-					break;
-				}
-			}
-		}
-
-		AMXInstruction instr(static_cast<AMXOpcode>(opcode), cip);
+		AmxInstruction instr(static_cast<AmxOpcode>(opcode), cip);
 		instructions.push_back(instr);
 
 		switch (opcode) {
@@ -1334,7 +1325,7 @@ void JIT::ParseCode(cell start, cell end, std::vector<AMXInstruction> &instructi
 	}
 }
 
-void *JIT::GetFunction(cell address) {
+void *Frontend::GetFunction(cell address) {
 	if (compiling_.find(address) != compiling_.end()) {
 		return 0;
 	}
@@ -1346,18 +1337,18 @@ void *JIT::GetFunction(cell address) {
 
 	const ProcData *fn = proc_map_.GetFunction(address);
 	if (fn != 0) {
-		JITAssembler as(this);
+		Assembler as(this);
 		compiling_.insert(address);
 		code = as.Assemble(fn->codestart, fn->codeend);
 		compiling_.erase(address);
-		proc_map_.Map(fn->codestart, fn->codeend, code);
+		proc_map_.Insert(fn->codestart, fn->codeend, code);
 		return code;
 	}
 
 	return 0;
 }
 
-void JIT::CallFunction(cell address, cell *params, cell *retval) {
+void Frontend::CallFunction(cell address, cell *params, cell *retval) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
@@ -1453,7 +1444,7 @@ void JIT::CallFunction(cell address, cell *params, cell *retval) {
 	}
 }
 
-int JIT::CallPublicFunction(int index, cell *retval) {
+int Frontend::CallPublicFunction(int index, cell *retval) {
 	// Some instructions may set a non-zero error code to indicate
 	// that a runtime error occured (e.g. array index out of bounds).
 	amx_->error = AMX_ERR_NONE;
@@ -1480,9 +1471,22 @@ int JIT::CallPublicFunction(int index, cell *retval) {
 	return amx_->error;
 }
 
-cell JIT::CallNativeFunction(int index, cell *params) {
+cell Frontend::CallNativeFunction(int index, cell *params) {
 	AMX_NATIVE native = reinterpret_cast<AMX_NATIVE>(GetNativeAddress(amx_, index));
 	return native(amx_, params);
+}
+
+// static
+AmxOpcode Frontend::UnrelocateOpcode(cell *opcode_list, cell opcode) {	
+	if (opcode_list != 0) {
+		for (int i = 0; i < NUM_AMX_OPCODES; i++) {
+			if (opcode_list[i] == opcode) {
+				opcode = i;
+				break;
+			}
+		}
+	}
+	return static_cast<AmxOpcode>(opcode);
 }
 
 } // namespace jit

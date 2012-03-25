@@ -39,7 +39,8 @@
 
 namespace jit {
 
-enum AMXOpcode {
+// List of AMX opcodes.
+enum AmxOpcode {
 	OP_NONE,         OP_LOAD_PRI,     OP_LOAD_ALT,     OP_LOAD_S_PRI,
 	OP_LOAD_S_ALT,   OP_LREF_PRI,     OP_LREF_ALT,     OP_LREF_S_PRI,
 	OP_LREF_S_ALT,   OP_LOAD_I,       OP_LODB_I,       OP_CONST_PRI,
@@ -78,41 +79,41 @@ enum AMXOpcode {
 	NUM_AMX_OPCODES
 };
 
-class AMXInstruction {
+class AmxInstruction {
 public:
-	AMXInstruction(AMXOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
+	AmxInstruction(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
 
 	inline const cell *GetIP() const
 		{ return ip_; }
-	inline AMXOpcode GetOpcode() const 
+	inline AmxOpcode GetOpcode() const 
 		{ return opcode_; }
 	inline cell GetOperand(unsigned int index = 0u) const
 		{ return *(ip_ + 1 + index); }
 
 private:
-	AMXOpcode opcode_;
+	AmxOpcode opcode_;
 	const cell *ip_;
 };
 
 // Base class for JIT exceptions.
-class JITError {};
+class JitError {};
 
-class InstructionError : public JITError {
+class InstructionError : public JitError {
 public:
-	InstructionError(const AMXInstruction &instr) : instr_(instr) {}
-	inline const AMXInstruction &GetInstruction() const { return instr_; }
+	InstructionError(const AmxInstruction &instr) : instr_(instr) {}
+	inline const AmxInstruction &GetInstruction() const { return instr_; }
 private:
-	AMXInstruction instr_;
+	AmxInstruction instr_;
 };
 
 class UnsupportedInstructionError : public InstructionError {
 public:
-	UnsupportedInstructionError(const AMXInstruction &instr) : InstructionError(instr) {}
+	UnsupportedInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
 };
 
 class InvalidInstructionError : public InstructionError {
 public:
-	InvalidInstructionError(const AMXInstruction &instr) : InstructionError(instr) {}
+	InvalidInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
 };
 
 class TaggedAddress {
@@ -129,7 +130,7 @@ private:
 	std::string tag_;
 };
 
-inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
+static inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
 	if (left.GetAddress() != right.GetAddress()) {
 		return left.GetAddress() < right.GetAddress();
 	}
@@ -176,10 +177,9 @@ private:
 	std::size_t size_;
 };
 
-// CodeMap maps AMX instructions to corresponding JIT code.
 class CodeMap {
 public:
-	inline void Map(cell amx_ip, sysint_t native_ip) {
+	inline void Insert(cell amx_ip, sysint_t native_ip) {
 		amx_map_.insert(std::make_pair(amx_ip, native_ip));
 	}
 	
@@ -222,7 +222,7 @@ struct ProcData {
 	cell codeend;   // address of last instruction
 };
 
-inline bool operator<(const ProcData &left, const ProcData &right) {
+static inline bool operator<(const ProcData &left, const ProcData &right) {
 	return left.codestart < right.codestart;
 }
 
@@ -234,7 +234,7 @@ public:
 		}
 	}
 
-	void Map(cell codestart, cell codeend, void *native_code) {
+	void Insert(cell codestart, cell codeend, void *native_code) {
 		ProcData data = {codestart, codeend};
 		map_.insert(std::make_pair(data, native_code));
 	}
@@ -272,14 +272,15 @@ private:
 	MapType map_;
 };
 
-class JIT;
+class Frontend;
 
-class JITAssembler : private AsmJit::Assembler {
+class Assembler : private AsmJit::Assembler {
 public:
-	JITAssembler(JIT *jit);
+	Assembler(Frontend *frontend);
+	virtual ~Assembler() {}
 
-	// JIT-compile function at a given address.
-	void *Assemble(cell start, cell end);
+	// Frontend-compile function at a given address.
+	virtual void *Assemble(cell start, cell end);
 
 private:
 	void halt(cell code);
@@ -294,7 +295,7 @@ private:
 	void native_floatsqroot();
 	void native_floatlog();
 
-	typedef void (JITAssembler::*NativeOverride)();
+	typedef void (Assembler::*NativeOverride)();
 	std::map<std::string, NativeOverride> native_overrides_;
 
 private:
@@ -305,18 +306,16 @@ private:
 	LabelMap label_map_;
 
 private:
-	JIT *jit_;
+	Frontend *frontend_;
 };
 
-class JIT {
-	friend class JITAssembler;
+class Frontend {
+	friend class Assembler;
 public:
-	// Set size of stack used by JIT code.
-	static void SetStackSize(std::size_t stack_size);
-
-	JIT(AMX *amx, cell *opcode_list = 0);
+	Frontend(AMX *amx, cell *opcode_list = 0);
+	virtual ~Frontend() {}
 	
-	// Get AMX instance associated with this JIT.
+	// Get AMX instance associated with this Frontend.
 	inline AMX *GetAmx() { 
 		return amx_; 
 	}
@@ -346,25 +345,30 @@ public:
 		return code_map_;
 	}
 
-	// Turn raw AMX code into a sequence of AMXInstruction's.
-	void ParseCode(cell start, cell end, std::vector<AMXInstruction> &instructions) const;
+	// Turn raw AMX code into a sequence of AmxInstruction's.
+	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
 	// Get function's code (and compile if needed).
 	void *GetFunction(cell address);
 
 	// Call a function.
-	void CallFunction(cell address, cell *params, cell *retval);
+	virtual void CallFunction(cell address, cell *params, cell *retval);
 
 	// Call a public function.
-	int  CallPublicFunction(int index, cell *retval);
+	virtual int CallPublicFunction(int index, cell *retval);
 
 	// Call a native function (used for SYSREQ.pri).
-	cell CallNativeFunction(int index, cell *params);
+	virtual cell CallNativeFunction(int index, cell *params);
+
+	// Set size of stack buffer used by JIT code. By default it's 1 MB.
+	static void SetStackSize(std::size_t stack_size);
 
 private:
 	// Disable copying.
-	JIT(const JIT &);
-	JIT &operator=(const JIT &);
+	Frontend(const Frontend &);
+	Frontend &operator=(const Frontend &);
+
+	static AmxOpcode UnrelocateOpcode(cell *opcode_list, cell opcode);
 
 private:
 	AMX        *amx_;
