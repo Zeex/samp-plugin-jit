@@ -392,9 +392,6 @@ void *Assembler::Assemble(cell start, cell end) {
 			// [STK] = ALT, STK = STK - cell size
 			push(ecx);
 			break;
-		case OP_PUSH_R: // value
-			// obsolete
-			break;
 		case OP_PUSH_C: // value
 			// [STK] = value, STK = STK - cell size
 			push(instr.GetOperand());
@@ -477,7 +474,6 @@ void *Assembler::Assemble(cell start, cell end) {
 			break;
 
 		case OP_JUMP:
-		case OP_JREL:
 		case OP_JZER: 
 		case OP_JNZ:
 		case OP_JEQ:
@@ -498,9 +494,6 @@ void *Assembler::Assemble(cell start, cell end) {
 					// CIP = CIP + offset (jump to the address relative from
 					// the current position)
 					jmp(L_dest);
-					break;
-				case OP_JREL: // offset
-					// obsolete
 					break;
 				case OP_JZER: // offset
 					// if PRI == 0 then CIP = CIP + offset
@@ -927,21 +920,6 @@ void *Assembler::Assemble(cell start, cell end) {
 		special_native:
 			break;
 		}
-		case OP_FILE: // size ord name
-			// obsolete
-			break;
-		case OP_LINE: // line ord
-			// obsolete
-			break;
-		case OP_SYMBOL: // size offset flag name
-			// obsolete
-			break;
-		case OP_SRANGE: // level size
-			// obsolete
-			break;
-		case OP_JUMP_PRI:
-			// obsolete
-			break;
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
 			// is passed as an offset from CIP) and_ jump to the associated
@@ -1013,12 +991,19 @@ void *Assembler::Assemble(cell start, cell end) {
 		case OP_NOP:
 			// no-operation, for code alignment
 			break;
-		case OP_SYMTAG: // value
-			// obsolete
-			break;
 		case OP_BREAK:
 			// conditional breakpoint
 			break;
+		case OP_PUSH_R:
+		case OP_FILE:
+		case OP_SYMBOL:
+		case OP_LINE:
+		case OP_SRANGE:
+		case OP_SYMTAG:
+		case OP_JUMP_PRI:
+		case OP_JREL:
+			// obsolete
+			throw ObsoleteInstructionError(instr);
 		default:
 			throw InvalidInstructionError(instr);
 		}		
