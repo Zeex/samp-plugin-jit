@@ -96,6 +96,8 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			logprintf("[jit] Error: Invalid instruction at address %08x:", address);					
 		} catch (const jit::UnsupportedInstructionError &) {
 			logprintf("[jit] Error: Unsupported instruction at address %08x:", address);
+		} catch (const jit::ObsoleteInstructionError &) {
+			logprintf("[jit] Error: Obsolete instruction at address %08x:", address);
 		}
 		// Dump first 4 cells for debugging...
 		const cell *ip = instr.GetIP();

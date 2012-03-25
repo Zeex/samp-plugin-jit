@@ -116,6 +116,11 @@ public:
 	InvalidInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
 };
 
+class ObsoleteInstructionError : public InstructionError {
+public:
+	ObsoleteInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
+};
+
 class TaggedAddress {
 public:
 	TaggedAddress(cell address, std::string tag = std::string())
