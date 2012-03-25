@@ -279,7 +279,7 @@ public:
 	JITAssembler(JIT *jit);
 
 	// JIT-compile function at a given address.
-	void *Assemble(cell start, cell end, CodeMap *code_map = 0);
+	void *Assemble(cell start, cell end);
 
 private:
 	void halt(cell code);
