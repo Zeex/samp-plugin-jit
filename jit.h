@@ -277,7 +277,7 @@ class Frontend;
 class Assembler : private AsmJit::Assembler {
 public:
 	Assembler(Frontend *frontend);
-	virtual ~Assembler() {}
+	virtual ~Assembler() ASMJIT_NOTHROW {}
 
 	// Frontend-compile function at a given address.
 	virtual void *Assemble(cell start, cell end);
