@@ -5,7 +5,7 @@ project(jit)
 set(JIT_VERSION_MAJOR  0)
 set(JIT_VERSION_MINOR  2)
 set(JIT_VERSION_PATCH  0)
-set(JIT_VERSION_STRING "0.2beta3")
+set(JIT_VERSION_STRING "0.2")
 
 include(CheckIncludeFile)
 
