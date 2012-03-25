@@ -248,9 +248,6 @@ public:
 	// Call a public function.
 	virtual int CallPublicFunction(int index, cell *retval);
 
-	// Call a native function (used for SYSREQ.pri).
-	virtual cell CallNativeFunction(int index, cell *params);
-
 	// Set size of stack buffer used by JIT code. By default it's 1 MB.
 	static void SetStackSize(std::size_t stack_size);
 
