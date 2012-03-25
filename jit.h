@@ -29,6 +29,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <set>
 
 #include <AsmJit/Assembler.h>
 #include <AsmJit/MemoryManager.h>
@@ -216,6 +217,15 @@ private:
 	NativeMapType native_map_;
 };
 
+struct ProcData {
+	cell codestart; // address of first instruction
+	cell codeend;   // address of last instruction
+};
+
+inline bool operator<(const ProcData &left, const ProcData &right) {
+	return left.codestart < right.codestart;
+}
+
 class ProcMap {
 public:
 	~ProcMap() {
@@ -229,9 +239,18 @@ public:
 		map_.insert(std::make_pair(data, native_code));
 	}
 
-	void *GetFunctionCode(cell fn_addr) const {
-		ProcData fn_data = {fn_addr, 0};
-		MapType::const_iterator iterator = map_.find(fn_data);
+	const ProcData *GetFunction(cell address) const {
+		ProcData data = {address, 0};
+		MapType::const_iterator iterator = map_.find(data);
+		if (iterator != map_.end()) {
+			return &(iterator->first);
+		}
+		return 0;
+	}
+
+	void *GetFunctionCode(cell address) const {
+		ProcData data = {address, 0};
+		MapType::const_iterator iterator = map_.find(data);
 		if (iterator != map_.end()) {
 			return iterator->second;
 		}
@@ -249,20 +268,9 @@ public:
 	}
 
 private:
-	struct ProcData {
-		cell codestart; // address of first instruction
-		cell codeend;   // address of last instruction
-	};
-
-	friend bool operator<(const ProcData &left, const ProcData &right);
-
 	typedef std::map<ProcData, void*> MapType;
 	MapType map_;
 };
-
-inline bool operator<(const ProcMap::ProcData &left, const ProcMap::ProcData &right) {
-	return left.codestart < right.codestart;
-}
 
 class JIT;
 
@@ -271,7 +279,7 @@ public:
 	JITAssembler(JIT *jit);
 
 	// JIT-compile function at a given address.
-	void *CompileFunction(cell address, CodeMap *code_map = 0);
+	void *Assemble(cell start, cell end, CodeMap *code_map = 0);
 
 private:
 	void halt(cell code);
@@ -339,7 +347,7 @@ public:
 	}
 
 	// Turn raw AMX code into a sequence of AMXInstruction's.
-	void AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const;
+	void ParseCode(cell start, cell end, std::vector<AMXInstruction> &instructions) const;
 
 	// Get function's code (and compile if needed).
 	void *GetFunction(cell address);
@@ -371,7 +379,9 @@ private:
 	void *halt_esp_;
 
 	ProcMap proc_map_;
-	CodeMap code_map_;
+	CodeMap code_map_;	
+
+	std::set<cell> compiling_;
 
 	static void *esp_;
 	static StackBuffer stack_;

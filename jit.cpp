@@ -146,41 +146,18 @@ JITAssembler::JITAssembler(JIT *jit)
 	JIT_OVERRIDE_NATIVE(floatlog);
 }
 
-void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
+void *JITAssembler::Assemble(cell start, cell end, CodeMap *code_map) {
 	AMX *amx = jit_->GetAmx();
 	AMX_HEADER *amxhdr = jit_->GetAmxHeader();
 
 	cell code = reinterpret_cast<cell>(jit_->GetAmxCode());
 	cell data = reinterpret_cast<cell>(jit_->GetAmxData());	
 
-	std::vector<AMXInstruction> instructions;
-	jit_->AnalyzeFunction(address, instructions);
+	std::vector<AMXInstruction> instrs;
+	jit_->ParseCode(start, end, instrs);
 
-	// Mark this function as being compiled.
-	cell end_address = reinterpret_cast<cell>(instructions.back().GetIP()) - code;
-	jit_->GetProcMap().Map(address, end_address, 0);
-
-	using AsmJit::byte_ptr;
-	using AsmJit::byte_ptr_abs;
-	using AsmJit::word_ptr;
-	using AsmJit::word_ptr_abs;
-	using AsmJit::dword_ptr;
-	using AsmJit::dword_ptr_abs;
-	
-	using AsmJit::eax;
-	using AsmJit::ecx;
-	using AsmJit::edx;
-	using AsmJit::esi;
-	using AsmJit::edi;
-	using AsmJit::ebp;
-	using AsmJit::esp;
-	using AsmJit::ax;
-	using AsmJit::al;
-	using AsmJit::cx;
-	using AsmJit::cl;
-
-	for (std::vector<AMXInstruction>::iterator iterator = instructions.begin(); 
-			iterator != instructions.end(); ++iterator) 
+	for (std::vector<AMXInstruction>::iterator iterator = instrs.begin(); 
+			iterator != instrs.end(); ++iterator) 
 	{
 		AMXInstruction &instr = *iterator;
 
@@ -190,6 +167,21 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 		if (code_map != 0) {
 			code_map->Map(cip, getCodeSize());
 		}
+
+		using AsmJit::byte_ptr;
+		using AsmJit::word_ptr;
+		using AsmJit::dword_ptr;
+		using AsmJit::dword_ptr_abs;
+		using AsmJit::eax;
+		using AsmJit::ecx;
+		using AsmJit::edx;
+		using AsmJit::esi;
+		using AsmJit::edi;
+		using AsmJit::ebp;
+		using AsmJit::esp;
+		using AsmJit::ax;
+		using AsmJit::al;
+		using AsmJit::cl;
 
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
@@ -376,6 +368,8 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 			case 5:
 				lea(ebp, dword_ptr(eax, data));
 				break;
+			case 6:
+				break;
 			default:
 				throw UnsupportedInstructionError(instr);
 			}
@@ -462,10 +456,10 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
 			cell fn_addr = instr.GetOperand() - code;
-			void *fn = jit_->GetFunction(fn_addr);
+			const void *fn = jit_->GetFunction(fn_addr);
 			if (fn != 0) {
 				// The target function has been compiled.
-				call(fn);
+				call(const_cast<void*>(fn));
 			} else {
 				// The current function calls itself directly or indirectly.
 				push(esp);
@@ -480,6 +474,7 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 		case OP_CALL_PRI:
 			// obsolete
 			break;
+		// jump instructions
 		case OP_JUMP: // offset
 			// CIP = CIP + offset (jump to the address relative from
 			// the current position)
@@ -1006,9 +1001,7 @@ void *JITAssembler::CompileFunction(cell address, CodeMap *code_map) {
 		}		
 	}
 
-	void *fn =  make();
-	jit_->GetProcMap().Map(address, end_address, fn);
-	return fn;
+	return make();
 }
 
 void JITAssembler::halt(cell code) {
@@ -1129,13 +1122,30 @@ JIT::JIT(AMX *amx, cell *opcode_list)
 	if (!stack_.IsReady()) {
 		stack_.Allocate(1 << 20); // stack is 1 MB by default
 	}
+
+	std::vector<AMXInstruction> instrs;
+	ParseCode(0, amxhdr_->dat - amxhdr_->cod, instrs);
+
+	// Find start and end addresses of all functions.
+	cell fn_start = 0;
+	cell code_start = reinterpret_cast<cell>(code_);
+	for (std::vector<AMXInstruction>::const_iterator iterator = instrs.begin();
+			iterator != instrs.end(); ++iterator) {
+		const AMXInstruction &instr = *iterator;		
+		if (instr.GetOpcode() == OP_PROC || iterator == instrs.end() - 1) {
+			cell ip = reinterpret_cast<cell>(instr.GetIP()) - code_start;
+			if (fn_start != 0) {
+				proc_map_.Map(fn_start, ip - sizeof(cell), 0);
+			}
+			fn_start = ip;
+		}
+	}
 }
 
-void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instructions) const {
-	const cell *cip = reinterpret_cast<cell*>(code_ + address);
-	bool seen_proc = false;
+void JIT::ParseCode(cell start, cell end, std::vector<AMXInstruction> &instructions) const {
+	const cell *cip = reinterpret_cast<cell*>(code_ + start);
 
-	while (cip < reinterpret_cast<cell*>(data_)) {
+	while (cip <= reinterpret_cast<cell*>(code_ + end)) {
 		cell opcode = *cip;
 
 		if (opcode_list_ != 0) {
@@ -1145,14 +1155,6 @@ void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instruction
 					break;
 				}
 			}
-		}
-
-		if (opcode == OP_PROC) {
-			// Start of function body...
-			if (seen_proc) {
-				return;
-			}
-			seen_proc = true;
 		}
 
 		AMXInstruction instr(static_cast<AMXOpcode>(opcode), cip);
@@ -1312,23 +1314,37 @@ void JIT::AnalyzeFunction(cell address, std::vector<AMXInstruction> &instruction
 	}
 }
 
-void *JIT::GetFunction(cell address) {	
-	void *fn = proc_map_.GetFunctionCode(address);
-	if (fn != 0) {
-		return fn;
-	} else {
-		JITAssembler as(this);
-		fn = as.CompileFunction(address, &code_map_);
-		return fn;
+void *JIT::GetFunction(cell address) {
+	if (compiling_.find(address) != compiling_.end()) {
+		return 0;
 	}
+
+	void *code = proc_map_.GetFunctionCode(address);
+	if (code != 0) {
+		return code;
+	}
+
+	const ProcData *fn = proc_map_.GetFunction(address);
+	if (fn != 0) {
+		JITAssembler as(this);
+		compiling_.insert(address);
+		code = as.Assemble(fn->codestart, fn->codeend, &code_map_);
+		compiling_.erase(address);
+		proc_map_.Map(fn->codestart, fn->codeend, code);
+		return code;
+	}
+
+	return 0;
 }
 
 void JIT::CallFunction(cell address, cell *params, cell *retval) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
-	void *start = GetFunction(address);
+	const void *start = GetFunction(address);	
 	cell retval_;
+
+	assert(start != 0);
 
 	#if defined COMPILER_MSVC
 		if (++call_depth_ == 1) {
