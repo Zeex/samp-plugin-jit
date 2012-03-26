@@ -170,10 +170,10 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	OVERRIDE_NATIVE(floatsqroot);
 	OVERRIDE_NATIVE(floatlog);
 
-	for (std::vector<AmxInstruction>::iterator iterator = instrs.begin(); 
-			iterator != instrs.end(); ++iterator) 
+	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin(); 
+			instr_iterator != instrs.end(); ++instr_iterator) 
 	{
-		AmxInstruction &instr = *iterator;
+		AmxInstruction &instr = *instr_iterator;		
 
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) 
 		         - reinterpret_cast<cell>(GetAmxCode());
@@ -364,6 +364,16 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			case 5:
 				as.lea(eax, dword_ptr(ebp, -reinterpret_cast<sysint_t>(GetAmxData())));
 				break;
+			case 6: {
+				if (instr_iterator == instrs.end() - 1) {
+					// Can't get address of next instruction since this one is the last.
+					throw InvalidInstructionError(instr);
+				}
+				AmxInstruction &next_instr = *(instr_iterator + 1);
+				as.mov(eax, reinterpret_cast<sysint_t>(next_instr.GetIP()) 
+				            - reinterpret_cast<sysint_t>(GetAmxCode()));
+				break;
+			}
 			default:
 				throw UnsupportedInstructionError(instr);
 			}
@@ -381,8 +391,6 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 				break;
 			case 5:
 				as.lea(ebp, dword_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
-				break;
-			case 6:
 				break;
 			default:
 				throw UnsupportedInstructionError(instr);
