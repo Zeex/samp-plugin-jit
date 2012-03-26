@@ -161,8 +161,7 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 		         - reinterpret_cast<cell>(GetAmxCode());
 		as.bind(L(as, cip));
 
-		amx_code_map_.insert(std::make_pair(cip, as.getCodeSize()));
-		native_code_map_.insert(std::make_pair(as.getCodeSize(), cip));
+		code_map_.insert(std::make_pair(cip, as.getCodeSize()));
 
 		using AsmJit::byte_ptr;
 		using AsmJit::word_ptr;
@@ -1333,8 +1332,8 @@ Jitter::~Jitter() {
 }
 
 void Jitter::JumpTo(cell ip, void *stack_ptr) {
-	AmxCodeMap::const_iterator it = amx_code_map_.find(ip);
-	if (it != amx_code_map_.end()) {
+	CodeMap::const_iterator it = code_map_.find(ip);
+	if (it != code_map_.end()) {
 		void *dest = it->second + reinterpret_cast<char*>(code_);
 		#if defined COMPILER_MSVC
 			__asm {

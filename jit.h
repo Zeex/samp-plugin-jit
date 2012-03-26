@@ -222,17 +222,8 @@ public:
 
 	// Get offset to native code corresponding to AMX code.
 	inline sysint_t GetInstrOffset(cell amx_ip) {
-		AmxCodeMap::const_iterator iterator = amx_code_map_.find(amx_ip);
-		if (iterator != amx_code_map_.end()) {
-			return iterator->second;
-		}
-		return -1;
-	}
-
-	// Get address of AMX code corresponding to native code.
-	inline cell GetAmxInstr(sysint_t native_ip) {
-		NativeCodeMap::const_iterator iterator = native_code_map_.find(native_ip);
-		if (iterator != native_code_map_.end()) {
+		CodeMap::const_iterator iterator = code_map_.find(amx_ip);
+		if (iterator != code_map_.end()) {
 			return iterator->second;
 		}
 		return -1;
@@ -282,11 +273,8 @@ private:
 
 	void *code_;
 
-	typedef std::map<cell, sysint_t> AmxCodeMap;
-	AmxCodeMap amx_code_map_;
-
-	typedef std::map<sysint_t, cell> NativeCodeMap;
-	NativeCodeMap native_code_map_;	
+	typedef std::map<cell, sysint_t> CodeMap;
+	CodeMap code_map_;
 
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
 	LabelMap label_map_;
