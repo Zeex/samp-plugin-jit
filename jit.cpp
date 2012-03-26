@@ -483,6 +483,7 @@ void Jitter::Compile() {
 			break;
 
 		case OP_JUMP:
+		case OP_JUMP_PRI:
 		case OP_JZER: 
 		case OP_JNZ:
 		case OP_JEQ:
@@ -503,6 +504,15 @@ void Jitter::Compile() {
 					// CIP = CIP + offset (jump to the address relative from
 					// the current position)
 					as.jmp(L_dest);
+					break;
+				case OP_JUMP_PRI:
+					// CIP = PRI (indirect jump)
+					as.push(esp);
+					as.push(eax);
+					as.push(reinterpret_cast<sysint_t>(this));
+					as.call(reinterpret_cast<void*>(::Jump));
+					// Didn't jump because of invalid address - exit with error.
+					halt(as, AMX_ERR_INVINSTR);
 					break;
 				case OP_JZER: // offset
 					// if PRI == 0 then CIP = CIP + offset
@@ -1013,8 +1023,7 @@ void Jitter::Compile() {
 		case OP_SYMBOL:
 		case OP_LINE:
 		case OP_SRANGE:
-		case OP_SYMTAG:
-		case OP_JUMP_PRI:
+		case OP_SYMTAG:		
 		case OP_JREL:
 			// obsolete
 			throw ObsoleteInstructionError(instr);
