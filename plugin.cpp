@@ -73,8 +73,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#endif	
 	std::map<AMX*, jit::Jitter*>::iterator iterator = jitters.find(amx);
 	if (iterator != jitters.end()) {
-		iterator->second->CallPublicFunction(index, retval);
-		return AMX_ERR_NONE;
+		return iterator->second->CallPublicFunction(index, retval);
 	} else {
 		JumpX86::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
