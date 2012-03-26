@@ -140,6 +140,10 @@ static int GetNativeIndex(AMX *amx, cell address) {
 	return -1;
 }
 
+static void STDCALL JumpTo(jit::Jitter *jitter, cell ip) {
+	jitter->JumpTo(ip);
+}
+
 namespace jit {
 
 #define OVERRIDE_NATIVE(name) \
@@ -391,6 +395,11 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 				break;
 			case 5:
 				as.lea(ebp, dword_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
+				break;
+			case 6:
+				as.push(eax);
+				as.push(reinterpret_cast<sysint_t>(this));
+				as.call(reinterpret_cast<void*>(::JumpTo));
 				break;
 			default:
 				throw UnsupportedInstructionError(instr);
@@ -1341,6 +1350,38 @@ void Jitter::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instru
 Jitter::~Jitter() {
 	if (code_ != 0) {
 		AsmJit::MemoryManager::getGlobal()->free(code_);
+	}
+}
+
+void Jitter::JumpTo(cell ip) {
+	AmxCodeMap::const_iterator it = amx_code_map_.find(ip);
+	if (it != amx_code_map_.end()) {
+		void *dest = it->second + reinterpret_cast<char*>(code_);
+		#if defined COMPILER_MSVC
+			// Unwind stack untill the "jmp ::JumpTo" point (see SCTRL)
+			// so we have to pop:
+			//  * ip
+			//  * return address
+			//  * global JumpTo's parameters 
+			//  * global JumpTo's return address
+			// This gives us 5 dwords in total == 20 bytes.
+			__asm {
+				add esp, 20
+				jmp dword ptr [dest]
+			}
+		#elif defined COMPILER_GCC
+			// Same as above but popping 4 extra bytes because of "this" 
+			// being pushed on stack in GCC variant of thiscall:
+			// http://en.wikipedia.org/wiki/X86_calling_conventions#thiscall
+			__asm__ __volatile__ (
+				"addl $24, %%esp;"
+				"jmpl *%0;"
+					: 
+					: "r"(dest) 
+					: );
+		#endif
+	} else {
+		THROW(BadJumpError(ip));
 	}
 }
 
