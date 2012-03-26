@@ -137,11 +137,6 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 		stack_.Allocate(1 << 20); // stack is 1 MB by default
 	}
 
-	std::vector<AmxInstruction> instrs;
-	ParseCode(0, GetAmxHeader()->dat - GetAmxHeader()->cod, instrs);
-
-	AsmJit::Assembler as;
-
 	// Register native overrides
 	OVERRIDE_NATIVE(float);
 	OVERRIDE_NATIVE(floatabs);
@@ -151,6 +146,13 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	OVERRIDE_NATIVE(floatdiv);
 	OVERRIDE_NATIVE(floatsqroot);
 	OVERRIDE_NATIVE(floatlog);
+}
+
+void Jitter::Compile() {
+	std::vector<AmxInstruction> instrs;
+	ParseCode(0, GetAmxHeader()->dat - GetAmxHeader()->cod, instrs);
+
+	AsmJit::Assembler as;
 
 	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin(); 
 			instr_iterator != instrs.end(); ++instr_iterator) 
@@ -365,7 +367,7 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			// 6=CIP
 			switch (instr.GetOperand()) {
 			case 2:
-				as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), eax);
+				as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), eax);
 				break;
 			case 4:
 				as.lea(esp, dword_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
@@ -432,8 +434,8 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
-			as.mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)));
-			as.add(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), instr.GetOperand());
+			as.mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
+			as.add(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), instr.GetOperand());
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
@@ -879,11 +881,11 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 		case OP_SYSREQ_PRI:
 			// call system service, service number in PRI
 			as.push(eax);
-			as.push(reinterpret_cast<sysint_t>(amx));
+			as.push(reinterpret_cast<sysint_t>(amx_));
 			as.call(reinterpret_cast<void*>(GetNativeAddress));
 			as.add(esp, 8);
 			as.push(esp);
-			as.push(reinterpret_cast<sysint_t>(amx));
+			as.push(reinterpret_cast<sysint_t>(amx_));
 			as.call(eax);
 			break;
 		case OP_SYSREQ_C:   // index
@@ -892,12 +894,12 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			std::string native_name;
 			switch (instr.GetOpcode()) {
 				case OP_SYSREQ_C:
-					native_name = GetNativeName(amx, instr.GetOperand());
+					native_name = GetNativeName(amx_, instr.GetOperand());
 					break;
 				case OP_SYSREQ_D: {
-					int index = GetNativeIndex(amx, instr.GetOperand());
+					int index = GetNativeIndex(amx_, instr.GetOperand());
 					if (index != -1) {
-						native_name = GetNativeName(amx, index);
+						native_name = GetNativeName(amx_, index);
 					}
 					break;
 				}
@@ -913,10 +915,10 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			}
 		ordinary_native:
 			as.push(esp);
-			as.push(reinterpret_cast<sysint_t>(amx));
+			as.push(reinterpret_cast<sysint_t>(amx_));
 			switch (instr.GetOpcode()) {
 				case OP_SYSREQ_C:					
-					as.call(reinterpret_cast<void*>(GetNativeAddress(amx, instr.GetOperand())));
+					as.call(reinterpret_cast<void*>(GetNativeAddress(amx_, instr.GetOperand())));
 					break;
 				case OP_SYSREQ_D:
 					as.call(reinterpret_cast<void*>(instr.GetOperand()));
