@@ -25,11 +25,9 @@
 #define JIT_H
 
 #include <cstdlib>
-#include <iosfwd>
 #include <map>
 #include <string>
 #include <vector>
-#include <set>
 
 #include <AsmJit/Assembler.h>
 #include <AsmJit/Operand.h>
