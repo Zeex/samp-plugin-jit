@@ -455,10 +455,6 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(ebp);
-			as.pop(edx);
-			as.add(esp, dword_ptr(esp));
-			as.add(esp, 4);
-			as.push(edx);
 			as.ret();
 			break;
 		case OP_CALL: { // offset
@@ -469,7 +465,9 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
 			cell fn_addr = instr.GetOperand() - reinterpret_cast<cell>(GetAmxCode());
-			as.call(L(as, fn_addr));			
+			as.call(L(as, fn_addr));
+			as.add(esp, dword_ptr(esp));
+			as.add(esp, 4);
 			break;
 		}
 		case OP_CALL_PRI:
@@ -1390,6 +1388,8 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 			mov dword ptr [eax].halt_ebp_, ebp
 			call dword ptr [start]
 			mov dword ptr [retval_], eax
+			add esp, dword ptr [parambytes]
+			add esp, 4
 			pop edi
 			pop esi
 		}
@@ -1417,15 +1417,25 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 					: : "r"(params[i]) : "%esp");
 		}
 		__asm__ __volatile__ (
-			"movl -4(%%esp), %0;"
-			"movl %%ebp, %1;"
-			"calll *%3;"
-			"movl %%eax, %2;"
+			"leal -4(%%esp), %%eax;"
+			"movl %%eax, (%0);"
+			"movl %%ebp, (%1);"
+				:
+				: "r"(&halt_esp_), "r"(&halt_ebp_)
+				: "%eax");
+		__asm__ __volatile__ (
+			"calll *%1;"
+			"movl %%eax, %0;"
+				: "=r"(retval_)
+				: "r"(start)
+				: "%ecx", "%edx" );
+		__asm__ __volatile__ (
+			"addl %0, %%esp;"
 			"popl %%edi;"
 			"popl %%esi;"
-				: "=r"(halt_esp_), "=r"(halt_ebp_), "=r"(retval_)
-				: "r"(start)
-				: "%ecx", "%edx");
+				:
+				: "r"(parambytes + sizeof(cell))
+				: );
 		if (--call_depth_ == 0) {
 			__asm__ __volatile__ (
 				"movl %0, %%esp;"
