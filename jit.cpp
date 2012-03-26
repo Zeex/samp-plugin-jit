@@ -944,38 +944,40 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 			// Get pointer to the start of the case table.
 			case_table = reinterpret_cast<case_record*>(instr.GetOperand() + sizeof(cell));
 
-			// The number of cases follows the CASETBL opcode (which follows the SWITCH).
-			int num_cases = *(reinterpret_cast<cell*>(instr.GetOperand()) + 1);
-
-			// Get minimum and_ maximum values.
-			cell *min_value = 0;
-			cell *max_value = 0;
-			for (int i = 0; i < num_cases; i++) {
-				cell *value = &case_table[i + 1].value;
-				if (min_value == 0 || *value < *min_value) {
-					min_value = value;
-				}
-				if (max_value == 0 || *value > *max_value) {
-					max_value = value;
-				}
-			}
-
 			// Get address of the "default" record.
 			cell default_addr = case_table[0].address - reinterpret_cast<cell>(GetAmxCode());
 
-			// Check if the value in eax is in the allowed range.
-			// If not, jump to the default case (i.e. no match).
-			as.cmp(eax, *min_value);
-			as.jl(L(as, default_addr));
-			as.cmp(eax, *max_value);
-			as.jg(L(as, default_addr));
+			// The number of cases follows the CASETBL opcode (which follows the SWITCH).
+			int num_cases = *(reinterpret_cast<cell*>(instr.GetOperand()) + 1);
 
-			// OK now sequentially compare eax with each value.
-			// This is pretty slow so I probably should optimize
-			// this in future...
-			for (int i = 0; i < num_cases; i++) {
-				as.cmp(eax, case_table[i + 1].value);
-				as.je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(GetAmxCode())));
+			if (num_cases > 0) {
+				// Get minimum and maximum values.
+				cell *min_value = 0;
+				cell *max_value = 0;
+				for (int i = 0; i < num_cases; i++) {
+					cell *value = &case_table[i + 1].value;
+					if (min_value == 0 || *value < *min_value) {
+						min_value = value;
+					}
+					if (max_value == 0 || *value > *max_value) {
+						max_value = value;
+					}
+				}
+
+				// Check if the value in eax is in the allowed range.
+				// If not, jump to the default case (i.e. no match).
+				as.cmp(eax, *min_value);
+				as.jl(L(as, default_addr));
+				as.cmp(eax, *max_value);
+				as.jg(L(as, default_addr));
+
+				// OK now sequentially compare eax with each value.
+				// This is pretty slow so I probably should optimize
+				// this in future...
+				for (int i = 0; i < num_cases; i++) {
+					as.cmp(eax, case_table[i + 1].value);
+					as.je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(GetAmxCode())));
+				}
 			}
 
 			// No match found - go for default case.
