@@ -236,7 +236,7 @@ public:
 	virtual void Compile();
 
 	// Unconditional jump to the specified AMX address.
-	virtual void JumpTo(cell ip, void *stack_ptr);
+	virtual void Jump(cell ip, void *stack_ptr);
 
 	// Call a function.
 	virtual void CallFunction(cell address, cell *params, cell *retval);
