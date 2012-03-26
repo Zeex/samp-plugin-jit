@@ -65,28 +65,6 @@
 	#endif
 #endif
 
-#if defined COMPILER_MSVC
-	#define THROW(what)                        \
-		do {                                   \
-			if (call_depth_ > 0) {             \
-				__asm {                        \
-					mov esp, dword ptr [esp_]  \
-				}                              \
-			}                                  \
-			throw what;                        \
-		} while (false)
-#elif defined COMPILER_GCC
-	#define THROW(what)                        \
-		do {                                   \
-			if (call_depth_ > 0) {             \
-				__asm__ __volatile__ (         \
-					"movl %0, %%esp;"          \
-						: : "r"(esp_) : );     \
-			}                                  \
-			throw what;                        \
-		} while (false)
-#endif
-
 static cell GetPublicAddress(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
@@ -1354,35 +1332,36 @@ Jitter::~Jitter() {
 }
 
 void Jitter::JumpTo(cell ip) {
+	void *dest = code_;
+
 	AmxCodeMap::const_iterator it = amx_code_map_.find(ip);
-	if (it != amx_code_map_.end()) {
-		void *dest = it->second + reinterpret_cast<char*>(code_);
-		#if defined COMPILER_MSVC
-			// Unwind stack untill the "jmp ::JumpTo" point (see SCTRL)
-			// so we have to pop:
-			//  * ip
-			//  * return address
-			//  * global JumpTo's parameters 
-			//  * global JumpTo's return address
-			// This gives us 5 dwords in total == 20 bytes.
-			__asm {
-				add esp, 20
-				jmp dword ptr [dest]
-			}
-		#elif defined COMPILER_GCC
-			// Same as above but popping 4 extra bytes because of "this" 
-			// being pushed on stack in GCC variant of thiscall:
-			// http://en.wikipedia.org/wiki/X86_calling_conventions#thiscall
-			__asm__ __volatile__ (
-				"addl $24, %%esp;"
-				"jmpl *%0;"
-					: 
-					: "r"(dest) 
-					: );
-		#endif
-	} else {
-		THROW(BadJumpError(ip));
+	if (it == amx_code_map_.end()) {
+		dest = it->second + reinterpret_cast<char*>(code_);
 	}
+
+	#if defined COMPILER_MSVC
+		// Unwind stack untill the "jmp ::JumpTo" point (see SCTRL)
+		// so we have to pop:
+		//  * ip
+		//  * return address
+		//  * global JumpTo's parameters 
+		//  * global JumpTo's return address
+		// This gives us 5 dwords in total == 20 bytes.
+		__asm {
+			add esp, 20
+			jmp dword ptr [dest]
+		}
+	#elif defined COMPILER_GCC
+		// Same as above but popping 4 extra bytes because of "this" 
+		// being pushed on stack in GCC variant of thiscall:
+		// http://en.wikipedia.org/wiki/X86_calling_conventions#thiscall
+		__asm__ __volatile__ (
+			"addl $24, %%esp;"
+			"jmpl *%0;"
+				: 
+				: "r"(dest) 
+				: );
+	#endif
 }
 
 void Jitter::CallFunction(cell address, cell *params, cell *retval) {
