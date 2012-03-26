@@ -161,10 +161,11 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		amx_GetAddr_hook.Install(
 			(void*)amx_GetAddr,
 			(void*)amx_GetAddr_JIT);
-	}
+	}	
 
 	try {
 		jit::Jitter *jitter = new jit::Jitter(amx, ::opcode_list);
+		jitter->Compile();
 		jitters.insert(std::make_pair(amx, jitter));
 	} catch (const jit::JitError &) {
 		try {

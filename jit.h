@@ -232,6 +232,9 @@ public:
 	// Turn raw AMX code into a sequence of AmxInstruction's.
 	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
+	// JIT-compile whole AMX script.
+	virtual void Compile();
+
 	// Unconditional jump to the specified AMX address.
 	virtual void JumpTo(cell ip, void *stack_ptr);
 
