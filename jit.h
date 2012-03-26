@@ -120,6 +120,14 @@ public:
 	ObsoleteInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
 };
 
+class BadJumpError : public JitError {
+public:
+	BadJumpError(cell dest) : dest_(dest) {}
+	inline cell GetDestination() const { return dest_; }
+private:
+	cell dest_;
+};
+
 class TaggedAddress {
 public:
 	TaggedAddress(cell address, std::string tag = std::string())
@@ -240,6 +248,9 @@ public:
 
 	// Turn raw AMX code into a sequence of AmxInstruction's.
 	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
+
+	// Unconditional jump to the specified AMX address.
+	virtual void JumpTo(cell ip);
 
 	// Call a function.
 	virtual void CallFunction(cell address, cell *params, cell *retval);

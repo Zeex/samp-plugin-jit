@@ -188,6 +188,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			const cell *ip = instr.GetIP();
 			logprintf("  %08x %08x %08x %08x %08x %08x ...", 
 					*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 5), *(ip + 5));
+		} catch (const jit::BadJumpError &e) {
+			logprintf("[jit]: Error: Bad jump address: %08x", e.GetDestination());
 		}
 	} catch (...) {
 		logprintf("[jit] Error: Unknown error");
