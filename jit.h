@@ -120,14 +120,6 @@ public:
 	ObsoleteInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
 };
 
-class BadJumpError : public JitError {
-public:
-	BadJumpError(cell dest) : dest_(dest) {}
-	inline cell GetDestination() const { return dest_; }
-private:
-	cell dest_;
-};
-
 class TaggedAddress {
 public:
 	TaggedAddress(cell address, std::string tag = std::string())
