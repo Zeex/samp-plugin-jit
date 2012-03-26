@@ -222,9 +222,12 @@ public:
 
 	// Get offset to native code corresponding to AMX code.
 	inline sysint_t GetInstrOffset(cell amx_ip) {
-		CodeMap::const_iterator iterator = code_map_.find(amx_ip);
-		if (iterator != code_map_.end()) {
-			return iterator->second;
+		assert(code_map_ != 0);
+		if (code_map_ != 0) {
+			CodeMap::const_iterator iterator = code_map_->find(amx_ip);
+			if (iterator != code_map_->end()) {
+				return iterator->second;
+			}
 		}
 		return -1;
 	}
@@ -250,24 +253,8 @@ public:
 private:
 	// Disable copying.
 	Jitter(const Jitter &);
-	Jitter &operator=(const Jitter &);
+	Jitter &operator=(const Jitter &);	
 
-	AsmJit::Label &L(AsmJit::Assembler &as, cell address, const std::string &tag = "");
-
-	// Code snippets
-	void halt(AsmJit::Assembler &as, cell error_code);
-
-	// Native overrides for floating-point natives
-	void native_float(AsmJit::Assembler &as);
-	void native_floatabs(AsmJit::Assembler &as);
-	void native_floatadd(AsmJit::Assembler &as);
-	void native_floatsub(AsmJit::Assembler &as);
-	void native_floatmul(AsmJit::Assembler &as);
-	void native_floatdiv(AsmJit::Assembler &as);
-	void native_floatsqroot(AsmJit::Assembler &as);
-	void native_floatlog(AsmJit::Assembler &as);
-
-private:
 	AMX *amx_;
 	cell *opcode_list_;
 	
@@ -277,14 +264,34 @@ private:
 	void *code_;
 
 	typedef std::map<cell, sysint_t> CodeMap;
-	CodeMap code_map_;
+	CodeMap *code_map_;
 
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
-	LabelMap label_map_;
+	LabelMap *label_map_;
+
+	// Label code location. The label can optionally have a unique name.
+	AsmJit::Label &Label(AsmJit::Assembler &as, 
+	                     LabelMap *label_map, 
+	                     cell address, 
+	                     const std::string &name = std::string());
 
 	typedef void (Jitter::*NativeOverride)(AsmJit::Assembler &as);
 	std::map<std::string, NativeOverride> native_overrides_;
 
+	// Native overrides for floating-point natives.
+	void native_float(AsmJit::Assembler &as);
+	void native_floatabs(AsmJit::Assembler &as);
+	void native_floatadd(AsmJit::Assembler &as);
+	void native_floatsub(AsmJit::Assembler &as);
+	void native_floatmul(AsmJit::Assembler &as);
+	void native_floatdiv(AsmJit::Assembler &as);
+	void native_floatsqroot(AsmJit::Assembler &as);
+	void native_floatlog(AsmJit::Assembler &as);
+
+	// Code snippets.
+	void halt(AsmJit::Assembler &as, cell error_code);
+
+	// Static members.
 	static void *esp_;
 	static StackBuffer stack_;
 	static int call_depth_;
