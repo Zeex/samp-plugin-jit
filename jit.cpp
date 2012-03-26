@@ -118,8 +118,8 @@ static int GetNativeIndex(AMX *amx, cell address) {
 	return -1;
 }
 
-static void STDCALL JumpTo(jit::Jitter *jitter, cell ip, void *stack_ptr) {
-	jitter->JumpTo(ip, stack_ptr);
+static void STDCALL Jump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
+	jitter->Jump(ip, stack_ptr);
 }
 
 namespace jit {
@@ -379,7 +379,7 @@ void Jitter::Compile() {
 				as.push(esp);
 				as.push(eax);
 				as.push(reinterpret_cast<sysint_t>(this));
-				as.call(reinterpret_cast<void*>(::JumpTo));
+				as.call(reinterpret_cast<void*>(::Jump));
 				// Didn't jump because of invalid address - exit with error.
 				halt(as, AMX_ERR_INVINSTR);
 				break;
@@ -1333,7 +1333,7 @@ Jitter::~Jitter() {
 	}
 }
 
-void Jitter::JumpTo(cell ip, void *stack_ptr) {
+void Jitter::Jump(cell ip, void *stack_ptr) {
 	CodeMap::const_iterator it = code_map_.find(ip);
 	if (it != code_map_.end()) {
 		void *dest = it->second + reinterpret_cast<char*>(code_);
