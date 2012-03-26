@@ -118,8 +118,8 @@ static int GetNativeIndex(AMX *amx, cell address) {
 	return -1;
 }
 
-static void STDCALL JumpTo(jit::Jitter *jitter, cell ip) {
-	jitter->JumpTo(ip);
+static void STDCALL JumpTo(jit::Jitter *jitter, cell ip, void *stack_ptr) {
+	jitter->JumpTo(ip, stack_ptr);
 }
 
 namespace jit {
@@ -375,9 +375,12 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 				as.lea(ebp, dword_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
 				break;
 			case 6:
+				as.push(esp);
 				as.push(eax);
 				as.push(reinterpret_cast<sysint_t>(this));
 				as.call(reinterpret_cast<void*>(::JumpTo));
+				// Didn't jump because of invalid address - exit with error.
+				halt(as, AMX_ERR_INVINSTR);
 				break;
 			default:
 				throw UnsupportedInstructionError(instr);
@@ -1331,37 +1334,24 @@ Jitter::~Jitter() {
 	}
 }
 
-void Jitter::JumpTo(cell ip) {
-	void *dest = code_;
-
+void Jitter::JumpTo(cell ip, void *stack_ptr) {
 	AmxCodeMap::const_iterator it = amx_code_map_.find(ip);
-	if (it == amx_code_map_.end()) {
-		dest = it->second + reinterpret_cast<char*>(code_);
+	if (it != amx_code_map_.end()) {
+		void *dest = it->second + reinterpret_cast<char*>(code_);
+		#if defined COMPILER_MSVC
+			__asm {
+				mov esp, dword ptr [stack_ptr]
+				jmp dword ptr [dest]
+			}
+		#elif defined COMPILER_GCC
+			__asm__ __volatile__ (
+				"movl %0, %%esp;"
+				"jmpl *%1;"
+					: 
+					: "r"(stack_ptr), "r"(dest) 
+					: );
+		#endif
 	}
-
-	#if defined COMPILER_MSVC
-		// Unwind stack untill the "jmp ::JumpTo" point (see SCTRL)
-		// so we have to pop:
-		//  * ip
-		//  * return address
-		//  * global JumpTo's parameters 
-		//  * global JumpTo's return address
-		// This gives us 5 dwords in total == 20 bytes.
-		__asm {
-			add esp, 20
-			jmp dword ptr [dest]
-		}
-	#elif defined COMPILER_GCC
-		// Same as above but popping 4 extra bytes because of "this" 
-		// being pushed on stack in GCC variant of thiscall:
-		// http://en.wikipedia.org/wiki/X86_calling_conventions#thiscall
-		__asm__ __volatile__ (
-			"addl $24, %%esp;"
-			"jmpl *%0;"
-				: 
-				: "r"(dest) 
-				: );
-	#endif
 }
 
 void Jitter::CallFunction(cell address, cell *params, cell *retval) {
