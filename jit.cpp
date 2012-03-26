@@ -26,6 +26,7 @@
 #include <cstring>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -132,6 +133,8 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	, opcode_list_(opcode_list)
 	, halt_esp_(0)
 	, halt_ebp_(0)
+	, code_map_(0)
+	, label_map_(0)
 {
 	if (!stack_.IsReady()) {
 		stack_.Allocate(1 << 20); // stack is 1 MB by default
@@ -154,6 +157,9 @@ void Jitter::Compile() {
 
 	AsmJit::Assembler as;
 
+	std::auto_ptr<CodeMap> code_map(new CodeMap);
+	std::auto_ptr<LabelMap> label_map(new LabelMap);
+
 	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin(); 
 			instr_iterator != instrs.end(); ++instr_iterator) 
 	{
@@ -161,9 +167,9 @@ void Jitter::Compile() {
 
 		cell cip = reinterpret_cast<cell>(instr.GetIP()) 
 		         - reinterpret_cast<cell>(GetAmxCode());
-		as.bind(L(as, cip));
+		as.bind(Label(as, label_map.get(), cip));
 
-		code_map_.insert(std::make_pair(cip, as.getCodeSize()));
+		code_map->insert(std::make_pair(cip, as.getCodeSize()));
 
 		using AsmJit::byte_ptr;
 		using AsmJit::word_ptr;
@@ -466,7 +472,7 @@ void Jitter::Compile() {
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
 			cell fn_addr = instr.GetOperand() - reinterpret_cast<cell>(GetAmxCode());
-			as.call(L(as, fn_addr));
+			as.call(Label(as, label_map.get(), fn_addr));
 			as.add(esp, dword_ptr(esp));
 			as.add(esp, 4);
 			break;
@@ -492,7 +498,7 @@ void Jitter::Compile() {
 		case OP_JSGRTR:
 		case OP_JSGEQ: {
 			cell dest = instr.GetOperand() - reinterpret_cast<cell>(GetAmxCode());
-			AsmJit::Label &L_dest = L(as, dest);
+			AsmJit::Label &L_dest = Label(as, label_map.get(), dest);
 
 			switch (instr.GetOpcode()) {
 				case OP_JUMP: // offset
@@ -849,7 +855,7 @@ void Jitter::Compile() {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-			AsmJit::Label &L_loop = L(as, cip, "loop");
+			AsmJit::Label &L_loop = Label(as, label_map.get(), cip, "loop");
 			as.lea(edi, dword_ptr(ecx, reinterpret_cast<sysint_t>(GetAmxData())));                      // memory start
 			as.lea(esi, dword_ptr(ecx, reinterpret_cast<sysint_t>(GetAmxData()) + instr.GetOperand())); // memory end
 			as.bind(L_loop);
@@ -866,8 +872,8 @@ void Jitter::Compile() {
 			break;
 		case OP_BOUNDS: { // value
 			// Abort execution if PRI > value or_ if PRI < 0.
-			AsmJit::Label &L_halt = L(as, cip, "halt");
-			AsmJit::Label &L_good = L(as, cip, "good");
+			AsmJit::Label &L_halt = Label(as, label_map.get(), cip, "halt");
+			AsmJit::Label &L_good = Label(as, label_map.get(), cip, "good");
 				as.cmp(eax, instr.GetOperand());
 			as.jg(L_halt);
 				as.cmp(eax, 0);
@@ -964,21 +970,21 @@ void Jitter::Compile() {
 				// Check if the value in eax is in the allowed range.
 				// If not, jump to the default case (i.e. no match).
 				as.cmp(eax, *min_value);
-				as.jl(L(as, default_addr));
+				as.jl(Label(as, label_map.get(), default_addr));
 				as.cmp(eax, *max_value);
-				as.jg(L(as, default_addr));
+				as.jg(Label(as, label_map.get(), default_addr));
 
 				// OK now sequentially compare eax with each value.
 				// This is pretty slow so I probably should optimize
 				// this in future...
 				for (int i = 0; i < num_cases; i++) {
 					as.cmp(eax, case_table[i + 1].value);
-					as.je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(GetAmxCode())));
+					as.je(Label(as, label_map.get(), case_table[i + 1].address - reinterpret_cast<cell>(GetAmxCode())));
 				}
 			}
 
 			// No match found - go for default case.
-			as.jmp(L(as, default_addr));
+			as.jmp(Label(as, label_map.get(), default_addr));
 			break;
 		}
 		case OP_CASETBL: // ...
@@ -1020,6 +1026,9 @@ void Jitter::Compile() {
 	}
 
 	code_ = as.make();
+
+	code_map_ = code_map.release();
+	label_map_ = label_map.release();
 }
 
 void Jitter::halt(AsmJit::Assembler &as, cell error_code) {
@@ -1133,13 +1142,13 @@ void Jitter::native_floatlog(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-AsmJit::Label &Jitter::L(AsmJit::Assembler &as, cell address, const std::string &tag) {
-	LabelMap::iterator iterator = label_map_.find(TaggedAddress(address, tag));
-	if (iterator != label_map_.end()) {
+AsmJit::Label &Jitter::Label(AsmJit::Assembler &as, LabelMap *label_map, cell address, const std::string &name) {
+	LabelMap::iterator iterator = label_map->find(TaggedAddress(address, name));
+	if (iterator != label_map->end()) {
 		return iterator->second;
 	} else {
 		std::pair<LabelMap::iterator, bool> where = 
-				label_map_.insert(std::make_pair(TaggedAddress(address, tag), as.newLabel()));
+				label_map->insert(std::make_pair(TaggedAddress(address, name), as.newLabel()));
 		return where.first->second;
 	}
 }
@@ -1334,8 +1343,8 @@ Jitter::~Jitter() {
 }
 
 void Jitter::Jump(cell ip, void *stack_ptr) {
-	CodeMap::const_iterator it = code_map_.find(ip);
-	if (it != code_map_.end()) {
+	CodeMap::const_iterator it = code_map_->find(ip);
+	if (it != code_map_->end()) {
 		void *dest = it->second + reinterpret_cast<char*>(code_);
 		#if defined COMPILER_MSVC
 			__asm {
