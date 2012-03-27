@@ -14,7 +14,7 @@ New server.cfg vars:
 
   * jit_listing <0|1>
 
-    Output assembly listing to a text file name like so: 
+    Output assembly listing to a text file named like so: 
       
     <amx_path>/<amx_name>.asm
 
