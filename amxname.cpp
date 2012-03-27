@@ -38,7 +38,7 @@
 #endif
 #include "amxname.h"
 
-static time_t GetMtime(const std::string filename) {
+static time_t GetMtime(const std::string &filename) {
 	struct stat attrib;
 	stat(filename.c_str(), &attrib);
 	return attrib.st_mtime;
