@@ -11,3 +11,13 @@ New server.cfg vars:
 
     Specifies how much memory must be allocated for JIT stack, in bytes.
     Default stack size is 1 MB.
+
+  * jit_listing <0|1>
+
+    Output assembly listing to a text file name like so: 
+      
+    <amx_path>/<amx_name>.asm
+
+    For example, if you run LVDM JIT will output its code to:
+
+    gamemodes/lvdm.asm
