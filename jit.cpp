@@ -892,16 +892,22 @@ void Jitter::Compile() {
 			as.bind(L_good);
 			break;
 		}
-		case OP_SYSREQ_PRI:
+		case OP_SYSREQ_PRI: {
 			// call system service, service number in PRI
-			as.push(eax);
-			as.push(reinterpret_cast<sysint_t>(amx_));
-			as.call(reinterpret_cast<void*>(GetNativeAddress));
-			as.add(esp, 8);
-			as.push(esp);
-			as.push(reinterpret_cast<sysint_t>(amx_));
-			as.call(eax);
+			AsmJit::Label &L_halt = Label(as, label_map.get(), cip, "halt");			
+				as.push(eax);
+				as.push(reinterpret_cast<sysint_t>(amx_));
+				as.call(reinterpret_cast<void*>(GetNativeAddress));
+				as.add(esp, 8);
+				as.test(eax, eax);
+				as.jz(L_halt);
+				as.push(esp);
+				as.push(reinterpret_cast<sysint_t>(amx_));
+				as.call(eax);
+			as.bind(L_halt);
+				halt(as, AMX_ERR_NOTFOUND);
 			break;
+		}
 		case OP_SYSREQ_C:   // index
 		case OP_SYSREQ_D: { // address
 			// call system service
@@ -1378,6 +1384,9 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 
 	assert(start != 0);
 
+	void *halt_esp = halt_esp_;
+	void *halt_ebp = halt_ebp_;
+
 	#if defined COMPILER_MSVC
 		if (++call_depth_ == 1) {
 			assert(stack_.IsReady());
@@ -1468,6 +1477,11 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 }
 
 int Jitter::CallPublicFunction(int index, cell *retval) {
+	// Make sure all native functions have been registered.
+	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
+		return AMX_ERR_NOTFOUND;
+	}
+
 	// Some instructions may set a non-zero error code to indicate
 	// that a runtime error occured (e.g. array index out of bounds).
 	amx_->error = AMX_ERR_NONE;
