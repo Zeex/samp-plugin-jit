@@ -230,7 +230,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			// Print first few cells of the problem instruction for debugging.
 			const cell *ip = instr.GetIP();
 			logprintf("  %08x %08x %08x %08x %08x %08x ...", 
-					*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 5), *(ip + 5));
+					*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
 			return AMX_ERR_INVINSTR;
 		}
 	} catch (...) {
