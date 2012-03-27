@@ -1471,6 +1471,9 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 		}
 	#endif
 
+	halt_esp_ = halt_esp;
+	halt_ebp_ = halt_ebp;
+
 	if (retval != 0) {
 		*retval = retval_;
 	}
