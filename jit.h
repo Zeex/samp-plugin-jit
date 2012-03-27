@@ -24,6 +24,7 @@
 #ifndef JIT_H
 #define JIT_H
 
+#include <cstdio>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -233,8 +234,9 @@ public:
 	// Turn raw AMX code into a sequence of AmxInstruction's.
 	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
-	// JIT-compile whole AMX script.
-	virtual void Compile();
+	// JIT-compile whole AMX script and optionally output assembly 
+	// code listing to a stream.
+	virtual void Compile(std::FILE *list_stream = 0);
 
 	// Unconditional jump to the specified AMX address.
 	virtual void Jump(cell ip, void *stack_ptr);
