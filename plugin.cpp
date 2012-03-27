@@ -171,7 +171,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		try {
 			logprintf("[jit] An error occured, this script will run without JIT!");
 			throw;
-		} catch (const jit::InstructionError &e) {
+		} catch (const jit::CompileError &e) {
 			const jit::AmxInstruction &instr = e.GetInstruction();
 			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 			cell address = reinterpret_cast<cell>(instr.GetIP()) 

@@ -95,27 +95,27 @@ private:
 // Base class for JIT exceptions.
 class JitError {};
 
-class InstructionError : public JitError {
+class CompileError : public JitError {
 public:
-	InstructionError(const AmxInstruction &instr) : instr_(instr) {}
+	CompileError(const AmxInstruction &instr) : instr_(instr) {}
 	inline const AmxInstruction &GetInstruction() const { return instr_; }
 private:
 	AmxInstruction instr_;
 };
 
-class UnsupportedInstructionError : public InstructionError {
+class UnsupportedInstructionError : public CompileError {
 public:
-	UnsupportedInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
+	UnsupportedInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
 };
 
-class InvalidInstructionError : public InstructionError {
+class InvalidInstructionError : public CompileError {
 public:
-	InvalidInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
+	InvalidInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
 };
 
-class ObsoleteInstructionError : public InstructionError {
+class ObsoleteInstructionError : public CompileError {
 public:
-	ObsoleteInstructionError(const AmxInstruction &instr) : InstructionError(instr) {}
+	ObsoleteInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
 };
 
 class TaggedAddress {
