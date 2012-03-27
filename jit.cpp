@@ -149,11 +149,13 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	OVERRIDE_NATIVE(floatlog);
 }
 
-void Jitter::Compile() {
+void Jitter::Compile(std::FILE *list_stream) {
 	std::vector<AmxInstruction> instrs;
 	ParseCode(0, GetAmxHeader()->dat - GetAmxHeader()->cod, instrs);
 
 	AsmJit::Assembler as;
+	AsmJit::FileLogger logger(list_stream);
+	as.setLogger(&logger);
 
 	std::auto_ptr<CodeMap> code_map(new CodeMap);
 	std::auto_ptr<LabelMap> label_map(new LabelMap);
