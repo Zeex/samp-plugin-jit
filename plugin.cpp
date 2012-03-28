@@ -23,13 +23,10 @@
 
 #include <cassert>
 #include <cstddef>
-#include <cstdio>
-#include <cstring>
 #include <fstream>
 #include <map>
 #include <string>
 
-#include "amxname.h"
 #include "configreader.h"
 #include "jit.h"
 #include "jump-x86.h"
@@ -139,20 +136,12 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 	}
 }
 
-static void dummy() {}
-
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	typedef int (AMXAPI *amx_Exec_t)(AMX *amx, cell *retval, int index);
 	amx_Exec_t amx_Exec = (amx_Exec_t)((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec];
 
 	typedef int (AMXAPI *amx_GetAddr_t)(AMX *amx, cell amx_addr, cell **phys_addr);
 	amx_GetAddr_t amx_GetAddr = (amx_GetAddr_t)((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_GetAddr];
-
-	typedef uint16_t *(AMXAPI *amx_Align16_t)(uint16_t *v);
-	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align16] = (amx_Align16_t)dummy;
-
-	typedef uint32_t *(AMXAPI *amx_Align32_t)(uint32_t *v);
-	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (amx_Align32_t)dummy;
 
 	#if defined __GNUC__
 		// Get opcode list before we hook amx_Exec().
@@ -175,45 +164,15 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	}	
 
 	try {
-		// Prepare a file for assembly listing if "jit_listing" option is activated.		
-		std::FILE *stream = 0;
-		if (::server_cfg.GetOption("jit_listing", false)) {
-			std::string amx_path = GetAmxName(amx);
-			if (!amx_path.empty()) {
-				std::string asm_path;
-				std::string::size_type dot = amx_path.find_last_of(".");
-				if (dot != std::string::npos 
-						&& std::strcmp(amx_path.c_str() + dot, ".amx") == 0) {
-					// Strip extension.
-					asm_path.assign(amx_path.begin(), amx_path.begin() + dot);
-				} else {
-					asm_path.assign(amx_path);					
-				}
-				asm_path.append(".asm");
-				stream = std::fopen(asm_path.c_str(), "w");
-				if (stream != 0) {
-					std::fprintf(stream, "; Assembly code generated from %s\n\n", amx_path.c_str());
-				}
-			}
-		}		
-
-		// Create a new Jitter instance and compile the script.
 		jit::Jitter *jitter = new jit::Jitter(amx, ::opcode_list);
+		jitter->Compile();
 		jitters.insert(std::make_pair(amx, jitter));
-		jitter->Compile(stream);
-
-		// Close listing file.
-		if (stream != 0) {
-			std::fclose(stream);
-		}
 	} catch (const jit::JitError &) {
 		try {
 			logprintf("[jit] An error occured, this script will run without JIT!");
 			throw;
 		} catch (const jit::CompileError &e) {
 			const jit::AmxInstruction &instr = e.GetInstruction();
-
-			// Get instruction address.
 			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 			cell address = reinterpret_cast<cell>(instr.GetIP()) 
 						 - reinterpret_cast<cell>(amx->base + hdr->cod);
@@ -226,8 +185,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			} catch (const jit::ObsoleteInstructionError &) {
 				logprintf("[jit] Error: Obsolete instruction at address %08x:", address);
 			}
-
-			// Print first few cells of the problem instruction for debugging.
 			const cell *ip = instr.GetIP();
 			logprintf("  %08x %08x %08x %08x %08x %08x ...", 
 					*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));

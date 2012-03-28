@@ -37,12 +37,8 @@ add_subdirectory(AsmJit)
 
 add_library(jit MODULE
 	amx/amx.h
-	amx/amxaux.c
-	amx/amxaux.h
 	amx/getch.h
 	amx/sclinux.h
-	amxname.cpp
-	amxname.h
 	amxplugin.cpp
 	configreader.cpp
 	configreader.h
