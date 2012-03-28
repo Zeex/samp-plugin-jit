@@ -133,6 +133,7 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	, halt_ebp_(0)
 	, code_map_(0)
 	, label_map_(0)
+	, code_(0)
 {
 	if (!stack_.IsReady()) {
 		stack_.Allocate(1 << 20); // stack is 1 MB by default
