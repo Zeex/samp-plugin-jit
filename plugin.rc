@@ -15,9 +15,9 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 		{
 			VALUE "InternalName",     "jit"
 			VALUE "OriginalFilename", "jit.dll"
-			VALUE "FileDescription",  "SA-MP JIT plugin"
+			VALUE "FileDescription",  "JIT plugin"
 			VALUE "FileVersion",      PLUGIN_VERSION_STRING
-			VALUE "ProductName",      "SA-MP JIT plugin"
+			VALUE "ProductName",      "JIT plugin"
 			VALUE "ProductVersion",   PLUGIN_VERSION_STRING
 		}
 	}
