@@ -1483,32 +1483,41 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 }
 
 int Jitter::CallPublicFunction(int index, cell *retval) {
-	// Make sure all native functions have been registered.
-	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
-		return AMX_ERR_NOTFOUND;
-	}
-
 	// Some instructions may set a non-zero error code to indicate
-	// that a runtime error occured (e.g. array index out of bounds).
+	// an error, e.g. array index out of bounds, etc.
 	amx_->error = AMX_ERR_NONE;
 
-	amx_->stk -= sizeof(cell);
 	int paramcount = amx_->paramcount;
-	cell *params = reinterpret_cast<cell*>(GetAmxData() + amx_->stk);
-	params[0] = paramcount * sizeof(cell);
+	int parambytes = paramcount * sizeof(cell);
 
-	amx_->reset_hea = amx_->hea;
-	amx_->reset_stk = amx_->stk;
+	// Push parambytes onto AMX stack.
+	amx_->stk -= sizeof(cell);
+	cell *params = reinterpret_cast<cell*>(GetAmxData() + amx_->stk);
+	params[0] = parambytes;
+
+	cell stk = amx_->stk;
+	cell hea = amx_->hea;
+
+	// Make sure all natives are registered.
+	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
+		amx_->error = AMX_ERR_NOTFOUND;
+		goto exit;
+	}
 
 	cell address = GetPublicAddress(amx_, index);
 	if (address == 0) {
+		// Bad public index - exit with error.
 		amx_->error = AMX_ERR_INDEX;
-	} else {
-		CallFunction(address, params, retval);
+		goto exit;
 	}
+	
+	CallFunction(address, params, retval);
 
-	// Reset STK and_ parameter count.
-	amx_->stk += (paramcount + 1) * sizeof(cell);
+exit:
+	amx_->stk = stk;
+	amx_->hea = hea;
+
+	amx_->stk += parambytes + sizeof(cell); // one more cell for params[0]
 	amx_->paramcount = 0;
 
 	return amx_->error;
