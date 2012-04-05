@@ -1488,19 +1488,20 @@ int Jitter::CallPublicFunction(int index, cell *retval) {
 
 	if (amx_->hea >= amx_->stk) {
 		amx_->error = AMX_ERR_STACKERR;
-		goto exit;
+		return amx_->error;
 	}
 	if (amx_->hea < amx_->hlw) {
 		amx_->error = AMX_ERR_HEAPLOW;
-		goto exit;
+		return amx_->error;
 	}
 	if (amx_->stk > amx_->stp) {
 		amx_->error = AMX_ERR_STACKLOW;
-		goto exit;
-	}
+		return amx_->error;
+        }
 
 	int paramcount = amx_->paramcount;
 	int parambytes = paramcount * sizeof(cell);
+	cell address = 0;
 
 	// Push parambytes onto AMX stack.
 	amx_->stk -= sizeof(cell);
@@ -1513,20 +1514,19 @@ int Jitter::CallPublicFunction(int index, cell *retval) {
 		goto exit;
 	}
 
-	cell address = GetPublicAddress(amx_, index);
+	address = GetPublicAddress(amx_, index);
 	if (address == 0) {
 		// Bad public index - exit with error.
 		amx_->error = AMX_ERR_INDEX;
 		goto exit;
 	}
-	
+
 	CallFunction(address, params, retval);
 
 exit:
 	// Pop parameters and reset parameter count.
 	amx_->stk += parambytes + sizeof(cell); // one more cell for params[0]
 	amx_->paramcount = 0;
-
 	return amx_->error;
 }
 
