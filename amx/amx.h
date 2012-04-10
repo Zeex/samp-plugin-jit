@@ -31,6 +31,8 @@
 #ifndef AMX_H_INCLUDED
 #define AMX_H_INCLUDED
 
+#include <stddef.h>
+
 #if defined HAVE_STDINT_H
   #include <stdint.h>
 #else
