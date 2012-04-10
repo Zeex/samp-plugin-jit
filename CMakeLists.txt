@@ -54,7 +54,7 @@ add_library(jit MODULE
 
 target_link_libraries(jit AsmJit)
 
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(UNIX OR MINGW)
 	list(APPEND COMPILE_FLAGS 
 		-m32 
 		-Wno-attributes
@@ -62,11 +62,17 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	list(APPEND LINK_FLAGS
 		-m32
 	)
+	if(UNIX)
+		add_definitions(-DLINUX)
+	endif()
+endif()
+
+if(WIN32)
 	if(MINGW)
 		list(APPEND LINK_FLAGS -Wl,--kill-at,--enable-stdcall-fixup)
+	elseif(MSVC)
+		list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin.def")
 	endif()
-elseif(MSVC)
-	list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin.def")
 endif()
 
 foreach(flag ${COMPILE_FLAGS})
