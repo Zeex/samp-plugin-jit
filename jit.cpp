@@ -123,6 +123,27 @@ static void STDCALL Jump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
 
 namespace jit {
 
+// Memory addressing
+using AsmJit::byte_ptr;
+using AsmJit::word_ptr;
+using AsmJit::dword_ptr;
+using AsmJit::dword_ptr_abs;
+
+// X86 registers
+using AsmJit::eax;
+using AsmJit::ecx;
+using AsmJit::edx;
+using AsmJit::esi;
+using AsmJit::edi;
+using AsmJit::ebp;
+using AsmJit::esp;
+using AsmJit::ax;
+using AsmJit::al;
+using AsmJit::cl;
+
+// FPU registers
+using AsmJit::st;
+
 #define OVERRIDE_NATIVE(name) \
 	do { native_overrides_[#name] = &Jitter::native_##name; } while (false);
 
@@ -171,21 +192,6 @@ void Jitter::Compile(std::FILE *list_stream) {
 		as.bind(Label(as, label_map.get(), cip));
 
 		code_map->insert(std::make_pair(cip, as.getCodeSize()));
-
-		using AsmJit::byte_ptr;
-		using AsmJit::word_ptr;
-		using AsmJit::dword_ptr;
-		using AsmJit::dword_ptr_abs;
-		using AsmJit::eax;
-		using AsmJit::ecx;
-		using AsmJit::edx;
-		using AsmJit::esi;
-		using AsmJit::edi;
-		using AsmJit::ebp;
-		using AsmJit::esp;
-		using AsmJit::ax;
-		using AsmJit::al;
-		using AsmJit::cl;
 
 		switch (instr.GetOpcode()) {
 		case OP_LOAD_PRI: // address
@@ -1048,9 +1054,6 @@ void Jitter::Compile(std::FILE *list_stream) {
 }
 
 void Jitter::halt(AsmJit::Assembler &as, cell error_code) {
-	using AsmJit::esp;
-	using AsmJit::ebp;
-	using AsmJit::dword_ptr_abs;
 	as.mov(dword_ptr_abs(reinterpret_cast<void*>(&GetAmx()->error)), error_code);
 	as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&halt_esp_)));
 	as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&halt_ebp_)));
@@ -1058,9 +1061,6 @@ void Jitter::halt(AsmJit::Assembler &as, cell error_code) {
 }
 
 void Jitter::native_float(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fild(dword_ptr(esp, 4));
 	as.sub(esp, 4);
 	as.fstp(dword_ptr(esp));
@@ -1069,9 +1069,6 @@ void Jitter::native_float(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatabs(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fld(dword_ptr(esp, 4));
 	as.fabs();
 	as.sub(esp, 4);
@@ -1081,9 +1078,6 @@ void Jitter::native_floatabs(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatadd(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fld(dword_ptr(esp, 4));
 	as.fadd(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1093,9 +1087,6 @@ void Jitter::native_floatadd(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatsub(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fld(dword_ptr(esp, 4));
 	as.fsub(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1105,9 +1096,6 @@ void Jitter::native_floatsub(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatmul(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fld(dword_ptr(esp, 4));
 	as.fmul(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1117,9 +1105,6 @@ void Jitter::native_floatmul(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatdiv(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fld(dword_ptr(esp, 4));
 	as.fdiv(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1129,9 +1114,6 @@ void Jitter::native_floatdiv(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatsqroot(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::dword_ptr;
 	as.fld(dword_ptr(esp, 4));
 	as.fsqrt();
 	as.sub(esp, 4);
@@ -1141,10 +1123,6 @@ void Jitter::native_floatsqroot(AsmJit::Assembler &as) {
 }
 
 void Jitter::native_floatlog(AsmJit::Assembler &as) {
-	using AsmJit::esp;
-	using AsmJit::eax;
-	using AsmJit::st;
-	using AsmJit::dword_ptr;
 	as.fld1();
 	as.fld(dword_ptr(esp, 8));
 	as.fyl2x();
