@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -83,7 +83,7 @@ public:
 
 	inline const cell *GetIP() const
 		{ return ip_; }
-	inline AmxOpcode GetOpcode() const 
+	inline AmxOpcode GetOpcode() const
 		{ return opcode_; }
 	inline cell GetOperand(unsigned int index = 0u) const
 		{ return *(ip_ + 1 + index); }
@@ -142,7 +142,7 @@ static inline bool operator<(const TaggedAddress &left, const TaggedAddress &rig
 
 class StackBuffer {
 public:
-	StackBuffer() 
+	StackBuffer()
 		: ptr_(0)
 		, top_(0)
 		, size_(0)
@@ -184,25 +184,25 @@ class Jitter {
 public:
 	Jitter(AMX *amx, cell *opcode_list = 0);
 	virtual ~Jitter();
-	
+
 	// Get AMX instance associated with this Jitter.
-	inline AMX *GetAmx() const { 
-		return amx_; 
+	inline AMX *GetAmx() const {
+		return amx_;
 	}
 
 	// Get pointer to AMX header.
-	inline AMX_HEADER *GetAmxHeader() const { 
-		return reinterpret_cast<AMX_HEADER*>(GetAmx()->base); 
+	inline AMX_HEADER *GetAmxHeader() const {
+		return reinterpret_cast<AMX_HEADER*>(GetAmx()->base);
 	}
 
 	// Get pointer to AMX data.
 	inline unsigned char *GetAmxData() const {
-		return GetAmx()->data != 0 ? GetAmx()->data : GetAmx()->base + GetAmxHeader()->dat; 
+		return GetAmx()->data != 0 ? GetAmx()->data : GetAmx()->base + GetAmxHeader()->dat;
 	}
 
 	// Get pointer to AMX code.
 	inline unsigned char *GetAmxCode() const {
-		return GetAmx()->base + GetAmxHeader()->cod; 
+		return GetAmx()->base + GetAmxHeader()->cod;
 	}
 
 	// Get pointer to native code buffer.
@@ -234,7 +234,7 @@ public:
 	// Turn raw AMX code into a sequence of AmxInstruction's.
 	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
-	// JIT-compile whole AMX script and optionally output assembly 
+	// JIT-compile whole AMX script and optionally output assembly
 	// code listing to a stream.
 	virtual void Compile(std::FILE *list_stream = 0);
 
@@ -242,7 +242,7 @@ public:
 	virtual void Jump(cell ip, void *stack_ptr);
 
 	// Call a function.
-	virtual void CallFunction(cell address, cell *params, cell *retval);
+	virtual int CallFunction(cell address, cell *params, cell *retval);
 
 	// Call a public function.
 	virtual int CallPublicFunction(int index, cell *retval);
@@ -253,11 +253,11 @@ public:
 private:
 	// Disable copying.
 	Jitter(const Jitter &);
-	Jitter &operator=(const Jitter &);	
+	Jitter &operator=(const Jitter &);
 
 	AMX *amx_;
 	cell *opcode_list_;
-	
+
 	void *halt_ebp_;
 	void *halt_esp_;
 
@@ -270,9 +270,9 @@ private:
 	LabelMap *label_map_;
 
 	// Label code location. The label can optionally have a unique name.
-	AsmJit::Label &Label(AsmJit::Assembler &as, 
-	                     LabelMap *label_map, 
-	                     cell address, 
+	AsmJit::Label &Label(AsmJit::Assembler &as,
+	                     LabelMap *label_map,
+	                     cell address,
 	                     const std::string &name = std::string());
 
 	typedef void (Jitter::*NativeOverride)(AsmJit::Assembler &as);

@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -126,7 +126,7 @@ namespace jit {
 #define OVERRIDE_NATIVE(name) \
 	do { native_overrides_[#name] = &Jitter::native_##name; } while (false);
 
-Jitter::Jitter(AMX *amx, cell *opcode_list) 
+Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, opcode_list_(opcode_list)
 	, halt_esp_(0)
@@ -161,12 +161,12 @@ void Jitter::Compile(std::FILE *list_stream) {
 	std::auto_ptr<CodeMap> code_map(new CodeMap);
 	std::auto_ptr<LabelMap> label_map(new LabelMap);
 
-	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin(); 
-			instr_iterator != instrs.end(); ++instr_iterator) 
+	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin();
+			instr_iterator != instrs.end(); ++instr_iterator)
 	{
-		AmxInstruction &instr = *instr_iterator;		
+		AmxInstruction &instr = *instr_iterator;
 
-		cell cip = reinterpret_cast<cell>(instr.GetIP()) 
+		cell cip = reinterpret_cast<cell>(instr.GetIP())
 		         - reinterpret_cast<cell>(GetAmxCode());
 		as.bind(Label(as, label_map.get(), cip));
 
@@ -360,7 +360,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 					throw InvalidInstructionError(instr);
 				}
 				AmxInstruction &next_instr = *(instr_iterator + 1);
-				as.mov(eax, reinterpret_cast<sysint_t>(next_instr.GetIP()) 
+				as.mov(eax, reinterpret_cast<sysint_t>(next_instr.GetIP())
 				            - reinterpret_cast<sysint_t>(GetAmxCode()));
 				break;
 			}
@@ -487,7 +487,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 
 		case OP_JUMP:
 		case OP_JUMP_PRI:
-		case OP_JZER: 
+		case OP_JZER:
 		case OP_JNZ:
 		case OP_JEQ:
 		case OP_JNEQ:
@@ -897,7 +897,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 		}
 		case OP_SYSREQ_PRI: {
 			// call system service, service number in PRI
-			AsmJit::Label &L_halt = Label(as, label_map.get(), cip, "halt");			
+			AsmJit::Label &L_halt = Label(as, label_map.get(), cip, "halt");
 				as.push(eax);
 				as.push(reinterpret_cast<sysint_t>(amx_));
 				as.call(reinterpret_cast<void*>(GetNativeAddress));
@@ -940,7 +940,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 			as.push(esp);
 			as.push(reinterpret_cast<sysint_t>(amx_));
 			switch (instr.GetOpcode()) {
-				case OP_SYSREQ_C:					
+				case OP_SYSREQ_C:
 					as.call(reinterpret_cast<void*>(GetNativeAddress(amx_, instr.GetOperand())));
 					break;
 				case OP_SYSREQ_D:
@@ -1032,13 +1032,13 @@ void Jitter::Compile(std::FILE *list_stream) {
 		case OP_SYMBOL:
 		case OP_LINE:
 		case OP_SRANGE:
-		case OP_SYMTAG:		
+		case OP_SYMTAG:
 		case OP_JREL:
 			// obsolete
 			throw ObsoleteInstructionError(instr);
 		default:
 			throw InvalidInstructionError(instr);
-		}		
+		}
 	}
 
 	code_ = as.make();
@@ -1163,7 +1163,7 @@ AsmJit::Label &Jitter::Label(AsmJit::Assembler &as, LabelMap *label_map, cell ad
 	if (iterator != label_map->end()) {
 		return iterator->second;
 	} else {
-		std::pair<LabelMap::iterator, bool> where = 
+		std::pair<LabelMap::iterator, bool> where =
 				label_map->insert(std::make_pair(TaggedAddress(address, name), as.newLabel()));
 		return where.first->second;
 	}
@@ -1185,7 +1185,7 @@ void Jitter::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instru
 
 	while (cip < reinterpret_cast<cell*>(GetAmxCode() + end)) {
 		cell opcode = *cip;
-		
+
 		if (opcode_list_ != 0) {
 			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
 				if (opcode_list_[i] == opcode) {
@@ -1271,7 +1271,7 @@ void Jitter::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instru
 		case OP_SYSREQ_C:
 		case OP_PUSH_ADR:
 		case OP_SYSREQ_D:
-		case OP_SWITCH:			
+		case OP_SWITCH:
 			cip += 2;
 			break;
 
@@ -1371,24 +1371,26 @@ void Jitter::Jump(cell ip, void *stack_ptr) {
 			__asm__ __volatile__ (
 				"movl %0, %%esp;"
 				"jmpl *%1;"
-					: 
-					: "r"(stack_ptr), "r"(dest) 
+					:
+					: "r"(stack_ptr), "r"(dest)
 					: );
 		#endif
 	}
 }
 
-void Jitter::CallFunction(cell address, cell *params, cell *retval) {
+int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
-	const void *start = GetInstrPtr(address, GetCode());	
+	const void *start = GetInstrPtr(address, GetCode());
 	cell retval_;
 
 	assert(start != 0);
 
 	void *halt_esp = halt_esp_;
 	void *halt_ebp = halt_ebp_;
+
+	amx_->error = AMX_ERR_NONE;
 
 	#if defined COMPILER_MSVC
 		if (++call_depth_ == 1) {
@@ -1480,54 +1482,69 @@ void Jitter::CallFunction(cell address, cell *params, cell *retval) {
 	if (retval != 0) {
 		*retval = retval_;
 	}
+
+	return amx_->error;
 }
 
+class CallContext {
+public:
+	CallContext(AMX *amx)
+		: amx_(amx)
+		, paramcount_(amx->paramcount)
+	{
+		// Push parambytes onto AMX stack.
+		amx_->stk -= sizeof(cell);
+	}
+
+	cell *GetParams() const {
+		unsigned char *data = amx_->data;
+		if (data == 0) {
+			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+			data = amx_->base + hdr->dat;
+		}
+
+		cell *params = reinterpret_cast<cell*>(data + amx_->stk);
+		params[0] = paramcount_ * sizeof(cell);
+
+		return params;
+	}
+
+	~CallContext() {
+		// Pop parameters and reset parameter count.
+		amx_->stk += (paramcount_ + 1) * sizeof(cell);
+		amx_->paramcount = 0;
+	}
+
+private:
+	AMX *amx_;
+	int paramcount_;
+};
+
 int Jitter::CallPublicFunction(int index, cell *retval) {
-	// Clear error code.
-	amx_->error = AMX_ERR_NONE;
+	CallContext ctx(amx_);
 
 	if (amx_->hea >= amx_->stk) {
-		amx_->error = AMX_ERR_STACKERR;
-		goto exit;
+		return AMX_ERR_STACKERR;
 	}
 	if (amx_->hea < amx_->hlw) {
-		amx_->error = AMX_ERR_HEAPLOW;
-		goto exit;
+		return AMX_ERR_HEAPLOW;
 	}
 	if (amx_->stk > amx_->stp) {
-		amx_->error = AMX_ERR_STACKLOW;
-		goto exit;
+		return AMX_ERR_STACKLOW;
 	}
-
-	int paramcount = amx_->paramcount;
-	int parambytes = paramcount * sizeof(cell);
-
-	// Push parambytes onto AMX stack.
-	amx_->stk -= sizeof(cell);
-	cell *params = reinterpret_cast<cell*>(GetAmxData() + amx_->stk);
-	params[0] = parambytes;
 
 	// Make sure all natives are registered.
 	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
-		amx_->error = AMX_ERR_NOTFOUND;
-		goto exit;
+		return AMX_ERR_NOTFOUND;
 	}
 
 	cell address = GetPublicAddress(amx_, index);
 	if (address == 0) {
 		// Bad public index - exit with error.
-		amx_->error = AMX_ERR_INDEX;
-		goto exit;
+		return AMX_ERR_INDEX;
 	}
-	
-	CallFunction(address, params, retval);
 
-exit:
-	// Pop parameters and reset parameter count.
-	amx_->stk += parambytes + sizeof(cell); // one more cell for params[0]
-	amx_->paramcount = 0;
-
-	return amx_->error;
+	return CallFunction(address, ctx.GetParams(), retval);
 }
 
 } // namespace jit
