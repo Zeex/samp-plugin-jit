@@ -56,11 +56,7 @@ target_link_libraries(jit AsmJit)
 
 if(UNIX OR MINGW)
 	list(APPEND COMPILE_FLAGS 
-		-m32 
 		-Wno-attributes
-	)
-	list(APPEND LINK_FLAGS
-		-m32
 	)
 	if(UNIX)
 		add_definitions(-DLINUX)
