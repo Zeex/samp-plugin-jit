@@ -73,10 +73,53 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#endif
 	std::map<AMX*, jit::Jitter*>::iterator iterator = jitters.find(amx);
 	if (iterator != jitters.end()) {
-		return iterator->second->CallPublicFunction(index, retval);
+		jit::Jitter *jitter = iterator->second;
+		if (jitter == 0) {
+			// Compilation previously failed, call normal amx_Exec().
+			JumpX86::ScopedRemove r(&amx_Exec_hook);
+			return amx_Exec(amx, retval, index);
+		} else {
+			return iterator->second->CallPublicFunction(index, retval);
+		}
 	} else {
-		JumpX86::ScopedRemove r(&amx_Exec_hook);
-		return amx_Exec(amx, retval, index);
+		// Attempt to JIT-compile this script.
+		jit::Jitter *jitter = new jit::Jitter(amx, ::opcode_list);
+		int error = AMX_ERR_NONE;
+		try {
+			jitter->Compile();
+		} catch (const jit::JitError &) {
+			try {
+				logprintf("[jit] An error occured, this script will run without JIT!");
+				throw;
+			} catch (const jit::CompileError &e) {
+				const jit::AmxInstruction &instr = e.GetInstruction();
+				AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+				cell address = reinterpret_cast<cell>(instr.GetIP())
+							 - reinterpret_cast<cell>(amx->base + hdr->cod);
+				try {
+					throw;
+				} catch (const jit::InvalidInstructionError &) {
+					logprintf("[jit] Error: Invalid instruction at address %08x:", address);
+				} catch (const jit::UnsupportedInstructionError &) {
+					logprintf("[jit] Error: Unsupported instruction at address %08x:", address);
+				} catch (const jit::ObsoleteInstructionError &) {
+					logprintf("[jit] Error: Obsolete instruction at address %08x:", address);
+				}
+				const cell *ip = instr.GetIP();
+				logprintf("  %08x %08x %08x %08x %08x %08x ...",
+						*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
+				error = AMX_ERR_INVINSTR;
+			}
+		} catch (...) {
+			logprintf("[jit] Error: Unknown error");
+			throw;
+		}
+		if (error != AMX_ERR_NONE) {
+			delete jitter;
+			jitter = 0;
+		}
+		jitters.insert(std::make_pair(amx, jitter));
+		return error;
 	}
 }
 
@@ -161,37 +204,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		amx_GetAddr_hook.Install(
 			(void*)amx_GetAddr,
 			(void*)amx_GetAddr_JIT);
-	}
-
-	try {
-		jit::Jitter *jitter = new jit::Jitter(amx, ::opcode_list);
-		jitter->Compile();
-		jitters.insert(std::make_pair(amx, jitter));
-	} catch (const jit::JitError &) {
-		try {
-			logprintf("[jit] An error occured, this script will run without JIT!");
-			throw;
-		} catch (const jit::CompileError &e) {
-			const jit::AmxInstruction &instr = e.GetInstruction();
-			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-			cell address = reinterpret_cast<cell>(instr.GetIP())
-						 - reinterpret_cast<cell>(amx->base + hdr->cod);
-			try {
-				throw;
-			} catch (const jit::InvalidInstructionError &) {
-				logprintf("[jit] Error: Invalid instruction at address %08x:", address);
-			} catch (const jit::UnsupportedInstructionError &) {
-				logprintf("[jit] Error: Unsupported instruction at address %08x:", address);
-			} catch (const jit::ObsoleteInstructionError &) {
-				logprintf("[jit] Error: Obsolete instruction at address %08x:", address);
-			}
-			const cell *ip = instr.GetIP();
-			logprintf("  %08x %08x %08x %08x %08x %08x ...",
-					*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
-			return AMX_ERR_INVINSTR;
-		}
-	} catch (...) {
-		logprintf("[jit] Error: Unknown error");
 	}
 
 	return AMX_ERR_NONE;
