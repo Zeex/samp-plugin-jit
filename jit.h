@@ -258,6 +258,9 @@ private:
 	AMX *amx_;
 	cell *opcode_list_;
 
+	// This variable is true if the AMX has been JIT compiled with Compile().
+	bool compiled_;
+
 	void *halt_ebp_;
 	void *halt_esp_;
 
