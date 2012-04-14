@@ -150,6 +150,7 @@ using AsmJit::st;
 Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, opcode_list_(opcode_list)
+	, compiled_(false)
 	, halt_esp_(0)
 	, halt_ebp_(0)
 	, code_map_(0)
@@ -172,6 +173,10 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 }
 
 void Jitter::Compile(std::FILE *list_stream) {
+	if (compiled_) {
+		return;
+	}
+
 	std::vector<AmxInstruction> instrs;
 	ParseCode(0, GetAmxHeader()->dat - GetAmxHeader()->cod, instrs);
 
@@ -1048,6 +1053,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 	}
 
 	code_ = as.make();
+	compiled_ = true;
 
 	code_map_ = code_map.release();
 	label_map_ = label_map.release();
