@@ -1,2 +1,3 @@
 build
-pluginversion.h
+plugin.rc
+version.h
