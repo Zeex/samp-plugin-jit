@@ -31,7 +31,7 @@
 #include "jit.h"
 #include "jump-x86.h"
 #include "plugin.h"
-#include "pluginversion.h"
+#include "version.h"
 
 #ifdef WIN32
 	#include <Windows.h>
