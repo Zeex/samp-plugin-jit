@@ -335,11 +335,19 @@ void Jitter::Compile(std::FILE *list_stream) {
 			break;
 		case OP_ALIGN_PRI: // number
 			// Little Endian: PRI ^= cell size - number
-			as.xor_(eax, sizeof(cell) - instr.GetOperand());
+			#if BYTE_ORDER == LITTLE_ENDIAN
+				if (instr.GetOperand() < sizeof(cell)) {
+					as.xor_(eax, sizeof(cell) - instr.GetOperand());
+				}
+			#endif
 			break;
 		case OP_ALIGN_ALT: // number
 			// Little Endian: ALT ^= cell size - number
-			as.xor_(ecx, sizeof(cell) - instr.GetOperand());
+			#if BYTE_ORDER == LITTLE_ENDIAN
+				if (instr.GetOperand() < sizeof(cell)) {
+					as.xor_(ecx, sizeof(cell) - instr.GetOperand());
+				}
+			#endif
 			break;
 		case OP_LCTRL: // index
 			// PRI is set to the current value of any of the special registers.
