@@ -64,15 +64,6 @@ static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
 }
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-	#if defined __GNUC__ && !defined WIN32
-		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-			// amx_BrowseRelocate() wants the opcode list.
-			assert(::opcode_list != 0);
-			*retval = reinterpret_cast<cell>(::opcode_list);
-			return AMX_ERR_NONE;
-		}
-	#endif
-
 	// A Jitter instance associated with this AMX.
 	jit::Jitter *jitter = 0;
 
