@@ -99,9 +99,6 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 						*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
 				error = AMX_ERR_INVINSTR;
 			}
-		} catch (...) {
-			logprintf("[jit] Error: Unknown error");
-			throw;
 		}
 		if (error != AMX_ERR_NONE) {
 			delete jitter;
