@@ -47,7 +47,8 @@ extern void *pAMXFunctions;
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-static std::map<AMX*, jit::Jitter*> jitters;
+typedef std::map<AMX*, jit::Jitter*> AmxToJitterMap;
+static AmxToJitterMap amx_to_jitter;
 
 static JumpX86 amx_Exec_hook;
 static JumpX86 amx_GetAddr_hook;
@@ -71,19 +72,16 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			return AMX_ERR_NONE;
 		}
 	#endif
-	std::map<AMX*, jit::Jitter*>::iterator iterator = jitters.find(amx);
-	if (iterator != jitters.end()) {
-		jit::Jitter *jitter = iterator->second;
-		if (jitter == 0) {
-			// Compilation previously failed, call normal amx_Exec().
-			JumpX86::ScopedRemove r(&amx_Exec_hook);
-			return amx_Exec(amx, retval, index);
-		} else {
-			return iterator->second->CallPublicFunction(index, retval);
-		}
-	} else {
-		// Attempt to JIT-compile this script.
-		jit::Jitter *jitter = new jit::Jitter(amx, ::opcode_list);
+
+	// A Jitter instance associated with this AMX.
+	jit::Jitter *jitter = 0;
+
+	// When amx_Exec() is called for the first time attempt to
+	// JIT-compile this AMX. In case of compilation failure a null
+	// pointer is put into amx_to_jit map to indicate this.
+	AmxToJitterMap::iterator iterator = amx_to_jitter.find(amx);
+	if (iterator == amx_to_jitter.end()) {
+		jitter = new jit::Jitter(amx, ::opcode_list);
 		int error = AMX_ERR_NONE;
 		try {
 			jitter->Compile();
@@ -118,8 +116,15 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			delete jitter;
 			jitter = 0;
 		}
-		jitters.insert(std::make_pair(amx, jitter));
-		return error;
+		amx_to_jitter.insert(std::make_pair(amx, jitter));
+	}
+
+	if (jitter == 0) {
+		// Compilation previously failed, call normal amx_Exec().
+		JumpX86::ScopedRemove r(&amx_Exec_hook);
+		return amx_Exec(amx, retval, index);
+	} else {
+		return jitter->CallPublicFunction(index, retval);
 	}
 }
 
@@ -174,7 +179,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-	for (std::map<AMX*, jit::Jitter*>::iterator it = jitters.begin(); it != jitters.end(); ++it) {
+	for (AmxToJitterMap::iterator it = amx_to_jitter.begin(); 
+			it != amx_to_jitter.end(); ++it) {
 		delete it->second;
 	}
 }
@@ -210,10 +216,10 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	std::map<AMX*, jit::Jitter*>::iterator it = jitters.find(amx);
-	if (it != jitters.end()) {
+	AmxToJitterMap::iterator it = amx_to_jitter.find(amx);
+	if (it != amx_to_jitter.end()) {
 		delete it->second;
-		jitters.erase(it);
+		amx_to_jitter.erase(it);
 	}
 	return AMX_ERR_NONE;
 }
