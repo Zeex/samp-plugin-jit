@@ -243,10 +243,8 @@ void Jitter::Compile(std::FILE *list_stream) {
 			// PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
 			switch (instr.GetOperand()) {
 			case 1:
-				as.xor_(eax, eax);
 				as.mov(al, byte_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
 			case 2:
-				as.xor_(eax, eax);
 				as.mov(ax, word_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
 			default:
 				as.mov(eax, dword_ptr(eax, reinterpret_cast<sysint_t>(GetAmxData())));
@@ -312,10 +310,8 @@ void Jitter::Compile(std::FILE *list_stream) {
 			// "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
 			switch (instr.GetOperand()) {
 			case 1:
-				as.xor_(ecx, ecx);
 				as.mov(byte_ptr(ecx, reinterpret_cast<sysint_t>(GetAmxData())), al);
 			case 2:
-				as.xor_(ecx, ecx);
 				as.mov(word_ptr(ecx, reinterpret_cast<sysint_t>(GetAmxData())), ax);
 			default:
 				as.mov(dword_ptr(ecx, reinterpret_cast<sysint_t>(GetAmxData())), eax);
