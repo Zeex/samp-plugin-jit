@@ -2,22 +2,19 @@ cmake_minimum_required(VERSION 2.8)
 
 project(jit)
 
-set(JIT_VERSION_MAJOR  0)
-set(JIT_VERSION_MINOR  3)
-set(JIT_VERSION_PATCH  3)
-
 list(APPEND CMAKE_MODULE_PATH "${jit_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
+include(GetGitRevisionDescription)
 
-include_directories("./")
-include_directories("./amx")
+include_directories(".")
+include_directories("amx")
 
-set(ASMJIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/asmjit)
+set(ASMJIT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/asmjit")
 set(ASMJIT_BUILD_LIBRARY TRUE)
 add_definitions(-DASMJIT_API=)
 include_directories(${ASMJIT_DIR})
-add_subdirectory(asmjit)
+add_subdirectory("asmjit")
 
 add_library(jit MODULE
 	"amx/amx.h"
@@ -72,11 +69,30 @@ endif()
 # Don't prefix output DLL with "lib"
 set_target_properties(jit PROPERTIES PREFIX "")
 
-set(PLUGIN_NAME        ${CMAKE_PROJECT_NAME})
-set(PLUGIN_DESCRIPTION "JIT plugin")
-set(PLUGIN_COPYRIGHT   "Copyright (c) 2012 Zeex")
-set(PLUGIN_VERSION     ${JIT_VERSION_MAJOR}.${JIT_VERSION_MINOR}.${JIT_VERSION_PATCH})
-set(PLUGIN_VERSION_RC  ${JIT_VERSION_MAJOR},${JIT_VERSION_MINOR},${JIT_VERSION_PATCH},0)
+find_package(Git)
+if(GIT_FOUND)
+	# Get latest version tag from Git history
+	git_describe(description --match v[0-9]*.[0-9]**)
+	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
+	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
+endif()
+
+if(version STREQUAL "")
+	# Read version from VERSION.txt (updated on each release)
+	message(STATUS "Failed to get version from Git, will read VERSION.txt")
+	file(READ "${jit_SOURCE_DIR}/VERSION.txt" version)
+	string(STRIP ${version} version)
+endif()
+
+string(REGEX REPLACE "[.-]" "," version_rc ${version})
+string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
+
+set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
+set(PLUGIN_DESCRIPTION "JIT compiler plugin for SA-MP server")
+set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
+set(PLUGIN_VERSION ${version})
+set(PLUGIN_VERSION_RC ${version_rc})
 
 configure_file(
 	"${jit_SOURCE_DIR}/plugin.rc.in"
@@ -89,6 +105,8 @@ configure_file(
 	@ONLY
 )
 
+message(STATUS "JIT plugin version: ${version}")
+
 install(TARGETS jit LIBRARY DESTINATION ".")
 install(FILES "README.txt" DESTINATION ".")
 
@@ -100,10 +118,10 @@ endif()
 
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 if(WIN32)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${JIT_VERSION_STRING}-win32")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PLUGIN_VERSION}-win32")
 	set(CPACK_GENERATOR ZIP)
 elseif(UNIX)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${JIT_VERSION_STRING}-linux")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PLUGIN_VERSION}-linux")
 	set(CPACK_GENERATOR TGZ)
 endif()
 
