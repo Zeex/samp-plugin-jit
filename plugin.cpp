@@ -105,6 +105,8 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			jitter = 0;
 		}
 		amx_to_jitter.insert(std::make_pair(amx, jitter));
+	} else {
+		jitter = iterator->second;
 	}
 
 	if (jitter == 0) {
