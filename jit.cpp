@@ -64,62 +64,84 @@
 	#endif
 #endif
 
-static cell GetPublicAddress(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
-	int num_publics = (hdr->natives - hdr->publics) / hdr->defsize;
+namespace jit {
 
-	if (index == -1) {
-		return hdr->cip;
-	}
-	if (index < 0 || index >= num_publics) {
-		return 0;
-	}
-	return publics[index].address;
+StackBuffer::StackBuffer()
+	: ptr_(0)
+	, top_(0)
+	, size_(0)
+{}
+
+StackBuffer::~StackBuffer() { 
+	Deallocate();
 }
 
-static cell GetNativeAddress(AMX *amx, int index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
-	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
-
-	if (index < 0 || index >= num_natives) {
-		return 0;
+void StackBuffer::Allocate(std::size_t size) {
+	if (ptr_ == 0) {
+		size_ = size;
+		ptr_ = std::malloc(size_);
+		top_ = reinterpret_cast<char*>(ptr_) + size_ - 4;
 	}
-	return natives[index].address;
 }
 
-static const char *GetNativeName(AMX *amx, int index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
-	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
-
-	if (index < 0 || index >= num_natives) {
-		return 0;
+void StackBuffer::Deallocate() {
+	if (ptr_ != 0) {
+		std::free(ptr_);
+		ptr_ = top_ = 0;
+		size_ = 0;
 	}
-	return reinterpret_cast<char*>(amx->base + natives[index].nameofs);
 }
 
-static int GetNativeIndex(AMX *amx, cell address) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+} // namespace jit
 
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
-	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
 
-	for (int i = 0; i < num_natives; i++) {
-		if (natives[i].address == address) {
-			return i;
-		}
+namespace jit {
+
+CallContext::CallContext(AMX *amx)
+	: amx_(amx)
+	, params_(0)
+{
+	params_ = PushStack(amx_->paramcount * sizeof(cell));
+	amx_->paramcount = 0;
+}
+
+CallContext::~CallContext() {
+	int paramcount = PopStack();
+	PopStack(paramcount / sizeof(cell));
+}
+
+unsigned char *CallContext::GetDataPtr() {
+	unsigned char *data = amx_->data;
+	if (data == 0) {
+		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+		data = amx_->base + hdr->dat;
 	}
-	return -1;
+	return data;
 }
 
-static void STDCALL Jump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
-	jitter->Jump(ip, stack_ptr);
+cell *CallContext::GetStackPtr() {
+	return reinterpret_cast<cell*>(GetDataPtr() + amx_->stk);
 }
+
+cell *CallContext::PushStack(cell value) {
+	amx_->stk -= sizeof(cell);
+	cell *stack = GetStackPtr();
+	*stack = value;
+	return stack;
+}
+
+cell CallContext::PopStack() {
+	cell *stack = GetStackPtr();
+	amx_->stk += sizeof(cell);
+	return *stack;
+}
+
+void CallContext::PopStack(int ncells) {
+	amx_->stk += ncells * sizeof(cell);
+}
+
+} // namespace jit
 
 namespace jit {
 
@@ -144,8 +166,76 @@ using AsmJit::cl;
 // FPU registers
 using AsmJit::st;
 
+} // namespace jit
+
+
 #define OVERRIDE_NATIVE(name) \
 	do { native_overrides_[#name] = &Jitter::native_##name; } while (false);
+
+
+namespace {
+
+cell GetPublicAddress(AMX *amx, cell index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
+	int num_publics = (hdr->natives - hdr->publics) / hdr->defsize;
+
+	if (index == -1) {
+		return hdr->cip;
+	}
+	if (index < 0 || index >= num_publics) {
+		return 0;
+	}
+	return publics[index].address;
+}
+
+cell GetNativeAddress(AMX *amx, int index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
+	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	if (index < 0 || index >= num_natives) {
+		return 0;
+	}
+	return natives[index].address;
+}
+
+const char *GetNativeName(AMX *amx, int index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
+	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	if (index < 0 || index >= num_natives) {
+		return 0;
+	}
+	return reinterpret_cast<char*>(amx->base + natives[index].nameofs);
+}
+
+int GetNativeIndex(AMX *amx, cell address) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
+	int num_natives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	for (int i = 0; i < num_natives; i++) {
+		if (natives[i].address == address) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void STDCALL Jump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
+	jitter->Jump(ip, stack_ptr);
+}
+
+} // unnamed namespace
+
+
+namespace jit {
 
 Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
