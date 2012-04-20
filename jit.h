@@ -77,6 +77,8 @@ enum AmxOpcode {
 	NUM_AMX_OPCODES
 };
 
+enum AmxOpcode;
+
 class AmxInstruction {
 public:
 	AmxInstruction(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
@@ -142,29 +144,11 @@ static inline bool operator<(const TaggedAddress &left, const TaggedAddress &rig
 
 class StackBuffer {
 public:
-	StackBuffer()
-		: ptr_(0)
-		, top_(0)
-		, size_(0)
-	{}
+	StackBuffer();
+	~StackBuffer();
 
-	~StackBuffer() { Deallocate(); }
-
-	inline void Allocate(std::size_t size) {
-		if (ptr_ == 0) {
-			size_ = size;
-			ptr_ = std::malloc(size_);
-			top_ = reinterpret_cast<char*>(ptr_) + size_ - 4;
-		}
-	}
-
-	inline void Deallocate() {
-		if (ptr_ != 0) {
-			std::free(ptr_);
-			ptr_ = top_ = 0;
-			size_ = 0;
-		}
-	}
+	void Allocate(std::size_t size);
+	void Deallocate();
 
 	inline bool IsReady() const { return ptr_ != 0; }
 	inline void *GetTop() const { return top_; }
@@ -182,53 +166,21 @@ private:
 
 class CallContext {
 public:
-	explicit CallContext(AMX *amx)
-		: amx_(amx)
-		, params_(0)
-	{
-		params_ = PushAmxStack(amx_->paramcount * sizeof(cell));
-		amx_->paramcount = 0;
-	}
+	explicit CallContext(AMX *amx);
+	~CallContext();
 
 	inline cell *GetParams() const {
 		return params_;
 	}
 
-	~CallContext() {
-		int paramcount = PopAmxStack();
-		PopAmxStack(paramcount / sizeof(cell));
-	}
-
 private:
-	unsigned char *GetDataPtr() {
-		unsigned char *data = amx_->data;
-		if (data == 0) {
-			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
-			data = amx_->base + hdr->dat;
-		}
-		return data;
-	}
+	unsigned char *GetDataPtr();
+	cell *GetStackPtr();
 
-	inline cell *GetStackPtr() {
-		return reinterpret_cast<cell*>(GetDataPtr() + amx_->stk);
-	}
+	cell *PushStack(cell value);
 
-	inline cell *PushAmxStack(cell value) {
-		amx_->stk -= sizeof(cell);
-		cell *stack = GetStackPtr();
-		*stack = value;
-		return stack;
-	}
-
-	inline cell PopAmxStack() {
-		cell *stack = GetStackPtr();
-		amx_->stk += sizeof(cell);
-		return *stack;
-	}
-
-	inline void PopAmxStack(int ncells) {
-		amx_->stk += ncells * sizeof(cell);
-	}
+	cell PopStack();
+	void PopStack(int ncells);
 
 private:
 	AMX *amx_;
