@@ -1482,41 +1482,60 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 
 class CallContext {
 public:
-	CallContext(AMX *amx)
+	explicit CallContext(AMX *amx)
 		: amx_(amx)
-		, paramcount_(amx->paramcount)
+		, params_(0)
 	{
-		// Push parambytes onto AMX stack.
-		amx_->stk -= sizeof(cell);
+		params_ = PushAmxStack(amx_->paramcount * sizeof(cell));
+		amx_->paramcount = 0;
 	}
 
-	cell *GetParams() const {
+	inline cell *GetParams() const {
+		return params_;
+	}
+
+	~CallContext() {
+		int paramcount = PopAmxStack();
+		PopAmxStack(paramcount / sizeof(cell));
+	}
+
+private:
+	unsigned char *GetDataPtr() {
 		unsigned char *data = amx_->data;
 		if (data == 0) {
 			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
 			data = amx_->base + hdr->dat;
 		}
-
-		cell *params = reinterpret_cast<cell*>(data + amx_->stk);
-		params[0] = paramcount_ * sizeof(cell);
-
-		return params;
+		return data;
 	}
 
-	~CallContext() {
-		// Pop parameters and reset parameter count.
-		amx_->stk += (paramcount_ + 1) * sizeof(cell);
-		amx_->paramcount = 0;
+	inline cell *GetStackPtr() {
+		return reinterpret_cast<cell*>(GetDataPtr() + amx_->stk);
+	}
+
+	inline cell *PushAmxStack(cell value) {
+		amx_->stk -= sizeof(cell);
+		cell *stack = GetStackPtr();
+		*stack = value;
+		return stack;
+	}
+
+	inline cell PopAmxStack() {
+		cell *stack = GetStackPtr();
+		amx_->stk += sizeof(cell);
+		return *stack;
+	}
+
+	inline void PopAmxStack(int ncells) {
+		amx_->stk += ncells * sizeof(cell);
 	}
 
 private:
 	AMX *amx_;
-	int paramcount_;
+	cell *params_;
 };
 
 int Jitter::CallPublicFunction(int index, cell *retval) {
-	CallContext ctx(amx_);
-
 	if (amx_->hea >= amx_->stk) {
 		return AMX_ERR_STACKERR;
 	}
@@ -1538,6 +1557,7 @@ int Jitter::CallPublicFunction(int index, cell *retval) {
 		return AMX_ERR_INDEX;
 	}
 
+	CallContext ctx(amx_);
 	return CallFunction(address, ctx.GetParams(), retval);
 }
 
