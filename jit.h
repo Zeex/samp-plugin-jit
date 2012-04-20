@@ -180,6 +180,61 @@ private:
 	std::size_t size_;
 };
 
+class CallContext {
+public:
+	explicit CallContext(AMX *amx)
+		: amx_(amx)
+		, params_(0)
+	{
+		params_ = PushAmxStack(amx_->paramcount * sizeof(cell));
+		amx_->paramcount = 0;
+	}
+
+	inline cell *GetParams() const {
+		return params_;
+	}
+
+	~CallContext() {
+		int paramcount = PopAmxStack();
+		PopAmxStack(paramcount / sizeof(cell));
+	}
+
+private:
+	unsigned char *GetDataPtr() {
+		unsigned char *data = amx_->data;
+		if (data == 0) {
+			AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+			data = amx_->base + hdr->dat;
+		}
+		return data;
+	}
+
+	inline cell *GetStackPtr() {
+		return reinterpret_cast<cell*>(GetDataPtr() + amx_->stk);
+	}
+
+	inline cell *PushAmxStack(cell value) {
+		amx_->stk -= sizeof(cell);
+		cell *stack = GetStackPtr();
+		*stack = value;
+		return stack;
+	}
+
+	inline cell PopAmxStack() {
+		cell *stack = GetStackPtr();
+		amx_->stk += sizeof(cell);
+		return *stack;
+	}
+
+	inline void PopAmxStack(int ncells) {
+		amx_->stk += ncells * sizeof(cell);
+	}
+
+private:
+	AMX *amx_;
+	cell *params_;
+};
+
 class Jitter {
 public:
 	Jitter(AMX *amx, cell *opcode_list = 0);
