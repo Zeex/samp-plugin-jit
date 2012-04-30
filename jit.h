@@ -177,17 +177,17 @@ public:
 
 	// Get pointer to AMX header.
 	inline AMX_HEADER *GetAmxHeader() const {
-		return reinterpret_cast<AMX_HEADER*>(GetAmx()->base);
+		return amxhdr_;
 	}
 
 	// Get pointer to AMX data.
 	inline unsigned char *GetAmxData() const {
-		return GetAmx()->data != 0 ? GetAmx()->data : GetAmx()->base + GetAmxHeader()->dat;
+		return amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat;
 	}
 
 	// Get pointer to AMX code.
 	inline unsigned char *GetAmxCode() const {
-		return GetAmx()->base + GetAmxHeader()->cod;
+		return amx_->base + amxhdr_->cod;
 	}
 
 	// Get pointer to native code buffer.
@@ -237,7 +237,9 @@ private:
 	Jitter &operator=(const Jitter &);
 
 private:
-	AMX *amx_;
+	AMX        *amx_;
+	AMX_HEADER *amxhdr_;
+
 	cell *opcode_list_;
 
 	bool compiled_;
