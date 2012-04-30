@@ -27,7 +27,6 @@
 #include <map>
 #include <string>
 
-#include "configreader.h"
 #include "jit.h"
 #include "jump-x86.h"
 #include "plugin.h"
@@ -51,17 +50,8 @@ typedef std::map<AMX*, jit::Jitter*> AmxToJitterMap;
 static AmxToJitterMap amx_to_jitter;
 
 static JumpX86 amx_Exec_hook;
-static JumpX86 amx_GetAddr_hook;
 
 static cell *opcode_list = 0;
-
-static ConfigReader server_cfg("server.cfg");
-
-static int AMXAPI amx_GetAddr_JIT(AMX *amx, cell amx_addr, cell **phys_addr) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	*phys_addr = reinterpret_cast<cell*>(amx->base + hdr->dat + amx_addr);
-	return AMX_ERR_NONE;
-}
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__ && !defined WIN32
@@ -168,11 +158,6 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		}
 	}
 
-	std::size_t stack_size = server_cfg.GetOption("jit_stack", 0);
-	if (stack_size != 0) {
-		jit::Jitter::SetStackSize(stack_size);
-	}
-
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
@@ -204,11 +189,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		amx_Exec_hook.Install(
 			(void*)amx_Exec,
 			(void*)amx_Exec_JIT);
-	}
-	if (!amx_GetAddr_hook.IsInstalled()) {
-		amx_GetAddr_hook.Install(
-			(void*)amx_GetAddr,
-			(void*)amx_GetAddr_JIT);
 	}
 
 	return AMX_ERR_NONE;

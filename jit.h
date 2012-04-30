@@ -142,28 +142,6 @@ static inline bool operator<(const TaggedAddress &left, const TaggedAddress &rig
 	return left.GetTag() < right.GetTag();
 }
 
-class StackBuffer {
-public:
-	StackBuffer();
-	~StackBuffer();
-
-	void Allocate(std::size_t size);
-	void Deallocate();
-
-	inline bool IsReady() const { return ptr_ != 0; }
-	inline void *GetTop() const { return top_; }
-	inline void *GetPtr() const { return ptr_; }
-
-private:
-	// Disable copying.
-	StackBuffer(const StackBuffer &);
-	StackBuffer &operator=(const StackBuffer &);
-
-	void *ptr_;
-	void *top_;
-	std::size_t size_;
-};
-
 class CallContext {
 public:
 	explicit CallContext(AMX *amx);
@@ -254,24 +232,19 @@ public:
 	// Call a public function.
 	virtual int CallPublicFunction(int index, cell *retval);
 
-	// Set size of stack buffer used by JIT code. By default it's 1 MB.
-	static void SetStackSize(std::size_t stack_size);
-
 private:
-	// Disable copying.
 	Jitter(const Jitter &);
 	Jitter &operator=(const Jitter &);
 
+private:
 	AMX *amx_;
 	cell *opcode_list_;
 
-	// This variable is true if the AMX has been JIT compiled with Compile().
 	bool compiled_;
+	void *code_;
 
 	void *halt_ebp_;
 	void *halt_esp_;
-
-	void *code_;
 
 	typedef std::map<cell, sysint_t> CodeMap;
 	CodeMap *code_map_;
@@ -279,16 +252,15 @@ private:
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
 	LabelMap *label_map_;
 
-	// Label code location. The label can optionally have a unique name.
 	AsmJit::Label &Label(AsmJit::Assembler &as,
 	                     LabelMap *label_map,
 	                     cell address,
 	                     const std::string &name = std::string());
 
+protected: // native overrides
 	typedef void (Jitter::*NativeOverride)(AsmJit::Assembler &as);
 	std::map<std::string, NativeOverride> native_overrides_;
 
-	// Native overrides for floating-point natives.
 	void native_float(AsmJit::Assembler &as);
 	void native_floatabs(AsmJit::Assembler &as);
 	void native_floatadd(AsmJit::Assembler &as);
@@ -298,13 +270,22 @@ private:
 	void native_floatsqroot(AsmJit::Assembler &as);
 	void native_floatlog(AsmJit::Assembler &as);
 
-	// Code snippets.
+protected: // code snippets
+	// Halt current function (jump to the point of call).
+	// Affects registers: EBP, ESP.
 	void halt(AsmJit::Assembler &as, cell error_code);
 
-	// Static members.
+	// Save stk/frm and switch to real stack.
+	// Affects registers: EDX, EBP, ESP.
+	void begin_alien_code(AsmJit::Assembler &as);
+
+	// Save ebp_/esp_ and switch to AMX stack.
+	// Affects registers: EDX, EBP, ESP.
+	void end_alien_code(AsmJit::Assembler &as);
+
+private: // static members
+	static void *ebp_;
 	static void *esp_;
-	static StackBuffer stack_;
-	static int call_depth_;
 };
 
 } // namespace jit

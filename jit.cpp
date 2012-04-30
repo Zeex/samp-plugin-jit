@@ -64,38 +64,6 @@
 	#endif
 #endif
 
-
-namespace jit {
-
-StackBuffer::StackBuffer()
-	: ptr_(0)
-	, top_(0)
-	, size_(0)
-{}
-
-StackBuffer::~StackBuffer() { 
-	Deallocate();
-}
-
-void StackBuffer::Allocate(std::size_t size) {
-	if (ptr_ == 0) {
-		size_ = size;
-		ptr_ = std::malloc(size_);
-		top_ = reinterpret_cast<char*>(ptr_) + size_ - 4;
-	}
-}
-
-void StackBuffer::Deallocate() {
-	if (ptr_ != 0) {
-		std::free(ptr_);
-		ptr_ = top_ = 0;
-		size_ = 0;
-	}
-}
-
-} // namespace jit
-
-
 namespace jit {
 
 CallContext::CallContext(AMX *amx)
@@ -143,35 +111,8 @@ void CallContext::PopStack(int ncells) {
 
 } // namespace jit
 
-namespace jit {
-
-// Memory addressing
-using AsmJit::byte_ptr;
-using AsmJit::word_ptr;
-using AsmJit::dword_ptr;
-using AsmJit::dword_ptr_abs;
-
-// X86 registers
-using AsmJit::eax;
-using AsmJit::ecx;
-using AsmJit::edx;
-using AsmJit::esi;
-using AsmJit::edi;
-using AsmJit::ebp;
-using AsmJit::esp;
-using AsmJit::ax;
-using AsmJit::al;
-using AsmJit::cl;
-
-// FPU registers
-using AsmJit::st;
-
-} // namespace jit
-
-
 #define OVERRIDE_NATIVE(name) \
 	do { native_overrides_[#name] = &Jitter::native_##name; } while (false);
-
 
 namespace {
 
@@ -234,8 +175,28 @@ void STDCALL Jump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
 
 } // unnamed namespace
 
-
 namespace jit {
+
+// Memory addressing
+using AsmJit::byte_ptr;
+using AsmJit::word_ptr;
+using AsmJit::dword_ptr;
+using AsmJit::dword_ptr_abs;
+
+// X86 registers
+using AsmJit::eax;
+using AsmJit::ecx;
+using AsmJit::edx;
+using AsmJit::esi;
+using AsmJit::edi;
+using AsmJit::ebp;
+using AsmJit::esp;
+using AsmJit::ax;
+using AsmJit::al;
+using AsmJit::cl;
+
+// FPU registers
+using AsmJit::st;
 
 Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
@@ -247,11 +208,6 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	, label_map_(0)
 	, code_(0)
 {
-	if (!stack_.IsReady()) {
-		stack_.Allocate(1 << 20); // stack is 1 MB by default
-	}
-
-	// Register native overrides
 	OVERRIDE_NATIVE(float);
 	OVERRIDE_NATIVE(floatabs);
 	OVERRIDE_NATIVE(floatadd);
@@ -561,19 +517,15 @@ void Jitter::Compile(std::FILE *list_stream) {
 			as.mov(ebp, esp);
 			break;
 		case OP_RET:
+		case OP_RETN:
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
-			as.pop(ebp);
-			as.ret();
-			break;
-		case OP_RETN:
-			// FRM = [STK], STK = STK + cell size,
-			// CIP = [STK], STK = STK + cell size,
-			// STK = STK + [STK]
 			// The RETN instruction removes a specified number of bytes
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(ebp);
+			as.lea(edx, dword_ptr(esp, -reinterpret_cast<sysint_t>(GetAmxData()) + 4));
+			as.mov(dword_ptr_abs(&amx_->stk), edx);
 			as.ret();
 			break;
 		case OP_CALL: { // offset
@@ -1048,17 +1000,20 @@ void Jitter::Compile(std::FILE *list_stream) {
 				goto ordinary_native;
 			}
 		ordinary_native:
-			as.push(esp);
-			as.push(reinterpret_cast<sysint_t>(amx_));
-			switch (instr.GetOpcode()) {
-				case OP_SYSREQ_C:
-					as.call(reinterpret_cast<void*>(GetNativeAddress(amx_, instr.GetOperand())));
-					break;
-				case OP_SYSREQ_D:
-					as.call(reinterpret_cast<void*>(instr.GetOperand()));
-					break;
-			}
-			as.add(esp, 8);
+			as.mov(edi, esp);
+			begin_alien_code(as);
+				as.push(edi);
+				as.push(reinterpret_cast<sysint_t>(amx_));
+				switch (instr.GetOpcode()) {
+					case OP_SYSREQ_C:
+						as.call(reinterpret_cast<void*>(GetNativeAddress(amx_, instr.GetOperand())));
+						break;
+					case OP_SYSREQ_D:
+						as.call(reinterpret_cast<void*>(instr.GetOperand()));
+						break;
+				}
+				as.add(esp, 8);
+			end_alien_code(as);
 		special_native:
 			break;
 		}
@@ -1166,6 +1121,24 @@ void Jitter::halt(AsmJit::Assembler &as, cell error_code) {
 	as.ret();
 }
 
+void Jitter::begin_alien_code(AsmJit::Assembler &as) {
+	as.lea(edx, dword_ptr(ebp, -reinterpret_cast<sysint_t>(GetAmxData())));
+	as.mov(dword_ptr_abs(&amx_->frm), edx);
+	as.mov(ebp, dword_ptr_abs(&ebp_));
+	as.lea(edx, dword_ptr(esp, -reinterpret_cast<sysint_t>(GetAmxData())));
+	as.mov(dword_ptr_abs(&amx_->stk), edx);
+	as.mov(esp, dword_ptr_abs(&esp_));
+}
+
+void Jitter::end_alien_code(AsmJit::Assembler &as) {
+	as.mov(dword_ptr_abs(&ebp_), ebp);
+	as.mov(edx, dword_ptr_abs(&amx_->frm));
+	as.lea(ebp, dword_ptr(edx, reinterpret_cast<sysint_t>(GetAmxData())));
+	as.mov(dword_ptr_abs(&esp_), esp);
+	as.mov(edx, dword_ptr_abs(&amx_->stk));
+	as.lea(esp, dword_ptr(edx, reinterpret_cast<sysint_t>(GetAmxData())));
+}
+
 void Jitter::native_float(AsmJit::Assembler &as) {
 	as.fild(dword_ptr(esp, 4));
 	as.sub(esp, 4);
@@ -1253,16 +1226,8 @@ AsmJit::Label &Jitter::Label(AsmJit::Assembler &as, LabelMap *label_map, cell ad
 	}
 }
 
+void *Jitter::ebp_;
 void *Jitter::esp_;
-StackBuffer Jitter::stack_;
-int Jitter::call_depth_ = 0;
-
-// static
-void Jitter::SetStackSize(std::size_t stack_size) {
-	if (!stack_.IsReady()) {
-		stack_.Allocate(stack_size);
-	}
-}
 
 void Jitter::ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const {
 	const cell *cip = reinterpret_cast<cell*>(GetAmxCode() + start);
@@ -1466,98 +1431,82 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 	int parambytes = params[0];
 	int paramcount = parambytes / sizeof(cell);
 
-	const void *start = GetInstrPtr(address, GetCode());
-	cell retval_;
+	static void *start;
+	start = GetInstrPtr(address, GetCode());
 
-	assert(start != 0);
+	static cell retval_;
 
 	void *halt_esp = halt_esp_;
 	void *halt_ebp = halt_ebp_;
 
+	static void *amx_stack;
+	amx_stack = GetAmxData() + amx_->stk;
+
+	static void *amx_frame;
+	amx_frame = GetAmxData() + amx_->frm;
+
 	amx_->error = AMX_ERR_NONE;
 
 	#if defined COMPILER_MSVC
-		if (++call_depth_ == 1) {
-			assert(stack_.IsReady());
-			void *stack_top = stack_.GetTop();
-			__asm {
-				mov dword ptr [esp_], esp
-				mov esp, dword ptr [stack_top]
-			}
-		}
 		__asm {
 			push esi
 			push edi
-		}
-		for (int i = paramcount; i >= 0; --i) {
-			__asm {
-				mov eax, dword ptr [i]
-				mov ecx, dword ptr [params]
-				push dword ptr [ecx + eax * 4]
-			}
-		}
-		__asm {
+
 			mov eax, dword ptr [this]
 			lea ecx, dword ptr [esp - 4]
 			mov dword ptr [eax].halt_esp_, ecx
 			mov dword ptr [eax].halt_ebp_, ebp
+
+			mov dword ptr [ebp_], ebp
+			mov dword ptr [esp_], esp
+
+			mov ebp, dword ptr [amx_frame]
+			mov esp, dword ptr [amx_stack]
+
 			call dword ptr [start]
 			mov dword ptr [retval_], eax
-			add esp, dword ptr [parambytes]
-			add esp, 4
+
+			mov ebp, dword ptr [ebp_]
+			mov esp, dword ptr [esp_]
+
 			pop edi
 			pop esi
 		}
-		if (--call_depth_ == 0) {
-			__asm {
-				mov esp, dword ptr [esp_]
-			}
-		}
 	#elif defined COMPILER_GCC
-		if (++call_depth_ == 1) {
-			__asm__ __volatile__ (
-				"movl %%esp, %0;"
-				"movl %1, %%esp;"
-					: "=r"(esp_)
-					: "r"(stack_.GetTop())
-					: );
-		}
 		__asm__ __volatile__ (
-			"pushl %%esi;"
-			"pushl %%edi;"
-				: : : "%esp");
-		for (int i = paramcount; i >= 0; --i) {
-			__asm__ __volatile__ (
-				"pushl %0;"
-					: : "r"(params[i]) : "%esp");
-		}
+			"pushl %esi;"
+			"pushl %edi;"
+		);
 		__asm__ __volatile__ (
 			"leal -4(%%esp), %%eax;"
-			"movl %%eax, (%0);"
-			"movl %%ebp, (%1);"
+			"movl %%eax, %0;"
+			"movl %%ebp, %1;"
+				: "=r"(halt_esp_), "=r"(halt_ebp_)
 				:
-				: "r"(&halt_esp_), "r"(&halt_ebp_)
 				: "%eax");
+		__asm__ __volatile__ (
+			"movl %%esp, %0;"
+			"movl %%ebp, %1;"
+				: "=r"(esp_), "=r"(ebp_));
+		__asm__ __volatile__ (
+			"movl %0, %%ebp;"
+			"movl %1, %%esp;"
+				:
+				: "r"(amx_frame), "r"(amx_stack));
 		__asm__ __volatile__ (
 			"calll *%1;"
 			"movl %%eax, %0;"
 				: "=r"(retval_)
 				: "r"(start)
-				: "%ecx", "%edx" );
+				: "%ecx", "%edx", "%edi", "%esi");
 		__asm__ __volatile__ (
-			"addl %0, %%esp;"
-			"popl %%edi;"
-			"popl %%esi;"
+			"movl %0, %%ebp;"
+			"movl %1, %%esp;"
 				:
-				: "r"(parambytes + sizeof(cell))
-				: );
-		if (--call_depth_ == 0) {
-			__asm__ __volatile__ (
-				"movl %0, %%esp;"
-					:
-					: "r"(esp_)
-					: );
-		}
+				: "r"(ebp_), "r"(esp_));
+		__asm__ __volatile__ (
+			"popl %edi;"
+			"popl %esi;");
 	#endif
 
 	halt_esp_ = halt_esp;
