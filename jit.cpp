@@ -967,9 +967,13 @@ void Jitter::Compile(std::FILE *list_stream) {
 				as.add(esp, 8);
 				as.test(eax, eax);
 				as.jz(L_halt);
-				as.push(esp);
-				as.push(reinterpret_cast<sysint_t>(amx_));
-				as.call(eax);
+				as.mov(edi, esp);
+				begin_alien_code(as);
+					as.push(edi);
+					as.push(reinterpret_cast<sysint_t>(amx_));
+					as.call(eax);
+					as.add(esp, 8);
+				end_alien_code(as);
 			as.bind(L_halt);
 				halt(as, AMX_ERR_NOTFOUND);
 			break;
