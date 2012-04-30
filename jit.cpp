@@ -200,6 +200,7 @@ using AsmJit::st;
 
 Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
+	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 	, opcode_list_(opcode_list)
 	, compiled_(false)
 	, halt_esp_(0)
@@ -224,7 +225,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 	}
 
 	std::vector<AmxInstruction> instrs;
-	ParseCode(0, GetAmxHeader()->dat - GetAmxHeader()->cod, instrs);
+	ParseCode(0, amxhdr_->dat - amxhdr_->cod, instrs);
 
 	AsmJit::Assembler as;
 	AsmJit::FileLogger logger(list_stream);
@@ -407,13 +408,13 @@ void Jitter::Compile(std::FILE *list_stream) {
 			// 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
 			switch (instr.GetOperand()) {
 			case 0:
-				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&GetAmxHeader()->cod)));
+				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amxhdr_->cod)));
 				break;
 			case 1:
-				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&GetAmxHeader()->dat)));
+				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amxhdr_->dat)));
 				break;
 			case 2:
-				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&GetAmx()->hea)));
+				as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
 				break;
 			case 4:
 				as.lea(eax, dword_ptr(esp, -reinterpret_cast<sysint_t>(GetAmxData())));
