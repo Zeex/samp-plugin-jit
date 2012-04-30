@@ -122,13 +122,35 @@ cell GetPublicAddress(AMX *amx, cell index) {
 	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
 	int num_publics = (hdr->natives - hdr->publics) / hdr->defsize;
 
-	if (index == -1) {
+	if (index == AMX_EXEC_MAIN) {
 		return hdr->cip;
 	}
 	if (index < 0 || index >= num_publics) {
 		return 0;
 	}
 	return publics[index].address;
+}
+
+int GetPublicIndex(AMX *amx, cell address) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
+	int num_publics = (hdr->natives - hdr->publics) / hdr->defsize;
+
+	if (address == hdr->cip) {
+		return AMX_EXEC_MAIN;
+	}
+	for (int i = 0; i < num_publics; i++) {
+		if (publics[i].address == address) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+inline bool IsPublic(AMX *amx, cell address) {
+	int index = GetPublicIndex(amx, address);
+	return index >= 0 || index == AMX_EXEC_MAIN;
 }
 
 cell GetNativeAddress(AMX *amx, int index) {
@@ -233,6 +255,8 @@ void Jitter::Compile(std::FILE *list_stream) {
 
 	std::auto_ptr<CodeMap> code_map(new CodeMap);
 	std::auto_ptr<LabelMap> label_map(new LabelMap);
+
+	cell current_function = 0;
 
 	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin();
 			instr_iterator != instrs.end(); ++instr_iterator)
@@ -517,6 +541,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 			as.lea(edx, dword_ptr(ebp, -reinterpret_cast<sysint_t>(GetAmxData())));
 			as.push(edx);
 			as.mov(ebp, esp);
+			current_function = cip;
 			break;
 		case OP_RET:
 		case OP_RETN:
@@ -527,8 +552,11 @@ void Jitter::Compile(std::FILE *list_stream) {
 			// pushed prior to the call.
 			as.pop(ebp);
 			as.add(ebp, reinterpret_cast<sysint_t>(GetAmxData()));
-			as.lea(edx, dword_ptr(esp, -reinterpret_cast<sysint_t>(GetAmxData()) + 4));
-			as.mov(dword_ptr_abs(&amx_->stk), edx);
+			if (IsPublic(amx_, current_function)) {
+				// Publics must sync stk with esp before exiting.
+				as.lea(edx, dword_ptr(esp, -reinterpret_cast<sysint_t>(GetAmxData()) + 4));
+				as.mov(dword_ptr_abs(&amx_->stk), edx);
+			}
 			as.ret();
 			break;
 		case OP_CALL: { // offset
