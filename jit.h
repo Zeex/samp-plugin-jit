@@ -216,9 +216,6 @@ public:
 		return -1;
 	}
 
-	// Turn raw AMX code into a sequence of AmxInstruction's.
-	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
-
 	// JIT-compile whole AMX script and optionally output assembly
 	// code listing to a stream.
 	virtual void Compile(std::FILE *list_stream = 0);
@@ -226,11 +223,16 @@ public:
 	// Unconditional jump to the specified AMX address.
 	virtual void Jump(cell ip, void *stack_ptr);
 
-	// Call a function.
-	virtual int CallFunction(cell address, cell *params, cell *retval);
-
 	// Call a public function.
 	virtual int CallPublicFunction(int index, cell *retval);
+
+private:
+	// Turn raw AMX code into a sequence of AmxInstruction's.
+	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
+
+	// Call a function.
+	// Must not be called for non-public functions.
+	int CallFunction(cell address, cell *params, cell *retval);
 
 private:
 	Jitter(const Jitter &);
