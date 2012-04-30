@@ -21,8 +21,6 @@ add_library(jit MODULE
 	"amx/getch.h"
 	"amx/sclinux.h"
 	"amxplugin.cpp"
-	"configreader.cpp"
-	"configreader.h"
 	"jit.cpp"
 	"jit.h"
 	"jump-x86.cpp"
