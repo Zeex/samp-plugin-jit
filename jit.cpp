@@ -514,7 +514,8 @@ void Jitter::Compile(std::FILE *list_stream) {
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
-			as.push(ebp);
+			as.lea(edx, dword_ptr(ebp, -reinterpret_cast<sysint_t>(GetAmxData())));
+			as.push(edx);
 			as.mov(ebp, esp);
 			break;
 		case OP_RET:
@@ -525,6 +526,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(ebp);
+			as.add(ebp, reinterpret_cast<sysint_t>(GetAmxData()));
 			as.lea(edx, dword_ptr(esp, -reinterpret_cast<sysint_t>(GetAmxData()) + 4));
 			as.mov(dword_ptr_abs(&amx_->stk), edx);
 			as.ret();
