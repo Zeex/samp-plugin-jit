@@ -1480,6 +1480,9 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 	static void *amx_frame;
 	amx_frame = GetAmxData() + amx_->frm;
 
+	static Jitter *this_;
+	this_ = this;
+
 	amx_->error = AMX_ERR_NONE;
 
 	#if defined COMPILER_MSVC
@@ -1487,16 +1490,16 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 			push esi
 			push edi
 
-			mov eax, dword ptr [this]
-			lea ecx, dword ptr [esp - 4]
-			mov dword ptr [eax].halt_esp_, ecx
-			mov dword ptr [eax].halt_ebp_, ebp
-
 			mov dword ptr [ebp_], ebp
 			mov dword ptr [esp_], esp
 
 			mov ebp, dword ptr [amx_frame]
 			mov esp, dword ptr [amx_stack]
+
+			mov eax, dword ptr [this_]
+			lea ecx, dword ptr [esp - 4]
+			mov dword ptr [eax].halt_esp_, ecx
+			mov dword ptr [eax].halt_ebp_, ebp
 
 			call dword ptr [start]
 			mov dword ptr [retval_], eax
@@ -1513,13 +1516,6 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 			"pushl %edi;"
 		);
 		__asm__ __volatile__ (
-			"leal -4(%%esp), %%eax;"
-			"movl %%eax, %0;"
-			"movl %%ebp, %1;"
-				: "=r"(halt_esp_), "=r"(halt_ebp_)
-				:
-				: "%eax");
-		__asm__ __volatile__ (
 			"movl %%esp, %0;"
 			"movl %%ebp, %1;"
 				: "=r"(esp_), "=r"(ebp_));
@@ -1528,6 +1524,13 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 			"movl %1, %%esp;"
 				:
 				: "r"(amx_frame), "r"(amx_stack));
+		__asm__ __volatile__ (
+			"leal -4(%%esp), %%eax;"
+			"movl %%eax, (%0);"
+			"movl %%ebp, (%1);"
+				:
+				: "r"(&this_->halt_esp_), "r"(&this_->halt_ebp_)
+				: "%eax");
 		__asm__ __volatile__ (
 			"calll *%1;"
 			"movl %%eax, %0;"
