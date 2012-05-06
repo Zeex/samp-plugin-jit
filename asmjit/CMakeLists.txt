@@ -68,9 +68,12 @@ If(${CMAKE_BUILD_TYPE})
   EndIf()
 EndIf()
 
-# Build AsmJit shared library?
-If(ASMJIT_BUILD_LIBRARY)
+# Build AsmJit library?
+If(ASMJIT_BUILD_STATIC_LIBRARY)
+  Add_Definitions(-DASMJIT_STATIC)
   Add_Library(AsmJit STATIC ${ASMJIT_SOURCES} ${ASMJIT_HEADERS})
+ElseIf(ASMJIT_BUILD_SHARED_LIBRARY)
+  Add_Library(AsmJit SHARED ${ASMJIT_SOURCES} ${ASMJIT_HEADERS})
 EndIf()
 
 # Build AsmJit test executables?

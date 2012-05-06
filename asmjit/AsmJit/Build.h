@@ -79,6 +79,10 @@
 # endif // __GNUC__ && __GNUC__ >= 4
 #endif // ASMJIT_HIDDEN
 
+#if defined(ASMJIT_STATIC)
+# define ASMJIT_API ASMJIT_HIDDEN
+#endif
+
 // Make AsmJit as shared library by default.
 #if !defined(ASMJIT_API)
 # if defined(ASMJIT_WINDOWS)
