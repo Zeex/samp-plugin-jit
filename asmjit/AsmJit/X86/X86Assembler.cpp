@@ -2544,12 +2544,12 @@ void X86Assembler::_emitJcc(uint32_t code, const Label* label, uint32_t hint) AS
 {
   if (!hint)
   {
-    _emitInstruction(code, label, NULL, NULL);
+    _emitInstruction(code, label);
   }
   else
   {
     Imm imm(hint);
-    _emitInstruction(code, label, &imm, NULL);
+    _emitInstruction(code, label, &imm);
   }
 }
 
