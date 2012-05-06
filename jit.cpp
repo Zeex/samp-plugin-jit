@@ -28,11 +28,11 @@
 #include <memory>
 #include <string>
 
-#include <AsmJit/AsmJit.h>
-#include <AsmJit/MemoryManager.h>
+#include <amx/amx.h>
+#include <AsmJit/X86/X86Assembler.h>
+#include <AsmJit/Core/MemoryManager.h>
 
 #include "jit.h"
-#include "amx/amx.h"
 
 #if defined _WIN32 || defined WIN32 || defined __WIN32__
 	#define OS_WIN32
@@ -249,7 +249,7 @@ void Jitter::Compile(std::FILE *list_stream) {
 	std::vector<AmxInstruction> instrs;
 	ParseCode(0, amxhdr_->dat - amxhdr_->cod, instrs);
 
-	AsmJit::Assembler as;
+	AsmJit::X86Assembler as;
 	AsmJit::FileLogger logger(list_stream);
 	as.setLogger(&logger);
 
@@ -1149,14 +1149,14 @@ void Jitter::Compile(std::FILE *list_stream) {
 	label_map_ = label_map.release();
 }
 
-void Jitter::halt(AsmJit::Assembler &as, cell error_code) {
+void Jitter::halt(AsmJit::X86Assembler &as, cell error_code) {
 	as.mov(dword_ptr_abs(reinterpret_cast<void*>(&GetAmx()->error)), error_code);
 	as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&halt_esp_)));
 	as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&halt_ebp_)));
 	as.ret();
 }
 
-void Jitter::begin_alien_code(AsmJit::Assembler &as) {
+void Jitter::begin_alien_code(AsmJit::X86Assembler &as) {
 	as.lea(edx, dword_ptr(ebp, -reinterpret_cast<sysint_t>(GetAmxData())));
 	as.mov(dword_ptr_abs(&amx_->frm), edx);
 	as.mov(ebp, dword_ptr_abs(&ebp_));
@@ -1165,7 +1165,7 @@ void Jitter::begin_alien_code(AsmJit::Assembler &as) {
 	as.mov(esp, dword_ptr_abs(&esp_));
 }
 
-void Jitter::end_alien_code(AsmJit::Assembler &as) {
+void Jitter::end_alien_code(AsmJit::X86Assembler &as) {
 	as.mov(dword_ptr_abs(&ebp_), ebp);
 	as.mov(edx, dword_ptr_abs(&amx_->frm));
 	as.lea(ebp, dword_ptr(edx, reinterpret_cast<sysint_t>(GetAmxData())));
@@ -1174,7 +1174,7 @@ void Jitter::end_alien_code(AsmJit::Assembler &as) {
 	as.lea(esp, dword_ptr(edx, reinterpret_cast<sysint_t>(GetAmxData())));
 }
 
-void Jitter::native_float(AsmJit::Assembler &as) {
+void Jitter::native_float(AsmJit::X86Assembler &as) {
 	as.fild(dword_ptr(esp, 4));
 	as.sub(esp, 4);
 	as.fstp(dword_ptr(esp));
@@ -1182,7 +1182,7 @@ void Jitter::native_float(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatabs(AsmJit::Assembler &as) {
+void Jitter::native_floatabs(AsmJit::X86Assembler &as) {
 	as.fld(dword_ptr(esp, 4));
 	as.fabs();
 	as.sub(esp, 4);
@@ -1191,7 +1191,7 @@ void Jitter::native_floatabs(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatadd(AsmJit::Assembler &as) {
+void Jitter::native_floatadd(AsmJit::X86Assembler &as) {
 	as.fld(dword_ptr(esp, 4));
 	as.fadd(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1200,7 +1200,7 @@ void Jitter::native_floatadd(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatsub(AsmJit::Assembler &as) {
+void Jitter::native_floatsub(AsmJit::X86Assembler &as) {
 	as.fld(dword_ptr(esp, 4));
 	as.fsub(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1209,7 +1209,7 @@ void Jitter::native_floatsub(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatmul(AsmJit::Assembler &as) {
+void Jitter::native_floatmul(AsmJit::X86Assembler &as) {
 	as.fld(dword_ptr(esp, 4));
 	as.fmul(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1218,7 +1218,7 @@ void Jitter::native_floatmul(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatdiv(AsmJit::Assembler &as) {
+void Jitter::native_floatdiv(AsmJit::X86Assembler &as) {
 	as.fld(dword_ptr(esp, 4));
 	as.fdiv(dword_ptr(esp, 8));
 	as.sub(esp, 4);
@@ -1227,7 +1227,7 @@ void Jitter::native_floatdiv(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatsqroot(AsmJit::Assembler &as) {
+void Jitter::native_floatsqroot(AsmJit::X86Assembler &as) {
 	as.fld(dword_ptr(esp, 4));
 	as.fsqrt();
 	as.sub(esp, 4);
@@ -1236,7 +1236,7 @@ void Jitter::native_floatsqroot(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-void Jitter::native_floatlog(AsmJit::Assembler &as) {
+void Jitter::native_floatlog(AsmJit::X86Assembler &as) {
 	as.fld1();
 	as.fld(dword_ptr(esp, 8));
 	as.fyl2x();
@@ -1250,7 +1250,7 @@ void Jitter::native_floatlog(AsmJit::Assembler &as) {
 	as.add(esp, 4);
 }
 
-AsmJit::Label &Jitter::Label(AsmJit::Assembler &as, LabelMap *label_map, cell address, const std::string &name) {
+AsmJit::Label &Jitter::Label(AsmJit::X86Assembler &as, LabelMap *label_map, cell address, const std::string &name) {
 	LabelMap::iterator iterator = label_map->find(TaggedAddress(address, name));
 	if (iterator != label_map->end()) {
 		return iterator->second;
