@@ -7,14 +7,14 @@ list(APPEND CMAKE_MODULE_PATH "${jit_SOURCE_DIR}/cmake/Modules")
 include(AmxConfig)
 include(GetGitRevisionDescription)
 
+set(ASMJIT_BUILD_STATIC_LIBRARY TRUE)
+add_subdirectory("asmjit")
+
 include_directories(".")
 include_directories("amx")
+include_directories("asmjit")
 
-set(ASMJIT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/asmjit")
-set(ASMJIT_BUILD_LIBRARY TRUE)
-add_definitions(-DASMJIT_API=)
-include_directories(${ASMJIT_DIR})
-add_subdirectory("asmjit")
+add_definitions(-DASMJIT_STATIC)
 
 add_library(jit MODULE
 	"amx/amx.h"
