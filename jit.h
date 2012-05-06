@@ -30,10 +30,8 @@
 #include <string>
 #include <vector>
 
-#include <AsmJit/Assembler.h>
-#include <AsmJit/Operand.h>
-
-#include "amx/amx.h"
+#include <amx/amx.h>
+#include <asmjit/X86/X86Assembler.h>
 
 namespace jit {
 
@@ -256,36 +254,36 @@ private:
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
 	LabelMap *label_map_;
 
-	AsmJit::Label &Label(AsmJit::Assembler &as,
+	AsmJit::Label &Label(AsmJit::X86Assembler &as,
 	                     LabelMap *label_map,
 	                     cell address,
 	                     const std::string &name = std::string());
 
 protected: // native overrides
-	typedef void (Jitter::*NativeOverride)(AsmJit::Assembler &as);
+	typedef void (Jitter::*NativeOverride)(AsmJit::X86Assembler &as);
 	std::map<std::string, NativeOverride> native_overrides_;
 
-	void native_float(AsmJit::Assembler &as);
-	void native_floatabs(AsmJit::Assembler &as);
-	void native_floatadd(AsmJit::Assembler &as);
-	void native_floatsub(AsmJit::Assembler &as);
-	void native_floatmul(AsmJit::Assembler &as);
-	void native_floatdiv(AsmJit::Assembler &as);
-	void native_floatsqroot(AsmJit::Assembler &as);
-	void native_floatlog(AsmJit::Assembler &as);
+	void native_float(AsmJit::X86Assembler &as);
+	void native_floatabs(AsmJit::X86Assembler &as);
+	void native_floatadd(AsmJit::X86Assembler &as);
+	void native_floatsub(AsmJit::X86Assembler &as);
+	void native_floatmul(AsmJit::X86Assembler &as);
+	void native_floatdiv(AsmJit::X86Assembler &as);
+	void native_floatsqroot(AsmJit::X86Assembler &as);
+	void native_floatlog(AsmJit::X86Assembler &as);
 
 protected: // code snippets
 	// Halt current function (jump to the point of call).
 	// Affects registers: EBP, ESP.
-	void halt(AsmJit::Assembler &as, cell error_code);
+	void halt(AsmJit::X86Assembler &as, cell error_code);
 
 	// Save stk/frm and switch to real stack.
 	// Affects registers: EDX, EBP, ESP.
-	void begin_alien_code(AsmJit::Assembler &as);
+	void begin_alien_code(AsmJit::X86Assembler &as);
 
 	// Save ebp_/esp_ and switch to AMX stack.
 	// Affects registers: EDX, EBP, ESP.
-	void end_alien_code(AsmJit::Assembler &as);
+	void end_alien_code(AsmJit::X86Assembler &as);
 
 private: // static members
 	static void *ebp_;

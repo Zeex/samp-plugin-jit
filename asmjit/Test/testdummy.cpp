@@ -1,43 +1,23 @@
-// AsmJit - Complete JIT Assembler for C++ Language.
-
-// Copyright (c) 2008-2012, Petr Kobalicek <kobalicek.petr@gmail.com>
+// [AsmJit]
+// Complete JIT Assembler for C++ Language.
 //
-// Permission is hereby granted, free of charge, to any person
-// obtaining a copy of this software and associated documentation
-// files (the "Software"), to deal in the Software without
-// restriction, including without limitation the rights to use,
-// copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following
-// conditions:
-// 
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// OTHER DEALINGS IN THE SOFTWARE.
+// [License]
+// Zlib - See COPYING file in this package.
 
 // This file is used as a dummy test. It's changed during development.
 
+// [Dependencies - AsmJit]
+#include <AsmJit/AsmJit.h>
+
+// [Dependencies - C]
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <AsmJit/AsmJit.h>
-
 // This is type of function we will generate
 typedef void (*MyFn)(void);
 
-static void dummyFunc(void)
-{
-
-}
+static void dummyFunc(void) {}
 
 int main(int argc, char* argv[])
 {
@@ -49,27 +29,66 @@ int main(int argc, char* argv[])
   logger.setLogBinary(true);
 
   // Create compiler.
-  Compiler c;
+  /*
+  X86Compiler c;
   c.setLogger(&logger);
 
-  c.newFunction(CALL_CONV_DEFAULT, FunctionBuilder0<Void>());
-  c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
+  c.newFunc(kX86FuncConvDefault, FuncBuilder0<Void>());
+  c.getFunc()->setHint(kFuncHintNaked, true);
 
-  ECall* ctx = c.call((void*)dummyFunc);
-  ctx->setPrototype(CALL_CONV_DEFAULT, FunctionBuilder0<Void>());
+  X86CompilerFuncCall* ctx = c.call((void*)dummyFunc);
+  ctx->setPrototype(kX86FuncConvDefault, FuncBuilder0<Void>());
 
-  c.endFunction();
+  c.endFunc();
+  */
+
+  X86Compiler c;
+  c.setLogger(&logger);
+
+  c.newFunc(kX86FuncConvDefault, FuncBuilder0<void>());
+  c.getFunc()->setHint(kFuncHintNaked, true);
+  
+  Label l91 = c.newLabel();
+  Label l92 = c.newLabel();
+  Label l93 = c.newLabel();
+  Label l94 = c.newLabel();
+  Label l95 = c.newLabel();
+  Label l96 = c.newLabel();
+  Label l97 = c.newLabel();
+  c.bind(l92);
+
+  GpVar _var91(c.newGpVar());
+  GpVar _var92(c.newGpVar());
+  
+  c.bind(l93);
+  c.jmp(l91);
+  c.bind(l95);
+  c.mov(_var91, imm(0));
+  c.bind(l96);
+  c.jmp(l93);
+  c.mov(_var92, imm(1));
+  c.jmp(l91);
+  c.bind(l94);
+  c.jmp(l92);
+  c.bind(l97);
+  c.add(_var91, _var92);
+  c.bind(l91);
+  c.ret();
+  c.endFunc();
+  
+  typedef void (*Func9)(void);
+  Func9 func9 = asmjit_cast<Func9>(c.make());
   // ==========================================================================
 
   // ==========================================================================
   // Make the function.
-  MyFn fn = function_cast<MyFn>(c.make());
+  // MyFn fn = asmjit_cast<MyFn>(c.make());
 
   // Call it.
   // printf("Result %llu\n", (unsigned long long)fn());
 
   // Free the generated function if it's not needed anymore.
-  MemoryManager::getGlobal()->free((void*)fn);
+  //MemoryManager::getGlobal()->free((void*)fn);
   // ==========================================================================
 
   return 0;

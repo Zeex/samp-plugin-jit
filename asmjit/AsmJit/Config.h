@@ -1,37 +1,18 @@
-// AsmJit - Complete JIT Assembler for C++ Language.
-
-// Copyright (c) 2008-2012, Petr Kobalicek <kobalicek.petr@gmail.com>
+// [AsmJit]
+// Complete JIT Assembler for C++ Language.
 //
-// Permission is hereby granted, free of charge, to any person
-// obtaining a copy of this software and associated documentation
-// files (the "Software"), to deal in the Software without
-// restriction, including without limitation the rights to use,
-// copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following
-// conditions:
-// 
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// OTHER DEALINGS IN THE SOFTWARE.
-
-// This file is designed to be changeable. Platform specific changes
-// should be applied to this file and this guarantes and never versions
-// of AsmJit library will never overwrite generated config files.
-//
-// So modify this will by your build system or hand.
+// [License]
+// Zlib - See COPYING file in this package.
 
 // [Guard]
 #ifndef _ASMJIT_CONFIG_H
 #define _ASMJIT_CONFIG_H
+
+// This file is designed to be modifyable. Platform specific changes should
+// be applied to this file so it's guaranteed that never versions of AsmJit
+// library will never overwrite generated config files.
+//
+// So modify this file by your build system or by hand.
 
 // ============================================================================
 // [AsmJit - OS]
@@ -40,8 +21,8 @@
 // Provides definitions about your operating system. It's detected by default,
 // so override it if you have problems with automatic detection.
 //
-// #define ASMJIT_WINDOWS 1
-// #define ASMJIT_POSIX 2
+// #define ASMJIT_WINDOWS
+// #define ASMJIT_POSIX
 
 // ============================================================================
 // [AsmJit - Architecture]
@@ -58,14 +39,12 @@
 // ============================================================================
 
 // If you are embedding AsmJit library into your project (statically), undef
-// ASMJIT_API macro. ASMJIT_HIDDEN macro can contain visibility (used by GCC)
-// to hide some AsmJit symbols that shouldn't be never exported.
+// ASMJIT_API macro.
 //
 // If you have problems with throw() in compilation time, undef ASMJIT_NOTHROW
-// to disable this feature. ASMJIT_NOTHROW marks functions that never throws
-// an exception.
+// to disable this feature. ASMJIT_NOTHROW marks functions which never throw an
+// exception.
 
-// #define ASMJIT_HIDDEN
 // #define ASMJIT_API
 // #define ASMJIT_NOTHROW
 
