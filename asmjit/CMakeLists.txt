@@ -158,13 +158,15 @@ If(ASMJIT_BUILD_LIBRARY)
   ElseIf(ASMJIT_BUILD_SHARED_LIBRARY)
     Add_Library(AsmJit SHARED ${ASMJIT_ALL_SOURCES} ${ASMJIT_ALL_HEADERS})
   EndIf()
-  Install(TARGETS AsmJit DESTINATION lib${LIB_SUFFIX})
 
-  # Install header files.
-  ForEach(i ${ASMJIT_ALL_HEADERS})
-    Get_Filename_Component(path ${i} PATH)
-    Install(FILES ${i} DESTINATION "include/${path}")
-  EndForEach(i)
+  # Install library and header files?
+  If(ASMJIT_INSTALL)
+    Install(TARGETS AsmJit DESTINATION lib${LIB_SUFFIX})
+    ForEach(i ${ASMJIT_ALL_HEADERS})
+      Get_Filename_Component(path ${i} PATH)
+      Install(FILES ${i} DESTINATION "include/${path}")
+    EndForEach(i)
+  EndIf()
 EndIf()
 
 # Build AsmJit test executables?
