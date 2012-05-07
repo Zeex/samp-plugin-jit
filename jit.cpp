@@ -1486,6 +1486,7 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 		__asm {
 			push esi
 			push edi
+			push ecx
 
 			mov dword ptr [ebp_], ebp
 			mov dword ptr [esp_], esp
@@ -1504,6 +1505,7 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 			mov ebp, dword ptr [ebp_]
 			mov esp, dword ptr [esp_]
 
+			pop ecx
 			pop edi
 			pop esi
 		}
@@ -1511,6 +1513,7 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 		__asm__ __volatile__ (
 			"pushl %esi;"
 			"pushl %edi;"
+			"pushl %ecx;"
 		);
 		__asm__ __volatile__ (
 			"movl %%esp, %0;"
@@ -1540,6 +1543,7 @@ int Jitter::CallFunction(cell address, cell *params, cell *retval) {
 				:
 				: "r"(ebp_), "r"(esp_));
 		__asm__ __volatile__ (
+			"popl %ecx;"
 			"popl %edi;"
 			"popl %esi;");
 	#endif
