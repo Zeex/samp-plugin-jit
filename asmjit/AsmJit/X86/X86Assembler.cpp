@@ -2542,7 +2542,7 @@ _Cleanup:
 
 void X86Assembler::_emitJcc(uint32_t code, const Label* label, uint32_t hint) ASMJIT_NOTHROW
 {
-  if (!hint)
+  if (hint == kCondHintNone)
   {
     _emitInstruction(code, label);
   }
