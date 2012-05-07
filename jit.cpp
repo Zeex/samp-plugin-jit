@@ -1463,9 +1463,6 @@ void Jitter::Jump(cell ip, void *stack_ptr) {
 }
 
 int Jitter::CallFunction(cell address, cell *params, cell *retval) {
-	int parambytes = params[0];
-	int paramcount = parambytes / sizeof(cell);
-
 	static void *start;
 	start = GetInstrPtr(address, GetCode());
 
