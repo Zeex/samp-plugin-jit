@@ -20,15 +20,15 @@ add_library(jit MODULE
 	"amx/amx.h"
 	"amx/getch.h"
 	"amx/sclinux.h"
-	"amxplugin.cpp"
-	"jit.cpp"
-	"jit.h"
-	"jump-x86.cpp"
-	"jump-x86.h"
-	"plugin.cpp"
-	"plugin.h"
-	"plugin.rc"
-	"plugincommon.h"
+	"src/amxplugin.cpp"
+	"src/jit.cpp"
+	"src/jit.h"
+	"src/jump-x86.cpp"
+	"src/jump-x86.h"
+	"src/plugin.cpp"
+	"src/plugin.h"
+	"src/plugin.rc"
+	"src/plugincommon.h"
 )
 
 target_link_libraries(jit AsmJit)
@@ -46,7 +46,7 @@ if(WIN32)
 	if(MINGW)
 		list(APPEND LINK_FLAGS "-Wl,--kill-at,--enable-stdcall-fixup")
 	elseif(MSVC)
-		list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin.def")
+		list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/src/plugin.def")
 	endif()
 endif()
 
@@ -93,13 +93,13 @@ set(PLUGIN_VERSION ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
 
 configure_file(
-	"${jit_SOURCE_DIR}/plugin.rc.in"
-	"${jit_SOURCE_DIR}/plugin.rc"
+	"${jit_SOURCE_DIR}/src/plugin.rc.in"
+	"${jit_SOURCE_DIR}/src/plugin.rc"
 	@ONLY
 )
 configure_file(
-	"${jit_SOURCE_DIR}/version.h.in"
-	"${jit_SOURCE_DIR}/version.h"
+	"${jit_SOURCE_DIR}/src/version.h.in"
+	"${jit_SOURCE_DIR}/src/version.h"
 	@ONLY
 )
 
