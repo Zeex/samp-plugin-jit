@@ -81,11 +81,11 @@ class AmxInstruction {
 public:
 	AmxInstruction(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
 
-	inline const cell *GetIP() const
+	inline const cell *getPtr() const
 		{ return ip_; }
-	inline AmxOpcode GetOpcode() const
+	inline AmxOpcode getOpcode() const
 		{ return opcode_; }
-	inline cell GetOperand(unsigned int index = 0u) const
+	inline cell getOperand(unsigned int index = 0u) const
 		{ return *(ip_ + 1 + index); }
 
 private:
@@ -99,7 +99,7 @@ class JitError {};
 class CompileError : public JitError {
 public:
 	CompileError(const AmxInstruction &instr) : instr_(instr) {}
-	inline const AmxInstruction &GetInstruction() const { return instr_; }
+	inline const AmxInstruction &getInstr() const { return instr_; }
 private:
 	AmxInstruction instr_;
 };
@@ -125,8 +125,8 @@ public:
 		: address_(address), tag_(tag)
 	{}
 
-	inline cell GetAddress() const { return address_; }
-	inline std::string GetTag() const { return tag_; }
+	inline cell getAddress() const { return address_; }
+	inline std::string getTag() const { return tag_; }
 
 private:
 	ucell address_;
@@ -134,10 +134,10 @@ private:
 };
 
 static inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
-	if (left.GetAddress() != right.GetAddress()) {
-		return left.GetAddress() < right.GetAddress();
+	if (left.getAddress() != right.getAddress()) {
+		return left.getAddress() < right.getAddress();
 	}
-	return left.GetTag() < right.GetTag();
+	return left.getTag() < right.getTag();
 }
 
 class CallContext {
@@ -145,18 +145,18 @@ public:
 	explicit CallContext(AMX *amx);
 	~CallContext();
 
-	inline cell *GetParams() const {
+	inline cell *getParams() const {
 		return params_;
 	}
 
 private:
-	unsigned char *GetDataPtr();
-	cell *GetStackPtr();
+	unsigned char *getDataPtr();
+	cell *getStackPtr();
 
-	cell *PushStack(cell value);
+	cell *push(cell value);
 
-	cell PopStack();
-	void PopStack(int ncells);
+	cell pop();
+	void pop(int ncells);
 
 private:
 	AMX *amx_;
@@ -168,69 +168,67 @@ public:
 	Jitter(AMX *amx, cell *opcode_list = 0);
 	virtual ~Jitter();
 
-	// Get AMX instance associated with this Jitter.
-	inline AMX *GetAmx() const {
+	// Returns AMX instance associated with this Jitter.
+	inline AMX *getAmx() const {
 		return amx_;
 	}
 
-	// Get pointer to AMX header.
-	inline AMX_HEADER *GetAmxHeader() const {
+	// Returns pointer to AMX header.
+	inline AMX_HEADER *getAmxHeader() const {
 		return amxhdr_;
 	}
 
-	// Get pointer to AMX data.
-	inline unsigned char *GetAmxData() const {
+	// Returns pointer to AMX data.
+	inline unsigned char *getAmxData() const {
 		return amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat;
 	}
 
-	// Get pointer to AMX code.
-	inline unsigned char *GetAmxCode() const {
+	// Returns pointer to AMX code.
+	inline unsigned char *getAmxCode() const {
 		return amx_->base + amxhdr_->cod;
 	}
 
-	// Get pointer to native code buffer.
-	inline void *GetCode() const {
+	// Returns pointer to native code buffer.
+	inline void *getCode() const {
 		return code_;
 	}
 
-	// Get address of native code corresponding to AMX code.
-	inline void *GetInstrPtr(cell amx_ip, void *code_ptr) {
-		sysint_t native_ip = GetInstrOffset(amx_ip);
+	// Returns address of native code corresponding to AMX code.
+	inline void *getInstrPtr(cell amx_ip, void *code_ptr) {
+		sysint_t native_ip = getInstrOffset(amx_ip);
 		if (native_ip >= 0) {
 			return reinterpret_cast<void*>(reinterpret_cast<sysint_t>(code_ptr) + native_ip);
 		}
 		return 0;
 	}
 
-	// Get offset to native code corresponding to AMX code.
-	inline sysint_t GetInstrOffset(cell amx_ip) {
-		assert(code_map_ != 0);
-		if (code_map_ != 0) {
-			CodeMap::const_iterator iterator = code_map_->find(amx_ip);
-			if (iterator != code_map_->end()) {
+	// Returns offset to native code corresponding to AMX code.
+	inline sysint_t getInstrOffset(cell amx_ip) {
+		assert(codeMap_ != 0);
+		if (codeMap_ != 0) {
+			CodeMap::const_iterator iterator = codeMap_->find(amx_ip);
+			if (iterator != codeMap_->end()) {
 				return iterator->second;
 			}
 		}
 		return -1;
 	}
 
-	// JIT-compile whole AMX script and optionally output assembly
-	// code listing to a stream.
-	virtual void Compile(std::FILE *list_stream = 0);
+	// JIT-compiles the whole AMX and optionally outputs assembly code listing.
+	void compile(std::FILE *list_stream = 0);
 
-	// Unconditional jump to the specified AMX address.
-	virtual void Jump(cell ip, void *stack_ptr);
+	// Turns raw AMX code into a sequence of AmxInstruction's.
+	void collectInstrs(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
-	// Call a public function.
-	virtual int CallPublicFunction(int index, cell *retval);
+	// Jumps to instruction that was translated from the specified AMX instruction.
+	void doJump(cell ip, void *stack_ptr);
 
-private:
-	// Turn raw AMX code into a sequence of AmxInstruction's.
-	void ParseCode(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
+	// Calls a public function and returns one of AMX error codes.
+	int callPublicFunction(int index, cell *retval);
 
-	// Call a function.
-	// Must not be called for non-public functions.
-	int CallFunction(cell address, cell *params, cell *retval);
+	// Calls a function by address and returns one of AMX error codes.
+	// Currently works only with public functions.
+	int callFunction(cell address, cell *retval);
 
 private:
 	Jitter(const Jitter &);
@@ -240,28 +238,28 @@ private:
 	AMX        *amx_;
 	AMX_HEADER *amxhdr_;
 
-	cell *opcode_list_;
+	cell *opcodeList_;
 
 	bool compiled_;
 	void *code_;
 
-	void *halt_ebp_;
-	void *halt_esp_;
+	void *haltEbp_;
+	void *haltEsp_;
 
 	typedef std::map<cell, sysint_t> CodeMap;
-	CodeMap *code_map_;
+	CodeMap *codeMap_;
 
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
-	LabelMap *label_map_;
+	LabelMap *labelMap_;
 
-	AsmJit::Label &Label(AsmJit::X86Assembler &as,
-	                     LabelMap *label_map,
-	                     cell address,
-	                     const std::string &name = std::string());
+	AsmJit::Label &L(AsmJit::X86Assembler &as,
+	                 LabelMap *labelMap,
+	                 cell address,
+	                 const std::string &name = std::string());
 
-protected: // native overrides
+private: // native overrides
 	typedef void (Jitter::*NativeOverride)(AsmJit::X86Assembler &as);
-	std::map<std::string, NativeOverride> native_overrides_;
+	std::map<std::string, NativeOverride> nativeOverrides_;
 
 	void native_float(AsmJit::X86Assembler &as);
 	void native_floatabs(AsmJit::X86Assembler &as);
@@ -279,11 +277,11 @@ protected: // code snippets
 
 	// Save stk/frm and switch to real stack.
 	// Affects registers: EDX, EBP, ESP.
-	void begin_alien_code(AsmJit::X86Assembler &as);
+	void beginExternalCode(AsmJit::X86Assembler &as);
 
 	// Save ebp_/esp_ and switch to AMX stack.
 	// Affects registers: EDX, EBP, ESP.
-	void end_alien_code(AsmJit::X86Assembler &as);
+	void endExternalCode(AsmJit::X86Assembler &as);
 
 private: // static members
 	static void *ebp_;

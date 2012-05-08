@@ -74,15 +74,15 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 		jitter = new jit::Jitter(amx, ::opcode_list);
 		int error = AMX_ERR_NONE;
 		try {
-			jitter->Compile();
+			jitter->compile();
 		} catch (const jit::JitError &) {
 			try {
 				logprintf("[jit] An error occured, this script will run without JIT!");
 				throw;
 			} catch (const jit::CompileError &e) {
-				const jit::AmxInstruction &instr = e.GetInstruction();
+				const jit::AmxInstruction &instr = e.getInstr();
 				AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-				cell address = reinterpret_cast<cell>(instr.GetIP())
+				cell address = reinterpret_cast<cell>(instr.getPtr())
 							 - reinterpret_cast<cell>(amx->base + hdr->cod);
 				try {
 					throw;
@@ -93,7 +93,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 				} catch (const jit::ObsoleteInstructionError &) {
 					logprintf("[jit] Error: Obsolete instruction at address %08x:", address);
 				}
-				const cell *ip = instr.GetIP();
+				const cell *ip = instr.getPtr();
 				logprintf("  %08x %08x %08x %08x %08x %08x ...",
 						*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
 				error = AMX_ERR_INVINSTR;
@@ -113,7 +113,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 		JumpX86::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
 	} else {
-		return jitter->CallPublicFunction(index, retval);
+		return jitter->callPublicFunction(index, retval);
 	}
 }
 
