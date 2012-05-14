@@ -240,7 +240,6 @@ private:
 
 	cell *opcodeList_;
 
-	bool compiled_;
 	void *code_;
 
 	void *haltEbp_;
