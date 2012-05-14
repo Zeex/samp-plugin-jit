@@ -224,12 +224,12 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 	, opcodeList_(opcode_list)
+	, code_(0)
+	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
 	, codeMap_(0)
 	, labelMap_(0)
-	, code_(0)
-	, codeSize_(0)
 {
 	OVERRIDE_NATIVE(float);
 	OVERRIDE_NATIVE(floatabs);
