@@ -229,6 +229,7 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	, codeMap_(0)
 	, labelMap_(0)
 	, code_(0)
+	, codeSize_(0)
 {
 	OVERRIDE_NATIVE(float);
 	OVERRIDE_NATIVE(floatabs);
@@ -1148,6 +1149,7 @@ void Jitter::compile(std::FILE *list_stream) {
 	}
 
 	code_ = as.make();
+	codeSize_ = as.getCodeSize();
 
 	codeMap_ = code_map.release();
 	labelMap_ = labelMap.release();
