@@ -232,15 +232,11 @@ public:
 	// Calls a public function and returns one of AMX error codes.
 	int callPublicFunction(int index, cell *retval);
 
-	// Calls a function by address and returns one of AMX error codes.
-	// Currently works only with public functions.
-	int callFunction(cell address, cell *retval);
-
 private:
 	Jitter(const Jitter &);
 	Jitter &operator=(const Jitter &);
 
-private:
+private: // member variables
 	AMX        *amx_;
 	AMX_HEADER *amxhdr_;
 
@@ -258,15 +254,19 @@ private:
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
 	LabelMap *labelMap_;
 
-	AsmJit::Label &L(AsmJit::X86Assembler &as,
-	                 LabelMap *labelMap,
-	                 cell address,
-	                 const std::string &name = std::string());
+private: // private methods
+	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, const std::string &name = std::string());
+
+	// Calls a function by address and returns one of AMX error codes. Due to current design 
+	// this method must be called only on public functions.
+	int callFunction(cell address, cell *retval);
 
 private: // native overrides
 	typedef void (Jitter::*NativeOverride)(AsmJit::X86Assembler &as);
 	std::map<std::string, NativeOverride> nativeOverrides_;
 
+	// These are the optimized versions of the floating-point natives that make use of FPU
+	// instructions performing the same operations.
 	void native_float(AsmJit::X86Assembler &as);
 	void native_floatabs(AsmJit::X86Assembler &as);
 	void native_floatadd(AsmJit::X86Assembler &as);
