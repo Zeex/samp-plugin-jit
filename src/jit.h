@@ -24,6 +24,7 @@
 #ifndef JIT_H
 #define JIT_H
 
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <map>
@@ -178,19 +179,24 @@ public:
 		return amxhdr_;
 	}
 
-	// Returns pointer to AMX data.
+	// Returns a pointer to the AMX data section.
 	inline unsigned char *getAmxData() const {
 		return amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat;
 	}
 
-	// Returns pointer to AMX code.
+	// Returns a pointer to the AMX code section.
 	inline unsigned char *getAmxCode() const {
 		return amx_->base + amxhdr_->cod;
 	}
 
-	// Returns pointer to native code buffer.
+	// Returns a pointer to the native code buffer.
 	inline void *getCode() const {
 		return code_;
+	}
+
+	// Returns the size of the compiled code, in bytes.
+	inline std::size_t getCodeSize() const {
+		return codeSize_;
 	}
 
 	// Returns address of native code corresponding to AMX code.
@@ -241,6 +247,7 @@ private:
 	cell *opcodeList_;
 
 	void *code_;
+	std::size_t codeSize_;
 
 	void *haltEbp_;
 	void *haltEsp_;
