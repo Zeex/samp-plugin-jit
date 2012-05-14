@@ -224,7 +224,6 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 	, opcodeList_(opcode_list)
-	, compiled_(false)
 	, haltEsp_(0)
 	, haltEbp_(0)
 	, codeMap_(0)
@@ -248,7 +247,7 @@ Jitter::~Jitter() {
 }
 
 void Jitter::compile(std::FILE *list_stream) {
-	if (compiled_) {
+	if (code_ != 0) {
 		return;
 	}
 
@@ -1149,7 +1148,6 @@ void Jitter::compile(std::FILE *list_stream) {
 	}
 
 	code_ = as.make();
-	compiled_ = true;
 
 	codeMap_ = code_map.release();
 	labelMap_ = labelMap.release();
