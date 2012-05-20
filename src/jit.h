@@ -32,7 +32,7 @@
 #include <vector>
 
 #include <amx/amx.h>
-#include <asmjit/X86/X86Assembler.h>
+#include <AsmJit/X86/X86Assembler.h>
 
 namespace jit {
 
