@@ -262,11 +262,9 @@ public:
 		return -1;
 	}
 
-	// JIT-compiles the whole AMX and optionally outputs assembly code listing.
+	// JIT-compiles the whole AMX and optionally outputs assembly code listing to the 
+	// specified stream.
 	void compile(std::FILE *list_stream = 0);
-
-	// Jumps to instruction that was translated from the specified AMX instruction.
-	void doJump(cell ip, void *stack);
 
 	// Calls a function and returns one of AMX error codes.
 	int callFunction(cell address, cell *retval);
@@ -294,9 +292,6 @@ private: // member variables
 	void *haltEbp_;
 	void *haltEsp_;
 
-	typedef void (JIT_CDECL *DoJumpHelper)(void *dest, void *stack);
-	DoJumpHelper doJumpHelper_;
-
 	typedef cell (JIT_CDECL *CallFunctionHelper)(void *start);
 	CallFunctionHelper callFunctionHelper_;
 
@@ -308,6 +303,9 @@ private: // member variables
 
 private: // private methods
 	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, const std::string &name = std::string());
+
+	// Jumps to specific AMX instruction (needed for LCTRL 6).
+	static void JIT_STDCALL doJump(Jitter *jitter, cell ip, void *stack);
 
 private: // native overrides
 	typedef void (Jitter::*NativeOverride)(AsmJit::X86Assembler &as);
