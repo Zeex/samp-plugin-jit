@@ -83,8 +83,6 @@ enum AmxOpcode {
 	NUM_AMX_OPCODES
 };
 
-enum AmxOpcode;
-
 class AmxInstruction {
 public:
 	AmxInstruction(const cell *ip) : ip_(ip) {}
