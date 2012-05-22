@@ -51,7 +51,7 @@ static AmxToJitterMap amx_to_jitter;
 
 static JumpX86 amx_Exec_hook;
 
-static cell *opcode_list = 0;
+static cell *opcodeTable = 0;
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__ && !defined WIN32
@@ -71,7 +71,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	// pointer is put into amx_to_jit map to indicate this.
 	AmxToJitterMap::iterator iterator = amx_to_jitter.find(amx);
 	if (iterator == amx_to_jitter.end()) {
-		jitter = new jit::Jitter(amx, ::opcode_list);
+		jitter = new jit::Jitter(amx, ::opcodeTable);
 		int error = AMX_ERR_NONE;
 		try {
 			jitter->compile();
@@ -180,7 +180,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		// Get opcode list before we hook amx_Exec().
 		if (::opcode_list == 0) {
 			amx->flags |= AMX_FLAG_BROWSE;
-			amx_Exec(amx, reinterpret_cast<cell*>(&opcode_list), 0);
+			amx_Exec(amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
 			amx->flags &= ~AMX_FLAG_BROWSE;
 		}
 	#endif

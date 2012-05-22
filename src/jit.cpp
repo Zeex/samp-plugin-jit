@@ -344,9 +344,9 @@ Jitter::Intrinsic Jitter::intrinsics_[] = {
 	{"floatlog",    &Jitter::native_floatlog}
 };
 
-Jitter::Jitter(AMX *amx, cell *opcode_list)
+Jitter::Jitter(AMX *amx, cell *opcodeTable)
 	: vm_(amx)
-	, opcodeList_(opcode_list)
+	, opcodeTable_(opcodeTable)
 	, code_(0)
 	, codeSize_(0)
 	, haltEsp_(0)
@@ -368,8 +368,10 @@ void Jitter::compile(std::FILE *list_stream) {
 		return;
 	}
 
-	AmxDisassembler disasm(vm_);
-	std::vector<AmxInstruction> instrs = disasm.disassemble();
+	AmxDisassembler disas(vm_);
+	disas.setInstrPtr(0);
+	disas.setOpcodeTable(opcodeTable_);
+	std::vector<AmxInstruction> instrs = disas.disassemble();
 
 	AsmJit::X86Assembler as;
 	AsmJit::FileLogger logger(list_stream);
