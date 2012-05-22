@@ -37,6 +37,48 @@
 namespace jit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// AmxInstruction implementation
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const char *AmxInstruction::opcodeNames[NUM_AMX_OPCODES] = {
+	"NONE",         "LOAD.PRI",     "LOAD.ALT",     "LOAD.S.PRI",
+	"LOAD.S.ALT",   "LREF.PRI",     "LREF.ALT",     "LREF.S.PRI",
+	"LREF.S.ALT",   "LOAD.I",       "LODB.I",       "CONST.PRI",
+	"CONST.ALT",    "ADDR.PRI",     "ADDR.ALT",     "STOR.PRI",
+	"STOR.ALT",     "STOR.S.PRI",   "STOR.S.ALT",   "SREF.PRI",
+	"SREF.ALT",     "SREF.S.PRI",   "SREF.S.ALT",   "STOR.I",
+	"STRB.I",       "LIDX",         "LIDX.B",       "IDXADDR",
+	"IDXADDR.B",    "ALIGN.PRI",    "ALIGN.ALT",    "LCTRL",
+	"SCTRL",        "MOVE.PRI",     "MOVE.ALT",     "XCHG",
+	"PUSH.PRI",     "PUSH.ALT",     "PUSH.R",       "PUSH.C",
+	"PUSH",         "PUSH.S",       "POP.PRI",      "POP.ALT",
+	"STACK",        "HEAP",         "PROC",         "RET",
+	"RETN",         "CALL",         "CALL.PRI",     "JUMP",
+	"JREL",         "JZER",         "JNZ",          "JEQ",
+	"JNEQ",         "JLESS",        "JLEQ",         "JGRTR",
+	"JGEQ",         "JSLESS",       "JSLEQ",        "JSGRTR",
+	"JSGEQ",        "SHL",          "SHR",          "SSHR",
+	"SHL.C.PRI",    "SHL.C.ALT",    "SHR.C.PRI",    "SHR.C.ALT",
+	"SMUL",         "SDIV",         "SDIV.ALT",     "UMUL",
+	"UDIV",         "UDIV.ALT",     "ADD",          "SUB",
+	"SUB.ALT",      "AND",          "OR",           "XOR",
+	"NOT",          "NEG",          "INVERT",       "ADD.C",
+	"SMUL.C",       "ZERO.PRI",     "ZERO.ALT",     "ZERO",
+	"ZERO.S",       "SIGN.PRI",     "SIGN.ALT",     "EQ",
+	"NEQ",          "LESS",         "LEQ",          "GRTR",
+	"GEQ",          "SLESS",        "SLEQ",         "SGRTR",
+	"SGEQ",         "EQ.C.PRI",     "EQ.C.ALT",     "INC.PRI",
+	"INC.ALT",      "INC",          "INC.S",        "INC.I",
+	"DEC.PRI",      "DEC.ALT",      "DEC",          "DEC.S",
+	"DEC.I",        "MOVS",         "CMPS",         "FILL",
+	"HALT",         "BOUNDS",       "SYSREQ.PRI",   "SYSREQ.C",
+	"FILE",         "LINE",         "SYMBOL",       "SRANGE",
+	"JUMP.PRI",     "SWITCH",       "CASETBL",      "SWAP.PRI",
+	"SWAP.ALT",     "PUSH.ADR",     "NOP",          "SYSREQ.D",
+	"SYMTAG",       "BREAK"
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AmxVm implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -123,16 +165,20 @@ AmxDisassembler::AmxDisassembler(AmxVm vm)
 {
 }
 
-bool AmxDisassembler::nextInstr(bool &error) {
-	error = false;
+bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
+	if (error != 0) {
+		*error = false;
+	}
 
 	if (ip_ < 0 || vm_.getHeader()->cod + ip_ >= vm_.getHeader()->dat) {
-		// Went out of code, stop here.
+		// Went out of the code section.
 		return false;
 	}
 
-	cell opcode = *reinterpret_cast<cell*>(vm_.getCode() + ip_);
+	instr.getOperands().clear();
+	instr.setAddress(ip_);
 
+	cell opcode = *reinterpret_cast<cell*>(vm_.getCode() + ip_);
 	if (opcodeTable_ != 0) {
 		// Lookup this opcode in opcode table.
 		for (int i = 0; i < NUM_AMX_OPCODES; i++) {
@@ -144,6 +190,7 @@ bool AmxDisassembler::nextInstr(bool &error) {
 	}
 
 	ip_ += sizeof(cell);
+	instr.setOpcode(static_cast<AmxOpcode>(opcode));
 
 	switch (opcode) {
 	// Instructions with one operand.
@@ -165,6 +212,7 @@ bool AmxDisassembler::nextInstr(bool &error) {
 	case OP_DEC:        case OP_DEC_S:      case OP_MOVS:       case OP_CMPS:
 	case OP_FILL:       case OP_HALT:       case OP_BOUNDS:     case OP_CALL:
 	case OP_SYSREQ_C:   case OP_PUSH_ADR:   case OP_SYSREQ_D:   case OP_SWITCH:
+		instr.addOperand(*reinterpret_cast<cell*>(vm_.getCode() + ip_));
 		ip_ += sizeof(cell);
 		break;
 
@@ -189,32 +237,21 @@ bool AmxDisassembler::nextInstr(bool &error) {
 	// Special instructions.
 	case OP_CASETBL: {
 		int num = *reinterpret_cast<cell*>(vm_.getCode() + ip_);
-		ip_ += sizeof(cell);
-		ip_ += 2 * num + 1;
+		// num case records follow, each is 2 cells big.
+		for (int i = 0; i < num * 2; i++) {
+			instr.addOperand(*reinterpret_cast<cell*>(vm_.getCode() + ip_));
+			ip_ += sizeof(cell);
+		}
 		break;
 	}
 
 	default:
-		error = true;
+		if (error != 0) {
+			*error = true;
+		}
 		return false;
 	}
 
-	return true;
-}
-
-AmxInstruction AmxDisassembler::getInstr() const {
-	return AmxInstruction(reinterpret_cast<cell*>(vm_.getCode() + ip_));
-}
-
-bool AmxDisassembler::disassemble(std::vector<AmxInstruction> &instrs) {
-	bool error;
-	while (nextInstr(error)) {
-		instrs.push_back(getInstr());
-	}
-	if (error) {
-		instrs.clear();
-		return false;
-	}
 	return true;
 }
 
@@ -272,25 +309,15 @@ Jitter::~Jitter() {
 
 bool Jitter::compile(CompileErrorHandler errorHandler) {
 	AmxDisassembler disas(vm_);
-	disas.setInstrPtr(0);
 	disas.setOpcodeTable(opcodeTable_);
-
-	std::vector<AmxInstruction> instrs;
-	if (!disas.disassemble(instrs)) {
-		// TODO: Make this less ugly
-		errorHandler(vm_, AmxInstruction(reinterpret_cast<cell*>(disas.getInstrPtr() + vm_.getCode())));
-		return false;
-	}
 
 	AsmJit::X86Assembler as;
 
-	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin();
-			instr_iterator != instrs.end(); ++instr_iterator)
-	{
-		AmxInstruction &instr = *instr_iterator;
+	bool error = false;
+	AmxInstruction instr;
 
-		cell cip = reinterpret_cast<cell>(instr.getPtr())
-		         - reinterpret_cast<cell>(vm_.getCode());
+	while (disas.decode(instr, &error)) {
+		cell cip = instr.getAddress();
 		as.bind(L(as, cip));
 
 		codeMap_.insert(std::make_pair(cip, as.getCodeSize()));
@@ -473,14 +500,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as.lea(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebp, -reinterpret_cast<sysint_t>(vm_.getData())));
 				break;
 			case 6: {
-				if (instr_iterator == instrs.end() - 1) {
-					// Can't get address of next instruction since this one is the last.
-					errorHandler(vm_, instr);
-					return false;
-				}
-				AmxInstruction &next_instr = *(instr_iterator + 1);
-				as.mov(AsmJit::eax, reinterpret_cast<sysint_t>(next_instr.getPtr())
-				            - reinterpret_cast<sysint_t>(vm_.getCode()));
+				as.mov(AsmJit::eax, instr.getAddress() + instr.getSize());
 				break;
 			}
 			default:
@@ -1145,6 +1165,10 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			errorHandler(vm_, instr);
 			return false;
 		}
+	}
+
+	if (error) {
+		errorHandler(vm_, instr);
 	}
 
 	code_     = as.make();

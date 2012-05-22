@@ -21,10 +21,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
 #include <map>
+#include <sstream>
 #include <string>
 
 #include "jit.h"
@@ -96,11 +100,27 @@ static std::string GetFileName(const std::string &path) {
 	return path;
 }
 
+static std::string InstrToString(const jit::AmxInstruction &instr) {
+	std::stringstream ss;
+
+	if (instr.getName() != 0) {
+		std::string name(instr.getName());
+		std::transform(name.begin(), name.end(), std::ostream_iterator<char>(ss), ::tolower);
+	} else {
+		ss << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
+	}
+
+	std::vector<cell> opers = instr.getOperands();
+	for (std::vector<cell>::const_iterator it = opers.begin(); it != opers.end(); ++it) {
+		ss << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
+	}
+
+	return ss.str();
+}
+
 static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
-	logprintf("JIT compilation error occured at %08x:", instr.getRelPtr(vm.getAmx()));
-	const cell *ip = instr.getPtr();
-	logprintf("  %08x %08x %08x %08x %08x %08x ...",
-			*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
+	logprintf("JIT compilation error occured at %08x:", instr.getAddress());
+	logprintf("  %s", InstrToString(instr).c_str());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {

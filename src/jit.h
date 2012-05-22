@@ -24,6 +24,7 @@
 #ifndef JIT_H
 #define JIT_H
 
+#include <cassert>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -85,19 +86,63 @@ enum AmxOpcode {
 
 class AmxInstruction {
 public:
-	AmxInstruction(const cell *ip) : ip_(ip) {}
+	AmxInstruction() : address_(0), opcode_(OP_NONE), operands_() {}
 
-	inline const cell *getPtr() const
-		{ return ip_; }
-	inline cell getRelPtr(AMX *amx) const
-		{ return cell(ip_) - cell(reinterpret_cast<AMX_HEADER*>(amx->base)->cod + amx->base); }
-	inline AmxOpcode getOpcode() const
-		{ return static_cast<AmxOpcode>(*ip_); }
-	inline cell getOperand(unsigned int index = 0u) const
-		{ return *(ip_ + 1 + index); }
+	inline int getSize() const {
+		return sizeof(cell) * (1 + operands_.size());
+	}
+
+	inline const cell getAddress() const {
+		return address_; 
+	}
+	inline void setAddress(cell address) {
+		address_ = address;
+	}
+
+	inline AmxOpcode getOpcode() const {
+		return opcode_;
+	}
+	inline void setOpcode(AmxOpcode opcode) {
+		opcode_ = opcode;
+	}
+
+	inline cell getOperand(unsigned int index = 0u) {
+		assert(index >= 0 && index < operands_.size());
+		return operands_[index];
+	}
+
+	inline std::vector<cell> &getOperands() {
+		return operands_;
+	}
+	inline const std::vector<cell> &getOperands() const {
+		return operands_;
+	}
+	inline void setOperands(std::vector<cell> operands) {
+		operands_ = operands;
+	}
+
+	inline void addOperand(cell value) {
+		operands_.push_back(value);
+	}
+
+	inline int getNumOperands() const {
+		return operands_.size();
+	}
+
+	inline const char *getName() const {
+		if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
+			return opcodeNames[opcode_];
+		}
+		return 0;
+	}
 
 private:
-	const cell *ip_;
+	cell address_;
+	AmxOpcode opcode_;
+	std::vector<cell> operands_;
+
+private:
+	static const char *opcodeNames[NUM_AMX_OPCODES];
 };
 
 class AmxVm {
@@ -163,25 +208,17 @@ public:
 	}
 
 	// Sets the instruction pointer (relative to COD).
-	inline void setInstrPtr(cell ip) {
+	inline void setIp(cell ip) {
 		ip_ = ip;
 	}
 
 	// Returns position of the instruction pointer.
-	inline cell getInstrPtr() const {
+	inline cell getIp() const {
 		return ip_;
 	}
 
-	// Jumps to next instruction. If an error occurs, e.g. invalid instruction,
-	// the "error" argument is set to "true".
-	bool nextInstr(bool &error);
-
-	// Returns current instruction.
-	AmxInstruction getInstr() const;
-	
-	// Disassembles the whole AMX. If an error occurs, e.g. invalid instruction, it
-	// returns "false" and clears the output vector.
-	bool disassemble(std::vector<AmxInstruction> &instrs);
+	// Decodes current instruction and increments instruction pointer. 
+	bool decode(AmxInstruction &instr, bool *error = 0);
 
 private:
 	AmxVm vm_;
