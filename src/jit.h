@@ -222,7 +222,7 @@ private:
 
 class Jitter {
 public:
-	Jitter(AMX *amx, cell *opcode_list = 0);
+	Jitter(AMX *amx, cell *opcodeTable = 0);
 	virtual ~Jitter();
 
 	inline void *getCode() const {
@@ -267,7 +267,7 @@ private:
 private:
 	AmxVm vm_;
 
-	cell *opcodeList_;
+	cell *opcodeTable_;
 
 	void *code_;
 	std::size_t codeSize_;
