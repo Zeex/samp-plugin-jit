@@ -89,6 +89,8 @@ public:
 
 	inline const cell *getPtr() const
 		{ return ip_; }
+	inline cell getRelPtr(AMX *amx) const
+		{ return cell(ip_) - cell(reinterpret_cast<AMX_HEADER*>(amx->base)->cod + amx->base); }
 	inline AmxOpcode getOpcode() const
 		{ return static_cast<AmxOpcode>(*ip_); }
 	inline cell getOperand(unsigned int index = 0u) const
@@ -249,9 +251,12 @@ public:
 		return -1;
 	}
 
+	// Compilation error handler.
+	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
+
 	// Compiles the whole AMX and optionally outputs assembly code listing to the 
 	// specified stream.
-	bool compile(std::FILE *list_stream = 0);
+	bool compile(CompileErrorHandler errorHandler = 0, std::FILE *list_stream = 0);
 
 	// Calls a function and returns one of AMX error codes.
 	int callFunction(cell address, cell *retval);

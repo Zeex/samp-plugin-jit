@@ -96,6 +96,13 @@ static std::string GetFileName(const std::string &path) {
 	return path;
 }
 
+static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
+	logprintf("JIT compilation error occured at %08x:", instr.getRelPtr(vm.getAmx()));
+	const cell *ip = instr.getPtr();
+	logprintf("  %08x %08x %08x %08x %08x %08x ...",
+			*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
+}
+
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
@@ -146,8 +153,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	#endif
 
 	jit::Jitter *jitter = new jit::Jitter(amx, ::opcodeTable);
-	if (!jitter->compile()) {
-		logprintf("JIT couldn't compile this script, sorry.");
+	if (!jitter->compile(CompileError)) {
 		delete jitter;
 	} else {
 		::amx2jitter.insert(std::make_pair(amx, jitter));
