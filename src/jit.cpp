@@ -358,10 +358,6 @@ int getNativeIndex(AMX *amx, cell address) {
 	return -1;
 }
 
-void JIT_STDCALL doJump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
-	jitter->doJump(ip, stack_ptr);
-}
-
 } // unnamed namespace
 
 namespace jit {
@@ -395,7 +391,6 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
-	, doJumpHelper_(0)
 	, callFunctionHelper_(0)
 	, codeMap_(0)
 	, labelMap_(0)
@@ -653,7 +648,7 @@ void Jitter::compile(std::FILE *list_stream) {
 				as.push(esp);
 				as.push(eax);
 				as.push(reinterpret_cast<sysint_t>(this));
-				as.call(reinterpret_cast<void*>(::doJump));
+				as.call(reinterpret_cast<void*>(Jitter::doJump));
 				// Didn't jump because of invalid address - exit with error.
 				halt(as, AMX_ERR_INVINSTR);
 				break;
@@ -777,7 +772,7 @@ void Jitter::compile(std::FILE *list_stream) {
 					as.push(esp);
 					as.push(eax);
 					as.push(reinterpret_cast<sysint_t>(this));
-					as.call(reinterpret_cast<void*>(::doJump));
+					as.call(reinterpret_cast<void*>(Jitter::doJump));
 					// Didn't jump because of invalid address - exit with error.
 					halt(as, AMX_ERR_INVINSTR);
 					break;
@@ -1431,23 +1426,26 @@ AsmJit::Label &Jitter::L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell addr
 	}
 }
 
-void Jitter::doJump(cell ip, void *stack) {
-	CodeMap::const_iterator it = codeMap_->find(ip);
+void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
+	CodeMap::const_iterator it = jitter->codeMap_->find(ip);
 
-	if (it != codeMap_->end()) {
-		void *dest = it->second + reinterpret_cast<char*>(code_);
+	typedef void (JIT_CDECL *DoJumpHelper)(void *dest, void *stack);
+	static DoJumpHelper doJumpHelper = 0;
 
-		if (doJumpHelper_ == 0) {
+	if (it != jitter->codeMap_->end()) {
+		void *dest = it->second + reinterpret_cast<char*>(jitter->code_);
+
+		if (doJumpHelper == 0) {
 			AsmJit::X86Assembler as;
 
 			as.mov(esp, dword_ptr(esp, 8));
 			as.jmp(dword_ptr(esp, 4));
 			as.ret();
 
-			doJumpHelper_ = (DoJumpHelper)as.make();
+			doJumpHelper = (DoJumpHelper)as.make();
 		}
 
-		doJumpHelper_(dest, stack);
+		doJumpHelper(dest, stack);
 	}
 }
 
