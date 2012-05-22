@@ -170,14 +170,16 @@ public:
 		return ip_;
 	}
 
-	// Jumps to next instruction, if any.
-	bool nextInstr();
+	// Jumps to next instruction. If an error occurs, e.g. invalid instruction,
+	// the "error" argument is set to "true".
+	bool nextInstr(bool &error);
 
 	// Returns current instruction.
 	AmxInstruction getInstr() const;
 	
-	// Disassemble the whole AMX vm.
-	std::vector<AmxInstruction> disassemble();
+	// Disassembles the whole AMX. If an error occurs, e.g. invalid instruction, it
+	// returns "false" and clears the output vector.
+	bool disassemble(std::vector<AmxInstruction> &instrs);
 
 private:
 	AmxVm vm_;
@@ -240,19 +242,16 @@ public:
 		return 0;
 	}
 	inline sysint_t getInstrOffset(cell amx_ip) {
-		assert(codeMap_ != 0);
-		if (codeMap_ != 0) {
-			CodeMap::const_iterator iterator = codeMap_->find(amx_ip);
-			if (iterator != codeMap_->end()) {
-				return iterator->second;
-			}
+		CodeMap::const_iterator iterator = codeMap_.find(amx_ip);
+		if (iterator != codeMap_.end()) {
+			return iterator->second;
 		}
 		return -1;
 	}
 
 	// Compiles the whole AMX and optionally outputs assembly code listing to the 
 	// specified stream.
-	void compile(std::FILE *list_stream = 0);
+	bool compile(std::FILE *list_stream = 0);
 
 	// Calls a function and returns one of AMX error codes.
 	int callFunction(cell address, cell *retval);
@@ -282,15 +281,14 @@ private:
 	CallFunctionHelper callFunctionHelper_;
 
 	typedef std::map<cell, sysint_t> CodeMap;
-	CodeMap *codeMap_;
+	CodeMap codeMap_;
 
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
-	LabelMap *labelMap_;
+	LabelMap labelMap_;
 
 private:
 	// Sets a label. Optionally takes a label name.
-	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, 
-			const std::string &name = std::string());
+	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name = "");
 
 	// Jumps to specific AMX instruction.
 	static void JIT_STDCALL doJump(Jitter *jitter, cell ip, void *stack);
@@ -333,31 +331,6 @@ private:
 	// Save ebp_/esp_ and switch to AMX stack.
 	// Affects registers: EDX, EBP, ESP.
 	void endExternalCode(AsmJit::X86Assembler &as);
-};
-
-class Error {};
-
-class CompileError : public Error {
-public:
-	CompileError(const AmxInstruction &instr) : instr_(instr) {}
-	inline const AmxInstruction &getInstr() const { return instr_; }
-private:
-	AmxInstruction instr_;
-};
-
-class UnsupportedInstructionError : public CompileError {
-public:
-	UnsupportedInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
-};
-
-class InvalidInstructionError : public CompileError {
-public:
-	InvalidInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
-};
-
-class ObsoleteInstructionError : public CompileError {
-public:
-	ObsoleteInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
 };
 
 } // namespace jit

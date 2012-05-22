@@ -47,7 +47,7 @@ typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
 typedef std::map<AMX*, jit::Jitter*> AmxToJitterMap;
-static AmxToJitterMap amx_to_jitter;
+static AmxToJitterMap amx2jitter;
 
 static JumpX86 amx_Exec_hook;
 
@@ -56,63 +56,18 @@ static cell *opcodeTable = 0;
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__ && !defined WIN32
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-			// amx_BrowseRelocate() wants the opcode list.
 			assert(::opcode_list != 0);
 			*retval = reinterpret_cast<cell>(::opcode_list);
 			return AMX_ERR_NONE;
 		}
 	#endif
-
-	// A Jitter instance associated with this AMX.
-	jit::Jitter *jitter = 0;
-
-	// When amx_Exec() is called for the first time attempt to
-	// JIT-compile this AMX. In case of compilation failure a null
-	// pointer is put into amx_to_jit map to indicate this.
-	AmxToJitterMap::iterator iterator = amx_to_jitter.find(amx);
-	if (iterator == amx_to_jitter.end()) {
-		jitter = new jit::Jitter(amx, ::opcodeTable);
-		int error = AMX_ERR_NONE;
-		try {
-			jitter->compile();
-		} catch (const jit::Error &) {
-			try {
-				logprintf("[jit] An error occured, this vm will run without JIT!");
-				throw;
-			} catch (const jit::CompileError &e) {
-				const jit::AmxInstruction &instr = e.getInstr();
-				AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-				cell address = reinterpret_cast<cell>(instr.getPtr())
-							 - reinterpret_cast<cell>(amx->base + hdr->cod);
-				try {
-					throw;
-				} catch (const jit::InvalidInstructionError &) {
-					logprintf("[jit] Error: Invalid instruction at address %08x:", address);
-				} catch (const jit::UnsupportedInstructionError &) {
-					logprintf("[jit] Error: Unsupported instruction at address %08x:", address);
-				} catch (const jit::ObsoleteInstructionError &) {
-					logprintf("[jit] Error: Obsolete instruction at address %08x:", address);
-				}
-				const cell *ip = instr.getPtr();
-				logprintf("  %08x %08x %08x %08x %08x %08x ...",
-						*ip, *(ip + 1), *(ip + 2), *(ip + 3), *(ip + 4), *(ip + 5));
-				error = AMX_ERR_INVINSTR;
-			}
-		}
-		if (error != AMX_ERR_NONE) {
-			delete jitter;
-			jitter = 0;
-		}
-		amx_to_jitter.insert(std::make_pair(amx, jitter));
-	} else {
-		jitter = iterator->second;
-	}
-
-	if (jitter == 0) {
+	AmxToJitterMap::iterator iterator = ::amx2jitter.find(amx);
+	if (iterator == ::amx2jitter.end()) {
 		// Compilation previously failed, call normal amx_Exec().
 		JumpX86::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
 	} else {
+		jit::Jitter *jitter = iterator->second;
 		return jitter->callPublicFunction(index, retval);
 	}
 }
@@ -163,8 +118,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-	for (AmxToJitterMap::iterator it = amx_to_jitter.begin(); 
-			it != amx_to_jitter.end(); ++it) {
+	for (AmxToJitterMap::iterator it = amx2jitter.begin(); it != amx2jitter.end(); ++it) {
 		delete it->second;
 	}
 }
@@ -185,6 +139,14 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		}
 	#endif
 
+	jit::Jitter *jitter = new jit::Jitter(amx, ::opcodeTable);
+	if (!jitter->compile()) {
+		logprintf("JIT couldn't compile this script, sorry.");
+		delete jitter;
+	} else {
+		::amx2jitter.insert(std::make_pair(amx, jitter));
+	}
+
 	if (!amx_Exec_hook.IsInstalled()) {
 		amx_Exec_hook.Install(
 			(void*)amx_Exec,
@@ -195,10 +157,10 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	AmxToJitterMap::iterator it = amx_to_jitter.find(amx);
-	if (it != amx_to_jitter.end()) {
+	AmxToJitterMap::iterator it = amx2jitter.find(amx);
+	if (it != amx2jitter.end()) {
 		delete it->second;
-		amx_to_jitter.erase(it);
+		amx2jitter.erase(it);
 	}
 	return AMX_ERR_NONE;
 }
