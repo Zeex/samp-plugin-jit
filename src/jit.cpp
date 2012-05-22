@@ -1391,7 +1391,6 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
 
 			as.mov(AsmJit::esp, AsmJit::dword_ptr(AsmJit::esp, 8));
 			as.jmp(AsmJit::dword_ptr(AsmJit::esp, 4));
-			as.ret();
 
 			doJumpHelper = (DoJumpHelper)as.make();
 		}
