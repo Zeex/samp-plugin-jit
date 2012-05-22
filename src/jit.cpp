@@ -270,7 +270,7 @@ Jitter::~Jitter() {
 	}
 }
 
-bool Jitter::compile(CompileErrorHandler errorHandler, std::FILE *list_stream) {
+bool Jitter::compile(CompileErrorHandler errorHandler) {
 	AmxDisassembler disas(vm_);
 	disas.setInstrPtr(0);
 	disas.setOpcodeTable(opcodeTable_);
@@ -283,8 +283,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler, std::FILE *list_stream) {
 	}
 
 	AsmJit::X86Assembler as;
-	AsmJit::FileLogger logger(list_stream);
-	as.setLogger(&logger);
 
 	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin();
 			instr_iterator != instrs.end(); ++instr_iterator)

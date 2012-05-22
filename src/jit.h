@@ -256,7 +256,7 @@ public:
 
 	// Compiles the whole AMX and optionally outputs assembly code listing to the 
 	// specified stream.
-	bool compile(CompileErrorHandler errorHandler = 0, std::FILE *list_stream = 0);
+	bool compile(CompileErrorHandler errorHandler = 0);
 
 	// Calls a function and returns one of AMX error codes.
 	int callFunction(cell address, cell *retval);
