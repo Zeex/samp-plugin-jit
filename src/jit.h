@@ -269,8 +269,7 @@ public:
 	// Calls a function and returns one of AMX error codes.
 	int callFunction(cell address, cell *retval);
 
-	// Calls a public function and returns one of AMX error codes. It also performs
-	// some extra checks (e.g. against stack overflow/underflow, etc).
+	// Calls a public function and returns one of AMX error codes. 
 	int callPublicFunction(int index, cell *retval);
 
 private:

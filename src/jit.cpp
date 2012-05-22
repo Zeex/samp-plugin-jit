@@ -1450,6 +1450,21 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
 }
 
 int Jitter::callFunction(cell address, cell *retval) {
+	if (amx_->hea >= amx_->stk) {
+		return AMX_ERR_STACKERR;
+	}
+	if (amx_->hea < amx_->hlw) {
+		return AMX_ERR_HEAPLOW;
+	}
+	if (amx_->stk > amx_->stp) {
+		return AMX_ERR_STACKLOW;
+	}
+
+	// Make sure all natives are registered.
+	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
+		return AMX_ERR_NOTFOUND;
+	}
+
 	if (callFunctionHelper_ == 0) {
 		AsmJit::X86Assembler as;
 		
@@ -1521,27 +1536,10 @@ int Jitter::callFunction(cell address, cell *retval) {
 }
 
 int Jitter::callPublicFunction(int index, cell *retval) {
-	if (amx_->hea >= amx_->stk) {
-		return AMX_ERR_STACKERR;
-	}
-	if (amx_->hea < amx_->hlw) {
-		return AMX_ERR_HEAPLOW;
-	}
-	if (amx_->stk > amx_->stp) {
-		return AMX_ERR_STACKLOW;
-	}
-
-	// Make sure all natives are registered.
-	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
-		return AMX_ERR_NOTFOUND;
-	}
-
 	cell address = getPublicAddress(amx_, index);
 	if (address == 0) {
-		// Bad public index - exit with error.
 		return AMX_ERR_INDEX;
 	}
-
 	CallContext ctx(amx_);
 	return callFunction(address, retval);
 }
