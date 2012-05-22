@@ -123,7 +123,7 @@ AmxDisassembler::AmxDisassembler(AmxVm vm)
 {
 }
 
-bool AmxDisassembler::nextInstr() {
+bool AmxDisassembler::nextInstr(bool &error) {
 	if (ip_ < 0 || vm_.getHeader()->cod + ip_ >= vm_.getHeader()->dat) {
 		// Went out of code, stop here.
 		return false;
@@ -193,9 +193,11 @@ bool AmxDisassembler::nextInstr() {
 	}
 
 	default:
-		throw InvalidInstructionError(getInstr());
+		error = true;
+		return false;
 	}
 
+	error = false;
 	return true;
 }
 
@@ -203,12 +205,16 @@ AmxInstruction AmxDisassembler::getInstr() const {
 	return AmxInstruction(reinterpret_cast<cell*>(vm_.getCode() + ip_));
 }
 
-std::vector<AmxInstruction> AmxDisassembler::disassemble() {
-	std::vector<AmxInstruction> instrs;
-	while (nextInstr()) {
+bool AmxDisassembler::disassemble(std::vector<AmxInstruction> &instrs) {
+	bool error;
+	while (nextInstr(error)) {
 		instrs.push_back(getInstr());
 	}
-	return instrs;
+	if (error) {
+		instrs.clear();
+		return false;
+	}
+	return true;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -254,8 +260,6 @@ Jitter::Jitter(AMX *amx, cell *opcodeTable)
 	, haltEsp_(0)
 	, haltEbp_(0)
 	, callFunctionHelper_(0)
-	, codeMap_(0)
-	, labelMap_(0)
 {
 }
 
@@ -265,24 +269,19 @@ Jitter::~Jitter() {
 	}
 }
 
-void Jitter::compile(std::FILE *list_stream) {
-	if (code_ != 0) {
-		return;
-	}
-
+bool Jitter::compile(std::FILE *list_stream) {
 	AmxDisassembler disas(vm_);
 	disas.setInstrPtr(0);
 	disas.setOpcodeTable(opcodeTable_);
-	std::vector<AmxInstruction> instrs = disas.disassemble();
+
+	std::vector<AmxInstruction> instrs;
+	if (!disas.disassemble(instrs)) {
+		return false;
+	}
 
 	AsmJit::X86Assembler as;
 	AsmJit::FileLogger logger(list_stream);
 	as.setLogger(&logger);
-
-	std::auto_ptr<CodeMap> code_map(new CodeMap);
-	std::auto_ptr<LabelMap> labelMap(new LabelMap);
-
-	cell current_function = 0;
 
 	for (std::vector<AmxInstruction>::iterator instr_iterator = instrs.begin();
 			instr_iterator != instrs.end(); ++instr_iterator)
@@ -291,9 +290,9 @@ void Jitter::compile(std::FILE *list_stream) {
 
 		cell cip = reinterpret_cast<cell>(instr.getPtr())
 		         - reinterpret_cast<cell>(vm_.getCode());
-		as.bind(L(as, labelMap.get(), cip));
+		as.bind(L(as, cip));
 
-		code_map->insert(std::make_pair(cip, as.getCodeSize()));
+		codeMap_.insert(std::make_pair(cip, as.getCodeSize()));
 
 		switch (instr.getOpcode()) {
 		case OP_LOAD_PRI: // address
@@ -475,7 +474,7 @@ void Jitter::compile(std::FILE *list_stream) {
 			case 6: {
 				if (instr_iterator == instrs.end() - 1) {
 					// Can't get address of next instruction since this one is the last.
-					throw InvalidInstructionError(instr);
+					return false;
 				}
 				AmxInstruction &next_instr = *(instr_iterator + 1);
 				as.mov(AsmJit::eax, reinterpret_cast<sysint_t>(next_instr.getPtr())
@@ -483,7 +482,7 @@ void Jitter::compile(std::FILE *list_stream) {
 				break;
 			}
 			default:
-				throw UnsupportedInstructionError(instr);
+				return false;
 			}
 			break;
 		case OP_SCTRL: // index
@@ -509,7 +508,7 @@ void Jitter::compile(std::FILE *list_stream) {
 				halt(as, AMX_ERR_INVINSTR);
 				break;
 			default:
-				throw UnsupportedInstructionError(instr);
+				return false;
 			}
 			break;
 		case OP_MOVE_PRI:
@@ -567,7 +566,6 @@ void Jitter::compile(std::FILE *list_stream) {
 			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, -reinterpret_cast<sysint_t>(vm_.getData())));
 			as.push(AsmJit::edx);
 			as.mov(AsmJit::ebp, AsmJit::esp);
-			current_function = cip;
 			break;
 		case OP_RET:
 		case OP_RETN:
@@ -588,7 +586,7 @@ void Jitter::compile(std::FILE *list_stream) {
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
 			cell fn_addr = instr.getOperand() - reinterpret_cast<cell>(vm_.getCode());
-			as.call(L(as, labelMap.get(), fn_addr));
+			as.call(L(as, fn_addr));
 			as.add(AsmJit::esp, AsmJit::dword_ptr(AsmJit::esp));
 			as.add(AsmJit::esp, 4);
 			break;
@@ -615,7 +613,7 @@ void Jitter::compile(std::FILE *list_stream) {
 		case OP_JSGRTR:
 		case OP_JSGEQ: {
 			cell dest = instr.getOperand() - reinterpret_cast<cell>(vm_.getCode());
-			AsmJit::Label &L_dest = L(as, labelMap.get(), dest);
+			AsmJit::Label &L_dest = L(as, dest);
 
 			switch (instr.getOpcode()) {
 				case OP_JUMP: // offset
@@ -981,7 +979,7 @@ void Jitter::compile(std::FILE *list_stream) {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-			AsmJit::Label &L_loop = L(as, labelMap.get(), cip, "loop");
+			AsmJit::Label &L_loop = L(as, cip, "loop");
 			as.lea(AsmJit::edi, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())));                      // memory start
 			as.lea(AsmJit::esi, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData()) + instr.getOperand())); // memory end
 			as.bind(L_loop);
@@ -998,8 +996,8 @@ void Jitter::compile(std::FILE *list_stream) {
 			break;
 		case OP_BOUNDS: { // value
 			// Abort execution if PRI > value or if PRI < 0.
-			AsmJit::Label &L_halt = L(as, labelMap.get(), cip, "halt");
-			AsmJit::Label &L_good = L(as, labelMap.get(), cip, "good");
+			AsmJit::Label &L_halt = L(as, cip, "halt");
+			AsmJit::Label &L_good = L(as, cip, "good");
 				as.cmp(AsmJit::eax, instr.getOperand());
 			as.jg(L_halt);
 				as.cmp(AsmJit::eax, 0);
@@ -1099,21 +1097,21 @@ void Jitter::compile(std::FILE *list_stream) {
 				// Check if the value in AsmJit::eax is in the allowed range.
 				// If not, jump to the default case (i.e. no match).
 				as.cmp(AsmJit::eax, *min_value);
-				as.jl(L(as, labelMap.get(), default_addr));
+				as.jl(L(as, default_addr));
 				as.cmp(AsmJit::eax, *max_value);
-				as.jg(L(as, labelMap.get(), default_addr));
+				as.jg(L(as, default_addr));
 
 				// OK now sequentially compare AsmJit::eax with each value.
 				// This is pretty slow so I probably should optimize
 				// this in future...
 				for (int i = 0; i < num_cases; i++) {
 					as.cmp(AsmJit::eax, case_table[i + 1].value);
-					as.je(L(as, labelMap.get(), case_table[i + 1].address - reinterpret_cast<cell>(vm_.getCode())));
+					as.je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(vm_.getCode())));
 				}
 			}
 
 			// No match found - go for default case.
-			as.jmp(L(as, labelMap.get(), default_addr));
+			as.jmp(L(as, default_addr));
 			break;
 		}
 		case OP_CASETBL: // ...
@@ -1139,25 +1137,15 @@ void Jitter::compile(std::FILE *list_stream) {
 		case OP_BREAK:
 			// conditional breakpoint
 			break;
-		case OP_PUSH_R:
-		case OP_FILE:
-		case OP_SYMBOL:
-		case OP_LINE:
-		case OP_SRANGE:
-		case OP_SYMTAG:
-		case OP_JREL:
-			// obsolete
-			throw ObsoleteInstructionError(instr);
 		default:
-			throw InvalidInstructionError(instr);
+			return false;
 		}
 	}
 
-	code_ = as.make();
+	code_     = as.make();
 	codeSize_ = as.getCodeSize();
 
-	codeMap_ = code_map.release();
-	labelMap_ = labelMap.release();
+	return true;
 }
 
 void Jitter::halt(AsmJit::X86Assembler &as, cell errorCode) {
@@ -1261,24 +1249,24 @@ void Jitter::native_floatlog(AsmJit::X86Assembler &as) {
 	as.add(AsmJit::esp, 4);
 }
 
-AsmJit::Label &Jitter::L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, const std::string &name) {
-	LabelMap::iterator iterator = labelMap->find(TaggedAddress(address, name));
-	if (iterator != labelMap->end()) {
+AsmJit::Label &Jitter::L(AsmJit::X86Assembler &as, cell address, const std::string &name) {
+	LabelMap::iterator iterator = labelMap_.find(TaggedAddress(address, name));
+	if (iterator != labelMap_.end()) {
 		return iterator->second;
 	} else {
 		std::pair<LabelMap::iterator, bool> where =
-				labelMap->insert(std::make_pair(TaggedAddress(address, name), as.newLabel()));
+				labelMap_.insert(std::make_pair(TaggedAddress(address, name), as.newLabel()));
 		return where.first->second;
 	}
 }
 
 void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
-	CodeMap::const_iterator it = jitter->codeMap_->find(ip);
+	CodeMap::const_iterator it = jitter->codeMap_.find(ip);
 
 	typedef void (JIT_CDECL *DoJumpHelper)(void *dest, void *stack);
 	static DoJumpHelper doJumpHelper = 0;
 
-	if (it != jitter->codeMap_->end()) {
+	if (it != jitter->codeMap_.end()) {
 		void *dest = it->second + reinterpret_cast<char*>(jitter->code_);
 
 		if (doJumpHelper == 0) {
