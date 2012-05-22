@@ -237,7 +237,11 @@ public:
 	// Jumps to instruction that was translated from the specified AMX instruction.
 	void doJump(cell ip, void *stack);
 
-	// Calls a public function and returns one of AMX error codes.
+	// Calls a function and returns one of AMX error codes.
+	int callFunction(cell address, cell *retval);
+
+	// Calls a public function and returns one of AMX error codes. It also performs
+	// some extra checks (e.g. against stack overflow/underflow, etc).
 	int callPublicFunction(int index, cell *retval);
 
 private:
@@ -273,10 +277,6 @@ private: // member variables
 
 private: // private methods
 	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, const std::string &name = std::string());
-
-	// Calls a function by address and returns one of AMX error codes. Due to current design 
-	// this method must be called only on public functions.
-	int callFunction(cell address, cell *retval);
 
 private: // native overrides
 	typedef void (Jitter::*NativeOverride)(AsmJit::X86Assembler &as);

@@ -530,11 +530,6 @@ void Jitter::compile(std::FILE *list_stream) {
 			// pushed prior to the call.
 			as.pop(ebp);
 			as.add(ebp, reinterpret_cast<sysint_t>(getAmxData()));
-			if (isPublic(amx_, current_function)) {
-				// Publics must sync stk with esp before exiting.
-				as.lea(edx, dword_ptr(esp, -reinterpret_cast<sysint_t>(getAmxData()) + 4));
-				as.mov(dword_ptr_abs(&amx_->stk), edx);
-			}
 			as.ret();
 			break;
 		case OP_CALL: { // offset
@@ -1463,6 +1458,12 @@ int Jitter::callFunction(cell address, cell *retval) {
 
 		// Call the target function. The function address is stored in EAX.
 		as.call(eax);
+
+		// Synchronize amx->stk and amx->frm with ESP and EBP respectively.
+		as.lea(ecx, dword_ptr(ebp, -reinterpret_cast<sysint_t>(getAmxData())));
+		as.mov(dword_ptr_abs(&amx_->frm), ecx);
+		as.lea(ecx, dword_ptr(esp, -reinterpret_cast<sysint_t>(getAmxData())));
+		as.mov(dword_ptr_abs(&amx_->stk), ecx);
 
 		// Switch back to the real stack.
 		as.mov(ebp, dword_ptr_abs(&ebp_));
