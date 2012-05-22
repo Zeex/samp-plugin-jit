@@ -103,9 +103,9 @@ private:
 };
 
 // Base class for JIT exceptions.
-class JitError {};
+class Error {};
 
-class CompileError : public JitError {
+class CompileError : public Error {
 public:
 	CompileError(const AmxInstruction &instr) : instr_(instr) {}
 	inline const AmxInstruction &getInstr() const { return instr_; }
