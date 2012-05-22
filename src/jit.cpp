@@ -1108,22 +1108,13 @@ void Jitter::compile(std::FILE *list_stream) {
 		}
 		case OP_SYSREQ_PRI: {
 			// call system service, service number in PRI
-			AsmJit::Label &L_halt = L(as, labelMap.get(), cip, "halt");
+			as.mov(AsmJit::edi, AsmJit::esp);
+			beginExternalCode(as);
+				as.push(AsmJit::edi);
 				as.push(AsmJit::eax);
-				as.push(reinterpret_cast<sysint_t>(vm_.getAmx()));
-				//as.call(reinterpret_cast<void*>(getNativeAddress));
-				as.add(AsmJit::esp, 8);
-				as.test(AsmJit::eax, AsmJit::eax);
-				as.jz(L_halt);
-				as.mov(AsmJit::edi, AsmJit::esp);
-				beginExternalCode(as);
-					as.push(AsmJit::edi);
-					as.push(reinterpret_cast<sysint_t>(vm_.getAmx()));
-					as.call(AsmJit::eax);
-					as.add(AsmJit::esp, 8);
-				endExternalCode(as);
-			as.bind(L_halt);
-				halt(as, AMX_ERR_NOTFOUND);
+				as.push(reinterpret_cast<sysint_t>(this));
+				as.call(reinterpret_cast<void*>(Jitter::doSysreq));
+			endExternalCode(as);
 			break;
 		}
 		case OP_SYSREQ_C:   // index
@@ -1265,8 +1256,8 @@ void Jitter::compile(std::FILE *list_stream) {
 	labelMap_ = labelMap.release();
 }
 
-void Jitter::halt(AsmJit::X86Assembler &as, cell error_code) {
-	as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->error)), error_code);
+void Jitter::halt(AsmJit::X86Assembler &as, cell errorCode) {
+	as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->error)), errorCode);
 	as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
 	as.mov(AsmJit::ebp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
 	as.ret();
@@ -1388,15 +1379,39 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
 
 		if (doJumpHelper == 0) {
 			AsmJit::X86Assembler as;
-
 			as.mov(AsmJit::esp, AsmJit::dword_ptr(AsmJit::esp, 8));
 			as.jmp(AsmJit::dword_ptr(AsmJit::esp, 4));
-
 			doJumpHelper = (DoJumpHelper)as.make();
 		}
 
 		doJumpHelper(dest, stack);
 	}
+}
+
+cell JIT_STDCALL Jitter::doSysreq(Jitter *jitter, int index, cell *params) {
+	AMX_NATIVE native = reinterpret_cast<AMX_NATIVE>(jitter->vm_.getNativeAddress(index));
+	if (native != 0) {
+		return native(jitter->vm_.getAmx(), params);
+	}
+	doHalt(jitter, AMX_ERR_NOTFOUND);
+	return 0; // make compiler happy
+}
+
+void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
+	typedef void (JIT_CDECL *DoHaltHelper)(int errorCode);
+	static DoHaltHelper doHaltHelper = 0;
+
+	if (doHaltHelper == 0) {
+		AsmJit::X86Assembler as;
+		as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::esp, 4));
+		as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jitter->vm_.getAmx()->error)), AsmJit::eax);
+		as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jitter->haltEsp_)));
+		as.mov(AsmJit::ebp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&jitter->haltEbp_)));
+		as.ret();
+		doHaltHelper = (DoHaltHelper)as.make();
+	}
+
+	doHaltHelper(errorCode);
 }
 
 int Jitter::callFunction(cell address, cell *retval) {
