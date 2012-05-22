@@ -113,6 +113,12 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		}
 	}
 
+	if (!amx_Exec_hook.IsInstalled()) {
+		amx_Exec_hook.Install(
+			(void*)amx_Exec,
+			(void*)amx_Exec_JIT);
+	}
+
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
@@ -145,12 +151,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		delete jitter;
 	} else {
 		::amx2jitter.insert(std::make_pair(amx, jitter));
-	}
-
-	if (!amx_Exec_hook.IsInstalled()) {
-		amx_Exec_hook.Install(
-			(void*)amx_Exec,
-			(void*)amx_Exec_JIT);
 	}
 
 	return AMX_ERR_NONE;
