@@ -75,7 +75,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 		int error = AMX_ERR_NONE;
 		try {
 			jitter->compile();
-		} catch (const jit::JitError &) {
+		} catch (const jit::Error &) {
 			try {
 				logprintf("[jit] An error occured, this script will run without JIT!");
 				throw;
