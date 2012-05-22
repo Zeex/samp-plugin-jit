@@ -77,7 +77,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 			jitter->compile();
 		} catch (const jit::Error &) {
 			try {
-				logprintf("[jit] An error occured, this script will run without JIT!");
+				logprintf("[jit] An error occured, this vm will run without JIT!");
 				throw;
 			} catch (const jit::CompileError &e) {
 				const jit::AmxInstruction &instr = e.getInstr();

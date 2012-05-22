@@ -100,9 +100,61 @@ private:
 	const cell *ip_;
 };
 
+class AmxVm {
+public:
+	AmxVm(AMX *amx) : amx_(amx) {}
+
+	inline AMX *getAmx() const {
+		return amx_;
+	}
+	inline AMX_HEADER *getHeader() const {
+		return reinterpret_cast<AMX_HEADER*>(amx_->base);
+	}
+	inline unsigned char *getData() const {
+		return amx_->data != 0 ? amx_->data : amx_->base + getHeader()->dat;
+	}
+	inline unsigned char *getCode() const {
+		return amx_->base + getHeader()->cod;
+	}
+
+	int getNumPublics() const {
+		return (getHeader()->natives - getHeader()->publics) / getHeader()->defsize;
+	}
+	int getNumNatives() const {
+		return (getHeader()->libraries - getHeader()->natives) / getHeader()->defsize;
+	}
+
+	AMX_FUNCSTUBNT *getPublics() const {
+		return reinterpret_cast<AMX_FUNCSTUBNT*>(getHeader()->publics + amx_->base);
+	}
+	AMX_FUNCSTUBNT *getNatives() const {
+		return reinterpret_cast<AMX_FUNCSTUBNT*>(getHeader()->natives + amx_->base);
+	}
+
+	cell getPublicAddress(int index) const;
+	cell getNativeAddress(int index) const;
+
+	int getPublicIndex(cell address) const;
+	int getNativeIndex(cell address) const;
+
+	const char *getPublicName(int index) const;
+	const char *getNativeName(int index) const;
+
+	cell *getStack() const {
+		return reinterpret_cast<cell*>(getData() + amx_->stk);
+	}
+
+	cell *pushStack(cell value);
+	cell  popStack();
+	void  popStack(int ncells);
+
+private:
+	AMX *amx_;
+};
+
 class AmxDisassembler {
 public:
-	AmxDisassembler(AMX *amx);
+	AmxDisassembler(AmxVm vm);
 
 	// An opcode table maps opcodes to label addresses inside amx_Exec().
 	// The GCC-specific implementation of AMX provides such a table.
@@ -126,11 +178,11 @@ public:
 	// Returns current instruction.
 	AmxInstruction getInstr() const;
 	
-	// Disassemble the whole AMX script.
+	// Disassemble the whole AMX vm.
 	std::vector<AmxInstruction> disassemble();
 
 private:
-	AMX *amx_;
+	AmxVm vm_;
 	cell *opcodeTable_;
 	cell ip_;
 };
@@ -158,7 +210,7 @@ static inline bool operator<(const TaggedAddress &left, const TaggedAddress &rig
 
 class CallContext {
 public:
-	explicit CallContext(AMX *amx);
+	explicit CallContext(AmxVm vm);
 	~CallContext();
 
 	inline cell *getParams() const {
@@ -166,16 +218,7 @@ public:
 	}
 
 private:
-	unsigned char *getDataPtr();
-	cell *getStackPtr();
-
-	cell *push(cell value);
-
-	cell pop();
-	void pop(int ncells);
-
-private:
-	AMX *amx_;
+	AmxVm vm_;
 	cell *params_;
 };
 
@@ -183,19 +226,6 @@ class Jitter {
 public:
 	Jitter(AMX *amx, cell *opcode_list = 0);
 	virtual ~Jitter();
-
-	inline AMX *getAmx() const {
-		return amx_;
-	}
-	inline AMX_HEADER *getAmxHeader() const {
-		return amxhdr_;
-	}
-	inline unsigned char *getAmxData() const {
-		return amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat;
-	}
-	inline unsigned char *getAmxCode() const {
-		return amx_->base + amxhdr_->cod;
-	}
 
 	inline void *getCode() const {
 		return code_;
@@ -237,8 +267,7 @@ private:
 	Jitter &operator=(const Jitter &);
 
 private:
-	AMX        *amx_;
-	AMX_HEADER *amxhdr_;
+	AmxVm vm_;
 
 	cell *opcodeList_;
 
