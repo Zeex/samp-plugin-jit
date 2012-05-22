@@ -34,6 +34,14 @@
 #include <amx/amx.h>
 #include <AsmJit/X86/X86Assembler.h>
 
+#if defined _MSC_VER
+	#define JIT_CDECL __cdecl
+	#define JIT_STDCALL __stdcall
+#elif defined __GNUC__
+	#define JIT_CDECL __attribute__((cdecl))
+	#define JIT_STDCALL __attribute__((stdcall))
+#endif
+
 namespace jit {
 
 // List of AMX opcodes.
@@ -227,7 +235,7 @@ public:
 	void collectInstrs(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
 	// Jumps to instruction that was translated from the specified AMX instruction.
-	void doJump(cell ip, void *stack_ptr);
+	void doJump(cell ip, void *stack);
 
 	// Calls a public function and returns one of AMX error codes.
 	int callPublicFunction(int index, cell *retval);
@@ -245,8 +253,17 @@ private: // member variables
 	void *code_;
 	std::size_t codeSize_;
 
+	void *ebp_;
+	void *esp_;
+
 	void *haltEbp_;
 	void *haltEsp_;
+
+	typedef void (JIT_CDECL *DoJumpHelper)(void *dest, void *stack);
+	DoJumpHelper doJumpHelper_;
+
+	typedef cell (JIT_CDECL *CallFunctionHelper)(void *start);
+	CallFunctionHelper callFunctionHelper_;
 
 	typedef std::map<cell, sysint_t> CodeMap;
 	CodeMap *codeMap_;
@@ -288,10 +305,6 @@ protected: // code snippets
 	// Save ebp_/esp_ and switch to AMX stack.
 	// Affects registers: EDX, EBP, ESP.
 	void endExternalCode(AsmJit::X86Assembler &as);
-
-private: // static members
-	static void *ebp_;
-	static void *esp_;
 };
 
 } // namespace jit
