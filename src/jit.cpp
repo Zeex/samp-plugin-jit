@@ -34,36 +34,6 @@
 
 #include "jit.h"
 
-#if defined _WIN32 || defined WIN32 || defined __WIN32__
-	#define OS_WIN32
-#elif defined __linux__ || defined linux || defined __linux
-	#define OS_LINUX
-#endif
-
-#if defined _MSC_VER
-	#define COMPILER_MSVC
-#elif defined __GNUC__
-	#define COMPILER_GCC
-#else
-	#error Unsupported compiler
-#endif
-
-#if defined COMPILER_MSVC
-	#if !defined CDECL
-		#define CDECL __cdecl
-	#endif
-	#if !defined STDCALL
-		#define STDCALL __stdcall
-	#endif
-#elif defined COMPILER_GCC
-	#if !defined CDECL
-		#define CDECL __attribute__((cdecl))
-	#endif
-	#if !defined STDCALL
-		#define STDCALL __attribute__((stdcall))
-	#endif
-#endif
-
 namespace jit {
 
 CallContext::CallContext(AMX *amx)
@@ -191,7 +161,7 @@ int getNativeIndex(AMX *amx, cell address) {
 	return -1;
 }
 
-void STDCALL doJump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
+void JIT_STDCALL doJump(jit::Jitter *jitter, cell ip, void *stack_ptr) {
 	jitter->doJump(ip, stack_ptr);
 }
 
@@ -228,6 +198,8 @@ Jitter::Jitter(AMX *amx, cell *opcode_list)
 	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
+	, doJumpHelper_(0)
+	, callFunctionHelper_(0)
 	, codeMap_(0)
 	, labelMap_(0)
 {
@@ -1267,9 +1239,6 @@ AsmJit::Label &Jitter::L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell addr
 	}
 }
 
-void *Jitter::ebp_;
-void *Jitter::esp_;
-
 void Jitter::collectInstrs(cell start, cell end, std::vector<AmxInstruction> &instructions) const {
 	const cell *cip = reinterpret_cast<cell*>(getAmxCode() + start);
 
@@ -1442,118 +1411,87 @@ void Jitter::collectInstrs(cell start, cell end, std::vector<AmxInstruction> &in
 	}
 }
 
-void Jitter::doJump(cell ip, void *stack_ptr) {
+void Jitter::doJump(cell ip, void *stack) {
 	CodeMap::const_iterator it = codeMap_->find(ip);
+
 	if (it != codeMap_->end()) {
 		void *dest = it->second + reinterpret_cast<char*>(code_);
-		#if defined COMPILER_MSVC
-			__asm {
-				mov esp, dword ptr [stack_ptr]
-				jmp dword ptr [dest]
-			}
-		#elif defined COMPILER_GCC
-			__asm__ __volatile__ (
-				"movl %0, %%esp;"
-				"jmpl *%1;"
-					:
-					: "r"(stack_ptr), "r"(dest)
-					: );
-		#endif
+
+		if (doJumpHelper_ == 0) {
+			AsmJit::X86Assembler as;
+
+			as.mov(esp, dword_ptr(esp, 8));
+			as.jmp(dword_ptr(esp, 4));
+			as.ret();
+
+			doJumpHelper_ = (DoJumpHelper)as.make();
+		}
+
+		doJumpHelper_(dest, stack);
 	}
 }
 
 int Jitter::callFunction(cell address, cell *retval) {
-	static void *start;
-	start = getInstrPtr(address, getCode());
+	if (callFunctionHelper_ == 0) {
+		AsmJit::X86Assembler as;
+		
+		// Copy function address to EAX.
+		as.mov(eax, dword_ptr(esp, 4));
 
-	static cell retval_;
+		// The ESI, EDI and ECX registers can be modified by JIT code so they
+		// must be saved somewhere e.g. on the stack. The EAX register is used
+		// to store the return value of this function so it's not listed here.
+		as.push(esi);
+		as.push(edi);
+		as.push(ecx);
 
-	void *haltEsp = haltEsp_;
-	void *haltEbp = haltEbp_;
+		// Keep the two stack pointers in this Jitter object.
+		as.mov(dword_ptr_abs(&ebp_), ebp);
+		as.mov(dword_ptr_abs(&esp_), esp);
 
-	static void *amxStack;
-	amxStack = getAmxData() + amx_->stk;
+		// JIT code is executed on AMX stack, so switch to it.
+		as.mov(ecx, dword_ptr_abs(&amx_->frm));
+		as.lea(ebp, dword_ptr(ecx, reinterpret_cast<sysint_t>(getAmxData())));		
+		as.mov(ecx, dword_ptr_abs(&amx_->stk));
+		as.lea(esp, dword_ptr(ecx, reinterpret_cast<sysint_t>(getAmxData())));
 
-	static void *amxFrame;
-	amxFrame = getAmxData() + amx_->frm;
+		// haltEsp_ and haltEbp_ are needed for HALT and BOUNDS
+		// instructions to quickly abort a currenly running function.
+		as.mov(dword_ptr_abs(&haltEbp_), ebp);
+		as.lea(ecx, dword_ptr(esp, - 4));
+		as.mov(dword_ptr_abs(&haltEsp_), ecx);
 
-	static Jitter *this_;
-	this_ = this;
+		// Call the target function. The function address is stored in EAX.
+		as.call(eax);
+
+		// Switch back to the real stack.
+		as.mov(ebp, dword_ptr_abs(&ebp_));
+		as.mov(esp, dword_ptr_abs(&esp_));
+
+		as.pop(ecx);
+		as.pop(edi);
+		as.pop(esi);
+
+		as.ret();
+
+		callFunctionHelper_ = (CallFunctionHelper)as.make();
+	}
 
 	amx_->error = AMX_ERR_NONE;
 
-	#if defined COMPILER_MSVC
-		__asm {
-			push esi
-			push edi
-			push ecx
+	void *start = getInstrPtr(address, getCode());
+	assert(start != 0);
 
-			mov dword ptr [ebp_], ebp
-			mov dword ptr [esp_], esp
+	void *haltEbp = haltEbp_;
+	void *haltEsp = haltEsp_;
 
-			mov ebp, dword ptr [amxFrame]
-			mov esp, dword ptr [amxStack]
-
-			mov eax, dword ptr [this_]
-			lea ecx, dword ptr [esp - 4]
-			mov dword ptr [eax].haltEsp_, ecx
-			mov dword ptr [eax].haltEbp_, ebp
-
-			call dword ptr [start]
-			mov dword ptr [retval_], eax
-
-			mov ebp, dword ptr [ebp_]
-			mov esp, dword ptr [esp_]
-
-			pop ecx
-			pop edi
-			pop esi
-		}
-	#elif defined COMPILER_GCC
-		__asm__ __volatile__ (
-			"pushl %esi;"
-			"pushl %edi;"
-			"pushl %ecx;"
-		);
-		__asm__ __volatile__ (
-			"movl %%esp, %0;"
-			"movl %%ebp, %1;"
-				: "=r"(esp_), "=r"(ebp_));
-		__asm__ __volatile__ (
-			"movl %0, %%ebp;"
-			"movl %1, %%esp;"
-				:
-				: "r"(amxFrame), "r"(amxStack));
-		__asm__ __volatile__ (
-			"leal -4(%%esp), %%eax;"
-			"movl %%eax, (%0);"
-			"movl %%ebp, (%1);"
-				:
-				: "r"(&this_->haltEsp_), "r"(&this_->haltEbp_)
-				: "%eax");
-		__asm__ __volatile__ (
-			"calll *%1;"
-			"movl %%eax, %0;"
-				: "=r"(retval_)
-				: "r"(start)
-				: "%ecx", "%edx", "%edi", "%esi");
-		__asm__ __volatile__ (
-			"movl %0, %%ebp;"
-			"movl %1, %%esp;"
-				:
-				: "r"(ebp_), "r"(esp_));
-		__asm__ __volatile__ (
-			"popl %ecx;"
-			"popl %edi;"
-			"popl %esi;");
-	#endif
-
-	haltEsp_ = haltEsp;
-	haltEbp_ = haltEbp;
-
+	cell retval_ = callFunctionHelper_(start);
 	if (retval != 0) {
 		*retval = retval_;
 	}
+
+	haltEbp_ = haltEbp;
+	haltEsp_ = haltEsp;
 
 	return amx_->error;
 }
