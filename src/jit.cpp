@@ -36,6 +36,203 @@
 
 namespace jit {
 
+AmxDisassembler::AmxDisassembler(AMX *amx)
+	: amx_(amx)
+	, opcodeTable_(0)
+	, ip_(0)
+{
+}
+
+bool AmxDisassembler::nextInstr() {
+	AMX_HEADER *amxhdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+
+	if (ip_ < 0 || amxhdr->cod + ip_ >= amxhdr->dat) {
+		// Went out of code, stop here.
+		return false;
+	}
+
+	unsigned char *amxcode = amx_->base + amxhdr->cod;
+	cell opcode = *reinterpret_cast<cell*>(amxcode + ip_);
+
+	if (opcodeTable_ != 0) {
+		// Lookup this opcode in opcode table.
+		for (int i = 0; i < NUM_AMX_OPCODES; i++) {
+			if (opcodeTable_[i] == opcode) {
+				opcode = i;
+				break;
+			}
+		}
+	}
+
+	ip_ += sizeof(cell);
+
+	switch (opcode) {
+	// Instructions with one operand.
+	case OP_LOAD_PRI:
+	case OP_LOAD_ALT:
+	case OP_LOAD_S_PRI:
+	case OP_LOAD_S_ALT:
+	case OP_LREF_PRI:
+	case OP_LREF_ALT:
+	case OP_LREF_S_PRI:
+	case OP_LREF_S_ALT:
+	case OP_LODB_I:
+	case OP_CONST_PRI:
+	case OP_CONST_ALT:
+	case OP_ADDR_PRI:
+	case OP_ADDR_ALT:
+	case OP_STOR_PRI:
+	case OP_STOR_ALT:
+	case OP_STOR_S_PRI:
+	case OP_STOR_S_ALT:
+	case OP_SREF_PRI:
+	case OP_SREF_ALT:
+	case OP_SREF_S_PRI:
+	case OP_SREF_S_ALT:
+	case OP_STRB_I:
+	case OP_LIDX_B:
+	case OP_IDXADDR_B:
+	case OP_ALIGN_PRI:
+	case OP_ALIGN_ALT:
+	case OP_LCTRL:
+	case OP_SCTRL:
+	case OP_PUSH_R:
+	case OP_PUSH_C:
+	case OP_PUSH:
+	case OP_PUSH_S:
+	case OP_STACK:
+	case OP_HEAP:
+	case OP_JREL:
+	case OP_JUMP:
+	case OP_JZER:
+	case OP_JNZ:
+	case OP_JEQ:
+	case OP_JNEQ:
+	case OP_JLESS:
+	case OP_JLEQ:
+	case OP_JGRTR:
+	case OP_JGEQ:
+	case OP_JSLESS:
+	case OP_JSLEQ:
+	case OP_JSGRTR:
+	case OP_JSGEQ:
+	case OP_SHL_C_PRI:
+	case OP_SHL_C_ALT:
+	case OP_SHR_C_PRI:
+	case OP_SHR_C_ALT:
+	case OP_ADD_C:
+	case OP_SMUL_C:
+	case OP_ZERO:
+	case OP_ZERO_S:
+	case OP_EQ_C_PRI:
+	case OP_EQ_C_ALT:
+	case OP_INC:
+	case OP_INC_S:
+	case OP_DEC:
+	case OP_DEC_S:
+	case OP_MOVS:
+	case OP_CMPS:
+	case OP_FILL:
+	case OP_HALT:
+	case OP_BOUNDS:
+	case OP_CALL:
+	case OP_SYSREQ_C:
+	case OP_PUSH_ADR:
+	case OP_SYSREQ_D:
+	case OP_SWITCH:
+		ip_ += sizeof(cell);
+		break;
+
+	// Instructions with no operands.
+	case OP_LOAD_I:
+	case OP_STOR_I:
+	case OP_LIDX:
+	case OP_IDXADDR:
+	case OP_MOVE_PRI:
+	case OP_MOVE_ALT:
+	case OP_XCHG:
+	case OP_PUSH_PRI:
+	case OP_PUSH_ALT:
+	case OP_POP_PRI:
+	case OP_POP_ALT:
+	case OP_PROC:
+	case OP_RET:
+	case OP_RETN:
+	case OP_CALL_PRI:
+	case OP_SHL:
+	case OP_SHR:
+	case OP_SSHR:
+	case OP_SMUL:
+	case OP_SDIV:
+	case OP_SDIV_ALT:
+	case OP_UMUL:
+	case OP_UDIV:
+	case OP_UDIV_ALT:
+	case OP_ADD:
+	case OP_SUB:
+	case OP_SUB_ALT:
+	case OP_AND:
+	case OP_OR:
+	case OP_XOR:
+	case OP_NOT:
+	case OP_NEG:
+	case OP_INVERT:
+	case OP_ZERO_PRI:
+	case OP_ZERO_ALT:
+	case OP_SIGN_PRI:
+	case OP_SIGN_ALT:
+	case OP_EQ:
+	case OP_NEQ:
+	case OP_LESS:
+	case OP_LEQ:
+	case OP_GRTR:
+	case OP_GEQ:
+	case OP_SLESS:
+	case OP_SLEQ:
+	case OP_SGRTR:
+	case OP_SGEQ:
+	case OP_INC_PRI:
+	case OP_INC_ALT:
+	case OP_INC_I:
+	case OP_DEC_PRI:
+	case OP_DEC_ALT:
+	case OP_DEC_I:
+	case OP_SYSREQ_PRI:
+	case OP_JUMP_PRI:
+	case OP_SWAP_PRI:
+	case OP_SWAP_ALT:
+	case OP_NOP:
+	case OP_BREAK:
+		break;
+
+	// Special instructions.
+	case OP_CASETBL: {
+		int num = *reinterpret_cast<cell*>(amxcode + ip_);
+		ip_ += sizeof(cell);
+		ip_ += 2 * num + 1;
+		break;
+	}
+
+	default:
+		throw InvalidInstructionError(getInstr());
+	}
+
+	return true;
+}
+
+AmxInstruction AmxDisassembler::getInstr() const {
+	return AmxInstruction(reinterpret_cast<cell*>(amx_->base + 
+			reinterpret_cast<AMX_HEADER*>(amx_->base)->cod + ip_));
+}
+
+std::vector<AmxInstruction> AmxDisassembler::disassemble() {
+	std::vector<AmxInstruction> instrs;
+	while (nextInstr()) {
+		instrs.push_back(getInstr());
+	}
+	return instrs;
+}
+
 CallContext::CallContext(AMX *amx)
 	: amx_(amx)
 	, params_(0)
@@ -224,8 +421,8 @@ void Jitter::compile(std::FILE *list_stream) {
 		return;
 	}
 
-	std::vector<AmxInstruction> instrs;
-	collectInstrs(0, amxhdr_->dat - amxhdr_->cod, instrs);
+	AmxDisassembler disasm(amx_);
+	std::vector<AmxInstruction> instrs = disasm.disassemble();
 
 	AsmJit::X86Assembler as;
 	AsmJit::FileLogger logger(list_stream);
@@ -1231,178 +1428,6 @@ AsmJit::Label &Jitter::L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell addr
 		std::pair<LabelMap::iterator, bool> where =
 				labelMap->insert(std::make_pair(TaggedAddress(address, name), as.newLabel()));
 		return where.first->second;
-	}
-}
-
-void Jitter::collectInstrs(cell start, cell end, std::vector<AmxInstruction> &instructions) const {
-	const cell *cip = reinterpret_cast<cell*>(getAmxCode() + start);
-
-	while (cip < reinterpret_cast<cell*>(getAmxCode() + end)) {
-		cell opcode = *cip;
-
-		if (opcodeList_ != 0) {
-			for (int i = 0; i < NUM_AMX_OPCODES; i++) {
-				if (opcodeList_[i] == opcode) {
-					opcode = i;
-					break;
-				}
-			}
-		}
-
-		AmxInstruction instr(static_cast<AmxOpcode>(opcode), cip);
-		instructions.push_back(instr);
-
-		switch (opcode) {
-		// Instructions with one operand.
-		case OP_LOAD_PRI:
-		case OP_LOAD_ALT:
-		case OP_LOAD_S_PRI:
-		case OP_LOAD_S_ALT:
-		case OP_LREF_PRI:
-		case OP_LREF_ALT:
-		case OP_LREF_S_PRI:
-		case OP_LREF_S_ALT:
-		case OP_LODB_I:
-		case OP_CONST_PRI:
-		case OP_CONST_ALT:
-		case OP_ADDR_PRI:
-		case OP_ADDR_ALT:
-		case OP_STOR_PRI:
-		case OP_STOR_ALT:
-		case OP_STOR_S_PRI:
-		case OP_STOR_S_ALT:
-		case OP_SREF_PRI:
-		case OP_SREF_ALT:
-		case OP_SREF_S_PRI:
-		case OP_SREF_S_ALT:
-		case OP_STRB_I:
-		case OP_LIDX_B:
-		case OP_IDXADDR_B:
-		case OP_ALIGN_PRI:
-		case OP_ALIGN_ALT:
-		case OP_LCTRL:
-		case OP_SCTRL:
-		case OP_PUSH_R:
-		case OP_PUSH_C:
-		case OP_PUSH:
-		case OP_PUSH_S:
-		case OP_STACK:
-		case OP_HEAP:
-		case OP_JREL:
-		case OP_JUMP:
-		case OP_JZER:
-		case OP_JNZ:
-		case OP_JEQ:
-		case OP_JNEQ:
-		case OP_JLESS:
-		case OP_JLEQ:
-		case OP_JGRTR:
-		case OP_JGEQ:
-		case OP_JSLESS:
-		case OP_JSLEQ:
-		case OP_JSGRTR:
-		case OP_JSGEQ:
-		case OP_SHL_C_PRI:
-		case OP_SHL_C_ALT:
-		case OP_SHR_C_PRI:
-		case OP_SHR_C_ALT:
-		case OP_ADD_C:
-		case OP_SMUL_C:
-		case OP_ZERO:
-		case OP_ZERO_S:
-		case OP_EQ_C_PRI:
-		case OP_EQ_C_ALT:
-		case OP_INC:
-		case OP_INC_S:
-		case OP_DEC:
-		case OP_DEC_S:
-		case OP_MOVS:
-		case OP_CMPS:
-		case OP_FILL:
-		case OP_HALT:
-		case OP_BOUNDS:
-		case OP_CALL:
-		case OP_SYSREQ_C:
-		case OP_PUSH_ADR:
-		case OP_SYSREQ_D:
-		case OP_SWITCH:
-			cip += 2;
-			break;
-
-		// Instructions with no operands.
-		case OP_LOAD_I:
-		case OP_STOR_I:
-		case OP_LIDX:
-		case OP_IDXADDR:
-		case OP_MOVE_PRI:
-		case OP_MOVE_ALT:
-		case OP_XCHG:
-		case OP_PUSH_PRI:
-		case OP_PUSH_ALT:
-		case OP_POP_PRI:
-		case OP_POP_ALT:
-		case OP_PROC:
-		case OP_RET:
-		case OP_RETN:
-		case OP_CALL_PRI:
-		case OP_SHL:
-		case OP_SHR:
-		case OP_SSHR:
-		case OP_SMUL:
-		case OP_SDIV:
-		case OP_SDIV_ALT:
-		case OP_UMUL:
-		case OP_UDIV:
-		case OP_UDIV_ALT:
-		case OP_ADD:
-		case OP_SUB:
-		case OP_SUB_ALT:
-		case OP_AND:
-		case OP_OR:
-		case OP_XOR:
-		case OP_NOT:
-		case OP_NEG:
-		case OP_INVERT:
-		case OP_ZERO_PRI:
-		case OP_ZERO_ALT:
-		case OP_SIGN_PRI:
-		case OP_SIGN_ALT:
-		case OP_EQ:
-		case OP_NEQ:
-		case OP_LESS:
-		case OP_LEQ:
-		case OP_GRTR:
-		case OP_GEQ:
-		case OP_SLESS:
-		case OP_SLEQ:
-		case OP_SGRTR:
-		case OP_SGEQ:
-		case OP_INC_PRI:
-		case OP_INC_ALT:
-		case OP_INC_I:
-		case OP_DEC_PRI:
-		case OP_DEC_ALT:
-		case OP_DEC_I:
-		case OP_SYSREQ_PRI:
-		case OP_JUMP_PRI:
-		case OP_SWAP_PRI:
-		case OP_SWAP_ALT:
-		case OP_NOP:
-		case OP_BREAK:
-			cip++;
-			break;
-
-		// Special instructions.
-		case OP_CASETBL: {
-			cip++;
-			int num = *cip++;
-			cip += 2 * num + 1;
-			break;
-		}
-
-		default:
-			throw InvalidInstructionError(instr);
-		}
 	}
 }
 
