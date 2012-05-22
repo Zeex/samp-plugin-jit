@@ -44,7 +44,6 @@
 
 namespace jit {
 
-// List of AMX opcodes.
 enum AmxOpcode {
 	OP_NONE,         OP_LOAD_PRI,     OP_LOAD_ALT,     OP_LOAD_S_PRI,
 	OP_LOAD_S_ALT,   OP_LREF_PRI,     OP_LREF_ALT,     OP_LREF_S_PRI,
@@ -136,32 +135,6 @@ private:
 	cell ip_;
 };
 
-// Base class for JIT exceptions.
-class Error {};
-
-class CompileError : public Error {
-public:
-	CompileError(const AmxInstruction &instr) : instr_(instr) {}
-	inline const AmxInstruction &getInstr() const { return instr_; }
-private:
-	AmxInstruction instr_;
-};
-
-class UnsupportedInstructionError : public CompileError {
-public:
-	UnsupportedInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
-};
-
-class InvalidInstructionError : public CompileError {
-public:
-	InvalidInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
-};
-
-class ObsoleteInstructionError : public CompileError {
-public:
-	ObsoleteInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
-};
-
 class TaggedAddress {
 public:
 	TaggedAddress(cell address, std::string tag = std::string())
@@ -211,37 +184,26 @@ public:
 	Jitter(AMX *amx, cell *opcode_list = 0);
 	virtual ~Jitter();
 
-	// Returns AMX instance associated with this Jitter.
 	inline AMX *getAmx() const {
 		return amx_;
 	}
-
-	// Returns pointer to AMX header.
 	inline AMX_HEADER *getAmxHeader() const {
 		return amxhdr_;
 	}
-
-	// Returns a pointer to the AMX data section.
 	inline unsigned char *getAmxData() const {
 		return amx_->data != 0 ? amx_->data : amx_->base + amxhdr_->dat;
 	}
-
-	// Returns a pointer to the AMX code section.
 	inline unsigned char *getAmxCode() const {
 		return amx_->base + amxhdr_->cod;
 	}
 
-	// Returns a pointer to the native code buffer.
 	inline void *getCode() const {
 		return code_;
 	}
-
-	// Returns the size of the compiled code, in bytes.
 	inline std::size_t getCodeSize() const {
 		return codeSize_;
 	}
 
-	// Returns address of native code corresponding to AMX code.
 	inline void *getInstrPtr(cell amx_ip, void *code_ptr) {
 		sysint_t native_ip = getInstrOffset(amx_ip);
 		if (native_ip >= 0) {
@@ -249,8 +211,6 @@ public:
 		}
 		return 0;
 	}
-
-	// Returns offset to native code corresponding to AMX code.
 	inline sysint_t getInstrOffset(cell amx_ip) {
 		assert(codeMap_ != 0);
 		if (codeMap_ != 0) {
@@ -262,7 +222,7 @@ public:
 		return -1;
 	}
 
-	// JIT-compiles the whole AMX and optionally outputs assembly code listing to the 
+	// Compiles the whole AMX and optionally outputs assembly code listing to the 
 	// specified stream.
 	void compile(std::FILE *list_stream = 0);
 
@@ -276,7 +236,7 @@ private:
 	Jitter(const Jitter &);
 	Jitter &operator=(const Jitter &);
 
-private: // member variables
+private:
 	AMX        *amx_;
 	AMX_HEADER *amxhdr_;
 
@@ -300,18 +260,25 @@ private: // member variables
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
 	LabelMap *labelMap_;
 
-private: // private methods
-	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, const std::string &name = std::string());
+private:
+	// Sets a label. Optionally takes a label name (useful for complex instructions like CASETBL).
+	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, 
+			const std::string &name = std::string());
 
 	// Jumps to specific AMX instruction (needed for LCTRL 6).
 	static void JIT_STDCALL doJump(Jitter *jitter, cell ip, void *stack);
 
-private: // native overrides
-	typedef void (Jitter::*NativeOverride)(AsmJit::X86Assembler &as);
-	std::map<std::string, NativeOverride> nativeOverrides_;
+private:
+	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler &as);
 
-	// These are the optimized versions of the floating-point natives that make use of FPU
-	// instructions performing the same operations.
+	struct Intrinsic {
+		std::string   name;
+		IntrinsicImpl impl;
+	};
+
+	static Intrinsic intrinsics_[];
+
+	// Optimized versions of the floating-point natives.
 	void native_float(AsmJit::X86Assembler &as);
 	void native_floatabs(AsmJit::X86Assembler &as);
 	void native_floatadd(AsmJit::X86Assembler &as);
@@ -321,7 +288,7 @@ private: // native overrides
 	void native_floatsqroot(AsmJit::X86Assembler &as);
 	void native_floatlog(AsmJit::X86Assembler &as);
 
-protected: // code snippets
+private:
 	// Halt current function (jump to the point of call).
 	// Affects registers: EBP, ESP.
 	void halt(AsmJit::X86Assembler &as, cell error_code);
@@ -333,6 +300,31 @@ protected: // code snippets
 	// Save ebp_/esp_ and switch to AMX stack.
 	// Affects registers: EDX, EBP, ESP.
 	void endExternalCode(AsmJit::X86Assembler &as);
+};
+
+class Error {};
+
+class CompileError : public Error {
+public:
+	CompileError(const AmxInstruction &instr) : instr_(instr) {}
+	inline const AmxInstruction &getInstr() const { return instr_; }
+private:
+	AmxInstruction instr_;
+};
+
+class UnsupportedInstructionError : public CompileError {
+public:
+	UnsupportedInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
+};
+
+class InvalidInstructionError : public CompileError {
+public:
+	InvalidInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
+};
+
+class ObsoleteInstructionError : public CompileError {
+public:
+	ObsoleteInstructionError(const AmxInstruction &instr) : CompileError(instr) {}
 };
 
 } // namespace jit
