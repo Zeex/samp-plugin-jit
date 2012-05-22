@@ -88,18 +88,52 @@ enum AmxOpcode;
 
 class AmxInstruction {
 public:
-	AmxInstruction(AmxOpcode opcode, const cell *ip) : opcode_(opcode), ip_(ip) {}
+	AmxInstruction(const cell *ip) : ip_(ip) {}
 
 	inline const cell *getPtr() const
 		{ return ip_; }
 	inline AmxOpcode getOpcode() const
-		{ return opcode_; }
+		{ return static_cast<AmxOpcode>(*ip_); }
 	inline cell getOperand(unsigned int index = 0u) const
 		{ return *(ip_ + 1 + index); }
 
 private:
-	AmxOpcode opcode_;
 	const cell *ip_;
+};
+
+class AmxDisassembler {
+public:
+	AmxDisassembler(AMX *amx);
+
+	// An opcode table maps opcodes to label addresses inside amx_Exec().
+	// The GCC-specific implementation of AMX provides such a table.
+	inline void setOpcodeTable(cell *opcodeTable) {
+		opcodeTable_ = opcodeTable;
+	}
+
+	// Sets the instruction pointer (relative to COD).
+	inline void setInstrPtr(cell ip) {
+		ip_ = ip;
+	}
+
+	// Returns position of the instruction pointer.
+	inline cell getInstrPtr() const {
+		return ip_;
+	}
+
+	// Jumps to next instruction, if any.
+	bool nextInstr();
+
+	// Returns current instruction.
+	AmxInstruction getInstr() const;
+	
+	// Disassemble the whole AMX script.
+	std::vector<AmxInstruction> disassemble();
+
+private:
+	AMX *amx_;
+	cell *opcodeTable_;
+	cell ip_;
 };
 
 // Base class for JIT exceptions.
@@ -230,9 +264,6 @@ public:
 
 	// JIT-compiles the whole AMX and optionally outputs assembly code listing.
 	void compile(std::FILE *list_stream = 0);
-
-	// Turns raw AMX code into a sequence of AmxInstruction's.
-	void collectInstrs(cell start, cell end, std::vector<AmxInstruction> &instructions) const;
 
 	// Jumps to instruction that was translated from the specified AMX instruction.
 	void doJump(cell ip, void *stack);
