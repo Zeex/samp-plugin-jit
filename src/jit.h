@@ -288,12 +288,18 @@ private:
 	LabelMap *labelMap_;
 
 private:
-	// Sets a label. Optionally takes a label name (useful for complex instructions like CASETBL).
+	// Sets a label. Optionally takes a label name.
 	AsmJit::Label &L(AsmJit::X86Assembler &as, LabelMap *labelMap, cell address, 
 			const std::string &name = std::string());
 
-	// Jumps to specific AMX instruction (needed for LCTRL 6).
+	// Jumps to specific AMX instruction.
 	static void JIT_STDCALL doJump(Jitter *jitter, cell ip, void *stack);
+
+	// Call native function by index in EAX).
+	static cell JIT_STDCALL doSysreq(Jitter *jitter, int index, cell *params);
+
+	// Stop execution of the current function.
+	static void JIT_STDCALL doHalt(Jitter *jitter, int errorCode);
 
 private:
 	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler &as);
@@ -318,7 +324,7 @@ private:
 private:
 	// Halt current function (jump to the point of call).
 	// Affects registers: EBP, ESP.
-	void halt(AsmJit::X86Assembler &as, cell error_code);
+	void halt(AsmJit::X86Assembler &as, cell errorCode);
 
 	// Save stk/frm and switch to real stack.
 	// Affects registers: EDX, EBP, ESP.
