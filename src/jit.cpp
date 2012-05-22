@@ -124,6 +124,8 @@ AmxDisassembler::AmxDisassembler(AmxVm vm)
 }
 
 bool AmxDisassembler::nextInstr(bool &error) {
+	error = false;
+
 	if (ip_ < 0 || vm_.getHeader()->cod + ip_ >= vm_.getHeader()->dat) {
 		// Went out of code, stop here.
 		return false;
@@ -197,7 +199,6 @@ bool AmxDisassembler::nextInstr(bool &error) {
 		return false;
 	}
 
-	error = false;
 	return true;
 }
 
@@ -269,13 +270,15 @@ Jitter::~Jitter() {
 	}
 }
 
-bool Jitter::compile(std::FILE *list_stream) {
+bool Jitter::compile(CompileErrorHandler errorHandler, std::FILE *list_stream) {
 	AmxDisassembler disas(vm_);
 	disas.setInstrPtr(0);
 	disas.setOpcodeTable(opcodeTable_);
 
 	std::vector<AmxInstruction> instrs;
 	if (!disas.disassemble(instrs)) {
+		// TODO: Make this less ugly
+		errorHandler(vm_, AmxInstruction(reinterpret_cast<cell*>(disas.getInstrPtr() + vm_.getCode())));
 		return false;
 	}
 
@@ -474,6 +477,7 @@ bool Jitter::compile(std::FILE *list_stream) {
 			case 6: {
 				if (instr_iterator == instrs.end() - 1) {
 					// Can't get address of next instruction since this one is the last.
+					errorHandler(vm_, instr);
 					return false;
 				}
 				AmxInstruction &next_instr = *(instr_iterator + 1);
@@ -482,6 +486,7 @@ bool Jitter::compile(std::FILE *list_stream) {
 				break;
 			}
 			default:
+				errorHandler(vm_, instr);
 				return false;
 			}
 			break;
@@ -508,6 +513,7 @@ bool Jitter::compile(std::FILE *list_stream) {
 				halt(as, AMX_ERR_INVINSTR);
 				break;
 			default:
+				errorHandler(vm_, instr);
 				return false;
 			}
 			break;
@@ -1138,6 +1144,7 @@ bool Jitter::compile(std::FILE *list_stream) {
 			// conditional breakpoint
 			break;
 		default:
+			errorHandler(vm_, instr);
 			return false;
 		}
 	}
