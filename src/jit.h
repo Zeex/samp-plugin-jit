@@ -241,11 +241,14 @@ public:
 	}
 
 	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
-
 	bool compile(CompileErrorHandler errorHandler = 0);
 
-	int callFunction(cell address, cell *retval);
-	int callPublicFunction(int index, cell *retval);
+	// Call a function located at the specified AMX address.
+	int call(cell address, cell *retval);
+
+	// Pushes parameters' size to the AMX stack and invokes call() against
+	// a public function at the specified index.
+	int exec(int index, cell *retval);
 
 private:
 	Jitter(const Jitter &);
@@ -265,8 +268,8 @@ private:
 	void *haltEbp_;
 	void *haltEsp_;
 
-	typedef cell (JIT_CDECL *CallFunctionHelper)(void *start);
-	CallFunctionHelper callFunctionHelper_;
+	typedef cell (JIT_CDECL *CallHelper)(void *start);
+	CallHelper callHelper_;
 
 	typedef std::map<cell, sysint_t> CodeMap;
 	CodeMap codeMap_;

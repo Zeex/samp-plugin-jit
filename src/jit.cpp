@@ -348,14 +348,14 @@ Jitter::Jitter(AMX *amx, cell *opcodeTable)
 	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
-	, callFunctionHelper_(0)
+	, callHelper_(0)
 {
 }
 
 Jitter::~Jitter() {
 	AsmJit::MemoryManager *mem = AsmJit::MemoryManager::getGlobal();
 	mem->free(code_);
-	mem->free(callFunctionHelper_);
+	mem->free(callHelper_);
 }
 
 bool Jitter::compile(CompileErrorHandler errorHandler) {
@@ -1396,7 +1396,7 @@ void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
 	doHaltHelper(errorCode);
 }
 
-int Jitter::callFunction(cell address, cell *retval) {
+int Jitter::call(cell address, cell *retval) {
 	if (vm_.getAmx()->hea >= vm_.getAmx()->stk) {
 		return AMX_ERR_STACKERR;
 	}
@@ -1412,7 +1412,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 		return AMX_ERR_NOTFOUND;
 	}
 
-	if (callFunctionHelper_ == 0) {
+	if (callHelper_ == 0) {
 		AsmJit::X86Assembler as;
 		
 		// Copy function address to EAX.
@@ -1467,7 +1467,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 
 		as.ret();
 
-		callFunctionHelper_ = (CallFunctionHelper)as.make();
+		callHelper_ = (CallHelper)as.make();
 	}
 
 	vm_.getAmx()->error = AMX_ERR_NONE;
@@ -1478,7 +1478,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 	void *haltEbp = haltEbp_;
 	void *haltEsp = haltEsp_;
 
-	cell retval_ = callFunctionHelper_(start);
+	cell retval_ = callHelper_(start);
 	if (retval != 0) {
 		*retval = retval_;
 	}
@@ -1489,13 +1489,13 @@ int Jitter::callFunction(cell address, cell *retval) {
 	return vm_.getAmx()->error;
 }
 
-int Jitter::callPublicFunction(int index, cell *retval) {
+int Jitter::exec(int index, cell *retval) {
 	cell address = vm_.getPublicAddress(index);
 	if (address == 0) {
 		return AMX_ERR_INDEX;
 	}
 	CallContext ctx(vm_);
-	return callFunction(address, retval);
+	return call(address, retval);
 }
 
 } // namespace jit

@@ -69,7 +69,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 		return amx_Exec(amx, retval, index);
 	} else {
 		jit::Jitter *jitter = iterator->second;
-		return jitter->callPublicFunction(index, retval);
+		return jitter->exec(index, retval);
 	}
 }
 
