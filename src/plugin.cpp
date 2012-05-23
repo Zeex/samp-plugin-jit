@@ -21,12 +21,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
-#include <iostream>
-#include <iterator>
 #include <map>
 #include <sstream>
 #include <string>
@@ -103,9 +100,9 @@ static std::string GetFileName(const std::string &path) {
 static std::string InstrToString(const jit::AmxInstruction &instr) {
 	std::stringstream ss;
 
-	if (instr.getName() != 0) {
-		std::string name(instr.getName());
-		std::transform(name.begin(), name.end(), std::ostream_iterator<char>(ss), ::tolower);
+	const char *name = instr.getName();
+	if (name != 0) {
+		ss << instr.getName();
 	} else {
 		ss << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
 	}
