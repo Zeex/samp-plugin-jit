@@ -106,7 +106,6 @@ configure_file(
 message(STATUS "JIT plugin version: ${version}")
 
 install(TARGETS jit LIBRARY DESTINATION ".")
-install(FILES "README.md" DESTINATION ".")
 
 if(MSVC)
 	set(PDB_NAME "jit.pdb")
