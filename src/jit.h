@@ -159,23 +159,17 @@ class AmxDisassembler {
 public:
 	AmxDisassembler(AmxVm vm);
 
-	// An opcode table maps opcodes to label addresses inside amx_Exec().
-	// The GCC-specific implementation of AMX provides such a table.
 	inline void setOpcodeTable(cell *opcodeTable) {
 		opcodeTable_ = opcodeTable;
 	}
 
-	// Sets the instruction pointer (relative to COD).
 	inline void setIp(cell ip) {
 		ip_ = ip;
 	}
-
-	// Returns position of the instruction pointer.
 	inline cell getIp() const {
 		return ip_;
 	}
 
-	// Decodes current instruction and increments instruction pointer. 
 	bool decode(AmxInstruction &instr, bool *error = 0);
 
 private:
@@ -246,17 +240,11 @@ public:
 		return -1;
 	}
 
-	// Compilation error handler.
 	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
 
-	// Compiles the whole AMX and optionally outputs assembly code listing to the 
-	// specified stream.
 	bool compile(CompileErrorHandler errorHandler = 0);
 
-	// Calls a function and returns one of AMX error codes.
 	int callFunction(cell address, cell *retval);
-
-	// Calls a public function and returns one of AMX error codes. 
 	int callPublicFunction(int index, cell *retval);
 
 private:
@@ -287,16 +275,10 @@ private:
 	LabelMap labelMap_;
 
 private:
-	// Sets a label. Optionally takes a label name.
 	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name = "");
 
-	// Jumps to specific AMX instruction.
 	static void JIT_STDCALL doJump(Jitter *jitter, cell ip, void *stack);
-
-	// Call native function by index in EAX).
 	static cell JIT_STDCALL doSysreq(Jitter *jitter, int index, cell *params);
-
-	// Stop execution of the current function.
 	static void JIT_STDCALL doHalt(Jitter *jitter, int errorCode);
 
 private:
@@ -309,7 +291,6 @@ private:
 
 	static Intrinsic intrinsics_[];
 
-	// Optimized versions of the floating-point natives.
 	void native_float(AsmJit::X86Assembler &as);
 	void native_floatabs(AsmJit::X86Assembler &as);
 	void native_floatadd(AsmJit::X86Assembler &as);
@@ -320,16 +301,8 @@ private:
 	void native_floatlog(AsmJit::X86Assembler &as);
 
 private:
-	// Halt current function (jump to the point of call).
-	// Affects registers: EBP, ESP.
 	void halt(AsmJit::X86Assembler &as, cell errorCode);
-
-	// Save stk/frm and switch to real stack.
-	// Affects registers: EDX, EBP, ESP.
 	void beginExternalCode(AsmJit::X86Assembler &as);
-
-	// Save EBP/ESP and switch to AMX stack.
-	// Affects registers: EDX, EBP, ESP.
 	void endExternalCode(AsmJit::X86Assembler &as);
 };
 
