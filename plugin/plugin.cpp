@@ -57,8 +57,8 @@ static cell *opcodeTable = 0;
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__ && !defined WIN32
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-			assert(::opcode_list != 0);
-			*retval = reinterpret_cast<cell>(::opcode_list);
+			assert(::opcodeTable != 0);
+			*retval = reinterpret_cast<cell>(::opcodeTable);
 			return AMX_ERR_NONE;
 		}
 	#endif
@@ -162,7 +162,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 
 	#if defined __GNUC__ && !defined WIN32
 		// Get opcode list before we hook amx_Exec().
-		if (::opcode_list == 0) {
+		if (::opcodeTable == 0) {
 			amx->flags |= AMX_FLAG_BROWSE;
 			amx_Exec(amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
 			amx->flags &= ~AMX_FLAG_BROWSE;
