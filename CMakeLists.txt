@@ -8,28 +8,34 @@ include(AmxConfig)
 include(GetGitRevisionDescription)
 
 set(ASMJIT_BUILD_STATIC_LIBRARY TRUE)
-add_subdirectory("asmjit")
+add_subdirectory("jit/asmjit")
 
-include_directories(".")
-include_directories("amx")
-include_directories("asmjit")
+include_directories("jit")
+include_directories("jit/asmjit")
+include_directories("plugin/SDK")
+include_directories("plugin/SDK/amx")
 
 add_definitions(-DASMJIT_STATIC)
 
 add_library(jit MODULE
-	"amx/amx.h"
-	"amx/getch.h"
-	"amx/sclinux.h"
-	"src/amxplugin.cpp"
-	"src/jit.cpp"
-	"src/jit.h"
-	"src/jump-x86.cpp"
-	"src/jump-x86.h"
-	"src/plugin.cpp"
-	"src/plugin.h"
-	"src/plugin.rc"
-	"src/plugincommon.h"
+	"jit/jit.cpp"
+	"jit/jit.h"
+	"plugin/SDK/amx/amx.h"
+	"plugin/SDK/amx/getch.h"
+	"plugin/SDK/amx/sclinux.h"
+	"plugin/SDK/plugin.h"
+	"plugin/SDK/plugincommon.h"
+	"plugin/SDK/amxplugin.cpp"
+	"plugin/jump-x86.cpp"
+	"plugin/jump-x86.h"
+	"plugin/plugin.cpp"
+	"plugin/plugin.rc"
 )
+
+source_group("jit" REGULAR_EXPRESSION "jit/[^/\\]+\\.(cpp|h)")
+source_group("plugin" REGULAR_EXPRESSION "plugin/[^/\\]+\\.(cpp|h|rc)")
+source_group("plugin\\SDK" REGULAR_EXPRESSION "plugin/SDK/[^/\\]+\\.(cpp|h)")
+source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "plugin/SDK/amx/[^/\\]+\\.(cpp|h)")
 
 target_link_libraries(jit AsmJit)
 
@@ -46,7 +52,7 @@ if(WIN32)
 	if(MINGW)
 		list(APPEND LINK_FLAGS "-Wl,--kill-at,--enable-stdcall-fixup")
 	elseif(MSVC)
-		list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/src/plugin.def")
+		list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin/plugin.def")
 	endif()
 endif()
 
@@ -93,13 +99,13 @@ set(PLUGIN_VERSION ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
 
 configure_file(
-	"${jit_SOURCE_DIR}/src/plugin.rc.in"
-	"${jit_SOURCE_DIR}/src/plugin.rc"
+	"${jit_SOURCE_DIR}/plugin/plugin.rc.in"
+	"${jit_SOURCE_DIR}/plugin/plugin.rc"
 	@ONLY
 )
 configure_file(
-	"${jit_SOURCE_DIR}/src/version.h.in"
-	"${jit_SOURCE_DIR}/src/version.h"
+	"${jit_SOURCE_DIR}/plugin/version.h.in"
+	"${jit_SOURCE_DIR}/plugin/version.h"
 	@ONLY
 )
 
