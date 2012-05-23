@@ -376,11 +376,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		switch (instr.getOpcode()) {
 		case OP_LOAD_PRI: // address
 			// PRI = [address]
-			as.mov(AsmJit::eax, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
+			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
 			break;
 		case OP_LOAD_ALT: // address
 			// PRI = [address]
-			as.mov(AsmJit::ecx, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
+			as.mov(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
 			break;
 		case OP_LOAD_S_PRI: // offset
 			// PRI = [FRM + offset]
@@ -392,39 +392,39 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_LREF_PRI: // address
 			// PRI = [ [address] ]
-			as.mov(AsmJit::edx, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
-			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
+			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx));
 			break;
 		case OP_LREF_ALT: // address
 			// ALT = [ [address] ]
-			as.mov(AsmJit::edx, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
-			as.mov(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, + instr.getOperand()));
+			as.mov(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx));
 			break;
 		case OP_LREF_S_PRI: // offset
 			// PRI = [ [FRM + offset] ]
 			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand()));
-			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx));
 			break;
 		case OP_LREF_S_ALT: // offset
 			// PRI = [ [FRM + offset] ]
 			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand()));
-			as.mov(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx));
 			break;
 		case OP_LOAD_I:
 			// PRI = [PRI] (full cell)
-			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebx));
 			break;
 		case OP_LODB_I: // number
 			// PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
 			switch (instr.getOperand()) {
 			case 1:
-				as.movzx(AsmJit::eax, AsmJit::byte_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+				as.movzx(AsmJit::eax, AsmJit::byte_ptr(AsmJit::ebx, AsmJit::eax));
 				break;
 			case 2:
-				as.movzx(AsmJit::eax, AsmJit::word_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+				as.movzx(AsmJit::eax, AsmJit::word_ptr(AsmJit::ebx, AsmJit::eax));
 				break;
 			case 4:
-				as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+				as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
 				break;
 			}
 			break;
@@ -438,19 +438,21 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_ADDR_PRI: // offset
 			// PRI = FRM + offset
-			as.lea(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand() - reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand()));
+			as.sub(AsmJit::eax, AsmJit::ebx);
 			break;
 		case OP_ADDR_ALT: // offset
 			// ALT = FRM + offset
-			as.lea(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand() - reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand()));
+			as.sub(AsmJit::ecx, AsmJit::ebx);
 			break;
 		case OP_STOR_PRI: // address
 			// [address] = PRI
-			as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())), AsmJit::eax);
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()), AsmJit::eax);
 			break;
 		case OP_STOR_ALT: // address
 			// [address] = ALT
-			as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())), AsmJit::ecx);
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()), AsmJit::ecx);
 			break;
 		case OP_STOR_S_PRI: // offset
 			// [FRM + offset] = ALT
@@ -462,49 +464,51 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SREF_PRI: // address
 			// [ [address] ] = PRI
-			as.mov(AsmJit::edx, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
-			as.mov(AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::eax);
+			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx), AsmJit::eax);
 			break;
 		case OP_SREF_ALT: // address
 			// [ [address] ] = ALT
-			as.mov(AsmJit::edx, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
-			as.mov(AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::ecx);
+			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx), AsmJit::ecx);
 			break;
 		case OP_SREF_S_PRI: // offset
 			// [ [FRM + offset] ] = PRI
 			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand()));
-			as.mov(AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::eax);
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx), AsmJit::eax);
 			break;
 		case OP_SREF_S_ALT: // offset
 			// [ [FRM + offset] ] = ALT
 			as.mov(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand()));
-			as.mov(AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::ecx);
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx), AsmJit::ecx);
 			break;
 		case OP_STOR_I:
 			// [ALT] = PRI (full cell)
-			as.mov(AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::eax);
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx), AsmJit::eax);
 			break;
 		case OP_STRB_I: // number
 			// "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
 			switch (instr.getOperand()) {
 			case 1:
-				as.mov(AsmJit::byte_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::al);
+				as.mov(AsmJit::byte_ptr(AsmJit::ebx, AsmJit::ecx), AsmJit::al);
 				break;
 			case 2:
-				as.mov(AsmJit::word_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::ax);
+				as.mov(AsmJit::word_ptr(AsmJit::ebx, AsmJit::ecx), AsmJit::ax);
 				break;
 			case 4:
-				as.mov(AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())), AsmJit::eax);
+				as.mov(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx), AsmJit::eax);
 				break;
 			}
 			break;
 		case OP_LIDX:
 			// PRI = [ ALT + (PRI x cell size) ]
-			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ecx, AsmJit::eax, 2, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
+			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::edx, AsmJit::eax, 2));
 			break;
 		case OP_LIDX_B: // shift
 			// PRI = [ ALT + (PRI << shift) ]
-			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ecx, AsmJit::eax, instr.getOperand(), reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
+			as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::edx, AsmJit::eax, instr.getOperand()));
 			break;
 		case OP_IDXADDR:
 			// PRI = ALT + (PRI x cell size) (calculate indexed address)
@@ -545,10 +549,12 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as.mov(AsmJit::eax, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
 				break;
 			case 4:
-				as.lea(AsmJit::eax, AsmJit::dword_ptr(AsmJit::esp, -reinterpret_cast<sysint_t>(vm_.getData())));
+				as.mov(AsmJit::eax, AsmJit::esp);
+				as.sub(AsmJit::eax, AsmJit::ebx);
 				break;
 			case 5:
-				as.lea(AsmJit::eax, AsmJit::dword_ptr(AsmJit::ebp, -reinterpret_cast<sysint_t>(vm_.getData())));
+				as.mov(AsmJit::eax, AsmJit::ebp);
+				as.sub(AsmJit::eax, AsmJit::ebx);
 				break;
 			case 6: {
 				as.mov(AsmJit::eax, instr.getAddress() + instr.getSize());
@@ -568,10 +574,10 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), AsmJit::eax);
 				break;
 			case 4:
-				as.lea(AsmJit::esp, AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+				as.lea(AsmJit::esp, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
 				break;
 			case 5:
-				as.lea(AsmJit::ebp, AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+				as.lea(AsmJit::ebp, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
 				break;
 			case 6:
 				as.push(AsmJit::esp);
@@ -612,7 +618,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PUSH: // address
 			// [STK] = [address], STK = STK - cell size
-			as.push(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(instr.getOperand() + vm_.getData())));
+			as.push(AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
 			break;
 		case OP_PUSH_S: // offset
 			// [STK] = [FRM + offset], STK = STK - cell size
@@ -628,7 +634,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			as.lea(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::esp, -reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::ecx, AsmJit::esp);
+			as.sub(AsmJit::ecx, AsmJit::ebx);
 			as.add(AsmJit::esp, instr.getOperand());
 			break;
 		case OP_HEAP: // value
@@ -638,7 +645,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
-			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, -reinterpret_cast<sysint_t>(vm_.getData())));
+			as.mov(AsmJit::edx, AsmJit::ebp);
+			as.sub(AsmJit::edx, AsmJit::ebx);
 			as.push(AsmJit::edx);
 			as.mov(AsmJit::ebp, AsmJit::esp);
 			break;
@@ -650,7 +658,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(AsmJit::ebp);
-			as.add(AsmJit::ebp, reinterpret_cast<sysint_t>(vm_.getData()));
+			as.add(AsmJit::ebp, AsmJit::ebx);
 			as.ret();
 			break;
 		case OP_CALL: { // offset
@@ -892,7 +900,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_ZERO: // address
 			// [address] = 0
-			as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(instr.getOperand() + vm_.getData())), 0);
+			as.mov(AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()), 0);
 			break;
 		case OP_ZERO_S: // offset
 			// [FRM + offset] = 0
@@ -988,7 +996,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_INC: // address
 			// [address] = [address] + 1
-			as.inc(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
+			as.inc(AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
 			break;
 		case OP_INC_S: // offset
 			// [FRM + offset] = [FRM + offset] + 1
@@ -996,7 +1004,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_INC_I:
 			// [PRI] = [PRI] + 1
-			as.inc(AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.inc(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
 			break;
 		case OP_DEC_PRI:
 			// PRI = PRI - 1
@@ -1008,7 +1016,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_DEC: // address
 			// [address] = [address] - 1
-			as.dec(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(vm_.getData() + instr.getOperand())));
+			as.dec(AsmJit::dword_ptr(AsmJit::ebx, instr.getOperand()));
 			break;
 		case OP_DEC_S: // offset
 			// [FRM + offset] = [FRM + offset] - 1
@@ -1016,14 +1024,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_DEC_I:
 			// [PRI] = [PRI] - 1
-			as.dec(AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.dec(AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
 			break;
 		case OP_MOVS: // number
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			as.lea(AsmJit::esi, AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
-			as.lea(AsmJit::edi, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::esi, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
+			as.lea(AsmJit::edi, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
 			as.push(AsmJit::ecx);
 			if (instr.getOperand() % 4 == 0) {
 				as.mov(AsmJit::ecx, instr.getOperand() / 4);
@@ -1042,9 +1050,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// specifies the number of bytes. The blocks should not
 			// overlap.
 			as.push(instr.getOperand());
-			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
 			as.push(AsmJit::edx);
-			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::eax, reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::eax));
 			as.push(AsmJit::edx);
 			as.call(reinterpret_cast<void*>(std::memcmp));
 			as.call(AsmJit::edx);
@@ -1055,8 +1063,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
 			AsmJit::Label &L_loop = L(as, cip, "loop");
-			as.lea(AsmJit::edi, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())));                      // memory start
-			as.lea(AsmJit::esi, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData()) + instr.getOperand())); // memory end
+			as.lea(AsmJit::edi, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
+			as.mov(AsmJit::esi, AsmJit::edi);
+			as.add(AsmJit::esi, instr.getOperand());
 			as.bind(L_loop);
 				as.mov(AsmJit::dword_ptr(AsmJit::edi), AsmJit::eax);
 				as.add(AsmJit::edi, sizeof(cell));
@@ -1203,7 +1212,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PUSH_ADR: // offset
 			// [STK] = FRM + offset, STK = STK - cell size
-			as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, instr.getOperand() - reinterpret_cast<sysint_t>(vm_.getData())));
+			as.lea(AsmJit::edx, dword_ptr(AsmJit::ebp, instr.getOperand()));
+			as.sub(AsmJit::edx, AsmJit::ebx);
 			as.push(AsmJit::edx);
 			break;
 		case OP_NOP:
@@ -1236,10 +1246,12 @@ void Jitter::halt(AsmJit::X86Assembler &as, cell errorCode) {
 }
 
 void Jitter::beginExternalCode(AsmJit::X86Assembler &as) {
-	as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::ebp, -reinterpret_cast<sysint_t>(vm_.getData())));
+	as.mov(AsmJit::edx, AsmJit::ebp);
+	as.sub(AsmJit::edx, AsmJit::ebx);
 	as.mov(AsmJit::dword_ptr_abs(&vm_.getAmx()->frm), AsmJit::edx);
 	as.mov(AsmJit::ebp, AsmJit::dword_ptr_abs(&ebp_));
-	as.lea(AsmJit::edx, AsmJit::dword_ptr(AsmJit::esp, -reinterpret_cast<sysint_t>(vm_.getData())));
+	as.mov(AsmJit::edx, AsmJit::esp);
+	as.sub(AsmJit::edx, AsmJit::ebx);
 	as.mov(AsmJit::dword_ptr_abs(&vm_.getAmx()->stk), AsmJit::edx);
 	as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(&esp_));
 }
@@ -1247,10 +1259,10 @@ void Jitter::beginExternalCode(AsmJit::X86Assembler &as) {
 void Jitter::endExternalCode(AsmJit::X86Assembler &as) {
 	as.mov(AsmJit::dword_ptr_abs(&ebp_), AsmJit::ebp);
 	as.mov(AsmJit::edx, AsmJit::dword_ptr_abs(&vm_.getAmx()->frm));
-	as.lea(AsmJit::ebp, AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())));
+	as.lea(AsmJit::ebp, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx));
 	as.mov(AsmJit::dword_ptr_abs(&esp_), AsmJit::esp);
 	as.mov(AsmJit::edx, AsmJit::dword_ptr_abs(&vm_.getAmx()->stk));
-	as.lea(AsmJit::esp, AsmJit::dword_ptr(AsmJit::edx, reinterpret_cast<sysint_t>(vm_.getData())));
+	as.lea(AsmJit::esp, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::edx));
 }
 
 void Jitter::native_float(AsmJit::X86Assembler &as) {
@@ -1408,12 +1420,14 @@ int Jitter::callFunction(cell address, cell *retval) {
 		// Copy function address to AsmJit::eax.
 		as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::esp, 4));
 
-		// The ESI, EDI and ECX registers can be modified by JIT code so they
-		// must be saved somewhere e.g. on the stack. The EAX register is used
-		// to store the return value of this function so it's not listed here.
+		// Save registers.
 		as.push(AsmJit::esi);
 		as.push(AsmJit::edi);
+		as.push(AsmJit::ebx);
 		as.push(AsmJit::ecx);
+
+		// The EBX register points to the start of the AMX data section in memory.
+		as.mov(AsmJit::ebx, reinterpret_cast<sysint_t>(vm_.getData()));
 
 		// Keep the two stack pointers in this Jitter object.
 		as.mov(AsmJit::dword_ptr_abs(&ebp_), AsmJit::ebp);
@@ -1421,9 +1435,9 @@ int Jitter::callFunction(cell address, cell *retval) {
 
 		// JIT code is executed on AMX stack, so switch to it.
 		as.mov(AsmJit::ecx, AsmJit::dword_ptr_abs(&vm_.getAmx()->frm));
-		as.lea(AsmJit::ebp, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())));		
+		as.lea(AsmJit::ebp, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
 		as.mov(AsmJit::ecx, AsmJit::dword_ptr_abs(&vm_.getAmx()->stk));
-		as.lea(AsmJit::esp, AsmJit::dword_ptr(AsmJit::ecx, reinterpret_cast<sysint_t>(vm_.getData())));
+		as.lea(AsmJit::esp, AsmJit::dword_ptr(AsmJit::ebx, AsmJit::ecx));
 
 		// haltEsp_ and haltEbp_ are needed for HALT and BOUNDS
 		// instructions to quickly abort a currenly running function.
@@ -1435,9 +1449,11 @@ int Jitter::callFunction(cell address, cell *retval) {
 		as.call(AsmJit::eax);
 
 		// Synchronize STK and FRM with ESP and EBP respectively.
-		as.lea(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::ebp, -reinterpret_cast<sysint_t>(vm_.getData())));
+		as.mov(AsmJit::ecx, AsmJit::ebp);
+		as.sub(AsmJit::ecx, AsmJit::ebx);
 		as.mov(AsmJit::dword_ptr_abs(&vm_.getAmx()->frm), AsmJit::ecx);
-		as.lea(AsmJit::ecx, AsmJit::dword_ptr(AsmJit::esp, -reinterpret_cast<sysint_t>(vm_.getData())));
+		as.mov(AsmJit::ecx, AsmJit::esp);
+		as.sub(AsmJit::ecx, AsmJit::ebx);
 		as.mov(AsmJit::dword_ptr_abs(&vm_.getAmx()->stk), AsmJit::ecx);
 
 		// Switch back to the real stack.
@@ -1445,6 +1461,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 		as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(&esp_));
 
 		as.pop(AsmJit::ecx);
+		as.pop(AsmJit::ebx);
 		as.pop(AsmJit::edi);
 		as.pop(AsmJit::esi);
 
