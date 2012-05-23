@@ -1239,10 +1239,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 }
 
 void Jitter::halt(AsmJit::X86Assembler &as, cell errorCode) {
-	as.mov(AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->error)), errorCode);
-	as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
-	as.mov(AsmJit::ebp, AsmJit::dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
-	as.ret();
+	as.push(errorCode);
+	as.call(reinterpret_cast<void*>(Jitter::doHalt));
 }
 
 void Jitter::beginExternalCode(AsmJit::X86Assembler &as) {
