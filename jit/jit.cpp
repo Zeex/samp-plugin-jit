@@ -319,6 +319,22 @@ Jitter::~Jitter() {
 	mem->free((void*)callHelper_);
 }
 
+void *Jitter::getInstrPtr(cell amx_ip, void *code_ptr) const {
+	sysint_t native_ip = getInstrOffset(amx_ip);
+	if (native_ip >= 0) {
+		return reinterpret_cast<void*>(reinterpret_cast<sysint_t>(code_ptr) + native_ip);
+	}
+	return 0;
+}
+
+sysint_t Jitter::getInstrOffset(cell amx_ip) const {
+	CodeMap::const_iterator iterator = codeMap_.find(amx_ip);
+	if (iterator != codeMap_.end()) {
+		return iterator->second;
+	}
+	return -1;
+}
+
 bool Jitter::compile(CompileErrorHandler errorHandler) {
 	AmxDisassembler disas(vm_);
 	disas.setOpcodeTable(opcodeTable_);

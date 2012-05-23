@@ -252,6 +252,9 @@ private:
 
 class Jitter {
 public:
+	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
+
+public:
 	Jitter(AMX *amx, cell *opcodeTable = 0);
 	virtual ~Jitter();
 
@@ -262,22 +265,9 @@ public:
 		return codeSize_;
 	}
 
-	inline void *getInstrPtr(cell amx_ip, void *code_ptr) {
-		sysint_t native_ip = getInstrOffset(amx_ip);
-		if (native_ip >= 0) {
-			return reinterpret_cast<void*>(reinterpret_cast<sysint_t>(code_ptr) + native_ip);
-		}
-		return 0;
-	}
-	inline sysint_t getInstrOffset(cell amx_ip) {
-		CodeMap::const_iterator iterator = codeMap_.find(amx_ip);
-		if (iterator != codeMap_.end()) {
-			return iterator->second;
-		}
-		return -1;
-	}
+	void    *getInstrPtr(cell amx_ip, void *code_ptr) const;
+	sysint_t getInstrOffset(cell amx_ip) const;
 
-	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 	// Calls a function located at the specified AMX address.
