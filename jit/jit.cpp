@@ -634,12 +634,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as.add(AsmJit::esp, 4);
 			break;
 		}
-		case OP_CALL_PRI:
-			// Same as CALL, the address to jump to is in PRI.
-			as.call(AsmJit::eax);
-			as.add(AsmJit::esp, AsmJit::dword_ptr(AsmJit::esp));
-			as.add(AsmJit::esp, 4);
-			break;
 
 		case OP_JUMP:
 		case OP_JUMP_PRI:
