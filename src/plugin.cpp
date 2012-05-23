@@ -119,7 +119,7 @@ static std::string InstrToString(const jit::AmxInstruction &instr) {
 }
 
 static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
-	logprintf("JIT compilation error occured at %08x:", instr.getAddress());
+	logprintf("JIT failed to compile instruction at %08x:", instr.getAddress());
 	logprintf("  %s", InstrToString(instr).c_str());
 }
 
