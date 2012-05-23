@@ -225,7 +225,7 @@ public:
 	inline std::string getTag() const { return tag_; }
 
 private:
-	ucell address_;
+	cell address_;
 	std::string tag_;
 };
 
