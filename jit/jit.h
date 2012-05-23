@@ -265,8 +265,8 @@ public:
 		return codeSize_;
 	}
 
-	void    *getInstrPtr(cell amx_ip, void *code_ptr) const;
-	sysint_t getInstrOffset(cell amx_ip) const;
+	void *getInstrPtr(cell amx_ip, void *code_ptr) const;
+	int   getInstrOffset(cell amx_ip) const;
 
 	bool compile(CompileErrorHandler errorHandler = 0);
 
@@ -298,7 +298,7 @@ private:
 	typedef cell (JIT_CDECL *CallHelper)(void *start);
 	CallHelper callHelper_;
 
-	typedef std::map<cell, sysint_t> CodeMap;
+	typedef std::map<cell, int> CodeMap;
 	CodeMap codeMap_;
 
 	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
