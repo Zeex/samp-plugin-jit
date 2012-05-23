@@ -157,17 +157,17 @@ public:
 		return amx_->base + getHeader()->cod;
 	}
 
-	int getNumPublics() const {
+	inline int getNumPublics() const {
 		return (getHeader()->natives - getHeader()->publics) / getHeader()->defsize;
 	}
-	int getNumNatives() const {
+	inline int getNumNatives() const {
 		return (getHeader()->libraries - getHeader()->natives) / getHeader()->defsize;
 	}
 
-	AMX_FUNCSTUBNT *getPublics() const {
+	inline AMX_FUNCSTUBNT *getPublics() const {
 		return reinterpret_cast<AMX_FUNCSTUBNT*>(getHeader()->publics + amx_->base);
 	}
-	AMX_FUNCSTUBNT *getNatives() const {
+	inline AMX_FUNCSTUBNT *getNatives() const {
 		return reinterpret_cast<AMX_FUNCSTUBNT*>(getHeader()->natives + amx_->base);
 	}
 
@@ -180,7 +180,7 @@ public:
 	const char *getPublicName(int index) const;
 	const char *getNativeName(int index) const;
 
-	cell *getStack() const {
+	inline cell *getStack() const {
 		return reinterpret_cast<cell*>(getData() + amx_->stk);
 	}
 
