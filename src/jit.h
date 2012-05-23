@@ -243,7 +243,7 @@ public:
 	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
 	bool compile(CompileErrorHandler errorHandler = 0);
 
-	// Call a function located at the specified AMX address.
+	// Calls a function located at the specified AMX address.
 	int call(cell address, cell *retval);
 
 	// Pushes parameters' size to the AMX stack and invokes call() against
