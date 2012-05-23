@@ -353,9 +353,9 @@ Jitter::Jitter(AMX *amx, cell *opcodeTable)
 }
 
 Jitter::~Jitter() {
-	if (code_ != 0) {
-		AsmJit::MemoryManager::getGlobal()->free(code_);
-	}
+	AsmJit::MemoryManager *mem = AsmJit::MemoryManager::getGlobal();
+	mem->free(code_);
+	mem->free(callFunctionHelper_);
 }
 
 bool Jitter::compile(CompileErrorHandler errorHandler) {
