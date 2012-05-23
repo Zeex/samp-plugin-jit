@@ -320,14 +320,14 @@ Jitter::~Jitter() {
 }
 
 void *Jitter::getInstrPtr(cell amx_ip, void *code_ptr) const {
-	sysint_t native_ip = getInstrOffset(amx_ip);
+	int native_ip = getInstrOffset(amx_ip);
 	if (native_ip >= 0) {
-		return reinterpret_cast<void*>(reinterpret_cast<sysint_t>(code_ptr) + native_ip);
+		return reinterpret_cast<void*>(reinterpret_cast<int>(code_ptr) + native_ip);
 	}
 	return 0;
 }
 
-sysint_t Jitter::getInstrOffset(cell amx_ip) const {
+int Jitter::getInstrOffset(cell amx_ip) const {
 	CodeMap::const_iterator iterator = codeMap_.find(amx_ip);
 	if (iterator != codeMap_.end()) {
 		return iterator->second;
@@ -559,7 +559,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			case 6:
 				as.push(AsmJit::esp);
 				as.push(AsmJit::eax);
-				as.push(reinterpret_cast<sysint_t>(this));
+				as.push(reinterpret_cast<int>(this));
 				as.call(reinterpret_cast<void*>(Jitter::doJump));
 				// Didn't jump because of invalid address - exit with error.
 				halt(as, AMX_ERR_INVINSTR);
@@ -678,7 +678,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					// CIP = PRI (indirect jump)
 					as.push(AsmJit::esp);
 					as.push(AsmJit::eax);
-					as.push(reinterpret_cast<sysint_t>(this));
+					as.push(reinterpret_cast<int>(this));
 					as.call(reinterpret_cast<void*>(Jitter::doJump));
 					// Didn't jump because of invalid address - exit with error.
 					halt(as, AMX_ERR_INVINSTR);
@@ -1068,7 +1068,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			beginExternalCode(as);
 				as.push(AsmJit::edi);
 				as.push(AsmJit::eax);
-				as.push(reinterpret_cast<sysint_t>(this));
+				as.push(reinterpret_cast<int>(this));
 				as.call(reinterpret_cast<void*>(Jitter::doSysreq));
 			endExternalCode(as);
 			break;
@@ -1101,7 +1101,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as.mov(AsmJit::edi, AsmJit::esp);
 			beginExternalCode(as);
 				as.push(AsmJit::edi);
-				as.push(reinterpret_cast<sysint_t>(vm_.getAmx()));
+				as.push(reinterpret_cast<int>(vm_.getAmx()));
 				switch (instr.getOpcode()) {
 					case OP_SYSREQ_C:
 						as.call(reinterpret_cast<void*>(vm_.getNativeAddress(instr.getOperand())));
@@ -1396,7 +1396,7 @@ int Jitter::call(cell address, cell *retval) {
 		as.push(AsmJit::edx);
 
 		// The EBX register points to the start of the AMX data section in memory.
-		as.mov(AsmJit::ebx, reinterpret_cast<sysint_t>(vm_.getData()));
+		as.mov(AsmJit::ebx, reinterpret_cast<int>(vm_.getData()));
 
 		// Keep the two stack pointers in this Jitter object.
 		as.mov(AsmJit::dword_ptr_abs(&ebp_), AsmJit::ebp);
