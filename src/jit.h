@@ -328,7 +328,7 @@ private:
 	// Affects registers: EDX, EBP, ESP.
 	void beginExternalCode(AsmJit::X86Assembler &as);
 
-	// Save ebp_/esp_ and switch to AMX stack.
+	// Save EBP/ESP and switch to AMX stack.
 	// Affects registers: EDX, EBP, ESP.
 	void endExternalCode(AsmJit::X86Assembler &as);
 };
