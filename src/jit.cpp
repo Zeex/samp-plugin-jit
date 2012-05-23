@@ -1425,6 +1425,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 		as.push(AsmJit::edi);
 		as.push(AsmJit::ebx);
 		as.push(AsmJit::ecx);
+		as.push(AsmJit::edx);
 
 		// The EBX register points to the start of the AMX data section in memory.
 		as.mov(AsmJit::ebx, reinterpret_cast<sysint_t>(vm_.getData()));
@@ -1460,6 +1461,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 		as.mov(AsmJit::ebp, AsmJit::dword_ptr_abs(&ebp_));
 		as.mov(AsmJit::esp, AsmJit::dword_ptr_abs(&esp_));
 
+		as.pop(AsmJit::edx);
 		as.pop(AsmJit::ecx);
 		as.pop(AsmJit::ebx);
 		as.pop(AsmJit::edi);
