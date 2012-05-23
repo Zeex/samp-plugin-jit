@@ -1415,7 +1415,7 @@ int Jitter::callFunction(cell address, cell *retval) {
 	if (callFunctionHelper_ == 0) {
 		AsmJit::X86Assembler as;
 		
-		// Copy function address to AsmJit::eax.
+		// Copy function address to EAX.
 		as.mov(AsmJit::eax, AsmJit::dword_ptr(AsmJit::esp, 4));
 
 		// Save registers.
