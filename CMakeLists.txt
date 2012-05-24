@@ -17,7 +17,12 @@ include_directories("plugin/SDK/amx")
 
 add_definitions(-DASMJIT_STATIC)
 
-add_library(jit MODULE
+set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
+set(PLUGIN_DEF "${CMAKE_CURRENT_SOURCE_DIR}/plugin/plugin.def")
+set(PLUGIN_DESCRIPTION "JIT plugin for SA-MP server")
+set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
+
+set(PLUGIN_SOURCES
 	"jit/jit.cpp"
 	"jit/jit.h"
 	"plugin/SDK/amx/amx.h"
@@ -36,42 +41,6 @@ source_group("jit" REGULAR_EXPRESSION "jit/[^/\\]+\\.(cpp|h)")
 source_group("plugin" REGULAR_EXPRESSION "plugin/[^/\\]+\\.(cpp|h|rc)")
 source_group("plugin\\SDK" REGULAR_EXPRESSION "plugin/SDK/[^/\\]+\\.(cpp|h)")
 source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "plugin/SDK/amx/[^/\\]+\\.(cpp|h)")
-
-target_link_libraries(jit AsmJit)
-
-if(UNIX OR MINGW)
-	list(APPEND COMPILE_FLAGS 
-		"-Wno-attributes"
-	)
-	if(UNIX)
-		add_definitions(-DLINUX)
-	endif()
-endif()
-
-if(WIN32)
-	if(MINGW)
-		list(APPEND LINK_FLAGS "-Wl,--kill-at,--enable-stdcall-fixup")
-	elseif(MSVC)
-		list(APPEND LINK_FLAGS "/DEF:${jit_SOURCE_DIR}/plugin/plugin.def")
-	endif()
-endif()
-
-foreach(flag ${COMPILE_FLAGS})
-	set(COMPILE_FLAGS_ "${COMPILE_FLAGS_} ${flag}")
-endforeach()
-if(NOT ${COMPILE_FLAGS_} STREQUAL "")
-	set_target_properties(jit PROPERTIES COMPILE_FLAGS ${COMPILE_FLAGS_})
-endif()
-
-foreach(flag ${LINK_FLAGS})
-	set(LINK_FLAGS_ "${LINK_FLAGS_} ${flag}")
-endforeach()
-if(NOT ${LINK_FLAGS} STREQUAL "")
-	set_target_properties(jit PROPERTIES LINK_FLAGS ${LINK_FLAGS_})
-endif()
-
-# Don't prefix output DLL with "lib"
-set_target_properties(jit PROPERTIES PREFIX "")
 
 find_package(Git)
 if(GIT_FOUND)
@@ -92,11 +61,12 @@ string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
-set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
-set(PLUGIN_DESCRIPTION "JIT plugin for SA-MP server")
-set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
 set(PLUGIN_VERSION ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
+
+include(SampPlugin)
+
+target_link_libraries(${PLUGIN_TARGET} AsmJit)
 
 configure_file(
 	"${jit_SOURCE_DIR}/plugin/plugin.rc.in"
@@ -108,8 +78,6 @@ configure_file(
 	"${jit_SOURCE_DIR}/plugin/version.h"
 	@ONLY
 )
-
-message(STATUS "JIT plugin version: ${version}")
 
 install(TARGETS jit LIBRARY DESTINATION ".")
 
