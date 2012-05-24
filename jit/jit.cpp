@@ -1040,15 +1040,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-			Label &L_loop = L(as, cip, "loop");
 			as.lea(edi, dword_ptr(ebx, ecx));
-			as.mov(esi, edi);
-			as.add(esi, instr.getOperand());
-			as.bind(L_loop);
-				as.mov(dword_ptr(edi), eax);
-				as.add(edi, sizeof(cell));
-				as.cmp(edi, esi);
-			as.jl(L_loop); // if edi < esi fill next cell
+			as.mov(edx, ecx);
+			as.mov(ecx, instr.getOperand() / sizeof(cell));
+			as.rep_stosd();
+			as.mov(ecx, edx);
 			break;
 		}
 		case OP_HALT: // number
