@@ -29,8 +29,7 @@
 #include <string>
 
 #include <amx/amx.h>
-#include <AsmJit/X86/X86Assembler.h>
-#include <AsmJit/Core/MemoryManager.h>
+#include <AsmJit/AsmJit.h>
 
 #include "jit.h"
 

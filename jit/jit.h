@@ -33,7 +33,7 @@
 #include <vector>
 
 #include <amx/amx.h>
-#include <AsmJit/X86/X86Assembler.h>
+#include <AsmJit/AsmJit.h>
 
 #if defined _MSC_VER
 	#define JIT_CDECL __cdecl
