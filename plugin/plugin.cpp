@@ -23,6 +23,8 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdlib>
+#include <fstream>
 #include <iomanip>
 #include <map>
 #include <sstream>
@@ -168,6 +170,14 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		delete jitter;
 	} else {
 		::amx2jitter.insert(std::make_pair(amx, jitter));
+		const char *dump_code = getenv("dump_code");
+		if (dump_code != 0 && atoi(dump_code) != 0) {
+			std::ofstream dump("jit.bin");
+			if (dump.is_open()) {
+				dump.write(reinterpret_cast<char*>(jitter->getCode()), jitter->getCodeSize());
+				dump.close();
+			}
+		}
 	}
 
 	if (!amx_Exec_hook.IsInstalled()) {
