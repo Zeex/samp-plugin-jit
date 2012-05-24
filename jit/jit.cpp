@@ -1023,19 +1023,35 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			}
 			as.pop(ecx);
 			break;
-		case OP_CMPS: // number
+		case OP_CMPS: { // number
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			as.push(instr.getOperand());
-			as.lea(edx, dword_ptr(ebx, ecx));
-			as.push(edx);
-			as.lea(edx, dword_ptr(ebx, eax));
-			as.push(edx);
-			as.call(reinterpret_cast<void*>(std::memcmp));
-			as.call(edx);
-			as.add(esp, 12);
+			Label L_above(L(as, cip, "above"));
+			Label L_below(L(as, cip, "below"));
+			Label L_equal(L(as, cip, "equal"));
+			Label L_continue(L(as, cip, "continue"));
+				as.cld();
+				as.lea(edi, dword_ptr(ebx, eax));
+				as.lea(esi, dword_ptr(ebx, ecx));
+				as.push(ecx);
+				as.mov(ecx, instr.getOperand());
+				as.repe_cmpsb();
+				as.pop(ecx);
+				as.ja(L_above);
+				as.jb(L_below);
+				as.jz(L_equal);
+			as.bind(L_above);
+				as.mov(eax, 1);
+				as.jmp(L_continue);
+			as.bind(L_below);
+				as.mov(eax, -1);
+				as.jmp(L_continue);
+			as.bind(L_equal);
+				as.xor_(eax, eax);
+			as.bind(L_continue);
 			break;
+		}
 		case OP_FILL: { // number
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
