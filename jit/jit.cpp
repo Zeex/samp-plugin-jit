@@ -755,15 +755,15 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 
 		case OP_SHL:
 			// PRI = PRI << ALT
-			as.shl(eax, bl);
+			as.shl(eax, cl);
 			break;
 		case OP_SHR:
 			// PRI = PRI >> ALT (without sign extension)
-			as.shr(eax, bl);
+			as.shr(eax, cl);
 			break;
 		case OP_SSHR:
 			// PRI = PRI >> ALT with sign extension
-			as.sar(eax, bl);
+			as.sar(eax, cl);
 			break;
 		case OP_SHL_C_PRI: // value
 			// PRI = PRI << value
@@ -888,7 +888,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SIGN_ALT:
 			// sign extent the byte in ALT to a cell
-			as.movsx(ebx, bl);
+			as.movsx(ebx, cl);
 			break;
 		case OP_EQ:
 			// PRI = PRI == ALT ? 1 : 0
