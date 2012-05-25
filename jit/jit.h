@@ -236,20 +236,6 @@ static inline bool operator<(const TaggedAddress &left, const TaggedAddress &rig
 	return left.getTag() < right.getTag();
 }
 
-class CallContext {
-public:
-	explicit CallContext(AmxVm vm);
-	~CallContext();
-
-	inline cell *getParams() const {
-		return params_;
-	}
-
-private:
-	AmxVm vm_;
-	cell *params_;
-};
-
 class Jitter {
 public:
 	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);

@@ -269,24 +269,6 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// CallContext implementation
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-CallContext::CallContext(AmxVm vm)
-	: vm_(vm)
-	, params_(0)
-{
-	AMX *amx = vm_.getAmx();
-	params_ = vm_.pushStack(amx->paramcount * sizeof(cell));
-	amx->paramcount = 0;
-}
-
-CallContext::~CallContext() {
-	//int paramcount = vm_.popStack();
-	//vm_.popStack(paramcount / sizeof(cell));
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Jitter implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1483,7 +1465,11 @@ int Jitter::exec(int index, cell *retval) {
 	if (address == 0) {
 		return AMX_ERR_INDEX;
 	}
-	CallContext ctx(vm_);
+
+	// Push size of arguments and reset parameter count.
+	vm_.pushStack(vm_.getAmx()->paramcount * sizeof(cell));
+	vm_.getAmx()->paramcount = 0;
+
 	return call(address, retval);
 }
 
