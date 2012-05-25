@@ -1364,6 +1364,9 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
 
 		doJumpHelper(dest, stack);
 	}
+
+	// No instruction at that address.
+	doHalt(jitter, AMX_ERR_INVINSTR);
 }
 
 cell JIT_STDCALL Jitter::doSysreq(Jitter *jitter, int index, cell *params) {
