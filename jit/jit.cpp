@@ -1228,7 +1228,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	return true;
 
 compile_error:
-	errorHandler(vm_, instr);
+	if (errorHandler != 0) {
+		errorHandler(vm_, instr);
+	}
 	return false;
 }
 
