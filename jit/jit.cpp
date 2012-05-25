@@ -1223,6 +1223,7 @@ compile_error:
 
 void Jitter::halt(X86Assembler &as, cell errorCode) {
 	as.push(errorCode);
+	as.push(reinterpret_cast<int>(this));
 	as.call(reinterpret_cast<void*>(Jitter::doHalt));
 }
 
