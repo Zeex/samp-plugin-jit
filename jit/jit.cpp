@@ -627,12 +627,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as.sub(dword_ptr(esp), edx);
 			break;
 		case OP_RET:
-			// STK = STK + cell size, FRM = [STK],
-			// CIP = [STK], STK = STK + cell size
-			as.pop(ebp);
-			as.add(ebp, ebx);
-			as.ret();
-			break;
 		case OP_RETN:
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
@@ -640,11 +634,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(ebp);
-			as.add(ebp, edx);
-			as.pop(edx);
-			as.add(esp, dword_ptr(esp));
-			as.add(esp, 4);
-			as.push(edx);
+			as.add(ebp, ebx);
 			as.ret();
 			break;
 		case OP_CALL: { // offset
@@ -654,10 +644,13 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			cell address = instr.getOperand() - reinterpret_cast<cell>(vm_.getCode());
-			as.call(L(as, address));
+			cell fn_addr = instr.getOperand() - reinterpret_cast<cell>(vm_.getCode());
+			as.call(L(as, fn_addr));
+			as.add(esp, dword_ptr(esp));
+			as.add(esp, 4);
 			break;
 		}
+
 		case OP_JUMP:
 		case OP_JUMP_PRI:
 		case OP_JZER:
