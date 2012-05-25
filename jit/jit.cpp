@@ -329,8 +329,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 
 	while (disas.decode(instr, &error)) {
 		cell cip = instr.getAddress();
-		as.bind(L(as, cip));
 
+		as.bind(L(as, cip));
 		codeMap_.insert(std::make_pair(cip, as.getCodeSize()));
 
 		switch (instr.getOpcode()) {
@@ -521,8 +521,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				break;
 			}
 			default:
-				errorHandler(vm_, instr);
-				return false;
+				goto compile_error;
 			}
 			break;
 		case OP_SCTRL: // index
@@ -548,8 +547,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				halt(as, AMX_ERR_INVINSTR);
 				break;
 			default:
-				errorHandler(vm_, instr);
-				return false;
+				goto compile_error;
 			}
 			break;
 		case OP_MOVE_PRI:
@@ -1126,8 +1124,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 
 		invalid_native:
-			errorHandler(vm_, instr);
-			return false;
+			goto compile_error;
 		}
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
@@ -1207,19 +1204,21 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// conditional breakpoint
 			break;
 		default:
-			errorHandler(vm_, instr);
-			return false;
+			goto compile_error;
 		}
 	}
 
 	if (error) {
-		errorHandler(vm_, instr);
+		goto compile_error;
 	}
 
 	code_     = as.make();
 	codeSize_ = as.getCodeSize();
-
 	return true;
+
+compile_error:
+	errorHandler(vm_, instr);
+	return false;
 }
 
 void Jitter::halt(X86Assembler &as, cell errorCode) {
