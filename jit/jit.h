@@ -242,7 +242,7 @@ public:
 
 public:
 	Jitter(AMX *amx, cell *opcodeTable = 0);
-	virtual ~Jitter();
+	~Jitter();
 
 	inline void *getCode() const {
 		return code_;
