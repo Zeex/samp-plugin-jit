@@ -319,6 +319,8 @@ int Jitter::getInstrOffset(cell amx_ip) const {
 }
 
 bool Jitter::compile(CompileErrorHandler errorHandler) {
+	assert(code_ == 0 && "You can't compile() twice, create a new Jitter instead");
+
 	AmxDisassembler disas(vm_);
 	disas.setOpcodeTable(opcodeTable_);
 

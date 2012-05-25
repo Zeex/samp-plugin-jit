@@ -256,11 +256,7 @@ public:
 
 	bool compile(CompileErrorHandler errorHandler = 0);
 
-	// Calls a function located at the specified AMX address.
 	int call(cell address, cell *retval);
-
-	// Pushes parameters' size to the AMX stack and invokes call() against
-	// a public function at the specified index.
 	int exec(int index, cell *retval);
 
 private:
