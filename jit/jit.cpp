@@ -622,10 +622,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
-			as.mov(ecx, ebp);
-			as.sub(ecx, edx);
-			as.push(ecx);
+			as.push(ebp);
 			as.mov(ebp, esp);
+			as.sub(dword_ptr(esp), edx);
 			break;
 		case OP_RET:
 			// STK = STK + cell size, FRM = [STK],
