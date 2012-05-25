@@ -644,9 +644,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as.add(ebp, ebx);
 			as.pop(edx);
 			as.add(esp, dword_ptr(esp));
-			as.add(esp, 4);
 			as.push(edx);
-			as.ret();
+			as.ret(4);
 			break;
 		case OP_CALL: { // offset
 			// [STK] = CIP + 5, STK = STK - cell size
