@@ -1067,12 +1067,12 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_SYSREQ_PRI: {
 			// call system service, service number in PRI
 			as.mov(edi, esp);
-			beginExternalCode(as);
+			endJitCode(as);
 				as.push(edi);
 				as.push(eax);
 				as.push(reinterpret_cast<int>(this));
 				as.call(reinterpret_cast<void*>(Jitter::doSysreq));
-			endExternalCode(as);
+			beginJitCode(as);
 			break;
 		}
 		case OP_SYSREQ_C:   // index
@@ -1103,7 +1103,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 
 		ordinary_native:
 			as.mov(edi, esp);
-			beginExternalCode(as);
+			endJitCode(as);
 				as.push(edi);
 				as.push(reinterpret_cast<int>(vm_.getAmx()));
 				switch (instr.getOpcode()) {
@@ -1120,7 +1120,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 						break;
 				}
 				as.add(esp, 8);
-			endExternalCode(as);
+			beginJitCode(as);
 			break;
 
 		special_native:
@@ -1237,7 +1237,7 @@ void Jitter::halt(X86Assembler &as, cell errorCode) {
 	as.jmp(L_halt_);
 }
 
-void Jitter::beginExternalCode(X86Assembler &as) {
+void Jitter::endJitCode(X86Assembler &as) {
 	as.mov(edx, ebp);
 	as.sub(edx, ebx);
 	as.mov(dword_ptr_abs(&vm_.getAmx()->frm), edx);
@@ -1248,7 +1248,7 @@ void Jitter::beginExternalCode(X86Assembler &as) {
 	as.mov(esp, dword_ptr_abs(&esp_));
 }
 
-void Jitter::endExternalCode(X86Assembler &as) {
+void Jitter::beginJitCode(X86Assembler &as) {
 	as.mov(dword_ptr_abs(&ebp_), ebp);
 	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->frm));
 	as.lea(ebp, dword_ptr(ebx, edx));
@@ -1416,12 +1416,12 @@ int Jitter::call(cell address, cell *retval) {
 		as.push(ecx);
 		as.push(edx);
 		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
-		endExternalCode(as);
+		beginJitCode(as);
 			as.lea(ecx, dword_ptr(esp, - 4));
 			as.mov(dword_ptr_abs(&haltEsp_), ecx);
 			as.mov(dword_ptr_abs(&haltEbp_), ebp);
 			as.call(eax);
-		beginExternalCode(as);
+		endJitCode(as);
 		as.pop(edx);
 		as.pop(ecx);
 		as.pop(ebx);

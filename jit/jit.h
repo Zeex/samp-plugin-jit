@@ -316,8 +316,8 @@ private:
 	AsmJit::Label L_halt_;
 	void halt(AsmJit::X86Assembler &as, cell errorCode);
 
-	void beginExternalCode(AsmJit::X86Assembler &as);
-	void endExternalCode(AsmJit::X86Assembler &as);
+	void beginJitCode(AsmJit::X86Assembler &as);
+	void endJitCode(AsmJit::X86Assembler &as);
 };
 
 } // namespace jit
