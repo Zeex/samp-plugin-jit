@@ -612,8 +612,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			as.lea(ecx, dword_ptr(esp, instr.getOperand()));
+			as.mov(ecx, dword_ptr(esp));
 			as.sub(ecx, ebx);
+			as.add(esp, instr.getOperand());
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
