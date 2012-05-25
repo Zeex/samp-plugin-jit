@@ -1077,19 +1077,20 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_SYSREQ_C:   // index
 		case OP_SYSREQ_D: { // address
 			// call system service
-			std::string nativeName;
+			const char *nativeName = 0;
 			switch (instr.getOpcode()) {
 				case OP_SYSREQ_C:
 					nativeName = vm_.getNativeName(instr.getOperand());
 					break;
 				case OP_SYSREQ_D: {
-					int index = vm_.getNativeIndex(instr.getOperand());
-					if (index != -1) {
-						nativeName = vm_.getNativeName(index);
-					}
+					nativeName = vm_.getNativeName(vm_.getNativeIndex(instr.getOperand()));
 					break;
 				}
 			}
+			if (nativeName == 0) {
+				goto invalid_native;
+			}
+
 			// Replace calls to various natives with their optimized equivalents.
 			for (int i = 0; i < sizeof(intrinsics_) / sizeof(Intrinsic); i++) {
 				if (intrinsics_[i].name == nativeName) {
@@ -1098,6 +1099,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				}
 				goto ordinary_native;
 			}
+
 		ordinary_native:
 			as.mov(edi, esp);
 			beginExternalCode(as);
@@ -1107,8 +1109,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					case OP_SYSREQ_C: {
 						cell address = vm_.getNativeAddress(instr.getOperand());
 						if (address == 0) {
-							errorHandler(vm_, instr);
-							return false;
+							goto invalid_native;
 						}
 						as.call(reinterpret_cast<void*>(address));
 						break;
@@ -1119,8 +1120,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				}
 				as.add(esp, 8);
 			endExternalCode(as);
+			break;
+
 		special_native:
 			break;
+
+		invalid_native:
+			errorHandler(vm_, instr);
+			return false;
 		}
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
