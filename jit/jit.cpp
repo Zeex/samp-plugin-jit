@@ -849,8 +849,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_NOT:
 			// PRI = !PRI
 			as.test(eax, eax);
-			as.setz(cl);
-			as.movzx(eax, cl);
+			as.setz(al);
+			as.movzx(eax, al);
 			break;
 		case OP_NEG:
 			// PRI = -PRI
