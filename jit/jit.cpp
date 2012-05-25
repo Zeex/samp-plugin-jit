@@ -357,7 +357,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as.mov(eax, dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_LOAD_ALT: // address
-			// PRI = [address]
+			// ALT = [address]
 			as.mov(ecx, dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_LOAD_S_PRI: // offset
