@@ -630,19 +630,30 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as.push(edx);
 			as.ret(4);
 			break;
-		case OP_CALL: { // offset
+		case OP_CALL: // offset
 			// [STK] = CIP + 5, STK = STK - cell size
 			// CIP = CIP + offset
 			// The CALL instruction jumps to an address after storing the
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			cell address = instr.getOperand() - reinterpret_cast<cell>(vm_.getCode());
-			as.call(L(as, address));
+			as.call(L(as, instr.getOperand() - reinterpret_cast<cell>(vm_.getCode())));
 			break;
-		}
-		case OP_JUMP:
+		case OP_CALL_PRI:
+			// Same as CALL, the address to jump to is in PRI.
+			as.push(esp);
+			as.push(eax);
+			as.push(reinterpret_cast<int>(this));
+			as.call(reinterpret_cast<void*>(Jitter::doCall));
+			break;
 		case OP_JUMP_PRI:
+			// CIP = PRI (indirect jump)
+			as.push(esp);
+			as.push(eax);
+			as.push(reinterpret_cast<int>(this));
+			as.call(reinterpret_cast<void*>(Jitter::doJump));
+			break;
+		case OP_JUMP:
 		case OP_JZER:
 		case OP_JNZ:
 		case OP_JEQ:
@@ -663,15 +674,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					// CIP = CIP + offset (jump to the address relative from
 					// the current position)
 					as.jmp(L_dest);
-					break;
-				case OP_JUMP_PRI:
-					// CIP = PRI (indirect jump)
-					as.push(esp);
-					as.push(eax);
-					as.push(reinterpret_cast<int>(this));
-					as.call(reinterpret_cast<void*>(Jitter::doJump));
-					// Didn't jump because of invalid address - exit with error.
-					halt(as, AMX_ERR_INVINSTR);
 					break;
 				case OP_JZER: // offset
 					// if PRI == 0 then CIP = CIP + offset
@@ -1346,8 +1348,8 @@ Label &Jitter::L(X86Assembler &as, cell address, const std::string &name) {
 	}
 }
 
-void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
-	CodeMap::const_iterator it = jitter->codeMap_.find(ip);
+void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
+	CodeMap::const_iterator it = jitter->codeMap_.find(address);
 
 	typedef void (JIT_CDECL *DoJumpHelper)(void *dest, void *stack);
 	static DoJumpHelper doJumpHelper = 0;
@@ -1357,16 +1359,41 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell ip, void *stack) {
 
 		if (doJumpHelper == 0) {
 			X86Assembler as;
+			as.mov(eax, dword_ptr(esp, 4));
 			as.mov(esp, dword_ptr(esp, 8));
-			as.jmp(dword_ptr(esp, 4));
+			as.jmp(eax);
 			doJumpHelper = (DoJumpHelper)as.make();
 		}
 
 		doJumpHelper(dest, stack);
 	}
 
-	// No instruction at that address.
 	doHalt(jitter, AMX_ERR_INVINSTR);
+}
+
+cell JIT_STDCALL Jitter::doCall(Jitter *jitter, cell address, void *stack) {
+	CodeMap::const_iterator it = jitter->codeMap_.find(address);
+
+	typedef cell (JIT_CDECL *DoCallHelper)(void *func, void *stack);
+	static DoCallHelper doCallHelper = 0;
+
+	if (it != jitter->codeMap_.end()) {
+		void *func = it->second + reinterpret_cast<char*>(jitter->code_);
+
+		if (doCallHelper == 0) {
+			X86Assembler as;
+			as.mov(eax, dword_ptr(esp, 4));
+			as.mov(esp, dword_ptr(esp, 8));
+			as.call(eax);
+			as.ret();
+			doCallHelper = (DoCallHelper)as.make();
+		}
+
+		return doCallHelper(func, stack);
+	}
+
+	doHalt(jitter, AMX_ERR_INVINSTR);
+	return 0; // make compiler happy
 }
 
 cell JIT_STDCALL Jitter::doSysreq(Jitter *jitter, int index, cell *params) {

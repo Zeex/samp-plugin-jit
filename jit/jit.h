@@ -289,7 +289,8 @@ private:
 private:
 	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name = "");
 
-	static void JIT_STDCALL doJump(Jitter *jitter, cell ip, void *stack);
+	static void JIT_STDCALL doJump(Jitter *jitter, cell address, void *stack);
+	static cell JIT_STDCALL doCall(Jitter *jitter, cell address, void *stack);
 	static cell JIT_STDCALL doSysreq(Jitter *jitter, int index, cell *params);
 	static void JIT_STDCALL doHalt(Jitter *jitter, int errorCode);
 
