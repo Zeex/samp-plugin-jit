@@ -317,7 +317,9 @@ private:
 	void native_floatlog(AsmJit::X86Assembler &as);
 
 private:
+	AsmJit::Label L_halt_;
 	void halt(AsmJit::X86Assembler &as, cell errorCode);
+
 	void beginExternalCode(AsmJit::X86Assembler &as);
 	void endExternalCode(AsmJit::X86Assembler &as);
 };

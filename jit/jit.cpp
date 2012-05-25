@@ -323,6 +323,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	disas.setOpcodeTable(opcodeTable_);
 
 	X86Assembler as;
+	L_halt_ = as.newLabel();
 
 	bool error = false;
 	AmxInstruction instr;
@@ -1208,6 +1209,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		}
 	}
 
+	// Halt implementation follows the code. To issue a HALT one does the following:
+	// 1. puts the error code in to ECX
+	// 2. and jumps to this point
+	as.bind(L_halt_);
+		as.push(ecx);
+		as.push(reinterpret_cast<int>(this));
+		as.call(reinterpret_cast<void*>(Jitter::doHalt));
+
 	if (error) {
 		goto compile_error;
 	}
@@ -1222,9 +1231,8 @@ compile_error:
 }
 
 void Jitter::halt(X86Assembler &as, cell errorCode) {
-	as.push(errorCode);
-	as.push(reinterpret_cast<int>(this));
-	as.call(reinterpret_cast<void*>(Jitter::doHalt));
+	as.mov(ecx, errorCode);
+	as.jmp(L_halt_);
 }
 
 void Jitter::beginExternalCode(X86Assembler &as) {
