@@ -28,8 +28,6 @@
 #include <sstream>
 #include <string>
 
-#include <amx/amx.h>
-
 #include "jit.h"
 #include "jump-x86.h"
 #include "plugin.h"
@@ -53,60 +51,8 @@ typedef std::map<AMX*, jit::Jitter*> AmxToJitterMap;
 static AmxToJitterMap amx2jitter;
 
 static JumpX86 amx_Exec_hook;
+
 static cell *opcodeTable = 0;
-
-static std::string InstrToString(const jit::AmxInstruction &instr) {
-	std::stringstream stream;
-	if (instr.getName() != 0) {
-		stream << instr.getName();
-	} else {
-		stream << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
-	}
-	std::vector<cell> opers = instr.getOperands();
-	for (std::vector<cell>::const_iterator it = opers.begin(); it != opers.end(); ++it) {
-		stream << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
-	}
-	return stream.str();
-}
-
-static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
-	logprintf("JIT compilation error at %08x:", instr.getAddress());
-	logprintf("  %s", InstrToString(instr).c_str());
-}
-
-static void RuntimeError(int errorCode) {
-	static const char *errorStrings[] = {
-		/* AMX_ERR_NONE      */ "(none)",
-		/* AMX_ERR_EXIT      */ "Forced exit",
-		/* AMX_ERR_ASSERT    */ "Assertion failed",
-		/* AMX_ERR_STACKERR  */ "Stack/heap collision (insufficient stack size)",
-		/* AMX_ERR_BOUNDS    */ "Array index out of bounds",
-		/* AMX_ERR_MEMACCESS */ "Invalid memory access",
-		/* AMX_ERR_INVINSTR  */ "Invalid instruction",
-		/* AMX_ERR_STACKLOW  */ "Stack underflow",
-		/* AMX_ERR_HEAPLOW   */ "Heap underflow",
-		/* AMX_ERR_CALLBACK  */ "No (valid) native function callback",
-		/* AMX_ERR_NATIVE    */ "Native function failed",
-		/* AMX_ERR_DIVIDE    */ "Divide by zero",
-		/* AMX_ERR_SLEEP     */ "(sleep mode)",
-		/* 13 */                "(reserved)",
-		/* 14 */                "(reserved)",
-		/* 15 */                "(reserved)",
-		/* AMX_ERR_MEMORY    */ "Out of memory",
-		/* AMX_ERR_FORMAT    */ "Invalid/unsupported P-code file format",
-		/* AMX_ERR_VERSION   */ "File is for a newer version of the AMX",
-		/* AMX_ERR_NOTFOUND  */ "File or function is not found",
-		/* AMX_ERR_INDEX     */ "Invalid index parameter (bad entry point)",
-		/* AMX_ERR_DEBUG     */ "Debugger cannot run",
-		/* AMX_ERR_INIT      */ "AMX not initialized (or doubly initialized)",
-		/* AMX_ERR_USERDATA  */ "Unable to set user data field (table full)",
-		/* AMX_ERR_INIT_JIT  */ "Cannot initialize the JIT",
-		/* AMX_ERR_PARAMS    */ "Parameter error",
-		/* AMX_ERR_DOMAIN    */ "Domain error, expression result does not fit in range",
-		/* AMX_ERR_GENERAL   */ "General error (unknown or unspecific error)"
-    };
-	logprintf("JIT runtime error %d: \"%s\"", errorCode, errorStrings[errorCode]);
-}
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#if defined __GNUC__ && !defined WIN32
@@ -123,11 +69,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 		return amx_Exec(amx, retval, index);
 	} else {
 		jit::Jitter *jitter = iterator->second;
-		int error = jitter->exec(index, retval);
-		if (error != AMX_ERR_NONE) {
-			RuntimeError(error);
-		}
-		return error;
+		return jitter->exec(index, retval);
 	}
 }
 
@@ -153,6 +95,29 @@ static std::string GetFileName(const std::string &path) {
 		return path.substr(lastSep + 1);
 	}
 	return path;
+}
+
+static std::string InstrToString(const jit::AmxInstruction &instr) {
+	std::stringstream ss;
+
+	const char *name = instr.getName();
+	if (name != 0) {
+		ss << instr.getName();
+	} else {
+		ss << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
+	}
+
+	std::vector<cell> opers = instr.getOperands();
+	for (std::vector<cell>::const_iterator it = opers.begin(); it != opers.end(); ++it) {
+		ss << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
+	}
+
+	return ss.str();
+}
+
+static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
+	logprintf("JIT failed to compile instruction at %08x:", instr.getAddress());
+	logprintf("  %s", InstrToString(instr).c_str());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
