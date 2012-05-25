@@ -390,7 +390,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_LOAD_I:
 			// PRI = [PRI] (full cell)
-			as.mov(eax, dword_ptr(ebx));
+			as.mov(eax, dword_ptr(ebx, eax));
 			break;
 		case OP_LODB_I: // number
 			// PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
