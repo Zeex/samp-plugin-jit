@@ -640,11 +640,12 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(ebp);
-			as.add(ebp, ebx);
+			as.add(ebp, edx);
 			as.pop(edx);
 			as.add(esp, dword_ptr(esp));
+			as.add(esp, 4);
 			as.push(edx);
-			as.ret(4);
+			as.ret();
 			break;
 		case OP_CALL: { // offset
 			// [STK] = CIP + 5, STK = STK - cell size
