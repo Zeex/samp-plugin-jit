@@ -354,11 +354,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		switch (instr.getOpcode()) {
 		case OP_LOAD_PRI: // address
 			// PRI = [address]
-			as.mov(eax, dword_ptr(edx, instr.getOperand()));
+			as.mov(eax, dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_LOAD_ALT: // address
 			// PRI = [address]
-			as.mov(ebx, dword_ptr(edx, instr.getOperand()));
+			as.mov(ecx, dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_LOAD_S_PRI: // offset
 			// PRI = [FRM + offset]
@@ -366,43 +366,43 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_LOAD_S_ALT: // offset
 			// ALT = [FRM + offset]
-			as.mov(ebx, dword_ptr(ebp, instr.getOperand()));
+			as.mov(ecx, dword_ptr(ebp, instr.getOperand()));
 			break;
 		case OP_LREF_PRI: // address
 			// PRI = [ [address] ]
-			as.mov(ecx, dword_ptr(edx, instr.getOperand()));
-			as.mov(eax, dword_ptr(edx, ecx));
+			as.mov(edx, dword_ptr(ebx, instr.getOperand()));
+			as.mov(eax, dword_ptr(ebx, edx));
 			break;
 		case OP_LREF_ALT: // address
 			// ALT = [ [address] ]
-			as.mov(ecx, dword_ptr(edx, + instr.getOperand()));
-			as.mov(ebx, dword_ptr(edx, ecx));
+			as.mov(edx, dword_ptr(ebx, + instr.getOperand()));
+			as.mov(ecx, dword_ptr(ebx, edx));
 			break;
 		case OP_LREF_S_PRI: // offset
 			// PRI = [ [FRM + offset] ]
-			as.mov(ecx, dword_ptr(ebp, instr.getOperand()));
-			as.mov(eax, dword_ptr(edx, ecx));
+			as.mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as.mov(eax, dword_ptr(ebx, edx));
 			break;
 		case OP_LREF_S_ALT: // offset
 			// PRI = [ [FRM + offset] ]
-			as.mov(ecx, dword_ptr(ebp, instr.getOperand()));
-			as.mov(ebx, dword_ptr(edx, ecx));
+			as.mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as.mov(ecx, dword_ptr(ebx, edx));
 			break;
 		case OP_LOAD_I:
 			// PRI = [PRI] (full cell)
-			as.mov(eax, dword_ptr(edx));
+			as.mov(eax, dword_ptr(ebx));
 			break;
 		case OP_LODB_I: // number
 			// PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
 			switch (instr.getOperand()) {
 			case 1:
-				as.movzx(eax, byte_ptr(edx, eax));
+				as.movzx(eax, byte_ptr(ebx, eax));
 				break;
 			case 2:
-				as.movzx(eax, word_ptr(edx, eax));
+				as.movzx(eax, word_ptr(ebx, eax));
 				break;
 			case 4:
-				as.mov(eax, dword_ptr(edx, eax));
+				as.mov(eax, dword_ptr(ebx, eax));
 				break;
 			}
 			break;
@@ -412,25 +412,25 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_CONST_ALT: // value
 			// ALT = value
-			as.mov(ebx, instr.getOperand());
+			as.mov(ecx, instr.getOperand());
 			break;
 		case OP_ADDR_PRI: // offset
 			// PRI = FRM + offset
 			as.lea(eax, dword_ptr(ebp, instr.getOperand()));
-			as.sub(eax, edx);
+			as.sub(eax, ebx);
 			break;
 		case OP_ADDR_ALT: // offset
 			// ALT = FRM + offset
-			as.lea(ebx, dword_ptr(ebp, instr.getOperand()));
-			as.sub(ebx, edx);
+			as.lea(ecx, dword_ptr(ebp, instr.getOperand()));
+			as.sub(ecx, ebx);
 			break;
 		case OP_STOR_PRI: // address
 			// [address] = PRI
-			as.mov(dword_ptr(edx, instr.getOperand()), eax);
+			as.mov(dword_ptr(ebx, instr.getOperand()), eax);
 			break;
 		case OP_STOR_ALT: // address
 			// [address] = ALT
-			as.mov(dword_ptr(edx, instr.getOperand()), ebx);
+			as.mov(dword_ptr(ebx, instr.getOperand()), ecx);
 			break;
 		case OP_STOR_S_PRI: // offset
 			// [FRM + offset] = ALT
@@ -438,63 +438,63 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_STOR_S_ALT: // offset
 			// [FRM + offset] = ALT
-			as.mov(dword_ptr(ebp, instr.getOperand()), ebx);
+			as.mov(dword_ptr(ebp, instr.getOperand()), ecx);
 			break;
 		case OP_SREF_PRI: // address
 			// [ [address] ] = PRI
-			as.mov(ecx, dword_ptr(edx, instr.getOperand()));
-			as.mov(dword_ptr(edx, ecx), eax);
+			as.mov(edx, dword_ptr(ebx, instr.getOperand()));
+			as.mov(dword_ptr(ebx, edx), eax);
 			break;
 		case OP_SREF_ALT: // address
 			// [ [address] ] = ALT
-			as.mov(ecx, dword_ptr(edx, instr.getOperand()));
-			as.mov(dword_ptr(edx, ecx), ebx);
+			as.mov(edx, dword_ptr(ebx, instr.getOperand()));
+			as.mov(dword_ptr(ebx, edx), ecx);
 			break;
 		case OP_SREF_S_PRI: // offset
 			// [ [FRM + offset] ] = PRI
-			as.mov(ecx, dword_ptr(ebp, instr.getOperand()));
-			as.mov(dword_ptr(edx, ecx), eax);
+			as.mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as.mov(dword_ptr(ebx, edx), eax);
 			break;
 		case OP_SREF_S_ALT: // offset
 			// [ [FRM + offset] ] = ALT
-			as.mov(ecx, dword_ptr(ebp, instr.getOperand()));
-			as.mov(dword_ptr(edx, ecx), ebx);
+			as.mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as.mov(dword_ptr(ebx, edx), ecx);
 			break;
 		case OP_STOR_I:
 			// [ALT] = PRI (full cell)
-			as.mov(dword_ptr(edx, ebx), eax);
+			as.mov(dword_ptr(ebx, ecx), eax);
 			break;
 		case OP_STRB_I: // number
 			// "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
 			switch (instr.getOperand()) {
 			case 1:
-				as.mov(byte_ptr(edx, ebx), al);
+				as.mov(byte_ptr(ebx, ecx), al);
 				break;
 			case 2:
-				as.mov(word_ptr(edx, ebx), ax);
+				as.mov(word_ptr(ebx, ecx), ax);
 				break;
 			case 4:
-				as.mov(dword_ptr(edx, ebx), eax);
+				as.mov(dword_ptr(ebx, ecx), eax);
 				break;
 			}
 			break;
 		case OP_LIDX:
 			// PRI = [ ALT + (PRI x cell size) ]
-			as.lea(ecx, dword_ptr(edx, ebx));
-			as.mov(eax, dword_ptr(ecx, eax, 2));
+			as.lea(edx, dword_ptr(ebx, ecx));
+			as.mov(eax, dword_ptr(edx, eax, 2));
 			break;
 		case OP_LIDX_B: // shift
 			// PRI = [ ALT + (PRI << shift) ]
-			as.lea(ecx, dword_ptr(edx, ebx));
-			as.mov(eax, dword_ptr(ecx, eax, instr.getOperand()));
+			as.lea(edx, dword_ptr(ebx, ecx));
+			as.mov(eax, dword_ptr(edx, eax, instr.getOperand()));
 			break;
 		case OP_IDXADDR:
 			// PRI = ALT + (PRI x cell size) (calculate indexed address)
-			as.lea(eax, dword_ptr(ebx, eax, 2));
+			as.lea(eax, dword_ptr(ecx, eax, 2));
 			break;
 		case OP_IDXADDR_B: // shift
 			// PRI = ALT + (PRI << shift) (calculate indexed address)
-			as.lea(eax, dword_ptr(ebx, eax, instr.getOperand()));
+			as.lea(eax, dword_ptr(ecx, eax, instr.getOperand()));
 			break;
 		case OP_ALIGN_PRI: // number
 			// Little Endian: PRI ^= cell size - number
@@ -508,7 +508,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// Little Endian: ALT ^= cell size - number
 			#if BYTE_ORDER == LITTLE_ENDIAN
 				if (instr.getOperand() < sizeof(cell)) {
-					as.xor_(ebx, sizeof(cell) - instr.getOperand());
+					as.xor_(ecx, sizeof(cell) - instr.getOperand());
 				}
 			#endif
 			break;
@@ -528,11 +528,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				break;
 			case 4:
 				as.mov(eax, esp);
-				as.sub(eax, edx);
+				as.sub(eax, ebx);
 				break;
 			case 5:
 				as.mov(eax, ebp);
-				as.sub(eax, edx);
+				as.sub(eax, ebx);
 				break;
 			case 6: {
 				as.mov(eax, instr.getAddress() + instr.getSize());
@@ -552,10 +552,10 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as.mov(dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), eax);
 				break;
 			case 4:
-				as.lea(esp, dword_ptr(edx, eax));
+				as.lea(esp, dword_ptr(ebx, eax));
 				break;
 			case 5:
-				as.lea(ebp, dword_ptr(edx, eax));
+				as.lea(ebp, dword_ptr(ebx, eax));
 				break;
 			case 6:
 				as.push(esp);
@@ -572,15 +572,15 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_MOVE_PRI:
 			// PRI = ALT
-			as.mov(eax, ebx);
+			as.mov(eax, ecx);
 			break;
 		case OP_MOVE_ALT:
 			// ALT = PRI
-			as.mov(ebx, eax);
+			as.mov(ecx, eax);
 			break;
 		case OP_XCHG:
 			// Exchange PRI and ALT
-			as.xchg(eax, ebx);
+			as.xchg(eax, ecx);
 			break;
 		case OP_PUSH_PRI:
 			// [STK] = PRI, STK = STK - cell size
@@ -588,7 +588,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PUSH_ALT:
 			// [STK] = ALT, STK = STK - cell size
-			as.push(ebx);
+			as.push(ecx);
 			break;
 		case OP_PUSH_C: // value
 			// [STK] = value, STK = STK - cell size
@@ -596,7 +596,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PUSH: // address
 			// [STK] = [address], STK = STK - cell size
-			as.push(dword_ptr(edx, instr.getOperand()));
+			as.push(dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_PUSH_S: // offset
 			// [STK] = [FRM + offset], STK = STK - cell size
@@ -608,16 +608,16 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_POP_ALT:
 			// STK = STK + cell size, ALT = [STK]
-			as.pop(ebx);
+			as.pop(ecx);
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			as.lea(ebx, dword_ptr(esp, instr.getOperand()));
-			as.sub(ebx, edx);
+			as.lea(ecx, dword_ptr(esp, instr.getOperand()));
+			as.sub(ecx, ebx);
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
-			as.mov(ebx, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
+			as.mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
 			as.add(dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), instr.getOperand());
 			break;
 		case OP_PROC:
@@ -630,7 +630,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
 			as.pop(ebp);
-			as.add(ebp, edx);
+			as.add(ebp, ebx);
 			as.ret();
 			break;
 		case OP_RETN:
@@ -640,10 +640,10 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
 			as.pop(ebp);
-			as.add(ebp, edx);
-			as.pop(ecx);
+			as.add(ebp, ebx);
+			as.pop(edx);
 			as.add(esp, dword_ptr(esp));
-			as.push(ecx);
+			as.push(edx);
 			as.ret(4);
 			break;
 		case OP_CALL: { // offset
@@ -701,52 +701,52 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					break;
 				case OP_JEQ: // offset
 					// if PRI == ALT then CIP = CIP + offset
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.je(L_dest);
 					break;
 				case OP_JNEQ: // offset
 					// if PRI != ALT then CIP = CIP + offset
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jne(L_dest);
 					break;
 				case OP_JLESS: // offset
 					// if PRI < ALT then CIP = CIP + offset (unsigned)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jb(L_dest);
 					break;
 				case OP_JLEQ: // offset
 					// if PRI <= ALT then CIP = CIP + offset (unsigned)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jbe(L_dest);
 					break;
 				case OP_JGRTR: // offset
 					// if PRI > ALT then CIP = CIP + offset (unsigned)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.ja(L_dest);
 					break;
 				case OP_JGEQ: // offset
 					// if PRI >= ALT then CIP = CIP + offset (unsigned)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jae(L_dest);
 					break;
 				case OP_JSLESS: // offset
 					// if PRI < ALT then CIP = CIP + offset (signed)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jl(L_dest);
 					break;
 				case OP_JSLEQ: // offset
 					// if PRI <= ALT then CIP = CIP + offset (signed)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jle(L_dest);
 					break;
 				case OP_JSGRTR: // offset
 					// if PRI > ALT then CIP = CIP + offset (signed)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jg(L_dest);
 					break;
 				case OP_JSGEQ: // offset
 					// if PRI >= ALT then CIP = CIP + offset (signed)
-					as.cmp(eax, ebx);
+					as.cmp(eax, ecx);
 					as.jge(L_dest);
 					break;
 			}
@@ -771,7 +771,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SHL_C_ALT: // value
 			// ALT = ALT << value
-			as.shl(ebx, static_cast<unsigned char>(instr.getOperand()));
+			as.shl(ecx, static_cast<unsigned char>(instr.getOperand()));
 			break;
 		case OP_SHR_C_PRI: // value
 			// PRI = PRI >> value (without sign extension)
@@ -779,70 +779,70 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SHR_C_ALT: // value
 			// PRI = PRI >> value (without sign extension)
-			as.shl(ebx, static_cast<unsigned char>(instr.getOperand()));
+			as.shl(ecx, static_cast<unsigned char>(instr.getOperand()));
 			break;
 		case OP_SMUL:
 			// PRI = PRI * ALT (signed multiply)
-			as.xor_(ecx, ecx);
-			as.imul(ebx);
+			as.xor_(edx, edx);
+			as.imul(ecx);
 			break;
 		case OP_SDIV:
 			// PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
-			as.xor_(ecx, ecx);
-			as.idiv(ebx);
-			as.mov(ebx, ecx);
+			as.xor_(edx, edx);
+			as.idiv(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_SDIV_ALT:
 			// PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
-			as.xchg(eax, ebx);
-			as.xor_(ecx, ecx);
-			as.idiv(ebx);
-			as.mov(ebx, ecx);
+			as.xchg(eax, ecx);
+			as.xor_(edx, edx);
+			as.idiv(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_UMUL:
 			// PRI = PRI * ALT (unsigned multiply)
-			as.xor_(ecx, ecx);
-			as.mul(ebx);
+			as.xor_(edx, edx);
+			as.mul(ecx);
 			break;
 		case OP_UDIV:
 			// PRI = PRI / ALT (unsigned divide), ALT = PRI mod ALT
-			as.xor_(ecx, ecx);
-			as.div(ebx);
-			as.mov(ebx, ecx);
+			as.xor_(edx, edx);
+			as.div(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_UDIV_ALT:
 			// PRI = ALT / PRI (unsigned divide), ALT = ALT mod PRI
-			as.xchg(eax, ebx);
-			as.xor_(ecx, ecx);
-			as.div(ebx);
-			as.mov(ebx, ecx);
+			as.xchg(eax, ecx);
+			as.xor_(edx, edx);
+			as.div(ecx);
+			as.mov(ecx, edx);
 			break;
 		case OP_ADD:
 			// PRI = PRI + ALT
-			as.add(eax, ebx);
+			as.add(eax, ecx);
 			break;
 		case OP_SUB:
 			// PRI = PRI - ALT
-			as.sub(eax, ebx);
+			as.sub(eax, ecx);
 			break;
 		case OP_SUB_ALT:
 			// PRI = ALT - PRI
 			// or:
 			// PRI = -(PRI - ALT)
-			as.sub(eax, ebx);
+			as.sub(eax, ecx);
 			as.neg(eax);
 			break;
 		case OP_AND:
 			// PRI = PRI & ALT
-			as.and_(eax, ebx);
+			as.and_(eax, ecx);
 			break;
 		case OP_OR:
 			// PRI = PRI | ALT
-			as.or_(eax, ebx);
+			as.or_(eax, ecx);
 			break;
 		case OP_XOR:
 			// PRI = PRI ^ ALT
-			as.xor_(eax, ebx);
+			as.xor_(eax, ecx);
 			break;
 		case OP_NOT:
 			// PRI = !PRI
@@ -872,11 +872,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_ZERO_ALT:
 			// ALT = 0
-			as.xor_(ebx, ebx);
+			as.xor_(ecx, ecx);
 			break;
 		case OP_ZERO: // address
 			// [address] = 0
-			as.mov(dword_ptr(edx, instr.getOperand()), 0);
+			as.mov(dword_ptr(ebx, instr.getOperand()), 0);
 			break;
 		case OP_ZERO_S: // offset
 			// [FRM + offset] = 0
@@ -888,65 +888,65 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SIGN_ALT:
 			// sign extent the byte in ALT to a cell
-			as.movsx(ebx, cl);
+			as.movsx(ecx, cl);
 			break;
 		case OP_EQ:
 			// PRI = PRI == ALT ? 1 : 0
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.sete(al);
 			as.movzx(eax, al);
 			break;
 		case OP_NEQ:
 			// PRI = PRI != ALT ? 1 : 0
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setne(al);
 			as.movzx(eax, al);
 			break;
 		case OP_LESS:
 			// PRI = PRI < ALT ? 1 : 0 (unsigned)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setb(al);
 			as.movzx(eax, al);
 			break;
 		case OP_LEQ:
 			// PRI = PRI <= ALT ? 1 : 0 (unsigned)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setbe(al);
 			as.movzx(eax, al);
 			break;
 		case OP_GRTR:
 			// PRI = PRI > ALT ? 1 : 0 (unsigned)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.seta(al);
 			as.movzx(eax, al);
 			break;
 		case OP_GEQ:
 			// PRI = PRI >= ALT ? 1 : 0 (unsigned)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setae(al);
 			as.movzx(eax, al);
 			break;
 		case OP_SLESS:
 			// PRI = PRI < ALT ? 1 : 0 (signed)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setl(al);
 			as.movzx(eax, al);
 			break;
 		case OP_SLEQ:
 			// PRI = PRI <= ALT ? 1 : 0 (signed)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setle(al);
 			as.movzx(eax, al);
 			break;
 		case OP_SGRTR:
 			// PRI = PRI > ALT ? 1 : 0 (signed)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setg(al);
 			as.movzx(eax, al);
 			break;
 		case OP_SGEQ:
 			// PRI = PRI >= ALT ? 1 : 0 (signed)
-			as.cmp(eax, ebx);
+			as.cmp(eax, ecx);
 			as.setge(al);
 			as.movzx(eax, al);
 			break;
@@ -958,7 +958,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_EQ_C_ALT: // value
 			// PRI = ALT == value ? 1 : 0
-			as.cmp(ebx, instr.getOperand());
+			as.cmp(ecx, instr.getOperand());
 			as.sete(al);
 			as.movzx(eax, al);
 			break;
@@ -968,11 +968,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_INC_ALT:
 			// ALT = ALT + 1
-			as.inc(ebx);
+			as.inc(ecx);
 			break;
 		case OP_INC: // address
 			// [address] = [address] + 1
-			as.inc(dword_ptr(edx, instr.getOperand()));
+			as.inc(dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_INC_S: // offset
 			// [FRM + offset] = [FRM + offset] + 1
@@ -980,7 +980,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_INC_I:
 			// [PRI] = [PRI] + 1
-			as.inc(dword_ptr(edx, eax));
+			as.inc(dword_ptr(ebx, eax));
 			break;
 		case OP_DEC_PRI:
 			// PRI = PRI - 1
@@ -988,11 +988,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_DEC_ALT:
 			// ALT = ALT - 1
-			as.dec(ebx);
+			as.dec(ecx);
 			break;
 		case OP_DEC: // address
 			// [address] = [address] - 1
-			as.dec(dword_ptr(edx, instr.getOperand()));
+			as.dec(dword_ptr(ebx, instr.getOperand()));
 			break;
 		case OP_DEC_S: // offset
 			// [FRM + offset] = [FRM + offset] - 1
@@ -1000,13 +1000,15 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_DEC_I:
 			// [PRI] = [PRI] - 1
-			as.dec(dword_ptr(edx, eax));
+			as.dec(dword_ptr(ebx, eax));
 			break;
 		case OP_MOVS: // number
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
-			as.lea(esi, dword_ptr(edx, eax));
+			as.lea(esi, dword_ptr(ebx, eax));
+			as.lea(edi, dword_ptr(ebx, ecx));
+			as.push(ecx);
 			if (instr.getOperand() % 4 == 0) {
 				as.mov(ecx, instr.getOperand() / 4);
 				as.rep_movsd();
@@ -1017,6 +1019,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as.mov(ecx, instr.getOperand());
 				as.rep_movsb();
 			}
+			as.pop(ecx);
 			break;
 		case OP_CMPS: { // number
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
@@ -1027,10 +1030,12 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			Label L_equal(L(as, cip, "equal"));
 			Label L_continue(L(as, cip, "continue"));
 				as.cld();
-				as.lea(edi, dword_ptr(edx, eax));
-				as.lea(esi, dword_ptr(edx, ebx));
+				as.lea(edi, dword_ptr(ebx, eax));
+				as.lea(esi, dword_ptr(ebx, ecx));
+				as.push(ecx);
 				as.mov(ecx, instr.getOperand());
 				as.repe_cmpsb();
+				as.pop(ecx);
 				as.ja(L_above);
 				as.jb(L_below);
 				as.jz(L_equal);
@@ -1049,9 +1054,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
-			as.lea(edi, dword_ptr(edx, ebx));
+			as.lea(edi, dword_ptr(ebx, ecx));
+			as.mov(edx, ecx);
 			as.mov(ecx, instr.getOperand() / sizeof(cell));
 			as.rep_stosd();
+			as.mov(ecx, edx);
 			break;
 		}
 		case OP_HALT: // number
@@ -1189,13 +1196,13 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SWAP_ALT:
 			// [STK] = ALT and ALT = [STK]
-			as.xchg(dword_ptr(esp), ebx);
+			as.xchg(dword_ptr(esp), ecx);
 			break;
 		case OP_PUSH_ADR: // offset
 			// [STK] = FRM + offset, STK = STK - cell size
-			as.lea(ecx, dword_ptr(ebp, instr.getOperand()));
-			as.sub(ecx, edx);
-			as.push(ecx);
+			as.lea(edx, dword_ptr(ebp, instr.getOperand()));
+			as.sub(edx, ebx);
+			as.push(edx);
 			break;
 		case OP_NOP:
 			// no-operation, for code alignment
@@ -1225,23 +1232,23 @@ void Jitter::halt(X86Assembler &as, cell errorCode) {
 }
 
 void Jitter::beginExternalCode(X86Assembler &as) {
-	as.mov(ecx, ebp);
-	as.sub(ecx, edx);
-	as.mov(dword_ptr_abs(&vm_.getAmx()->frm), ecx);
+	as.mov(edx, ebp);
+	as.sub(edx, ebx);
+	as.mov(dword_ptr_abs(&vm_.getAmx()->frm), edx);
 	as.mov(ebp, dword_ptr_abs(&ebp_));
-	as.mov(ecx, esp);
-	as.sub(ecx, edx);
-	as.mov(dword_ptr_abs(&vm_.getAmx()->stk), ecx);
+	as.mov(edx, esp);
+	as.sub(edx, ebx);
+	as.mov(dword_ptr_abs(&vm_.getAmx()->stk), edx);
 	as.mov(esp, dword_ptr_abs(&esp_));
 }
 
 void Jitter::endExternalCode(X86Assembler &as) {
 	as.mov(dword_ptr_abs(&ebp_), ebp);
-	as.mov(ecx, dword_ptr_abs(&vm_.getAmx()->frm));
-	as.lea(ebp, dword_ptr(edx, ecx));
+	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->frm));
+	as.lea(ebp, dword_ptr(ebx, edx));
 	as.mov(dword_ptr_abs(&esp_), esp);
-	as.mov(ecx, dword_ptr_abs(&vm_.getAmx()->stk));
-	as.lea(esp, dword_ptr(edx, ecx));
+	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->stk));
+	as.lea(esp, dword_ptr(ebx, edx));
 }
 
 void Jitter::native_float(X86Assembler &as) {
@@ -1400,14 +1407,14 @@ int Jitter::call(cell address, cell *retval) {
 		as.mov(eax, dword_ptr(esp, 4));
 
 		// Save registers.
-		as.push(edi);
 		as.push(esi);
+		as.push(edi);
 		as.push(ebx);
 		as.push(ecx);
 		as.push(edx);
 
-		// The EDX register points to the start of the AMX data section in memory.
-		as.mov(edx, reinterpret_cast<int>(vm_.getData()));
+		// The EBX register points to the start of the AMX data section in memory.
+		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
 
 		// Keep the two stack pointers in this Jitter object.
 		as.mov(dword_ptr_abs(&ebp_), ebp);
@@ -1415,9 +1422,9 @@ int Jitter::call(cell address, cell *retval) {
 
 		// JIT code is executed on AMX stack, so switch to it.
 		as.mov(ecx, dword_ptr_abs(&vm_.getAmx()->frm));
-		as.lea(ebp, dword_ptr(edx, ecx));
+		as.lea(ebp, dword_ptr(ebx, ecx));
 		as.mov(ecx, dword_ptr_abs(&vm_.getAmx()->stk));
-		as.lea(esp, dword_ptr(edx, ecx));
+		as.lea(esp, dword_ptr(ebx, ecx));
 
 		// haltEsp_ and haltEbp_ are needed for HALT and BOUNDS
 		// instructions to quickly abort a currenly running function.
@@ -1430,10 +1437,10 @@ int Jitter::call(cell address, cell *retval) {
 
 		// Synchronize STK and FRM with ESP and EBP respectively.
 		as.mov(ecx, ebp);
-		as.sub(ecx, edx);
+		as.sub(ecx, ebx);
 		as.mov(dword_ptr_abs(&vm_.getAmx()->frm), ecx);
 		as.mov(ecx, esp);
-		as.sub(ecx, edx);
+		as.sub(ecx, ebx);
 		as.mov(dword_ptr_abs(&vm_.getAmx()->stk), ecx);
 
 		// Switch back to the real stack.
@@ -1443,8 +1450,8 @@ int Jitter::call(cell address, cell *retval) {
 		as.pop(edx);
 		as.pop(ecx);
 		as.pop(ebx);
-		as.pop(esi);
 		as.pop(edi);
+		as.pop(esi);
 
 		as.ret();
 
