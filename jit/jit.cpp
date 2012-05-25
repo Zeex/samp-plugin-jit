@@ -1056,10 +1056,10 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
 			as.lea(edi, dword_ptr(ebx, ecx));
-			as.mov(edx, ecx);
+			as.push(ecx);
 			as.mov(ecx, instr.getOperand() / sizeof(cell));
 			as.rep_stosd();
-			as.mov(ecx, edx);
+			as.pop(ecx);
 			break;
 		}
 		case OP_HALT: // number
