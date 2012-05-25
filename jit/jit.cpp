@@ -1399,56 +1399,24 @@ int Jitter::call(cell address, cell *retval) {
 	if (callHelper_ == 0) {
 		X86Assembler as;
 		
-		// Copy function address to EAX.
 		as.mov(eax, dword_ptr(esp, 4));
-
-		// Save registers.
 		as.push(esi);
 		as.push(edi);
 		as.push(ebx);
 		as.push(ecx);
 		as.push(edx);
-
-		// The EBX register points to the start of the AMX data section in memory.
 		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
-
-		// Keep the two stack pointers in this Jitter object.
-		as.mov(dword_ptr_abs(&ebp_), ebp);
-		as.mov(dword_ptr_abs(&esp_), esp);
-
-		// JIT code is executed on AMX stack, so switch to it.
-		as.mov(ecx, dword_ptr_abs(&vm_.getAmx()->frm));
-		as.lea(ebp, dword_ptr(ebx, ecx));
-		as.mov(ecx, dword_ptr_abs(&vm_.getAmx()->stk));
-		as.lea(esp, dword_ptr(ebx, ecx));
-
-		// haltEsp_ and haltEbp_ are needed for HALT and BOUNDS
-		// instructions to quickly abort a currenly running function.
-		as.mov(dword_ptr_abs(&haltEbp_), ebp);
-		as.lea(ecx, dword_ptr(esp, - 4));
-		as.mov(dword_ptr_abs(&haltEsp_), ecx);
-
-		// Call the target function. The function address is stored in eax.
-		as.call(eax);
-
-		// Synchronize STK and FRM with ESP and EBP respectively.
-		as.mov(ecx, ebp);
-		as.sub(ecx, ebx);
-		as.mov(dword_ptr_abs(&vm_.getAmx()->frm), ecx);
-		as.mov(ecx, esp);
-		as.sub(ecx, ebx);
-		as.mov(dword_ptr_abs(&vm_.getAmx()->stk), ecx);
-
-		// Switch back to the real stack.
-		as.mov(ebp, dword_ptr_abs(&ebp_));
-		as.mov(esp, dword_ptr_abs(&esp_));
-
+		endExternalCode(as);
+			as.lea(ecx, dword_ptr(esp, - 4));
+			as.mov(dword_ptr_abs(&haltEsp_), ecx);
+			as.mov(dword_ptr_abs(&haltEbp_), ebp);
+			as.call(eax);
+		beginExternalCode(as);
 		as.pop(edx);
 		as.pop(ecx);
 		as.pop(ebx);
 		as.pop(edi);
 		as.pop(esi);
-
 		as.ret();
 
 		callHelper_ = (CallHelper)as.make();
