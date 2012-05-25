@@ -594,7 +594,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			as.mov(ecx, dword_ptr(esp));
+			as.mov(ecx, esp);
 			as.sub(ecx, ebx);
 			as.add(esp, instr.getOperand());
 			break;
