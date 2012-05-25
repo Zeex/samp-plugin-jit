@@ -1104,9 +1104,15 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as.push(edi);
 				as.push(reinterpret_cast<int>(vm_.getAmx()));
 				switch (instr.getOpcode()) {
-					case OP_SYSREQ_C:
-						as.call(reinterpret_cast<void*>(vm_.getNativeAddress(instr.getOperand())));
+					case OP_SYSREQ_C: {
+						cell address = vm_.getNativeAddress(instr.getOperand());
+						if (address == 0) {
+							errorHandler(vm_, instr);
+							return false;
+						}
+						as.call(reinterpret_cast<void*>(address));
 						break;
+					}
 					case OP_SYSREQ_D:
 						as.call(reinterpret_cast<void*>(instr.getOperand()));
 						break;
