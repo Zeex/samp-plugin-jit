@@ -255,6 +255,13 @@ public:
 	void *getInstrPtr(cell amx_ip, void *code_ptr) const;
 	int   getInstrOffset(cell amx_ip) const;
 
+	inline void setAssembler(AsmJit::X86Assembler *assembler) {
+		assembler_ = assembler;
+	}
+	inline AsmJit::X86Assembler *getAssembler() const {
+		return assembler_;
+	}
+
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 	int call(cell address, cell *retval);
@@ -266,8 +273,9 @@ private:
 
 private:
 	AmxVm vm_;
-
 	cell *opcodeTable_;
+
+	AsmJit::X86Assembler *assembler_;
 
 	void *code_;
 	std::size_t codeSize_;
@@ -290,8 +298,8 @@ private:
 private:
 	void getJumpRefs(std::set<cell> &refs) const;
 
-	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address);
-	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name);
+	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
+	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
 	static void JIT_STDCALL doJump(Jitter *jitter, cell address, void *stack);
 	static cell JIT_STDCALL doCall(Jitter *jitter, cell address, void *stack);
@@ -299,7 +307,7 @@ private:
 	static void JIT_STDCALL doHalt(Jitter *jitter, int errorCode);
 
 private:
-	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler &as);
+	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler *as);
 
 	struct Intrinsic {
 		std::string   name;
@@ -308,21 +316,21 @@ private:
 
 	static Intrinsic intrinsics_[];
 
-	void native_float(AsmJit::X86Assembler &as);
-	void native_floatabs(AsmJit::X86Assembler &as);
-	void native_floatadd(AsmJit::X86Assembler &as);
-	void native_floatsub(AsmJit::X86Assembler &as);
-	void native_floatmul(AsmJit::X86Assembler &as);
-	void native_floatdiv(AsmJit::X86Assembler &as);
-	void native_floatsqroot(AsmJit::X86Assembler &as);
-	void native_floatlog(AsmJit::X86Assembler &as);
+	void native_float(AsmJit::X86Assembler *as);
+	void native_floatabs(AsmJit::X86Assembler *as);
+	void native_floatadd(AsmJit::X86Assembler *as);
+	void native_floatsub(AsmJit::X86Assembler *as);
+	void native_floatmul(AsmJit::X86Assembler *as);
+	void native_floatdiv(AsmJit::X86Assembler *as);
+	void native_floatsqroot(AsmJit::X86Assembler *as);
+	void native_floatlog(AsmJit::X86Assembler *as);
 
 private:
 	AsmJit::Label L_halt_;
-	void halt(AsmJit::X86Assembler &as, cell errorCode);
+	void halt(AsmJit::X86Assembler *as, cell errorCode);
 
-	void beginJitCode(AsmJit::X86Assembler &as);
-	void endJitCode(AsmJit::X86Assembler &as);
+	void beginJitCode(AsmJit::X86Assembler *as);
+	void endJitCode(AsmJit::X86Assembler *as);
 };
 
 } // namespace jit
