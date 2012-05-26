@@ -1337,6 +1337,10 @@ void Jitter::native_floatlog(X86Assembler &as) {
 	as.add(esp, 4);
 }
 
+Label &Jitter::L(X86Assembler &as, cell address) {
+	return L(as, address, std::string());
+}
+
 Label &Jitter::L(X86Assembler &as, cell address, const std::string &name) {
 	LabelMap::iterator iterator = labelMap_.find(TaggedAddress(address, name));
 	if (iterator != labelMap_.end()) {
