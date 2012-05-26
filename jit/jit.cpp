@@ -1236,105 +1236,70 @@ compile_error:
 	return false;
 }
 
-void Jitter::halt(X86Assembler &as, cell errorCode) {
-	as.mov(ecx, errorCode);
-	as.jmp(L_halt_);
+int Jitter::call(cell address, cell *retval) {
+	if (vm_.getAmx()->hea >= vm_.getAmx()->stk) {
+		return AMX_ERR_STACKERR;
+	}
+	if (vm_.getAmx()->hea < vm_.getAmx()->hlw) {
+		return AMX_ERR_HEAPLOW;
+	}
+	if (vm_.getAmx()->stk > vm_.getAmx()->stp) {
+		return AMX_ERR_STACKLOW;
+	}
+
+	// Make sure all natives are registered.
+	if ((vm_.getAmx()->flags & AMX_FLAG_NTVREG) == 0) {
+		return AMX_ERR_NOTFOUND;
+	}
+
+	if (callHelper_ == 0) {
+		X86Assembler as;
+		
+		as.mov(eax, dword_ptr(esp, 4));
+		as.pushad();
+		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
+		beginJitCode(as);
+			as.lea(ecx, dword_ptr(esp, - 4));
+			as.mov(dword_ptr_abs(&haltEsp_), ecx);
+			as.mov(dword_ptr_abs(&haltEbp_), ebp);
+			as.call(eax);
+		endJitCode(as);
+		as.popad();
+		as.ret();
+
+		callHelper_ = (CallHelper)as.make();
+	}
+
+	vm_.getAmx()->error = AMX_ERR_NONE;
+
+	void *start = getInstrPtr(address, getCode());
+	assert(start != 0);
+
+	void *haltEbp = haltEbp_;
+	void *haltEsp = haltEsp_;
+
+	cell retval_ = callHelper_(start);
+	if (retval != 0) {
+		*retval = retval_;
+	}
+
+	haltEbp_ = haltEbp;
+	haltEsp_ = haltEsp;
+
+	return vm_.getAmx()->error;
 }
 
-void Jitter::endJitCode(X86Assembler &as) {
-	as.mov(edx, ebp);
-	as.sub(edx, ebx);
-	as.mov(dword_ptr_abs(&vm_.getAmx()->frm), edx);
-	as.mov(ebp, dword_ptr_abs(&ebp_));
-	as.mov(edx, esp);
-	as.sub(edx, ebx);
-	as.mov(dword_ptr_abs(&vm_.getAmx()->stk), edx);
-	as.mov(esp, dword_ptr_abs(&esp_));
-}
+int Jitter::exec(int index, cell *retval) {
+	cell address = vm_.getPublicAddress(index);
+	if (address == 0) {
+		return AMX_ERR_INDEX;
+	}
 
-void Jitter::beginJitCode(X86Assembler &as) {
-	as.mov(dword_ptr_abs(&ebp_), ebp);
-	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->frm));
-	as.lea(ebp, dword_ptr(ebx, edx));
-	as.mov(dword_ptr_abs(&esp_), esp);
-	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->stk));
-	as.lea(esp, dword_ptr(ebx, edx));
-}
+	// Push size of arguments and reset parameter count.
+	vm_.pushStack(vm_.getAmx()->paramcount * sizeof(cell));
+	vm_.getAmx()->paramcount = 0;
 
-void Jitter::native_float(X86Assembler &as) {
-	as.fild(dword_ptr(esp, 4));
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatabs(X86Assembler &as) {
-	as.fld(dword_ptr(esp, 4));
-	as.fabs();
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatadd(X86Assembler &as) {
-	as.fld(dword_ptr(esp, 4));
-	as.fadd(dword_ptr(esp, 8));
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatsub(X86Assembler &as) {
-	as.fld(dword_ptr(esp, 4));
-	as.fsub(dword_ptr(esp, 8));
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatmul(X86Assembler &as) {
-	as.fld(dword_ptr(esp, 4));
-	as.fmul(dword_ptr(esp, 8));
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatdiv(X86Assembler &as) {
-	as.fld(dword_ptr(esp, 4));
-	as.fdiv(dword_ptr(esp, 8));
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatsqroot(X86Assembler &as) {
-	as.fld(dword_ptr(esp, 4));
-	as.fsqrt();
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
-}
-
-void Jitter::native_floatlog(X86Assembler &as) {
-	as.fld1();
-	as.fld(dword_ptr(esp, 8));
-	as.fyl2x();
-	as.fld1();
-	as.fdivrp(st(1));
-	as.fld(dword_ptr(esp, 4));
-	as.fyl2x();
-	as.sub(esp, 4);
-	as.fstp(dword_ptr(esp));
-	as.mov(eax, dword_ptr(esp));
-	as.add(esp, 4);
+	return call(address, retval);
 }
 
 Label &Jitter::L(X86Assembler &as, cell address) {
@@ -1426,70 +1391,105 @@ void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
 	doHaltHelper(errorCode);
 }
 
-int Jitter::call(cell address, cell *retval) {
-	if (vm_.getAmx()->hea >= vm_.getAmx()->stk) {
-		return AMX_ERR_STACKERR;
-	}
-	if (vm_.getAmx()->hea < vm_.getAmx()->hlw) {
-		return AMX_ERR_HEAPLOW;
-	}
-	if (vm_.getAmx()->stk > vm_.getAmx()->stp) {
-		return AMX_ERR_STACKLOW;
-	}
-
-	// Make sure all natives are registered.
-	if ((vm_.getAmx()->flags & AMX_FLAG_NTVREG) == 0) {
-		return AMX_ERR_NOTFOUND;
-	}
-
-	if (callHelper_ == 0) {
-		X86Assembler as;
-		
-		as.mov(eax, dword_ptr(esp, 4));
-		as.pushad();
-		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
-		beginJitCode(as);
-			as.lea(ecx, dword_ptr(esp, - 4));
-			as.mov(dword_ptr_abs(&haltEsp_), ecx);
-			as.mov(dword_ptr_abs(&haltEbp_), ebp);
-			as.call(eax);
-		endJitCode(as);
-		as.popad();
-		as.ret();
-
-		callHelper_ = (CallHelper)as.make();
-	}
-
-	vm_.getAmx()->error = AMX_ERR_NONE;
-
-	void *start = getInstrPtr(address, getCode());
-	assert(start != 0);
-
-	void *haltEbp = haltEbp_;
-	void *haltEsp = haltEsp_;
-
-	cell retval_ = callHelper_(start);
-	if (retval != 0) {
-		*retval = retval_;
-	}
-
-	haltEbp_ = haltEbp;
-	haltEsp_ = haltEsp;
-
-	return vm_.getAmx()->error;
+void Jitter::native_float(X86Assembler &as) {
+	as.fild(dword_ptr(esp, 4));
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
 }
 
-int Jitter::exec(int index, cell *retval) {
-	cell address = vm_.getPublicAddress(index);
-	if (address == 0) {
-		return AMX_ERR_INDEX;
-	}
+void Jitter::native_floatabs(X86Assembler &as) {
+	as.fld(dword_ptr(esp, 4));
+	as.fabs();
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
 
-	// Push size of arguments and reset parameter count.
-	vm_.pushStack(vm_.getAmx()->paramcount * sizeof(cell));
-	vm_.getAmx()->paramcount = 0;
+void Jitter::native_floatadd(X86Assembler &as) {
+	as.fld(dword_ptr(esp, 4));
+	as.fadd(dword_ptr(esp, 8));
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
 
-	return call(address, retval);
+void Jitter::native_floatsub(X86Assembler &as) {
+	as.fld(dword_ptr(esp, 4));
+	as.fsub(dword_ptr(esp, 8));
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
+
+void Jitter::native_floatmul(X86Assembler &as) {
+	as.fld(dword_ptr(esp, 4));
+	as.fmul(dword_ptr(esp, 8));
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
+
+void Jitter::native_floatdiv(X86Assembler &as) {
+	as.fld(dword_ptr(esp, 4));
+	as.fdiv(dword_ptr(esp, 8));
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
+
+void Jitter::native_floatsqroot(X86Assembler &as) {
+	as.fld(dword_ptr(esp, 4));
+	as.fsqrt();
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
+
+void Jitter::native_floatlog(X86Assembler &as) {
+	as.fld1();
+	as.fld(dword_ptr(esp, 8));
+	as.fyl2x();
+	as.fld1();
+	as.fdivrp(st(1));
+	as.fld(dword_ptr(esp, 4));
+	as.fyl2x();
+	as.sub(esp, 4);
+	as.fstp(dword_ptr(esp));
+	as.mov(eax, dword_ptr(esp));
+	as.add(esp, 4);
+}
+
+void Jitter::halt(X86Assembler &as, cell errorCode) {
+	as.mov(ecx, errorCode);
+	as.jmp(L_halt_);
+}
+
+void Jitter::endJitCode(X86Assembler &as) {
+	as.mov(edx, ebp);
+	as.sub(edx, ebx);
+	as.mov(dword_ptr_abs(&vm_.getAmx()->frm), edx);
+	as.mov(ebp, dword_ptr_abs(&ebp_));
+	as.mov(edx, esp);
+	as.sub(edx, ebx);
+	as.mov(dword_ptr_abs(&vm_.getAmx()->stk), edx);
+	as.mov(esp, dword_ptr_abs(&esp_));
+}
+
+void Jitter::beginJitCode(X86Assembler &as) {
+	as.mov(dword_ptr_abs(&ebp_), ebp);
+	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->frm));
+	as.lea(ebp, dword_ptr(ebx, edx));
+	as.mov(dword_ptr_abs(&esp_), esp);
+	as.mov(edx, dword_ptr_abs(&vm_.getAmx()->stk));
+	as.lea(esp, dword_ptr(ebx, edx));
 }
 
 } // namespace jit
