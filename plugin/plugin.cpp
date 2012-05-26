@@ -139,6 +139,25 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		}
 	}
 
+	typedef int (AMXAPI *amx_Exec_t)(AMX *amx, cell *retval, int index);
+	amx_Exec_t amx_Exec = (amx_Exec_t)((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec];
+
+	#if defined __GNUC__ && !defined WIN32
+		// Get opcode list before we hook amx_Exec().
+		if (::opcodeTable == 0) {
+			AMX amx = {0};
+			amx.flags |= AMX_FLAG_BROWSE;
+			amx_Exec(&amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
+			amx.flags &= ~AMX_FLAG_BROWSE;
+		}
+	#endif
+
+	if (!amx_Exec_hook.IsInstalled()) {
+		amx_Exec_hook.Install(
+			(void*)amx_Exec,
+			(void*)amx_Exec_JIT);
+	}
+
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
 }
@@ -150,21 +169,6 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	typedef int (AMXAPI *amx_Exec_t)(AMX *amx, cell *retval, int index);
-	amx_Exec_t amx_Exec = (amx_Exec_t)((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec];
-
-	typedef int (AMXAPI *amx_GetAddr_t)(AMX *amx, cell amx_addr, cell **phys_addr);
-	amx_GetAddr_t amx_GetAddr = (amx_GetAddr_t)((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_GetAddr];
-
-	#if defined __GNUC__ && !defined WIN32
-		// Get opcode list before we hook amx_Exec().
-		if (::opcodeTable == 0) {
-			amx->flags |= AMX_FLAG_BROWSE;
-			amx_Exec(amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
-			amx->flags &= ~AMX_FLAG_BROWSE;
-		}
-	#endif
-
 	jit::Jitter *jitter = new jit::Jitter(amx, ::opcodeTable);
 	if (!jitter->compile(CompileError)) {
 		delete jitter;
@@ -179,13 +183,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			}
 		}
 	}
-
-	if (!amx_Exec_hook.IsInstalled()) {
-		amx_Exec_hook.Install(
-			(void*)amx_Exec,
-			(void*)amx_Exec_JIT);
-	}
-
 	return AMX_ERR_NONE;
 }
 
