@@ -181,9 +181,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 		} else {
 			logger.setStream(stderr);
 		}
-		logger.setEnabled(true);
 	} else {
-		logger.setEnabled(false);
+		as.setLogger(0);
 	}
 	
 	if (!jitter->compile(CompileError)) {
