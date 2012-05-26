@@ -619,12 +619,18 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
 			as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), instr.getOperand());
 			break;
-		case OP_PROC:
+		case OP_PROC: {
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
+			Logger *logger = as->getLogger();
+			if (logger != 0) {
+				// Separate functions with three empty lines.
+				logger->logString("\n\n\n");
+			}
 			as->push(ebp);
 			as->mov(ebp, esp);
 			as->sub(dword_ptr(esp), ebx);
 			break;
+		}
 		case OP_RET:
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
