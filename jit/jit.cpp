@@ -249,7 +249,7 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 
 	// Special instructions.
 	case OP_CASETBL: {
-		int num = *reinterpret_cast<cell*>(vm_.getCode() + ip_);
+		int num = *reinterpret_cast<cell*>(vm_.getCode() + ip_) + 1;
 		// num case records follow, each is 2 cells big.
 		for (int i = 0; i < num * 2; i++) {
 			instr.addOperand(*reinterpret_cast<cell*>(vm_.getCode() + ip_));
