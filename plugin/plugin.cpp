@@ -166,19 +166,33 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	jit::Jitter *jitter = new jit::Jitter(amx, ::opcodeTable);
+
+	AsmJit::X86Assembler as;
+	jitter->setAssembler(&as);
+
+	AsmJit::FileLogger logger;
+	as.setLogger(&logger);
+
+	const char *var = getenv("JIT_PRINT_ASSEMBLY");
+	if (var != 0) {
+		std::FILE *stream;
+		if (atoi(var) == 1) {
+			logger.setStream(stdout);
+		} else {
+			logger.setStream(stderr);
+		}
+		logger.setEnabled(true);
+	} else {
+		logger.setEnabled(false);
+	}
+	
 	if (!jitter->compile(CompileError)) {
 		delete jitter;
 	} else {
+		jitter->setAssembler(0);
 		::amx2jitter.insert(std::make_pair(amx, jitter));
-		const char *dump_code = getenv("dump_code");
-		if (dump_code != 0 && atoi(dump_code) != 0) {
-			std::ofstream dump("jit.bin");
-			if (dump.is_open()) {
-				dump.write(reinterpret_cast<char*>(jitter->getCode()), jitter->getCodeSize());
-				dump.close();
-			}
-		}
 	}
+
 	return AMX_ERR_NONE;
 }
 
