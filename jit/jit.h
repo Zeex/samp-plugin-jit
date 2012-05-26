@@ -287,7 +287,8 @@ private:
 	LabelMap labelMap_;
 
 private:
-	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name = "");
+	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address);
+	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name);
 
 	static void JIT_STDCALL doJump(Jitter *jitter, cell address, void *stack);
 	static cell JIT_STDCALL doCall(Jitter *jitter, cell address, void *stack);
