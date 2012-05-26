@@ -53,7 +53,6 @@ typedef std::map<AMX*, jit::Jitter*> AmxToJitterMap;
 static AmxToJitterMap amx2jitter;
 
 static JumpX86 amx_Exec_hook;
-
 static cell *opcodeTable = 0;
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
@@ -66,7 +65,6 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	#endif
 	AmxToJitterMap::iterator iterator = ::amx2jitter.find(amx);
 	if (iterator == ::amx2jitter.end()) {
-		// Compilation previously failed, call normal amx_Exec().
 		JumpX86::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
 	} else {
@@ -100,21 +98,20 @@ static std::string GetFileName(const std::string &path) {
 }
 
 static std::string InstrToString(const jit::AmxInstruction &instr) {
-	std::stringstream ss;
+	std::stringstream stream;
 
-	const char *name = instr.getName();
-	if (name != 0) {
-		ss << instr.getName();
+	if (instr.getName() != 0) {
+		stream << instr.getName();
 	} else {
-		ss << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
+		stream << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
 	}
 
-	std::vector<cell> opers = instr.getOperands();
+	const std::vector<cell> &opers = instr.getOperands();
 	for (std::vector<cell>::const_iterator it = opers.begin(); it != opers.end(); ++it) {
-		ss << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
+		stream << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
 	}
 
-	return ss.str();
+	return stream.str();
 }
 
 static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
@@ -126,37 +123,36 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
+#if defined WIN32
+	#define SAMP_SERVER_BINARY "samp-server.exe"
+#else
+	#define SAMP_SERVER_BINARY "samp03svr"
+#endif
+
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 	pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 
-	void *funAddr = JumpX86::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
-	if (funAddr != 0) {
-		std::string module = GetFileName(GetModuleNameBySymbol(funAddr));
-		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
+	void *ptr = JumpX86::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
+	if (ptr != 0) {
+		std::string module = GetFileName(GetModuleNameBySymbol(ptr));
+		if (!module.empty() && module != SAMP_SERVER_BINARY) {
 			logprintf("  JIT must be loaded before %s", module.c_str());
 			return false;
 		}
 	}
 
-	typedef int (AMXAPI *amx_Exec_t)(AMX *amx, cell *retval, int index);
-	amx_Exec_t amx_Exec = (amx_Exec_t)((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec];
-
 	#if defined __GNUC__ && !defined WIN32
 		// Get opcode list before we hook amx_Exec().
-		if (::opcodeTable == 0) {
-			AMX amx = {0};
-			amx.flags |= AMX_FLAG_BROWSE;
-			amx_Exec(&amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
-			amx.flags &= ~AMX_FLAG_BROWSE;
-		}
+		AMX amx = {0};
+		amx.flags |= AMX_FLAG_BROWSE;
+		amx_Exec(&amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
+		amx.flags &= ~AMX_FLAG_BROWSE;
 	#endif
 
-	if (!amx_Exec_hook.IsInstalled()) {
-		amx_Exec_hook.Install(
-			(void*)amx_Exec,
-			(void*)amx_Exec_JIT);
-	}
+	amx_Exec_hook.Install(
+		((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
+		(void*)amx_Exec_JIT);
 
 	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
 	return true;
