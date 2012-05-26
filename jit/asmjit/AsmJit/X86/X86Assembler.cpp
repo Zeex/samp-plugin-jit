@@ -720,6 +720,9 @@ static char* X86Assembler_dumpInstruction(char* buf,
   const Operand* o2,
   uint32_t memRegType) ASMJIT_NOTHROW
 {
+  // Prefix with TAB for readability.
+  buf = StringUtil::copy(buf, "\t", 1);
+
   if (emitOptions & kX86EmitOptionRex)
     buf = StringUtil::copy(buf, "rex ", 4);
   
