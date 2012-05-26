@@ -25,9 +25,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
-#include <iomanip>
 #include <map>
-#include <sstream>
 #include <string>
 
 #include "jit.h"
@@ -97,26 +95,9 @@ static std::string GetFileName(const std::string &path) {
 	return path;
 }
 
-static std::string InstrToString(const jit::AmxInstruction &instr) {
-	std::stringstream stream;
-
-	if (instr.getName() != 0) {
-		stream << instr.getName();
-	} else {
-		stream << std::setw(8) << std::setfill('0') << std::hex << instr.getOpcode();
-	}
-
-	const std::vector<cell> &opers = instr.getOperands();
-	for (std::vector<cell>::const_iterator it = opers.begin(); it != opers.end(); ++it) {
-		stream << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
-	}
-
-	return stream.str();
-}
-
 static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
 	logprintf("JIT failed to compile instruction at %08x:", instr.getAddress());
-	logprintf("  %s", InstrToString(instr).c_str());
+	logprintf("  %s", instr.asString().c_str());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
