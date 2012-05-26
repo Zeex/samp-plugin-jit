@@ -132,6 +132,9 @@ public:
 
 	const char *getName() const;
 
+	// Convert to a string: <name> <operands> ...
+	std::string asString() const;
+
 private:
 	cell address_;
 	AmxOpcode opcode_;

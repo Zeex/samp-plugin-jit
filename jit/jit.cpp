@@ -24,8 +24,10 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <iomanip>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include <amx/amx.h>
@@ -91,6 +93,19 @@ const char *AmxInstruction::getName() const {
 	return 0;
 }
 
+std::string AmxInstruction::asString() const {
+	std::stringstream stream;
+	if (getName() != 0) {
+		stream << getName();
+	} else {
+		stream << std::setw(8) << std::setfill('0') << std::hex << opcode_;
+	}
+	for (std::vector<cell>::const_iterator it = operands_.begin(); it != operands_.end(); ++it) {
+		stream << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
+	}
+	return stream.str();
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AmxVm implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,9 +128,6 @@ cell AmxVm::getNativeAddress(int index) const {
 }
 
 int AmxVm::getPublicIndex(cell address) const {
-	if (address == getHeader()->cip) {
-		return AMX_EXEC_MAIN;
-	}
 	for (int i = 0; i < getNumPublics(); i++) {
 		if (getPublics()[i].address == address) {
 			return i;
@@ -134,9 +146,6 @@ int AmxVm::getNativeIndex(cell address) const {
 }
 
 const char *AmxVm::getPublicName(int index) const {
-	if (index == AMX_EXEC_MAIN) {
-		return "main";
-	}
 	if (index < 0 || index >= getNumPublics()) {
 		return 0;
 	}
@@ -342,6 +351,31 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 
 	while (disas.decode(instr, &error)) {
 		cell cip = instr.getAddress();
+
+		Logger *logger = as->getLogger();
+		if (logger != 0) {
+			// In the beginning of each public function we print a commnet
+			// that includes the function name and its address.
+			if (instr.getOpcode() == OP_PROC) {
+				const char *name = 0;
+				if (cip == vm_.getHeader()->cip) {
+					name = "main";
+				} else {
+					int index = vm_.getPublicIndex(cip);
+					if (index >= 0) {
+						name = vm_.getPublicName(index);
+					}
+				}
+				if (name != 0) {
+					logger->logFormat("\n\n\n; %s@%08x\n", name, cip);
+				} else {
+					logger->logFormat("\n\n\n; @%08x\n", cip);
+				}
+			} else {
+				// Print AMX address of the current instruction.
+				logger->logFormat("%\t; @%08x %s\n", cip, instr.asString().c_str());
+			}
+		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
 			// This place is referenced by a JCC/JUMP/CALL/CASETBL instruction,
@@ -619,18 +653,12 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
 			as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), instr.getOperand());
 			break;
-		case OP_PROC: {
+		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
-			Logger *logger = as->getLogger();
-			if (logger != 0) {
-				// Separate functions with three empty lines.
-				logger->logString("\n\n\n");
-			}
 			as->push(ebp);
 			as->mov(ebp, esp);
 			as->sub(dword_ptr(esp), ebx);
 			break;
-		}
 		case OP_RET:
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
