@@ -647,13 +647,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// but the address on the stack is an absolute address.
 			as.call(L(as, instr.getOperand() - reinterpret_cast<cell>(vm_.getCode())));
 			break;
-		case OP_CALL_PRI:
-			// Same as CALL, the address to jump to is in PRI.
-			as.push(esp);
-			as.push(eax);
-			as.push(reinterpret_cast<int>(this));
-			as.call(reinterpret_cast<void*>(Jitter::doCall));
-			break;
 		case OP_JUMP_PRI:
 			// CIP = PRI (indirect jump)
 			as.push(esp);
@@ -1379,31 +1372,6 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
 	}
 
 	doHalt(jitter, AMX_ERR_INVINSTR);
-}
-
-cell JIT_STDCALL Jitter::doCall(Jitter *jitter, cell address, void *stack) {
-	CodeMap::const_iterator it = jitter->codeMap_.find(address);
-
-	typedef cell (JIT_CDECL *DoCallHelper)(void *func, void *stack);
-	static DoCallHelper doCallHelper = 0;
-
-	if (it != jitter->codeMap_.end()) {
-		void *func = it->second + reinterpret_cast<char*>(jitter->code_);
-
-		if (doCallHelper == 0) {
-			X86Assembler as;
-			as.mov(eax, dword_ptr(esp, 4));
-			as.mov(esp, dword_ptr(esp, 8));
-			as.call(eax);
-			as.ret();
-			doCallHelper = (DoCallHelper)as.make();
-		}
-
-		return doCallHelper(func, stack);
-	}
-
-	doHalt(jitter, AMX_ERR_INVINSTR);
-	return 0; // make compiler happy
 }
 
 cell JIT_STDCALL Jitter::doSysreq(Jitter *jitter, int index, cell *params) {
