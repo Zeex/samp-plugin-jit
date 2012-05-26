@@ -327,13 +327,21 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	X86Assembler as;
 	L_halt_ = as.newLabel();
 
+	std::set<cell> jumpRefs;
+	getJumpRefs(jumpRefs);
+
 	bool error = false;
 	AmxInstruction instr;
 
 	while (disas.decode(instr, &error)) {
 		cell cip = instr.getAddress();
 
-		as.bind(L(as, cip));
+		if (jumpRefs.find(cip) != jumpRefs.end()) {
+			// This place is referenced by a JCC/JUMP/CALL/CASETBL instruction,
+			// so put a label here.
+			as.bind(L(as, cip));
+		}
+
 		codeMap_.insert(std::make_pair(cip, as.getCodeSize()));
 
 		switch (instr.getOpcode()) {
@@ -1300,6 +1308,39 @@ int Jitter::exec(int index, cell *retval) {
 	vm_.getAmx()->paramcount = 0;
 
 	return call(address, retval);
+}
+
+void Jitter::getJumpRefs(std::set<cell> &refs) const {
+	AmxDisassembler disas(vm_);
+	AmxInstruction instr;
+
+	while (disas.decode(instr)) {
+		AmxOpcode opcode = instr.getOpcode();
+		switch (opcode) {
+			case OP_JUMP:
+			case OP_JZER:
+			case OP_JNZ:
+			case OP_JEQ:
+			case OP_JNEQ:
+			case OP_JLESS:
+			case OP_JLEQ:
+			case OP_JGRTR:
+			case OP_JGEQ:
+			case OP_JSLESS:
+			case OP_JSLEQ:
+			case OP_JSGRTR:
+			case OP_JSGEQ:
+			case OP_CALL:
+				refs.insert(instr.getOperand() - reinterpret_cast<int>(vm_.getCode()));
+				break;
+			case OP_CASETBL:
+				int n = instr.getNumOperands();
+				for (int i = 1; i < n; i += 2) {
+					refs.insert(instr.getOperand(i) - reinterpret_cast<int>(vm_.getCode()));
+				}
+				break;
+		}
+	}
 }
 
 Label &Jitter::L(X86Assembler &as, cell address) {

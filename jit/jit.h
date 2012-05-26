@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -287,6 +288,8 @@ private:
 	LabelMap labelMap_;
 
 private:
+	void getJumpRefs(std::set<cell> &refs) const;
+
 	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler &as, cell address, const std::string &name);
 
