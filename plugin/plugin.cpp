@@ -28,6 +28,8 @@
 #include <map>
 #include <string>
 
+#include "amxname.h"
+#include "configreader.h"
 #include "jit.h"
 #include "jump-x86.h"
 #include "plugin.h"
@@ -110,9 +112,15 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	#define SAMP_SERVER_BINARY "samp03svr"
 #endif
 
+static void *AMXAPI amx_Align(void *v) { return v; }
+
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 	pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
+
+	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align16] = (void*)amx_Align;
+	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (void*)amx_Align;
+	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align64] = (void*)amx_Align;
 
 	void *ptr = JumpX86::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
 	if (ptr != 0) {
@@ -154,14 +162,10 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	AsmJit::FileLogger logger;
 	as.setLogger(&logger);
 
-	const char *var = getenv("JIT_PRINT_ASSEMBLY");
-	if (var != 0) {
-		std::FILE *stream;
-		if (atoi(var) == 1) {
-			logger.setStream(stdout);
-		} else {
-			logger.setStream(stderr);
-		}
+	if (ConfigReader("server.cfg").GetOption("jit_dump_asm", false)) {
+		std::string amxPath = GetAmxName(amx);
+		std::string asmPath = amxPath + ".asm";
+		logger.setStream(std::fopen(asmPath.c_str(), "w"));
 	} else {
 		as.setLogger(0);
 	}
@@ -169,6 +173,9 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	if (!jitter->compile(CompileError)) {
 		delete jitter;
 	} else {
+		if (logger.getStream() != 0) {
+			std::fclose(logger.getStream());
+		}
 		jitter->setAssembler(0);
 		::amx2jitter.insert(std::make_pair(amx, jitter));
 	}
