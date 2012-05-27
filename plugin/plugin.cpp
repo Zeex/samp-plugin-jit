@@ -154,7 +154,10 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	jit::Jitter *jitter = new jit::Jitter(amx, ::opcodeTable);
+	jit::Jitter *jitter = new jit::Jitter(amx);
+	#if defined __GNUC__ && defined LINUX
+		jitter->setOpcodeTable(::opcodeTable);
+	#endif
 
 	AsmJit::X86Assembler as;
 	jitter->setAssembler(&as);
