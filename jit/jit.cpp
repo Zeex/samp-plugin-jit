@@ -1356,7 +1356,15 @@ int Jitter::exec(int index, cell *retval) {
 	return call(address, retval);
 }
 
-int Jitter::sysreq(cell address, cell *params, cell *retval) {
+int Jitter::sysreqC(cell index, cell *params, cell *retval) {
+	cell address = vm_.getNativeAddress(index);
+	if (address == 0) {
+		return AMX_ERR_NOTFOUND;
+	}
+	return sysreqD(address, params, retval);
+}
+
+int Jitter::sysreqD(cell address, cell *params, cell *retval) {
 	if (sysreqHelper_ == 0) {
 		X86Assembler as;
 
