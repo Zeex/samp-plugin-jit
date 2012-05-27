@@ -202,7 +202,8 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 
 	cell opcode = *reinterpret_cast<cell*>(vm_.getCode() + ip_);
 	if (opcodeTable_ != 0) {
-		// Lookup this opcode in opcode table.
+		// Lookup this opcode in the opcode relocation table.
+		bool found = false;
 		for (int i = 0; i < NUM_AMX_OPCODES; i++) {
 			if (opcodeTable_[i] == opcode) {
 				opcode = i;
@@ -294,9 +295,9 @@ Jitter::Intrinsic Jitter::intrinsics_[] = {
 	{"floatlog",    &Jitter::native_floatlog}
 };
 
-Jitter::Jitter(AMX *amx, cell *opcodeTable)
+Jitter::Jitter(AMX *amx)
 	: vm_(amx)
-	, opcodeTable_(opcodeTable)
+	, opcodeTable_(0)
 	, assembler_(0)
 	, code_(0)
 	, codeSize_(0)
@@ -376,8 +377,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end() || instr.getOpcode() == OP_PROC) {
-			// This place is referenced by a JCC/JUMP/CALL/CASETBL instruction,
-			// so put a label here.
 			as->bind(L(as, cip));
 		}
 
@@ -1388,11 +1387,14 @@ int Jitter::sysreqD(cell address, cell *params, cell *retval) {
 	return AMX_ERR_NONE;
 }
 
-void Jitter::getJumpRefs(std::set<cell> &refs) const {
+bool Jitter::getJumpRefs(std::set<cell> &refs) const {
 	AmxDisassembler disas(vm_);
-	AmxInstruction instr;
+	disas.setOpcodeTable(opcodeTable_);
 
-	while (disas.decode(instr)) {
+	AmxInstruction instr;
+	bool error = false;
+
+	while (disas.decode(instr, &error)) {
 		AmxOpcode opcode = instr.getOpcode();
 		switch (opcode) {
 			case OP_JUMP:
@@ -1419,6 +1421,8 @@ void Jitter::getJumpRefs(std::set<cell> &refs) const {
 				break;
 		}
 	}
+
+	return !error;
 }
 
 Label &Jitter::L(X86Assembler *as, cell address) {

@@ -245,7 +245,7 @@ public:
 	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
 
 public:
-	Jitter(AMX *amx, cell *opcodeTable = 0);
+	Jitter(AMX *amx);
 	~Jitter();
 
 	inline void *getCode() const {
@@ -257,6 +257,13 @@ public:
 
 	void *getInstrPtr(cell amx_ip, void *code_ptr) const;
 	int   getInstrOffset(cell amx_ip) const;
+
+	inline void setOpcodeTable(cell *opcodeTable) {
+		opcodeTable_ = opcodeTable;
+	}
+	inline cell *getOpcodeTable() const {
+		return opcodeTable_;
+	}
 
 	inline void setAssembler(AsmJit::X86Assembler *assembler) {
 		assembler_ = assembler;
@@ -277,7 +284,7 @@ private:
 	Jitter &operator=(const Jitter &);
 
 private:
-	void getJumpRefs(std::set<cell> &refs) const;
+	bool getJumpRefs(std::set<cell> &refs) const;
 
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
