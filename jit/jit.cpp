@@ -359,24 +359,19 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// In the beginning of each public function we print a commnet
 			// that includes the function name and its address.
 			if (instr.getOpcode() == OP_PROC) {
-				const char *name = 0;
-				if (cip == vm_.getHeader()->cip) {
-					name = "main";
+				const char *name = vm_.getPublicName(vm_.getPublicIndex(cip));
+				if (name != 0) {
+					logger->logFormat("\n\n\n; public %s\n", name, cip);
 				} else {
-					int index = vm_.getPublicIndex(cip);
-					if (index >= 0) {
-						name = vm_.getPublicName(index);
+					if (cip == vm_.getHeader()->cip) {
+						logger->logFormat("\n\n\n; main\n");
+					} else {
+						logger->logFormat("\n\n\n; proc_%x\n", cip);
 					}
 				}
-				if (name != 0) {
-					logger->logFormat("\n\n\n; %s@%08x\n", name, cip);
-				} else {
-					logger->logFormat("\n\n\n; @%08x\n", cip);
-				}
-			} else {
-				// Print AMX address of the current instruction.
-				logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 			}
+			// Print AMX address of the current instruction.
+			logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
