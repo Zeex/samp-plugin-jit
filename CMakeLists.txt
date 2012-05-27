@@ -42,7 +42,9 @@ set(PLUGIN_SOURCES
 	"plugin/options.cpp"
 	"plugin/options.h"
 	"plugin/plugin.cpp"
+	"plugin/plugin.def"
 	"plugin/plugin.rc"
+	"plugin/version.h"
 )
 
 source_group("jit" REGULAR_EXPRESSION "jit/[^/\\]+\\.(cpp|h)")
