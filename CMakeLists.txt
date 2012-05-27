@@ -39,6 +39,8 @@ set(PLUGIN_SOURCES
 	"plugin/configreader.h"
 	"plugin/jump-x86.cpp"
 	"plugin/jump-x86.h"
+	"plugin/options.cpp"
+	"plugin/options.h"
 	"plugin/plugin.cpp"
 	"plugin/plugin.rc"
 )
