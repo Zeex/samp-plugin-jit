@@ -47,10 +47,10 @@ set(PLUGIN_SOURCES
 	"plugin/version.h"
 )
 
-source_group("jit" REGULAR_EXPRESSION "jit/[^/\\]+\\.(cpp|h)")
-source_group("plugin" REGULAR_EXPRESSION "plugin/[^/\\]+\\.(cpp|h|rc)")
-source_group("plugin\\SDK" REGULAR_EXPRESSION "plugin/SDK/[^/\\]+\\.(cpp|h)")
-source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "plugin/SDK/amx/[^/\\]+\\.(cpp|h)")
+source_group("jit" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/jit/[^/\\]+\\..*")
+source_group("plugin" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/[^/\\]+\\..*")
+source_group("plugin\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/[^/\\]+\\..*")
+source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/amx/[^/\\]+\\..*")
 
 find_package(Git)
 if(GIT_FOUND)
