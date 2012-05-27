@@ -303,6 +303,7 @@ Jitter::Jitter(AMX *amx, cell *opcodeTable)
 	, haltEsp_(0)
 	, haltEbp_(0)
 	, callHelper_(0)
+	, sysreqHelper_(0)
 {
 }
 
@@ -310,6 +311,7 @@ Jitter::~Jitter() {
 	MemoryManager *mem = MemoryManager::getGlobal();
 	mem->free(code_);
 	mem->free((void*)callHelper_);
+	mem->free((void*)sysreqHelper_);
 }
 
 void *Jitter::getInstrPtr(cell amx_ip, void *code_ptr) const {
@@ -1352,6 +1354,31 @@ int Jitter::exec(int index, cell *retval) {
 	vm_.getAmx()->paramcount = 0;
 
 	return call(address, retval);
+}
+
+int Jitter::sysreq(cell address, cell *params, cell *retval) {
+	if (sysreqHelper_ == 0) {
+		X86Assembler as;
+
+		as.mov(eax, dword_ptr(esp, 4)); // address
+		as.mov(ecx, dword_ptr(esp, 8)); // params
+		endJitCode(&as);
+			as.push(ecx);
+			as.push(reinterpret_cast<int>(vm_.getAmx()));
+			as.call(eax);
+			as.add(esp, 8);
+		beginJitCode(&as);
+		as.ret();
+
+		sysreqHelper_ = (SysreqHelper)as.make();
+	}
+
+	cell retval_ = sysreqHelper_(address, params);
+	if (retval != 0) {
+		*retval = retval_;
+	}
+
+	return AMX_ERR_NONE;
 }
 
 void Jitter::getJumpRefs(std::set<cell> &refs) const {
