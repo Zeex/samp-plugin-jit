@@ -27,9 +27,13 @@
 #include <exception>
 #include <iterator>
 #include <list>
-#include <memory>
+#include <map>
+#ifdef _WIN32
+	#include <memory>
+#else
+	#include <tr1/memory>
+#endif
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include <amx/amx.h>
 #include <amx/amxaux.h>
@@ -76,7 +80,7 @@ public:
 	}
 
 private:
-	std::shared_ptr<AMX> amxPtr_;
+	std::tr1::shared_ptr<AMX> amxPtr_;
 	std::string name_;
 	std::time_t last_write_;
 };
@@ -96,8 +100,11 @@ void AmxFile::FreeAmx(AMX *amx) {
 	delete amx;
 }
 
-static std::unordered_map<std::string, AmxFile> scripts;
-static std::unordered_map<AMX*, std::string> cachedNames;
+typedef std::map<std::string, AmxFile> StringToAmxFileMap;
+static StringToAmxFileMap scripts;
+
+typedef std::map<AMX*, std::string> AmxToStringMap;
+static AmxToStringMap cachedNames;
 
 template<typename OutputIterator>
 static void GetFilesInDirectory(const std::string &dir,
@@ -132,28 +139,31 @@ static void GetFilesInDirectory(const std::string &dir,
 std::string GetAmxName(AMX_HEADER *amxhdr) {
 	std::string result;
 
-	std::list<std::string> files;
+	typedef std::list<std::string> StringList;
+
+	StringList files;
 	GetFilesInDirectory("gamemodes", "*.amx", std::back_inserter(files));
 	GetFilesInDirectory("filterscripts", "*.amx", std::back_inserter(files));
 
-	std::for_each(files.begin(), files.end(), [](const std::string &file) {
-		auto script_it = scripts.find(file);
+	for (StringList::const_iterator it = files.begin(); it != files.end(); ++it) {
+		const std::string &file = *it;
+		StringToAmxFileMap::iterator script_it = scripts.find(file);
 		if (script_it == scripts.end() ||
 				script_it->second.GetLastWriteTime() < GetMtime(file)) {
 			if (script_it != scripts.end()) {
 				scripts.erase(script_it);
 			}
-			AmxFile script_it(file);
-			if (script_it.IsLoaded()) {
-				scripts.insert(std::make_pair(file, script_it));
+			AmxFile script(file);
+			if (script.IsLoaded()) {
+				scripts.insert(std::make_pair(file, script));
 			}
 		}
-	});
+	}
 
-	for (auto iterator = scripts.begin(); iterator != scripts.end(); ++iterator) {
-		void *amxhdr2 = iterator->second.GetAmx()->base;
+	for (StringToAmxFileMap::const_iterator it = scripts.begin(); it != scripts.end(); ++it) {
+		void *amxhdr2 = it->second.GetAmx()->base;
 		if (std::memcmp(amxhdr, amxhdr2, sizeof(AMX_HEADER)) == 0) {
-			result = iterator->first;
+			result = it->first;
 			break;
 		}
 	}
@@ -164,7 +174,7 @@ std::string GetAmxName(AMX_HEADER *amxhdr) {
 std::string GetAmxName(AMX *amx) {
 	std::string result;
 
-	auto it = cachedNames.find(amx);
+	AmxToStringMap::iterator it = cachedNames.find(amx);
 	if (it != cachedNames.end()) {
 		result = it->second;
 	} else {
