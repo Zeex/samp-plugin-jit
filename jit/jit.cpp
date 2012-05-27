@@ -374,7 +374,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 		}
 
-		if (jumpRefs.find(cip) != jumpRefs.end()) {
+		if (jumpRefs.find(cip) != jumpRefs.end() || instr.getOpcode() == OP_PROC) {
 			// This place is referenced by a JCC/JUMP/CALL/CASETBL instruction,
 			// so put a label here.
 			as->bind(L(as, cip));
