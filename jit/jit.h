@@ -284,7 +284,8 @@ private:
 
 	static void JIT_STDCALL doJump(Jitter *jitter, cell address, void *stack);
 	static cell JIT_STDCALL doCall(Jitter *jitter, cell address, void *stack);
-	static cell JIT_STDCALL doSysreq(Jitter *jitter, int index, cell *params);
+	static cell JIT_STDCALL doSysreqC(Jitter *jitter, cell index, cell *params);
+	static cell JIT_STDCALL doSysreqD(Jitter *jitter, cell address, cell *params);
 	static void JIT_STDCALL doHalt(Jitter *jitter, int errorCode);
 
 private:
