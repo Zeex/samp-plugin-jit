@@ -269,7 +269,8 @@ public:
 
 	int call(cell address, cell *retval);
 	int exec(cell index, cell *retval);
-	int sysreq(cell address, cell *params, cell *retval);
+	int sysreqC(cell index, cell *params, cell *retval);
+	int sysreqD(cell address, cell *params, cell *retval);
 
 private:
 	Jitter(const Jitter &);
