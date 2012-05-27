@@ -268,35 +268,12 @@ public:
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 	int call(cell address, cell *retval);
-	int exec(int index, cell *retval);
+	int exec(cell index, cell *retval);
+	int sysreq(cell address, cell *params, cell *retval);
 
 private:
 	Jitter(const Jitter &);
 	Jitter &operator=(const Jitter &);
-
-private:
-	AmxVm vm_;
-	cell *opcodeTable_;
-
-	AsmJit::X86Assembler *assembler_;
-
-	void *code_;
-	std::size_t codeSize_;
-
-	void *ebp_;
-	void *esp_;
-
-	void *haltEbp_;
-	void *haltEsp_;
-
-	typedef cell (JIT_CDECL *CallHelper)(void *start);
-	CallHelper callHelper_;
-
-	typedef std::map<cell, int> CodeMap;
-	CodeMap codeMap_;
-
-	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
-	LabelMap labelMap_;
 
 private:
 	void getJumpRefs(std::set<cell> &refs) const;
@@ -334,6 +311,33 @@ private:
 
 	void beginJitCode(AsmJit::X86Assembler *as);
 	void endJitCode(AsmJit::X86Assembler *as);
+
+private:
+	AmxVm vm_;
+	cell *opcodeTable_;
+
+	AsmJit::X86Assembler *assembler_;
+
+	void *code_;
+	std::size_t codeSize_;
+
+	void *ebp_;
+	void *esp_;
+
+	void *haltEbp_;
+	void *haltEsp_;
+
+	typedef cell (JIT_CDECL *CallHelper)(void *start);
+	CallHelper callHelper_;
+
+	typedef cell (JIT_CDECL *SysreqHelper)(cell address, cell *params);
+	SysreqHelper sysreqHelper_;
+
+	typedef std::map<cell, int> CodeMap;
+	CodeMap codeMap_;
+
+	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
+	LabelMap labelMap_;
 };
 
 } // namespace jit
