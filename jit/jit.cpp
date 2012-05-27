@@ -348,13 +348,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	std::set<cell> jumpRefs;
 	getJumpRefs(jumpRefs);
 
+	Logger *logger = as->getLogger();
+
 	bool error = false;
 	AmxInstruction instr;
 
 	while (disas.decode(instr, &error)) {
 		cell cip = instr.getAddress();
 
-		Logger *logger = as->getLogger();
 		if (logger != 0) {
 			// In the beginning of each public function we print a commnet
 			// that includes the function name and its address.
@@ -1252,6 +1253,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	// Halt implementation follows the code. To issue a HALT one does the following:
 	// 1. puts the error code in to ECX
 	// 2. and jumps to this point
+	if (logger != 0) {
+		logger->logString("\n\n\n; Halt execution\n");
+	}
 	as->bind(L_halt_);
 		as->push(ecx);
 		as->push(reinterpret_cast<int>(this));
