@@ -1117,7 +1117,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->push(edi);
 				as->push(eax);
 				as->push(reinterpret_cast<int>(this));
-				as->call(reinterpret_cast<void*>(Jitter::doSysreq));
+				as->call(reinterpret_cast<void*>(Jitter::doSysreqC));
 			beginJitCode(as);
 			break;
 		}
@@ -1437,6 +1437,7 @@ Label &Jitter::L(X86Assembler *as, cell address, const std::string &name) {
 	}
 }
 
+// static
 void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
 	CodeMap::const_iterator it = jitter->codeMap_.find(address);
 
@@ -1460,15 +1461,27 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
 	doHalt(jitter, AMX_ERR_INVINSTR);
 }
 
-cell JIT_STDCALL Jitter::doSysreq(Jitter *jitter, int index, cell *params) {
-	AMX_NATIVE native = reinterpret_cast<AMX_NATIVE>(jitter->vm_.getNativeAddress(index));
-	if (native != 0) {
-		return native(jitter->vm_.getAmx(), params);
+// static
+cell JIT_STDCALL Jitter::doSysreqC(Jitter *jitter, cell index, cell *params) {
+	cell retval;
+	int error = jitter->sysreqC(index, params, &retval);
+	if (error != AMX_ERR_NONE) {
+		doHalt(jitter, error);
 	}
-	doHalt(jitter, AMX_ERR_NOTFOUND);
-	return 0; // make compiler happy
+	return retval;
 }
 
+// static
+cell JIT_STDCALL Jitter::doSysreqD(Jitter *jitter, cell address, cell *params) {
+	cell retval;
+	int error = jitter->sysreqD(address, params, &retval);
+	if (error != AMX_ERR_NONE) {
+		doHalt(jitter, error);
+	}
+	return retval;
+}
+
+// static
 void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
 	typedef void (JIT_CDECL *DoHaltHelper)(int errorCode);
 	static DoHaltHelper doHaltHelper = 0;
