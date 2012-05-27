@@ -375,7 +375,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				}
 			} else {
 				// Print AMX address of the current instruction.
-				logger->logFormat("%\t; @%08x %s\n", cip, instr.asString().c_str());
+				logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 			}
 		}
 
