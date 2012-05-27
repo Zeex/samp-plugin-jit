@@ -33,12 +33,15 @@ set(PLUGIN_SOURCES
 	"plugin/SDK/plugin.h"
 	"plugin/SDK/plugincommon.h"
 	"plugin/SDK/amxplugin.cpp"
-	"plugin/amxname.cpp"
-	"plugin/amxname.h"
+	"plugin/amxpathfinder.cpp"
+	"plugin/amxpathfinder.h"
 	"plugin/configreader.cpp"
 	"plugin/configreader.h"
+	"plugin/fileutils.cpp"
+	"plugin/fileutils.h"
 	"plugin/jump-x86.cpp"
 	"plugin/jump-x86.h"
+	"plugin/os.h"
 	"plugin/options.cpp"
 	"plugin/options.h"
 	"plugin/plugin.cpp"
@@ -46,6 +49,12 @@ set(PLUGIN_SOURCES
 	"plugin/plugin.rc"
 	"plugin/version.h"
 )
+
+if(WIN32)
+	list(APPEND PLUGIN_SOURCES "plugin/os-win32.cpp")
+elseif(UNIX)
+	list(APPEND PLUGIN_SOURCES "plugin/os-unix.cpp")
+endif()
 
 source_group("jit" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/jit/[^/\\]+\\..*")
 source_group("plugin" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/[^/\\]+\\..*")
