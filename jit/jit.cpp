@@ -1366,12 +1366,15 @@ int Jitter::sysreqD(cell address, cell *params, cell *retval) {
 
 		as.mov(eax, dword_ptr(esp, 4)); // address
 		as.mov(ecx, dword_ptr(esp, 8)); // params
+		as.push(ebx);
+		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
 		endJitCode(&as);
 			as.push(ecx);
 			as.push(reinterpret_cast<int>(vm_.getAmx()));
 			as.call(eax);
 			as.add(esp, 8);
 		beginJitCode(&as);
+		as.pop(ebx);
 		as.ret();
 
 		sysreqHelper_ = (SysreqHelper)as.make();
