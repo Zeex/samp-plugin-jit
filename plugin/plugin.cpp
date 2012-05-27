@@ -29,9 +29,9 @@
 #include <string>
 
 #include "amxname.h"
-#include "configreader.h"
 #include "jit.h"
 #include "jump-x86.h"
+#include "options.h"
 #include "plugin.h"
 #include "version.h"
 
@@ -162,8 +162,9 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	AsmJit::FileLogger logger;
 	as.setLogger(&logger);
 
-	if (ConfigReader("server.cfg").GetOption("jit_dump_asm", false)) {
-		std::string amxPath = GetAmxName(amx);
+	std::string amxPath = GetAmxName(amx);
+
+	if (Options::Get().dump_asm()) {
 		std::string asmPath = amxPath + ".asm";
 		logger.setStream(std::fopen(asmPath.c_str(), "w"));
 	} else {
@@ -177,6 +178,16 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 			std::fclose(logger.getStream());
 		}
 		jitter->setAssembler(0);
+
+		if (Options::Get().dump_bin()) {
+			std::string binPath = amxPath + ".bin";
+			std::FILE *bin = std::fopen(binPath.c_str(), "w");
+			if (bin != 0) {
+				std::fwrite(jitter->getCode(), jitter->getCodeSize(), 1, bin);
+				std::fclose(bin);
+			}
+		}
+
 		::amx2jitter.insert(std::make_pair(amx, jitter));
 	}
 
