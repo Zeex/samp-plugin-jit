@@ -592,7 +592,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->push(esp);
 				as->push(eax);
 				as->push(reinterpret_cast<int>(this));
-				as->call(reinterpret_cast<void*>(Jitter::doJump));
+				as->call(reinterpret_cast<int>(Jitter::doJump));
 				// Didn't jump because of invalid address - exit with error.
 				halt(as, AMX_ERR_INVINSTR);
 				break;
@@ -691,7 +691,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->push(esp);
 			as->push(eax);
 			as->push(reinterpret_cast<int>(this));
-			as->call(reinterpret_cast<void*>(Jitter::doJump));
+			as->call(reinterpret_cast<int>(Jitter::doJump));
 			break;
 		case OP_JUMP:
 		case OP_JZER:
@@ -1113,7 +1113,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->push(edi);
 				as->push(eax);
 				as->push(reinterpret_cast<int>(this));
-				as->call(reinterpret_cast<void*>(Jitter::doSysreqC));
+				as->call(reinterpret_cast<int>(Jitter::doSysreqC));
 			beginJitCode(as);
 			break;
 		}
@@ -1159,7 +1159,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					break;
 			}
 			as->push(reinterpret_cast<int>(this));
-			as->call(reinterpret_cast<void*>(Jitter::doSysreqD));
+			as->call(reinterpret_cast<int>(Jitter::doSysreqD));
 			break;
 
 		special_native:
@@ -1259,7 +1259,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	as->bind(L_halt_);
 		as->push(ecx);
 		as->push(reinterpret_cast<int>(this));
-		as->call(reinterpret_cast<void*>(Jitter::doHalt));
+		as->call(reinterpret_cast<int>(Jitter::doHalt));
 
 	if (error) {
 		goto compile_error;

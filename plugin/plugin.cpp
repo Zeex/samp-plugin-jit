@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 
-#include "amxname.h"
+#include "amxpathfinder.h"
 #include "jit.h"
 #include "jump-x86.h"
 #include "options.h"
@@ -162,7 +162,12 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	AsmJit::FileLogger logger;
 	as.setLogger(&logger);
 
-	std::string amxPath = GetAmxName(amx);
+	AMXPathFinder finder;
+	finder.AddSearchPath("./");
+	finder.AddSearchPath("gamemodes/");
+	finder.AddSearchPath("filterscripts/");
+
+	std::string amxPath = finder.FindAMX(amx);
 
 	if (Options::Get().dump_asm()) {
 		std::string asmPath = amxPath + ".asm";
