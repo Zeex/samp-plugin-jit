@@ -29,20 +29,13 @@
 #include <string>
 
 #include "amxpathfinder.h"
+#include "fileutils.h"
 #include "jit.h"
 #include "jump-x86.h"
 #include "options.h"
+#include "os.h"
 #include "plugin.h"
 #include "version.h"
-
-#ifdef WIN32
-	#include <Windows.h>
-#else
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE 1 // for dladdr()
-	#endif
-	#include <dlfcn.h>
-#endif
 
 extern void *pAMXFunctions;
 
@@ -55,7 +48,8 @@ static AmxToJitterMap amx2jitter;
 static JumpX86 amx_Exec_hook;
 static cell *opcodeTable = 0;
 
-static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
+static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
+{
 	#if defined __GNUC__ && !defined WIN32
 		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
 			assert(::opcodeTable != 0);
@@ -73,36 +67,14 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
 	}
 }
 
-static std::string GetModuleNameBySymbol(void *symbol) {
-	char module[FILENAME_MAX] = "";
-	if (symbol != 0) {
-		#ifdef WIN32
-			MEMORY_BASIC_INFORMATION mbi;
-			VirtualQuery(symbol, &mbi, sizeof(mbi));
-			GetModuleFileName((HMODULE)mbi.AllocationBase, module, FILENAME_MAX);
-		#else
-			Dl_info info;
-			dladdr(symbol, &info);
-			strcpy(module, info.dli_fname);
-		#endif
-	}
-	return std::string(module);
-}
-
-static std::string GetFileName(const std::string &path) {
-	std::string::size_type lastSep = path.find_last_of("/\\");
-	if (lastSep != std::string::npos) {
-		return path.substr(lastSep + 1);
-	}
-	return path;
-}
-
-static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr) {
+static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr)
+{
 	logprintf("JIT failed to compile instruction at %08x:", instr.getAddress());
 	logprintf("  %s", instr.asString().c_str());
 }
 
-PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
+PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
+{
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
@@ -114,7 +86,8 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 
 static void *AMXAPI amx_Align(void *v) { return v; }
 
-PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
+PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
+{
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 	pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 
@@ -124,7 +97,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
 	void *ptr = JumpX86::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
 	if (ptr != 0) {
-		std::string module = GetFileName(GetModuleNameBySymbol(ptr));
+		std::string module = fileutils::GetFileName(os::GetModulePath(ptr));
 		if (!module.empty() && module != SAMP_SERVER_BINARY) {
 			logprintf("  JIT must be loaded before %s", module.c_str());
 			return false;
@@ -147,13 +120,15 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	return true;
 }
 
-PLUGIN_EXPORT void PLUGIN_CALL Unload() {
+PLUGIN_EXPORT void PLUGIN_CALL Unload()
+{
 	for (AmxToJitterMap::iterator it = amx2jitter.begin(); it != amx2jitter.end(); ++it) {
 		delete it->second;
 	}
 }
 
-PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
+{
 	jit::Jitter *jitter = new jit::Jitter(amx);
 	#if defined __GNUC__ && defined LINUX
 		jitter->setOpcodeTable(::opcodeTable);
@@ -202,7 +177,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	return AMX_ERR_NONE;
 }
 
-PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
+PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx)
+{
 	AmxToJitterMap::iterator it = amx2jitter.find(amx);
 	if (it != amx2jitter.end()) {
 		delete it->second;
