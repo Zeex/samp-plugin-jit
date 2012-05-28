@@ -148,6 +148,10 @@ class AmxVm {
 public:
 	AmxVm(AMX *amx) : amx_(amx) {}
 
+	AMX *operator->() {
+		return amx_;
+	}
+
 	inline AMX *getAmx() const {
 		return amx_;
 	}

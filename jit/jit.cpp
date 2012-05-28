@@ -554,7 +554,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getHeader()->dat)));
 				break;
 			case 2:
-				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
 				break;
 			case 4:
 				as->mov(eax, esp);
@@ -578,7 +578,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// 6=CIP
 			switch (instr.getOperand()) {
 			case 2:
-				as->mov(dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), eax);
+				as->mov(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), eax);
 				break;
 			case 4:
 				as->lea(esp, dword_ptr(ebx, eax));
@@ -646,8 +646,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
-			as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)));
-			as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_.getAmx()->hea)), instr.getOperand());
+			as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
+			as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), instr.getOperand());
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
@@ -1285,18 +1285,18 @@ compile_error:
 }
 
 int Jitter::call(cell address, cell *retval) {
-	if (vm_.getAmx()->hea >= vm_.getAmx()->stk) {
+	if (vm_->hea >= vm_->stk) {
 		return AMX_ERR_STACKERR;
 	}
-	if (vm_.getAmx()->hea < vm_.getAmx()->hlw) {
+	if (vm_->hea < vm_->hlw) {
 		return AMX_ERR_HEAPLOW;
 	}
-	if (vm_.getAmx()->stk > vm_.getAmx()->stp) {
+	if (vm_->stk > vm_->stp) {
 		return AMX_ERR_STACKLOW;
 	}
 
 	// Make sure all natives are registered.
-	if ((vm_.getAmx()->flags & AMX_FLAG_NTVREG) == 0) {
+	if ((vm_->flags & AMX_FLAG_NTVREG) == 0) {
 		return AMX_ERR_NOTFOUND;
 	}
 
@@ -1318,7 +1318,7 @@ int Jitter::call(cell address, cell *retval) {
 		callHelper_ = (CallHelper)as.make();
 	}
 
-	vm_.getAmx()->error = AMX_ERR_NONE;
+	vm_->error = AMX_ERR_NONE;
 
 	void *start = getInstrPtr(address, getCode());
 	assert(start != 0);
@@ -1334,7 +1334,7 @@ int Jitter::call(cell address, cell *retval) {
 	haltEbp_ = haltEbp;
 	haltEsp_ = haltEsp;
 
-	return vm_.getAmx()->error;
+	return vm_->error;
 }
 
 int Jitter::exec(int index, cell *retval) {
@@ -1344,8 +1344,8 @@ int Jitter::exec(int index, cell *retval) {
 	}
 
 	// Push size of arguments and reset parameter count.
-	vm_.pushStack(vm_.getAmx()->paramcount * sizeof(cell));
-	vm_.getAmx()->paramcount = 0;
+	vm_.pushStack(vm_->paramcount * sizeof(cell));
+	vm_->paramcount = 0;
 
 	return call(address, retval);
 }
@@ -1491,7 +1491,7 @@ void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
 	if (doHaltHelper == 0) {
 		X86Assembler as;
 		as.mov(eax, dword_ptr(esp, 4));
-		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&jitter->vm_.getAmx()->error)), eax);
+		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&jitter->vm_->error)), eax);
 		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&jitter->haltEsp_)));
 		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&jitter->haltEbp_)));
 		as.ret();
@@ -1585,20 +1585,20 @@ void Jitter::halt(X86Assembler *as, cell errorCode) {
 void Jitter::endJitCode(X86Assembler *as) {
 	as->mov(edx, ebp);
 	as->sub(edx, ebx);
-	as->mov(dword_ptr_abs(&vm_.getAmx()->frm), edx);
+	as->mov(dword_ptr_abs(&vm_->frm), edx);
 	as->mov(ebp, dword_ptr_abs(&ebp_));
 	as->mov(edx, esp);
 	as->sub(edx, ebx);
-	as->mov(dword_ptr_abs(&vm_.getAmx()->stk), edx);
+	as->mov(dword_ptr_abs(&vm_->stk), edx);
 	as->mov(esp, dword_ptr_abs(&esp_));
 }
 
 void Jitter::beginJitCode(X86Assembler *as) {
 	as->mov(dword_ptr_abs(&ebp_), ebp);
-	as->mov(edx, dword_ptr_abs(&vm_.getAmx()->frm));
+	as->mov(edx, dword_ptr_abs(&vm_->frm));
 	as->lea(ebp, dword_ptr(ebx, edx));
 	as->mov(dword_ptr_abs(&esp_), esp);
-	as->mov(edx, dword_ptr_abs(&vm_.getAmx()->stk));
+	as->mov(edx, dword_ptr_abs(&vm_->stk));
 	as->lea(esp, dword_ptr(ebx, edx));
 }
 
