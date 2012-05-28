@@ -375,7 +375,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 		}
 
-		if (jumpRefs.find(cip) != jumpRefs.end() || instr.getOpcode() == OP_PROC) {
+		if (jumpRefs.find(cip) != jumpRefs.end()) {
 			as->bind(L(as, cip));
 		}
 
@@ -1410,11 +1410,15 @@ bool Jitter::getJumpRefs(std::set<cell> &refs) const {
 			case OP_CALL:
 				refs.insert(instr.getOperand() - reinterpret_cast<int>(vm_.getCode()));
 				break;
-			case OP_CASETBL:
+			case OP_CASETBL: {
 				int n = instr.getNumOperands();
 				for (int i = 1; i < n; i += 2) {
 					refs.insert(instr.getOperand(i) - reinterpret_cast<int>(vm_.getCode()));
 				}
+				break;
+			}
+			case OP_PROC:
+				refs.insert(instr.getAddress());
 				break;
 		}
 	}
