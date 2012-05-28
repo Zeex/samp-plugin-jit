@@ -358,8 +358,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		cell cip = instr.getAddress();
 
 		if (logger != 0) {
-			// In the beginning of each public function we print a commnet
-			// that includes the function name and its address.
+			// Print function name if the function is public.
 			if (instr.getOpcode() == OP_PROC) {
 				const char *name = vm_.getPublicName(vm_.getPublicIndex(cip));
 				if (name != 0) {
@@ -372,7 +371,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					}
 				}
 			}
-			// Print AMX address of the current instruction.
+			// Print current instruction and its AMX address.
 			logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 		}
 
