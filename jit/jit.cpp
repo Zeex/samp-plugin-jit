@@ -358,20 +358,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		cell cip = instr.getAddress();
 
 		if (logger != 0) {
-			// Print function name if the function is public.
 			if (instr.getOpcode() == OP_PROC) {
-				const char *name = vm_.getPublicName(vm_.getPublicIndex(cip));
-				if (name != 0) {
-					logger->logFormat("\n\n\n; public %s\n", name, cip);
-				} else {
-					if (cip == vm_.getHeader()->cip) {
-						logger->logFormat("\n\n\n; main\n");
-					} else {
-						logger->logFormat("\n\n\n; proc_%x\n", cip);
-					}
-				}
+				logger->logString("\n\n\n");
 			}
-			// Print current instruction and its AMX address.
 			logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
 		}
 
