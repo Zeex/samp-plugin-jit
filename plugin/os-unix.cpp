@@ -23,16 +23,11 @@
 
 #include "os.h"
 
-#include <csignal>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
 
-#include <cxxabi.h>
 #include <dirent.h>
-#include <execinfo.h>
 #include <fnmatch.h>
 
 #ifndef _GNU_SOURCE
@@ -50,78 +45,6 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 		strncpy(&name[0], info.dli_fname, maxLength);
 	}	
 	return std::string(&name[0]);
-}
-
-// The crash handler - it is set via SetCrashHandler()
-static void (*crashHandler)() = 0;
-
-// Previous SIGSEGV handler
-static void (*previousSIGSEGVHandler)(int);
-
-static void HandleSIGSEGV(int sig)
-{
-	if (::crashHandler != 0) {
-		::crashHandler();
-	}
-	signal(sig, SIG_DFL);
-}
-
-void os::SetCrashHandler(void (*handler)()) {
-	::crashHandler = handler;
-	if (handler != 0) {
-		::previousSIGSEGVHandler = signal(SIGSEGV, HandleSIGSEGV);
-	} else {
-		signal(SIGSEGV, ::previousSIGSEGVHandler);
-	}
-}
-
-// The interrupt (Ctrl+C) handler - set via SetInterruptHandler
-static void (*interruptHandler)();
-
-// Previous SIGINT handler
-static void (*previousSIGINTHandler)(int);
-
-// Out SIGINT handler
-static void HandleSIGINT(int sig) {
-	if (::interruptHandler != 0) {
-		::interruptHandler();
-	}
-	signal(sig, ::previousSIGINTHandler);
-	raise(sig);
-}
-
-void os::SetInterruptHandler(void (*handler)()) {
-	::interruptHandler = handler;
-	::previousSIGINTHandler = signal(SIGINT, HandleSIGINT);
-}
-
-std::string os::GetSymbolName(void *address, std::size_t maxLength) {
-	char **symbols = backtrace_symbols(&address, 1);
-	std::string symbol(symbols[0]);
-	std::free(symbols);
-
-	std::string::size_type lp = symbol.find('(');
-	std::string::size_type rp = symbol.find_first_of(")+-");
-
-	std::string name;
-	if (lp != std::string::npos && rp != std::string::npos) {
-		name.assign(symbol.begin() + lp + 1, symbol.begin() + rp);
-	}
-
-	if (!name.empty()) {
-		char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
-		if (demangled_name != 0) {
-			name.assign(demangled_name);
-
-			// Cut argment type information e.g. (int*, char*, void*).
-			std::string::size_type end = name.find('(');
-			if (end != std::string::npos) {
-				name.erase(end);
-			}
-		}
-	}	
-
-	return name;
 }
 
 void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
