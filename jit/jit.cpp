@@ -1145,19 +1145,17 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->push(esp);
 			switch (instr.getOpcode()) {
 				case OP_SYSREQ_C: {
-					cell address = vm_.getNativeAddress(instr.getOperand());
-					if (address == 0) {
-						goto invalid_native;
-					}
-					as->push(address);
+					as->push(instr.getOperand());
+					as->push(reinterpret_cast<int>(this));
+					as->call(reinterpret_cast<int>(Jitter::doSysreqC));
 					break;
 				}
 				case OP_SYSREQ_D:
 					as->push(instr.getOperand());
+					as->push(reinterpret_cast<int>(this));
+					as->call(reinterpret_cast<int>(Jitter::doSysreqD));
 					break;
 			}
-			as->push(reinterpret_cast<int>(this));
-			as->call(reinterpret_cast<int>(Jitter::doSysreqD));
 			break;
 
 		special_native:
