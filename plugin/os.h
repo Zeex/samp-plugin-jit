@@ -35,22 +35,10 @@ namespace os {
 extern const char kDirSepChar;
 
 const std::size_t kMaxModulePathLength = FILENAME_MAX;
-const std::size_t kMaxSymbolNameLength = 256;
 
 // GetModuleNameByAddress finds which module (executable/DLL) a given 
 // address belongs to.
 std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
-
-// SetCrashHandle sets a global exception handler on Windows and SIGSEGV
-// signal handler on Linux.
-void SetCrashHandler(void (*handler)());
-
-// SetInterruptHandler sets a global Ctrl+C event handler on Windows
-// and SIGINT signal handler on Linux.
-void SetInterruptHandler(void (*handler)());
-
-// GetSymbolName finds symbol name by address.
-std::string GetSymbolName(void *address, std::size_t maxLength = kMaxSymbolNameLength);
 
 // ListDirectoryFiles enumerates directory files whose name matches a specific pattern
 // and calls a given function (callback) for each of them until the callback returns false
