@@ -1122,13 +1122,13 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			}
 
 			// Replace calls to various natives with their optimized equivalents.
-			for (int i = 0; i < sizeof(intrinsics_) / sizeof(Intrinsic); i++) {
+			for (int i = 0; i < sizeof(intrinsics_) / sizeof(*intrinsics_); i++) {
 				if (intrinsics_[i].name == nativeName) {
 					(*this.*(intrinsics_[i].impl))(as);
 					goto special_native;
 				}
-				goto ordinary_native;
 			}
+			goto ordinary_native;
 
 		ordinary_native:
 			as->push(esp);
