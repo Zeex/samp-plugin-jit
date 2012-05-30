@@ -278,8 +278,11 @@ public:
 
 	bool compile(CompileErrorHandler errorHandler = 0);
 
+	void halt(int error);
+
 	int call(cell address, cell *retval);
 	int exec(cell index, cell *retval);
+
 	int sysreqC(cell index, cell *params, cell *retval);
 	int sysreqD(cell address, cell *params, cell *retval);
 
@@ -297,7 +300,7 @@ private:
 	static cell JIT_STDCALL doCall(Jitter *jitter, cell address, void *stack);
 	static cell JIT_STDCALL doSysreqC(Jitter *jitter, cell index, cell *params);
 	static cell JIT_STDCALL doSysreqD(Jitter *jitter, cell address, cell *params);
-	static void JIT_STDCALL doHalt(Jitter *jitter, int errorCode);
+	static void JIT_STDCALL doHalt(Jitter *jitter, int error);
 
 private:
 	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler *as);
@@ -339,6 +342,9 @@ private:
 
 	void *haltEbp_;
 	void *haltEsp_;
+
+	typedef void (JIT_CDECL *HaltHelper)(int error);
+	HaltHelper haltHelper_;
 
 	typedef cell (JIT_CDECL *CallHelper)(void *start);
 	CallHelper callHelper_;

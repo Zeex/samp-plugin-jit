@@ -311,6 +311,7 @@ Jitter::Jitter(AMX *amx)
 	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
+	, haltHelper_(0)
 	, callHelper_(0)
 	, sysreqHelper_(0)
 {
@@ -1279,6 +1280,22 @@ compile_error:
 	return false;
 }
 
+void Jitter::halt(int error) {
+	if (unlikely(haltHelper_ == 0)) {
+		X86Assembler as;
+
+		as.mov(eax, dword_ptr(esp, 4));
+		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&vm_->error)), eax);
+		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
+		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
+		as.ret();
+
+		haltHelper_ = (HaltHelper)as.make();
+	}
+
+	haltHelper_(error);
+}
+
 int Jitter::call(cell address, cell *retval) {
 	if (vm_->hea >= vm_->stk) {
 		return AMX_ERR_STACKERR;
@@ -1483,21 +1500,8 @@ cell JIT_STDCALL Jitter::doSysreqD(Jitter *jitter, cell address, cell *params) {
 }
 
 // static
-void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
-	typedef void (JIT_CDECL *DoHaltHelper)(int errorCode);
-	static DoHaltHelper doHaltHelper = 0;
-
-	if (unlikely(doHaltHelper == 0)) {
-		X86Assembler as;
-		as.mov(eax, dword_ptr(esp, 4));
-		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&jitter->vm_->error)), eax);
-		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&jitter->haltEsp_)));
-		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&jitter->haltEbp_)));
-		as.ret();
-		doHaltHelper = (DoHaltHelper)as.make();
-	}
-
-	doHaltHelper(errorCode);
+void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int error) {
+	jitter->halt(error);
 }
 
 void Jitter::native_float(X86Assembler *as) {
