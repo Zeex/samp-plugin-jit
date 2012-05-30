@@ -590,8 +590,6 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->push(eax);
 				as->push(reinterpret_cast<int>(this));
 				as->call(reinterpret_cast<int>(Jitter::doJump));
-				// Didn't jump because of invalid address - exit with error.
-				halt(as, AMX_ERR_INVINSTR);
 				break;
 			default:
 				goto compile_error;
@@ -1087,7 +1085,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
-			halt(as, instr.getOperand());
+			as->mov(ecx, instr.getOperand());
+			as->jmp(L_halt_);
 			break;
 		case OP_BOUNDS: { // value
 			// Abort execution if PRI > value or if PRI < 0.
@@ -1099,7 +1098,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->jl(L_halt);
 				as->jmp(L_good);
 			as->bind(L_halt);
-				halt(as, AMX_ERR_BOUNDS);
+				as->mov(ecx, AMX_ERR_BOUNDS);
+				as->jmp(L_halt_);
 			as->bind(L_good);
 			break;
 		}
@@ -1580,11 +1580,6 @@ void Jitter::native_floatlog(X86Assembler *as) {
 	as->fstp(dword_ptr(esp));
 	as->mov(eax, dword_ptr(esp));
 	as->add(esp, 4);
-}
-
-void Jitter::halt(X86Assembler *as, cell errorCode) {
-	as->mov(ecx, errorCode);
-	as->jmp(L_halt_);
 }
 
 void Jitter::endJitCode(X86Assembler *as) {

@@ -302,9 +302,6 @@ private:
 	void native_floatlog(AsmJit::X86Assembler *as);
 
 private:
-	AsmJit::Label L_halt_;
-	void halt(AsmJit::X86Assembler *as, cell errorCode);
-
 	void beginJitCode(AsmJit::X86Assembler *as);
 	void endJitCode(AsmJit::X86Assembler *as);
 
@@ -322,6 +319,8 @@ private:
 
 	void *haltEbp_;
 	void *haltEsp_;
+
+	AsmJit::Label L_halt_;
 
 	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stack);
 	JumpHelper jumpHelper_;
