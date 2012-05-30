@@ -692,7 +692,7 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
       *buf++ = ' ';
       *buf++ = (d < 0) ? '-' : '+';
       *buf++ = ' ';
-      buf = StringUtil::utoa(buf, d < 0 ? -d : d);
+      buf = StringUtil::utoa(buf, d < 0 ? -d : d, 16);
     }
 
     *buf++ = ']';
