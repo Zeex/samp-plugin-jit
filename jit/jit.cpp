@@ -1464,12 +1464,13 @@ Label &Jitter::L(X86Assembler *as, cell address) {
 }
 
 Label &Jitter::L(X86Assembler *as, cell address, const std::string &name) {
-	LabelMap::iterator iterator = labelMap_.find(TaggedAddress(address, name));
+	std::pair<cell, std::string> key = std::make_pair(address, name);
+	LabelMap::iterator iterator = labelMap_.find(key);
 	if (iterator != labelMap_.end()) {
 		return iterator->second;
 	} else {
 		std::pair<LabelMap::iterator, bool> where =
-				labelMap_.insert(std::make_pair(TaggedAddress(address, name), as->newLabel()));
+				labelMap_.insert(std::make_pair(key, as->newLabel()));
 		return where.first->second;
 	}
 }

@@ -32,6 +32,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <amx/amx.h>
 #include <AsmJit/AsmJit.h>
@@ -223,27 +224,6 @@ private:
 	cell ip_;
 };
 
-class TaggedAddress {
-public:
-	TaggedAddress(cell address, std::string tag = std::string())
-		: address_(address), tag_(tag)
-	{}
-
-	inline cell getAddress() const { return address_; }
-	inline std::string getTag() const { return tag_; }
-
-private:
-	cell address_;
-	std::string tag_;
-};
-
-static inline bool operator<(const TaggedAddress &left, const TaggedAddress &right) {
-	if (left.getAddress() != right.getAddress()) {
-		return left.getAddress() < right.getAddress();
-	}
-	return left.getTag() < right.getTag();
-}
-
 class Jitter {
 public:
 	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
@@ -358,7 +338,7 @@ private:
 	typedef std::map<cell, int> CodeMap;
 	CodeMap codeMap_;
 
-	typedef std::map<TaggedAddress, AsmJit::Label> LabelMap;
+	typedef std::map<std::pair<cell, std::string>, AsmJit::Label> LabelMap;
 	LabelMap labelMap_;
 };
 
