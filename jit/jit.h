@@ -259,8 +259,8 @@ public:
 		return codeSize_;
 	}
 
-	void *getInstrPtr(cell amx_ip, void *code_ptr) const;
-	int   getInstrOffset(cell amx_ip) const;
+	void *getInstrPtr(cell address) const;
+	int   getInstrOffset(cell address) const;
 
 	inline void setOpcodeTable(cell *opcodeTable) {
 		opcodeTable_ = opcodeTable;

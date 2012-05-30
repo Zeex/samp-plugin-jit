@@ -325,16 +325,16 @@ Jitter::~Jitter() {
 	mem->free((void*)sysreqHelper_);
 }
 
-void *Jitter::getInstrPtr(cell amx_ip, void *code_ptr) const {
-	int native_ip = getInstrOffset(amx_ip);
+void *Jitter::getInstrPtr(cell address) const {
+	int native_ip = getInstrOffset(address);
 	if (native_ip >= 0) {
-		return reinterpret_cast<void*>(reinterpret_cast<int>(code_ptr) + native_ip);
+		return reinterpret_cast<void*>(reinterpret_cast<int>(code_) + native_ip);
 	}
 	return 0;
 }
 
-int Jitter::getInstrOffset(cell amx_ip) const {
-	CodeMap::const_iterator iterator = codeMap_.find(amx_ip);
+int Jitter::getInstrOffset(cell address) const {
+	CodeMap::const_iterator iterator = codeMap_.find(address);
 	if (iterator != codeMap_.end()) {
 		return iterator->second;
 	}
@@ -1285,7 +1285,7 @@ void Jitter::jump(cell address, void *stack) {
 	CodeMap::const_iterator it = codeMap_.find(address);
 
 	if (it != codeMap_.end()) {
-		void *dest = getInstrPtr(address, code_);
+		void *dest = getInstrPtr(address);
 
 		if (unlikely(jumpHelper_ == 0)) {
 			X86Assembler as;
@@ -1351,7 +1351,7 @@ int Jitter::call(cell address, cell *retval) {
 
 	vm_->error = AMX_ERR_NONE;
 
-	void *start = getInstrPtr(address, getCode());
+	void *start = getInstrPtr(address);
 	assert(start != 0);
 
 	void *haltEbp = haltEbp_;
