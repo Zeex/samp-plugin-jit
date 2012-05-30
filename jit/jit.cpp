@@ -35,6 +35,14 @@
 
 #include "jit.h"
 
+#if defined __GNUC__
+	#define likely(x)       __builtin_expect((x),1)
+	#define unlikely(x)     __builtin_expect((x),0)
+#else
+	#define likely(x)         (x)
+	#define unlikely(x)       (x)
+#endif
+
 namespace jit {
 
 using namespace AsmJit;
@@ -1287,7 +1295,7 @@ int Jitter::call(cell address, cell *retval) {
 		return AMX_ERR_NOTFOUND;
 	}
 
-	if (callHelper_ == 0) {
+	if (unlikely(callHelper_ == 0)) {
 		X86Assembler as;
 		
 		as.mov(eax, dword_ptr(esp, 4));
@@ -1346,7 +1354,7 @@ int Jitter::sysreqC(cell index, cell *params, cell *retval) {
 }
 
 int Jitter::sysreqD(cell address, cell *params, cell *retval) {
-	if (sysreqHelper_ == 0) {
+	if (unlikely(sysreqHelper_ == 0)) {
 		X86Assembler as;
 
 		as.mov(eax, dword_ptr(esp, 4)); // address
@@ -1366,7 +1374,7 @@ int Jitter::sysreqD(cell address, cell *params, cell *retval) {
 	}
 
 	cell retval_ = sysreqHelper_(address, params);
-	if (retval != 0) {
+	if (likely(retval != 0)) {
 		*retval = retval_;
 	}
 
@@ -1440,7 +1448,7 @@ void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
 	if (it != jitter->codeMap_.end()) {
 		void *dest = it->second + reinterpret_cast<char*>(jitter->code_);
 
-		if (doJumpHelper == 0) {
+		if (unlikely(doJumpHelper == 0)) {
 			X86Assembler as;
 			as.mov(eax, dword_ptr(esp, 4));
 			as.mov(esp, dword_ptr(esp, 8));
@@ -1479,7 +1487,7 @@ void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int errorCode) {
 	typedef void (JIT_CDECL *DoHaltHelper)(int errorCode);
 	static DoHaltHelper doHaltHelper = 0;
 
-	if (doHaltHelper == 0) {
+	if (unlikely(doHaltHelper == 0)) {
 		X86Assembler as;
 		as.mov(eax, dword_ptr(esp, 4));
 		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&jitter->vm_->error)), eax);
