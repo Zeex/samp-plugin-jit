@@ -279,6 +279,7 @@ public:
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 	void halt(int error);
+	void jump(cell address, void *stack);
 
 	int call(cell address, cell *retval);
 	int exec(cell index, cell *retval);
@@ -342,6 +343,9 @@ private:
 
 	void *haltEbp_;
 	void *haltEsp_;
+
+	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stack);
+	JumpHelper jumpHelper_;
 
 	typedef void (JIT_CDECL *HaltHelper)(int error);
 	HaltHelper haltHelper_;

@@ -311,6 +311,7 @@ Jitter::Jitter(AMX *amx)
 	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
+	, jumpHelper_(0)
 	, haltHelper_(0)
 	, callHelper_(0)
 	, sysreqHelper_(0)
@@ -1280,6 +1281,24 @@ compile_error:
 	return false;
 }
 
+void Jitter::jump(cell address, void *stack) {
+	CodeMap::const_iterator it = codeMap_.find(address);
+
+	if (it != codeMap_.end()) {
+		void *dest = getInstrPtr(address, code_);
+
+		if (unlikely(jumpHelper_ == 0)) {
+			X86Assembler as;
+			as.mov(eax, dword_ptr(esp, 4));
+			as.mov(esp, dword_ptr(esp, 8));
+			as.jmp(eax);
+			jumpHelper_ = (JumpHelper)as.make();
+		}
+
+		jumpHelper_(dest, stack);
+	}
+}
+
 void Jitter::halt(int error) {
 	if (unlikely(haltHelper_ == 0)) {
 		X86Assembler as;
@@ -1457,25 +1476,7 @@ Label &Jitter::L(X86Assembler *as, cell address, const std::string &name) {
 
 // static
 void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
-	CodeMap::const_iterator it = jitter->codeMap_.find(address);
-
-	typedef void (JIT_CDECL *DoJumpHelper)(void *dest, void *stack);
-	static DoJumpHelper doJumpHelper = 0;
-
-	if (it != jitter->codeMap_.end()) {
-		void *dest = it->second + reinterpret_cast<char*>(jitter->code_);
-
-		if (unlikely(doJumpHelper == 0)) {
-			X86Assembler as;
-			as.mov(eax, dword_ptr(esp, 4));
-			as.mov(esp, dword_ptr(esp, 8));
-			as.jmp(eax);
-			doJumpHelper = (DoJumpHelper)as.make();
-		}
-
-		doJumpHelper(dest, stack);
-	}
-
+	jitter->jump(address, stack);
 	doHalt(jitter, AMX_ERR_INVINSTR);
 }
 
