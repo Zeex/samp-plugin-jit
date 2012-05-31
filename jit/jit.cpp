@@ -1335,7 +1335,11 @@ int Jitter::call(cell address, cell *retval) {
 		X86Assembler as;
 		
 		as.mov(eax, dword_ptr(esp, 4));
-		as.pushad();
+		as.push(esi);
+		as.push(edi);
+		as.push(ebx);
+		as.push(ecx);
+		as.push(edx);
 		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
 		beginJitCode(&as);
 			as.lea(ecx, dword_ptr(esp, - 4));
@@ -1343,7 +1347,11 @@ int Jitter::call(cell address, cell *retval) {
 			as.mov(dword_ptr_abs(&haltEbp_), ebp);
 			as.call(eax);
 		endJitCode(&as);
-		as.popad();
+		as.pop(edx);
+		as.pop(ecx);
+		as.pop(ebx);
+		as.pop(edi);
+		as.pop(esi);
 		as.ret();
 
 		callHelper_ = (CallHelper)as.make();
