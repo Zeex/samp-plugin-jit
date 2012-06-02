@@ -258,14 +258,14 @@ public:
 
 	bool compile(CompileErrorHandler errorHandler = 0);
 
-	void halt(int error);
-	void jump(cell address, void *stack);
-
 	int call(cell address, cell *retval);
 	int exec(cell index, cell *retval);
 
-	int sysreqC(cell index, cell *params, cell *retval);
-	int sysreqD(cell address, cell *params, cell *retval);
+	void halt(int error);
+	void jump(cell address, void *stackPtr, void *stackBase);
+
+	void sysreqC(cell index, cell *params, void *stackPtr, void *stackBase);
+	void sysreqD(cell address, cell *params, void *stackPtr, void *stackBase);
 
 private:
 	Jitter(const Jitter &);
@@ -277,10 +277,11 @@ private:
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
-	static void JIT_STDCALL doJump(Jitter *jitter, cell address, void *stack);
-	static cell JIT_STDCALL doSysreqC(Jitter *jitter, cell index, cell *params);
-	static cell JIT_STDCALL doSysreqD(Jitter *jitter, cell address, cell *params);
-	static void JIT_STDCALL doHalt(Jitter *jitter, int error);
+	static void JIT_CDECL doJump(Jitter *jitter, cell address, void *stackPtr, void *stackBase);
+	static void JIT_CDECL doHalt(Jitter *jitter, int error);
+
+	static void JIT_CDECL doSysreqC(Jitter *jitter, cell index, cell *params, void *stackPtr, void *stackBase);
+	static void JIT_CDECL doSysreqD(Jitter *jitter, cell address, cell *params, void *stackPtr, void *stackBase);
 
 private:
 	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler *as);
@@ -322,16 +323,16 @@ private:
 
 	AsmJit::Label L_halt_;
 
-	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stack);
-	JumpHelper jumpHelper_;
-
 	typedef void (JIT_CDECL *HaltHelper)(int error);
 	HaltHelper haltHelper_;
+
+	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stackPtr, void *stackBase);
+	JumpHelper jumpHelper_;
 
 	typedef cell (JIT_CDECL *CallHelper)(void *start);
 	CallHelper callHelper_;
 
-	typedef cell (JIT_CDECL *SysreqHelper)(cell address, cell *params);
+	typedef cell (JIT_CDECL *SysreqHelper)(cell address, cell *params, void *stackPtr, void *stackBase);
 	SysreqHelper sysreqHelper_;
 
 	typedef std::map<cell, int> CodeMap;
