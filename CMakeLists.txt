@@ -61,16 +61,11 @@ source_group("plugin" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/[^/
 source_group("plugin\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/[^/\\]+\\..*")
 source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/amx/[^/\\]+\\..*")
 
-find_package(Git)
-if(GIT_FOUND)
-	# Get latest version tag from Git history
-	git_describe(description --match v[0-9]*.[0-9]**)
+git_describe(description --match v[0-9]*.[0-9]**)
+if(description)
 	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
 	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
-endif()
-
-if(version STREQUAL "")
-	# Read version from VERSION.txt (updated on each release)
+else()
 	message(STATUS "Failed to get version from Git, will read VERSION.txt")
 	file(READ "${jit_SOURCE_DIR}/VERSION.txt" version)
 	string(STRIP ${version} version)
