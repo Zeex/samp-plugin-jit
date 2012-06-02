@@ -311,8 +311,8 @@ Jitter::Jitter(AMX *amx)
 	, codeSize_(0)
 	, haltEsp_(0)
 	, haltEbp_(0)
-	, jumpHelper_(0)
 	, haltHelper_(0)
+	, jumpHelper_(0)
 	, callHelper_(0)
 	, sysreqHelper_(0)
 {
@@ -683,9 +683,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_JUMP_PRI:
 			// CIP = PRI (indirect jump)
-			as->push(esp);
-			as->push(eax);
-			as->push(reinterpret_cast<int>(this));
+			as->push(ebp);                         // stackBase
+			as->lea(edx, dword_ptr(esp, -12));
+			as->push(edx);                         // stackPtr
+			as->push(eax);                         // address
+			as->push(reinterpret_cast<int>(this)); // jitter
 			as->call(reinterpret_cast<int>(Jitter::doJump));
 			break;
 		case OP_JUMP:
@@ -1106,12 +1108,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_SYSREQ_PRI: {
 			// call system service, service number in PRI
 			as->mov(edi, esp);
-			endJitCode(as);
-				as->push(edi);
-				as->push(eax);
-				as->push(reinterpret_cast<int>(this));
-				as->call(reinterpret_cast<int>(Jitter::doSysreqC));
-			beginJitCode(as);
+			as->push(ebp);                         // stackBase
+			as->lea(edx, dword_ptr(esp, -16));
+			as->push(edx);                         // stackPtr
+			as->push(edi);                         // params
+			as->push(eax);                         // index
+			as->push(reinterpret_cast<int>(this)); // jitter
+			as->call(reinterpret_cast<int>(Jitter::doSysreqC));
+			as->add(esp, 20);
 			break;
 		}
 		case OP_SYSREQ_C:   // index
@@ -1141,18 +1145,29 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			goto ordinary_native;
 
 		ordinary_native:
-			as->push(esp);
 			switch (instr.getOpcode()) {
 				case OP_SYSREQ_C: {
-					as->push(instr.getOperand());
-					as->push(reinterpret_cast<int>(this));
+					as->mov(edi, esp);
+					as->push(ebp);                         // stackBase
+					as->lea(edx, dword_ptr(esp, -16));
+					as->push(edx);                         // stackPtr
+					as->push(edi);                         // params
+					as->push(instr.getOperand());          // index
+					as->push(reinterpret_cast<int>(this)); // jitter
 					as->call(reinterpret_cast<int>(Jitter::doSysreqC));
+					as->add(esp, 20);
 					break;
 				}
 				case OP_SYSREQ_D:
-					as->push(instr.getOperand());
-					as->push(reinterpret_cast<int>(this));
+					as->mov(edi, esp);
+					as->push(ebp);                         // stackBase
+					as->lea(edx, dword_ptr(esp, -16));
+					as->push(edx);                         // stackPtr
+					as->push(edi);                         // params
+					as->push(instr.getOperand());          // address
+					as->push(reinterpret_cast<int>(this)); // jitter
 					as->call(reinterpret_cast<int>(Jitter::doSysreqD));
+					as->add(esp, 20);
 					break;
 			}
 			break;
@@ -1281,24 +1296,6 @@ compile_error:
 	return false;
 }
 
-void Jitter::jump(cell address, void *stack) {
-	CodeMap::const_iterator it = codeMap_.find(address);
-
-	if (it != codeMap_.end()) {
-		void *dest = getInstrPtr(address);
-
-		if (unlikely(jumpHelper_ == 0)) {
-			X86Assembler as;
-			as.mov(eax, dword_ptr(esp, 4));
-			as.mov(esp, dword_ptr(esp, 8));
-			as.jmp(eax);
-			jumpHelper_ = (JumpHelper)as.make();
-		}
-
-		jumpHelper_(dest, stack);
-	}
-}
-
 void Jitter::halt(int error) {
 	if (unlikely(haltHelper_ == 0)) {
 		X86Assembler as;
@@ -1313,6 +1310,25 @@ void Jitter::halt(int error) {
 	}
 
 	haltHelper_(error);
+}
+
+void Jitter::jump(cell address, void *stackPtr, void *stackBase) {
+	CodeMap::const_iterator it = codeMap_.find(address);
+
+	if (it != codeMap_.end()) {
+		void *dest = getInstrPtr(address);
+
+		if (unlikely(jumpHelper_ == 0)) {
+			X86Assembler as;
+			as.mov(eax, dword_ptr(esp, 4));  // dest
+			as.mov(esp, dword_ptr(esp, 8));  // stackPtr
+			as.mov(ebp, dword_ptr(esp, 12)); // stackBase
+			as.jmp(eax);
+			jumpHelper_ = (JumpHelper)as.make();
+		}
+
+		jumpHelper_(dest, stackPtr, stackBase);
+	}
 }
 
 int Jitter::call(cell address, cell *retval) {
@@ -1340,11 +1356,11 @@ int Jitter::call(cell address, cell *retval) {
 		as.push(ebx);
 		as.push(ecx);
 		as.push(edx);
-		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
 		beginJitCode(&as);
 			as.lea(ecx, dword_ptr(esp, - 4));
 			as.mov(dword_ptr_abs(&haltEsp_), ecx);
 			as.mov(dword_ptr_abs(&haltEbp_), ebp);
+			as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
 			as.call(eax);
 		endJitCode(&as);
 		as.pop(edx);
@@ -1389,40 +1405,35 @@ int Jitter::exec(int index, cell *retval) {
 	return call(address, retval);
 }
 
-int Jitter::sysreqC(cell index, cell *params, cell *retval) {
+void Jitter::sysreqC(cell index, cell *params, void *stackPtr, void *stackBase) {
 	cell address = vm_.getNativeAddress(index);
 	if (address == 0) {
-		return AMX_ERR_NOTFOUND;
+		halt(AMX_ERR_NOTFOUND);
 	}
-	return sysreqD(address, params, retval);
+	sysreqD(address, params, stackPtr, stackBase);
 }
 
-int Jitter::sysreqD(cell address, cell *params, cell *retval) {
+void Jitter::sysreqD(cell address, cell *params, void *stackPtr, void *stackBase) {
 	if (unlikely(sysreqHelper_ == 0)) {
 		X86Assembler as;
 
-		as.mov(eax, dword_ptr(esp, 4)); // address
-		as.mov(ecx, dword_ptr(esp, 8)); // params
-		as.push(ebx);
-		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
+		as.mov(eax, dword_ptr(esp, 4));  // address
+		as.mov(ecx, dword_ptr(esp, 8));  // params
+		as.mov(esp, dword_ptr(esp, 12)); // stackPtr
+		as.mov(ebp, dword_ptr(esp, 16)); // stackBase
 		endJitCode(&as);
 			as.push(ecx);
 			as.push(reinterpret_cast<int>(vm_.getAmx()));
 			as.call(eax);
 			as.add(esp, 8);
 		beginJitCode(&as);
-		as.pop(ebx);
+		as.sub(esp, 4); // for doSysreqC/D return address
 		as.ret();
 
 		sysreqHelper_ = (SysreqHelper)as.make();
 	}
 
-	cell retval_ = sysreqHelper_(address, params);
-	if (likely(retval != 0)) {
-		*retval = retval_;
-	}
-
-	return AMX_ERR_NONE;
+	sysreqHelper_(address, params, stackPtr, stackBase);
 }
 
 bool Jitter::getJumpRefs(std::set<cell> &refs) const {
@@ -1484,34 +1495,24 @@ Label &Jitter::L(X86Assembler *as, cell address, const std::string &name) {
 }
 
 // static
-void JIT_STDCALL Jitter::doJump(Jitter *jitter, cell address, void *stack) {
-	jitter->jump(address, stack);
+void JIT_CDECL Jitter::doJump(Jitter *jitter, cell address, void *stackPtr, void *stackBase) {
+	jitter->jump(address, stackPtr, stackBase);
 	doHalt(jitter, AMX_ERR_INVINSTR);
 }
 
 // static
-cell JIT_STDCALL Jitter::doSysreqC(Jitter *jitter, cell index, cell *params) {
-	cell retval;
-	int error = jitter->sysreqC(index, params, &retval);
-	if (error != AMX_ERR_NONE) {
-		doHalt(jitter, error);
-	}
-	return retval;
-}
-
-// static
-cell JIT_STDCALL Jitter::doSysreqD(Jitter *jitter, cell address, cell *params) {
-	cell retval;
-	int error = jitter->sysreqD(address, params, &retval);
-	if (error != AMX_ERR_NONE) {
-		doHalt(jitter, error);
-	}
-	return retval;
-}
-
-// static
-void JIT_STDCALL Jitter::doHalt(Jitter *jitter, int error) {
+void JIT_CDECL Jitter::doHalt(Jitter *jitter, int error) {
 	jitter->halt(error);
+}
+
+// static
+void JIT_CDECL Jitter::doSysreqC(Jitter *jitter, cell index, cell *params, void *stackPtr, void *stackBase) {
+	jitter->sysreqC(index, params, stackPtr, stackBase);
+}
+
+// static
+void JIT_CDECL Jitter::doSysreqD(Jitter *jitter, cell address, cell *params, void *stackPtr, void *stackBase) {
+	jitter->sysreqD(address, params, stackPtr, stackBase);
 }
 
 void Jitter::native_float(X86Assembler *as) {
@@ -1591,23 +1592,23 @@ void Jitter::native_floatlog(X86Assembler *as) {
 }
 
 void Jitter::endJitCode(X86Assembler *as) {
-	as->mov(edx, ebp);
-	as->sub(edx, ebx);
+	// Do NOT use EBX here!!
+	as->lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(vm_.getData())));
 	as->mov(dword_ptr_abs(&vm_->frm), edx);
 	as->mov(ebp, dword_ptr_abs(&ebp_));
-	as->mov(edx, esp);
-	as->sub(edx, ebx);
+	as->lea(edx, dword_ptr(esp, -reinterpret_cast<int>(vm_.getData())));
 	as->mov(dword_ptr_abs(&vm_->stk), edx);
 	as->mov(esp, dword_ptr_abs(&esp_));
 }
 
 void Jitter::beginJitCode(X86Assembler *as) {
+	// Do NOT use EBX here!!
 	as->mov(dword_ptr_abs(&ebp_), ebp);
 	as->mov(edx, dword_ptr_abs(&vm_->frm));
-	as->lea(ebp, dword_ptr(ebx, edx));
+	as->lea(ebp, dword_ptr(edx, reinterpret_cast<int>(vm_.getData())));
 	as->mov(dword_ptr_abs(&esp_), esp);
 	as->mov(edx, dword_ptr_abs(&vm_->stk));
-	as->lea(esp, dword_ptr(ebx, edx));
+	as->lea(esp, dword_ptr(edx, reinterpret_cast<int>(vm_.getData())));
 }
 
 } // namespace jit
