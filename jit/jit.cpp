@@ -1264,11 +1264,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		}
 	}
 
-	// Halt implementation follows the code. To issue a HALT one does the following:
-	// 1. puts the error code in to ECX
-	// 2. and jumps to this point
 	if (logger != 0) {
-		logger->logString("\n\n\n; Halt execution\n");
+		logger->logString("\n\n\n");
 	}
 	as->bind(L_halt_);
 		as->push(ecx);
