@@ -780,8 +780,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// STK = STK + cell size, ALT = [STK]
 			as->pop(ecx);
 			break;
-		case OP_STACK: { // value
-			// ALT = STK, STK = STK + value
+		case OP_STACK: 
+		case OP_HEAP: {
 			bool needAlt = true;
 			{
 				AmxInstruction instr;
@@ -797,38 +797,31 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				}
 				disas.setIp(ip);
 			}
-			if (needAlt) {
-				as->mov(ecx, esp);
-				as->sub(ecx, ebx);
-			}
-			if (instr.getOperand() >= 0) {
-				as->add(esp, instr.getOperand());
-			} else {
-				as->sub(esp, -instr.getOperand());
-			}
-			break;
-		}
-		case OP_HEAP: { // value
-			// ALT = HEA, HEA = HEA + value
-			bool needAlt = true;
-			{
-				AmxInstruction instr;
-				cell ip = disas.getIp();
-				while (disas.decode(instr)) {
-					if (instr.getInputRegisters() & REG_ALT) {
-						break;
+			switch (instr.getOpcode()) {
+				case OP_STACK: // value
+					// ALT = STK, STK = STK + value
+					if (needAlt) {
+						as->mov(ecx, esp);
+						as->sub(ecx, ebx);
 					}
-					if (instr.getOutputRegisters() & REG_ALT) {
-						needAlt = false;
-						break;
+					if (instr.getOperand() >= 0) {
+						as->add(esp, instr.getOperand());
+					} else {
+						as->sub(esp, -instr.getOperand());
 					}
-				}
-				disas.setIp(ip);
+					break;
+				case OP_HEAP: // value
+					// ALT = HEA, HEA = HEA + value
+					if (needAlt) {
+						as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
+					}
+					if (instr.getOperand() >= 0) {
+						as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), instr.getOperand());
+					} else {
+						as->sub(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), -instr.getOperand());
+					}
+					break;
 			}
-			if (needAlt) {
-				as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
-			}
-			as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), instr.getOperand());
 			break;
 		}
 		case OP_PROC:
