@@ -262,10 +262,10 @@ public:
 	int exec(cell index, cell *retval);
 
 	void halt(int error);
-	void jump(cell address, void *stackPtr, void *stackBase);
+	void jump(cell address, void *stackBase, void *stackPtr);
 
-	void sysreqC(cell index, cell *params, void *stackPtr, void *stackBase);
-	void sysreqD(cell address, cell *params, void *stackPtr, void *stackBase);
+	void sysreqC(cell index, void *stackBase, void *stackPtr);
+	void sysreqD(cell address, void *stackBase, void *stackPtr);
 
 private:
 	Jitter(const Jitter &);
@@ -277,11 +277,11 @@ private:
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
-	static void JIT_CDECL doJump(Jitter *jitter, cell address, void *stackPtr, void *stackBase);
+	static void JIT_CDECL doJump(Jitter *jitter, cell address, void *stackBase, void *stackPtr);
 	static void JIT_CDECL doHalt(Jitter *jitter, int error);
 
-	static void JIT_CDECL doSysreqC(Jitter *jitter, cell index, cell *params, void *stackPtr, void *stackBase);
-	static void JIT_CDECL doSysreqD(Jitter *jitter, cell address, cell *params, void *stackPtr, void *stackBase);
+	static void JIT_CDECL doSysreqC(Jitter *jitter, cell index, void *stackBase, void *stackPtr);
+	static void JIT_CDECL doSysreqD(Jitter *jitter, cell address, void *stackBase, void *stackPtr);
 
 private:
 	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler *as);
@@ -326,13 +326,13 @@ private:
 	typedef void (JIT_CDECL *HaltHelper)(int error);
 	HaltHelper haltHelper_;
 
-	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stackPtr, void *stackBase);
+	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stackBase, void *stackPtr);
 	JumpHelper jumpHelper_;
 
 	typedef cell (JIT_CDECL *CallHelper)(void *start);
 	CallHelper callHelper_;
 
-	typedef cell (JIT_CDECL *SysreqHelper)(cell address, cell *params, void *stackPtr, void *stackBase);
+	typedef cell (JIT_CDECL *SysreqHelper)(cell address, void *stackBase, void *stackPtr);
 	SysreqHelper sysreqHelper_;
 
 	typedef std::map<cell, int> CodeMap;
