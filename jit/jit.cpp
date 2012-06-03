@@ -1422,6 +1422,7 @@ void Jitter::sysreqD(cell address, void *stackBase, void *stackPtr) {
 			as.add(esp, 8);
 		beginJitCode(&as);
 		as.sub(esp, 20);
+		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
 		as.ret();
 
 		sysreqHelper_ = (SysreqHelper)as.make();
