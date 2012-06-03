@@ -437,11 +437,19 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_CONST_PRI: // value
 			// PRI = value
-			as->mov(eax, instr.getOperand());
+			if (instr.getOperand() == 0) {
+				as->xor_(eax, eax);
+			} else {
+				as->mov(eax, instr.getOperand());
+			}
 			break;
 		case OP_CONST_ALT: // value
 			// ALT = value
-			as->mov(ecx, instr.getOperand());
+			if (instr.getOperand() == 0) {
+				as->xor_(ecx, ecx);
+			} else {
+				as->mov(ecx, instr.getOperand());
+			}
 			break;
 		case OP_ADDR_PRI: // offset
 			// PRI = FRM + offset
