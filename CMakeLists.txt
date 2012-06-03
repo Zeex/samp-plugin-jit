@@ -93,7 +93,7 @@ configure_file(
 	@ONLY
 )
 
-install(TARGETS jit LIBRARY DESTINATION ".")
+install(TARGETS ${PLUGIN_TARGET} LIBRARY DESTINATION ".")
 
 if(MSVC)
 	set(PDB_NAME "jit.pdb")
