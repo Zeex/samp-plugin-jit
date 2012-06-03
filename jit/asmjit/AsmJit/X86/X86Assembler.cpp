@@ -701,7 +701,7 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
   else if (op->isImm())
   {
     const Imm& i = reinterpret_cast<const Imm&>(*op);
-    return StringUtil::utoa(buf, (sysint_t)i.getValue(), 16U);
+    return StringUtil::itoa(buf, (sysint_t)i.getValue());
   }
   else if (op->isLabel())
   {
