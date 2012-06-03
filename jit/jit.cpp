@@ -51,42 +51,165 @@ using namespace AsmJit;
 // AmxInstruction implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const char *AmxInstruction::opcodeNames[] = {
-	"none",         "load.pri",     "load.alt",     "load.s.pri",
-	"load.s.alt",   "lref.pri",     "lref.alt",     "lref.s.pri",
-	"lref.s.alt",   "load.i",       "lodb.i",       "const.pri",
-	"const.alt",    "addr.pri",     "addr.alt",     "stor.pri",
-	"stor.alt",     "stor.s.pri",   "stor.s.alt",   "sref.pri",
-	"sref.alt",     "sref.s.pri",   "sref.s.alt",   "stor.i",
-	"strb.i",       "lidx",         "lidx.b",       "idxaddr",
-	"idxaddr.b",    "align.pri",    "align.alt",    "lctrl",
-	"sctrl",        "move.pri",     "move.alt",     "xchg",
-	"push.pri",     "push.alt",     "push.r",       "push.c",
-	"push",         "push.s",       "pop.pri",      "pop.alt",
-	"stack",        "heap",         "proc",         "ret",
-	"retn",         "call",         "call.pri",     "jump",
-	"jrel",         "jzer",         "jnz",          "jeq",
-	"jneq",         "jless",        "jleq",         "jgrtr",
-	"jgeq",         "jsless",       "jsleq",        "jsgrtr",
-	"jsgeq",        "shl",          "shr",          "sshr",
-	"shl.c.pri",    "shl.c.alt",    "shr.c.pri",    "shr.c.alt",
-	"smul",         "sdiv",         "sdiv.alt",     "umul",
-	"udiv",         "udiv.alt",     "add",          "sub",
-	"sub.alt",      "and",          "or",           "xor",
-	"not",          "neg",          "invert",       "add.c",
-	"smul.c",       "zero.pri",     "zero.alt",     "zero",
-	"zero.s",       "sign.pri",     "sign.alt",     "eq",
-	"neq",          "less",         "leq",          "grtr",
-	"geq",          "sless",        "sleq",         "sgrtr",
-	"sgeq",         "eq.c.pri",     "eq.c.alt",     "inc.pri",
-	"inc.alt",      "inc",          "inc.s",        "inc.i",
-	"dec.pri",      "dec.alt",      "dec",          "dec.s",
-	"dec.i",        "movs",         "cmps",         "fill",
-	"halt",         "bounds",       "sysreq.pri",   "sysreq.c",
-	"file",         "line",         "symbol",       "srange",
-	"jump.pri",     "switch",       "casetbl",      "swap.pri",
-	"swap.alt",     "push.adr",     "nop",          "sysreq.d",
-	"symtag",       "break"
+const AmxInstruction::StaticInfoTableEntry AmxInstruction::info[NUM_AMX_OPCODES] = {
+	{"none",           REG_NONE,             REG_NONE},
+	{"load.pri",       REG_NONE,             REG_PRI},
+	{"load.alt",       REG_NONE,             REG_ALT},
+	{"load.s.pri",     REG_FRM,              REG_PRI},
+	{"load.s.alt",     REG_FRM,              REG_ALT},
+	{"lref.pri",       REG_NONE,             REG_PRI},
+	{"lref.alt",       REG_NONE,             REG_ALT},
+	{"lref.s.pri",     REG_FRM,              REG_PRI},
+	{"lref.s.alt",     REG_FRM,              REG_ALT},
+	{"load.i",         REG_PRI,              REG_PRI},
+	{"lodb.i",         REG_PRI,              REG_PRI},
+	{"const.pri",      REG_NONE,             REG_PRI},
+	{"const.alt",      REG_NONE,             REG_ALT},
+	{"addr.pri",       REG_FRM,              REG_PRI},
+	{"addr.alt",       REG_FRM,              REG_ALT},
+	{"stor.pri",       REG_PRI,              REG_NONE},
+	{"stor.alt",       REG_ALT,              REG_NONE},
+	{"stor.s.pri",     REG_FRM | REG_PRI,    REG_NONE},
+	{"stor.s.alt",     REG_FRM | REG_ALT,    REG_NONE},
+	{"sref.pri",       REG_PRI,              REG_NONE},
+	{"sref.alt",       REG_ALT,              REG_NONE},
+	{"sref.s.pri",     REG_FRM | REG_PRI,    REG_NONE},
+	{"sref.s.alt",     REG_FRM | REG_ALT,    REG_NONE},
+	{"stor.i",         REG_PRI | REG_ALT,    REG_NONE},
+	{"strb.i",         REG_PRI | REG_ALT,    REG_NONE},
+	{"lidx",           REG_PRI | REG_ALT,    REG_PRI},
+	{"lidx.b",         REG_PRI | REG_ALT,    REG_PRI},
+	{"idxaddr",        REG_PRI | REG_ALT,    REG_PRI},
+	{"idxaddr.b",      REG_PRI | REG_ALT,    REG_PRI},
+	{"align.pri",      REG_NONE, REG_PRI},
+	{"align.alt",      REG_NONE, REG_ALT},
+	{"lctrl",          REG_PRI | REG_COD |
+	                   REG_DAT | REG_HEA |
+	                   REG_STP | REG_STK |
+	                   REG_FRM | REG_CIP,    REG_PRI},
+	{"sctrl",          REG_PRI,              REG_HEA | REG_STK |
+	                                         REG_FRM | REG_CIP},
+	{"move.pri",       REG_ALT,              REG_PRI},
+	{"move.alt",       REG_PRI,              REG_ALT},
+	{"xchg",           REG_PRI | REG_ALT,    REG_PRI | REG_ALT},
+	{"push.pri",       REG_PRI | REG_STK,    REG_STK},
+	{"push.alt",       REG_ALT | REG_STK,    REG_STK},
+	{"push.r",         REG_NONE,             REG_NONE},
+	{"push.c",         REG_STK,              REG_STK},
+	{"push",           REG_STK,              REG_STK},
+	{"push.s",         REG_STK | REG_FRM,    REG_STK},
+	{"pop.pri",        REG_STK,              REG_PRI | REG_STK},
+	{"pop.alt",        REG_STK,              REG_ALT | REG_STK},
+	{"stack",          REG_STK,              REG_ALT | REG_STK},
+	{"heap",           REG_HEA,              REG_ALT | REG_HEA},
+	{"proc",           REG_STK | REG_FRM,    REG_STK | REG_FRM},
+	{"ret",            REG_STK,              REG_STK | REG_FRM |
+	                                         REG_CIP},
+	{"retn",           REG_STK,              REG_STK | REG_FRM |
+	                                         REG_CIP},
+	{"call",           REG_STK | REG_CIP,    REG_PRI | REG_ALT |
+	                                         REG_STK | REG_CIP},
+	{"call.pri",       REG_PRI | REG_STK |
+	                   REG_CIP,              REG_STK | REG_CIP},
+	{"jump",           REG_NONE,             REG_CIP},
+	{"jrel",           REG_NONE,             REG_NONE},
+	{"jzer",           REG_PRI,              REG_CIP},
+	{"jnz",            REG_PRI,              REG_CIP},
+	{"jeq",            REG_PRI | REG_ALT,    REG_CIP},
+	{"jneq",           REG_PRI | REG_ALT,    REG_CIP},
+	{"jless",          REG_PRI | REG_ALT,    REG_CIP},
+	{"jleq",           REG_PRI | REG_ALT,    REG_CIP},
+	{"jgrtr",          REG_PRI | REG_ALT,    REG_CIP},
+	{"jgeq",           REG_PRI | REG_ALT,    REG_CIP},
+	{"jsless",         REG_PRI | REG_ALT,    REG_CIP},
+	{"jsleq",          REG_PRI | REG_ALT,    REG_CIP},
+	{"jsgrtr",         REG_PRI | REG_ALT,    REG_CIP},
+	{"jsgeq",          REG_PRI | REG_ALT,    REG_CIP},
+	{"shl",            REG_PRI | REG_ALT,    REG_PRI},
+	{"shr",            REG_PRI | REG_ALT,    REG_PRI},
+	{"sshr",           REG_PRI | REG_ALT,    REG_PRI},
+	{"shl.c.pri",      REG_PRI,              REG_PRI},
+	{"shl.c.alt",      REG_ALT,              REG_ALT},
+	{"shr.c.pri",      REG_PRI,              REG_PRI},
+	{"shr.c.alt",      REG_ALT,              REG_ALT},
+	{"smul",           REG_PRI | REG_ALT,    REG_PRI},
+	{"sdiv",           REG_PRI | REG_ALT,    REG_PRI},
+	{"sdiv.alt",       REG_PRI | REG_ALT,    REG_PRI},
+	{"umul",           REG_PRI | REG_ALT,    REG_PRI},
+	{"udiv",           REG_PRI | REG_ALT,    REG_PRI},
+	{"udiv.alt",       REG_PRI | REG_ALT,    REG_PRI},
+	{"add",            REG_PRI | REG_ALT,    REG_PRI},
+	{"sub",            REG_PRI | REG_ALT,    REG_PRI},
+	{"sub.alt",        REG_PRI | REG_ALT,    REG_PRI},
+	{"and",            REG_PRI | REG_ALT,    REG_PRI},
+	{"or",             REG_PRI | REG_ALT,    REG_PRI},
+	{"xor",            REG_PRI | REG_ALT,    REG_PRI},
+	{"not",            REG_PRI,              REG_PRI},
+	{"neg",            REG_PRI,              REG_PRI},
+	{"invert",         REG_PRI,              REG_PRI},
+	{"add.c",          REG_PRI,              REG_PRI},
+	{"smul.c",         REG_PRI,              REG_PRI},
+	{"zero.pri",       REG_NONE,             REG_PRI},
+	{"zero.alt",       REG_NONE,             REG_PRI},
+	{"zero",           REG_NONE,             REG_NONE},
+	{"zero.s",         REG_FRM,              REG_NONE},
+	{"sign.pri",       REG_PRI,              REG_PRI},
+	{"sign.alt",       REG_ALT,              REG_ALT},
+	{"eq",             REG_PRI | REG_ALT,    REG_PRI},
+	{"neq",            REG_PRI | REG_ALT,    REG_PRI},
+	{"less",           REG_PRI | REG_ALT,    REG_PRI},
+	{"leq",            REG_PRI | REG_ALT,    REG_PRI},
+	{"grtr",           REG_PRI | REG_ALT,    REG_PRI},
+	{"geq",            REG_PRI | REG_ALT,    REG_PRI},
+	{"sless",          REG_PRI | REG_ALT,    REG_PRI},
+	{"sleq",           REG_PRI | REG_ALT,    REG_PRI},
+	{"sgrtr",          REG_PRI | REG_ALT,    REG_PRI},
+	{"sgeq",           REG_PRI | REG_ALT,    REG_PRI},
+	{"eq.c.pri",       REG_PRI,              REG_PRI},
+	{"eq.c.alt",       REG_ALT,              REG_PRI},
+	{"inc.pri",        REG_PRI,              REG_PRI},
+	{"inc.alt",        REG_ALT,              REG_ALT},
+	{"inc",            REG_NONE,             REG_NONE},
+	{"inc.s",          REG_FRM,              REG_NONE},
+	{"inc.i",          REG_PRI,              REG_NONE},
+	{"dec.pri",        REG_PRI,              REG_PRI},
+	{"dec.alt",        REG_ALT,              REG_ALT},
+	{"dec",            REG_NONE,             REG_NONE},
+	{"dec.s",          REG_FRM,              REG_NONE},
+	{"dec.i",          REG_PRI,              REG_NONE},
+	{"movs",           REG_PRI | REG_ALT,    REG_NONE},
+	{"cmps",           REG_PRI | REG_ALT,    REG_NONE},
+	{"fill",           REG_PRI | REG_ALT,    REG_NONE},
+	{"halt",           REG_PRI,              REG_NONE},
+	{"bounds",         REG_PRI,              REG_NONE},
+	{"sysreq.pri",     REG_PRI,              REG_PRI | REG_ALT |
+	                                         REG_COD | REG_DAT |
+	                                         REG_HEA | REG_STP |
+	                                         REG_STK | REG_FRM |
+	                                         REG_CIP},
+	{"sysreq.c",       REG_NONE,             REG_PRI | REG_ALT |
+	                                         REG_COD | REG_DAT |
+	                                         REG_HEA | REG_STP |
+	                                         REG_STK | REG_FRM |
+	                                         REG_CIP},
+	{"file",           REG_NONE,             REG_NONE},
+	{"line",           REG_NONE,             REG_NONE},
+	{"symbol",         REG_NONE,             REG_NONE},
+	{"srange",         REG_NONE,             REG_NONE},
+	{"jump.pri",       REG_PRI,              REG_CIP},
+	{"switch",         REG_PRI,              REG_CIP},
+	{"casetbl",        REG_NONE,             REG_NONE},
+	{"swap.pri",       REG_PRI | REG_STK,    REG_PRI},
+	{"swap.alt",       REG_ALT | REG_STK,    REG_ALT},
+	{"push.adr",       REG_STK | REG_FRM,    REG_STK},
+	{"nop",            REG_NONE,             REG_NONE},
+	{"sysreq.d",       REG_NONE,             REG_PRI | REG_ALT |
+	                                         REG_COD | REG_DAT |
+	                                         REG_HEA | REG_STP |
+	                                         REG_STK | REG_FRM |
+	                                         REG_CIP},
+	{"symtag",         REG_NONE,             REG_NONE},
+	{"break",          REG_NONE,             REG_NONE}
 };
 
 AmxInstruction::AmxInstruction() 
@@ -96,7 +219,21 @@ AmxInstruction::AmxInstruction()
 
 const char *AmxInstruction::getName() const {
 	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
-		return opcodeNames[opcode_];
+		return info[opcode_].name;
+	}
+	return 0;
+}
+
+int AmxInstruction::getInputRegisters() const {
+	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
+		return info[opcode_].inputRegisters;
+	}
+	return 0;
+}
+
+int AmxInstruction::getOutputRegisters() const {
+	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
+		return info[opcode_].outputRegisters;
 	}
 	return 0;
 }
@@ -643,21 +780,57 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// STK = STK + cell size, ALT = [STK]
 			as->pop(ecx);
 			break;
-		case OP_STACK: // value
+		case OP_STACK: { // value
 			// ALT = STK, STK = STK + value
-			as->mov(ecx, esp);
-			as->sub(ecx, ebx);
+			bool needAlt = true;
+			{
+				AmxInstruction instr;
+				cell ip = disas.getIp();
+				while (disas.decode(instr)) {
+					if (instr.getInputRegisters() & REG_ALT) {
+						break;
+					}
+					if (instr.getOutputRegisters() & REG_ALT) {
+						needAlt = false;
+						break;
+					}
+				}
+				disas.setIp(ip);
+			}
+			if (needAlt) {
+				as->mov(ecx, esp);
+				as->sub(ecx, ebx);
+			}
 			if (instr.getOperand() >= 0) {
 				as->add(esp, instr.getOperand());
 			} else {
 				as->sub(esp, -instr.getOperand());
 			}
 			break;
-		case OP_HEAP: // value
+		}
+		case OP_HEAP: { // value
 			// ALT = HEA, HEA = HEA + value
-			as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
+			bool needAlt = true;
+			{
+				AmxInstruction instr;
+				cell ip = disas.getIp();
+				while (disas.decode(instr)) {
+					if (instr.getInputRegisters() & REG_ALT) {
+						break;
+					}
+					if (instr.getOutputRegisters() & REG_ALT) {
+						needAlt = false;
+						break;
+					}
+				}
+				disas.setIp(ip);
+			}
+			if (needAlt) {
+				as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
+			}
 			as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), instr.getOperand());
 			break;
+		}
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
 			as->push(ebp);

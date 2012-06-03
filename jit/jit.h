@@ -47,6 +47,24 @@
 
 namespace jit {
 
+// REG_NONE is defined in WinNT.h
+#ifdef REG_NONE
+	#undef REG_NONE
+#endif
+
+enum AmxRegisters {
+	REG_NONE = 0,
+	REG_PRI = (2 << 0),
+	REG_ALT = (2 << 1),
+	REG_COD = (2 << 2),
+	REG_DAT = (2 << 3),
+	REG_HEA = (2 << 4),
+	REG_STP = (2 << 5),
+	REG_STK = (2 << 6),
+	REG_FRM = (2 << 7),
+	REG_CIP = (2 << 8),
+};
+
 enum AmxOpcode {
 	OP_NONE,         OP_LOAD_PRI,     OP_LOAD_ALT,     OP_LOAD_S_PRI,
 	OP_LOAD_S_ALT,   OP_LREF_PRI,     OP_LREF_ALT,     OP_LREF_S_PRI,
@@ -133,7 +151,9 @@ public:
 
 	const char *getName() const;
 
-	// Convert to a string: <name> <operands> ...
+	int getInputRegisters() const;
+	int getOutputRegisters() const;
+
 	std::string asString() const;
 
 private:
@@ -142,7 +162,12 @@ private:
 	std::vector<cell> operands_;
 
 private:
-	static const char *opcodeNames[];
+	struct StaticInfoTableEntry {
+		const char *name;
+		int inputRegisters;
+		int outputRegisters;
+	};
+	static const StaticInfoTableEntry info[NUM_AMX_OPCODES];
 };
 
 class AmxVm {
