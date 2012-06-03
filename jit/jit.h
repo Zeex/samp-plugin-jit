@@ -259,13 +259,7 @@ public:
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 	int call(cell address, cell *retval);
-	int exec(cell index, cell *retval);
-
-	void halt(int error);
-	void jump(cell address, void *stackBase, void *stackPtr);
-
-	void sysreqC(cell index, void *stackBase, void *stackPtr);
-	void sysreqD(cell address, void *stackBase, void *stackPtr);
+	int exec(cell index, cell *retval);	
 
 private:
 	Jitter(const Jitter &);
@@ -277,10 +271,16 @@ private:
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
+	void jump(cell address, void *stackBase, void *stackPtr);
 	static void JIT_CDECL doJump(Jitter *jitter, cell address, void *stackBase, void *stackPtr);
+
+	void halt(int error);
 	static void JIT_CDECL doHalt(Jitter *jitter, int error);
 
+	void sysreqC(cell index, void *stackBase, void *stackPtr);
 	static void JIT_CDECL doSysreqC(Jitter *jitter, cell index, void *stackBase, void *stackPtr);
+
+	void sysreqD(cell address, void *stackBase, void *stackPtr);
 	static void JIT_CDECL doSysreqD(Jitter *jitter, cell address, void *stackBase, void *stackPtr);
 
 private:
