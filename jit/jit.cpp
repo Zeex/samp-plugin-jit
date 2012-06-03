@@ -639,7 +639,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// ALT = STK, STK = STK + value
 			as->mov(ecx, esp);
 			as->sub(ecx, ebx);
-			as->add(esp, instr.getOperand());
+			if (instr.getOperand() >= 0) {
+				as->add(esp, instr.getOperand());
+			} else {
+				as->sub(esp, -instr.getOperand());
+			}
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
