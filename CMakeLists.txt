@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(jit)
 
-list(APPEND CMAKE_MODULE_PATH "${jit_SOURCE_DIR}/cmake/Modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
 include(GetGitRevisionDescription)
@@ -67,7 +67,7 @@ if(description)
 	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
 else()
 	message(STATUS "Failed to get version from Git, will read VERSION.txt")
-	file(READ "${jit_SOURCE_DIR}/VERSION.txt" version)
+	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
 	string(STRIP ${version} version)
 endif()
 
@@ -83,13 +83,13 @@ include(SampPlugin)
 target_link_libraries(${PLUGIN_TARGET} AsmJit)
 
 configure_file(
-	"${jit_SOURCE_DIR}/plugin/plugin.rc.in"
-	"${jit_SOURCE_DIR}/plugin/plugin.rc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/plugin.rc.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/plugin.rc"
 	@ONLY
 )
 configure_file(
-	"${jit_SOURCE_DIR}/plugin/version.h.in"
-	"${jit_SOURCE_DIR}/plugin/version.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/version.h.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/version.h"
 	@ONLY
 )
 
