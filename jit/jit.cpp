@@ -458,6 +458,8 @@ Jitter::Jitter(AMX *amx)
 Jitter::~Jitter() {
 	MemoryManager *mem = MemoryManager::getGlobal();
 	mem->free(code_);
+	mem->free((void*)haltHelper_);
+	mem->free((void*)jumpHelper_);
 	mem->free((void*)callHelper_);
 	mem->free((void*)sysreqHelper_);
 }
