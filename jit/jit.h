@@ -307,7 +307,11 @@ public:
 	int exec(cell index, cell *retval);	
 
 private:
+	// Get code locations referred to by JUMP/JCC/CALL instructions.
 	bool getJumpRefs(std::set<cell> &refs) const;
+
+	// See if we can safely change the value of a register.
+	bool canOverwriteRegister(cell address, AMXRegister reg) const;
 
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
