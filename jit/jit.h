@@ -43,6 +43,8 @@
 #elif defined __GNUC__
 	#define JIT_CDECL __attribute__((cdecl))
 	#define JIT_STDCALL __attribute__((stdcall))
+#else
+	#error Unsupported compiler
 #endif
 
 namespace jit {
