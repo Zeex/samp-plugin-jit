@@ -118,7 +118,7 @@ public:
 	}
 
 	inline const cell address() const {
-		return address_; 
+		return address_;
 	}
 	inline void setAddress(cell address) {
 		address_ = address;
@@ -308,7 +308,7 @@ public:
 
 public:
 	int call(cell address, cell *retval);
-	int exec(cell index, cell *retval);	
+	int exec(cell index, cell *retval);
 
 private:
 	// Get code locations referred to by JUMP/JCC/CALL instructions.
