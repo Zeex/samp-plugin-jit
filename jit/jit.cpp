@@ -1214,6 +1214,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
+			as->cld();
 			as->lea(esi, dword_ptr(ebx, eax));
 			as->lea(edi, dword_ptr(ebx, ecx));
 			as->push(ecx);
@@ -1262,6 +1263,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
+			as->cld();
 			as->lea(edi, dword_ptr(ebx, ecx));
 			as->push(ecx);
 			as->mov(ecx, instr.operand() / sizeof(cell));
