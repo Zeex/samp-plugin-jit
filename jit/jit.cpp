@@ -787,50 +787,29 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			// STK = STK + cell size, ALT = [STK]
 			as->pop(ecx);
 			break;
-		case OP_STACK: 
-		case OP_HEAP: {
-			bool needAlt = true;
-			{
-				AMXInstruction instr;
-				cell ip = disas.ip();
-				while (disas.decode(instr)) {
-					if (instr.inputRegisters() & REG_ALT) {
-						break;
-					}
-					if (instr.outputRegisters() & REG_ALT) {
-						needAlt = false;
-						break;
-					}
-				}
-				disas.setIp(ip);
+		case OP_STACK: // value
+			// ALT = STK, STK = STK + value
+			if (!canOverwriteRegister(cip + instr.size(), REG_ALT)) {
+				as->mov(ecx, esp);
+				as->sub(ecx, ebx);
 			}
-			switch (instr.opcode()) {
-				case OP_STACK: // value
-					// ALT = STK, STK = STK + value
-					if (needAlt) {
-						as->mov(ecx, esp);
-						as->sub(ecx, ebx);
-					}
-					if (instr.operand() >= 0) {
-						as->add(esp, instr.operand());
-					} else {
-						as->sub(esp, -instr.operand());
-					}
-					break;
-				case OP_HEAP: // value
-					// ALT = HEA, HEA = HEA + value
-					if (needAlt) {
-						as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
-					}
-					if (instr.operand() >= 0) {
-						as->add(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), instr.operand());
-					} else {
-						as->sub(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), -instr.operand());
-					}
-					break;
+			if (instr.operand() >= 0) {
+				as->add(esp, instr.operand());
+			} else {
+				as->sub(esp, -instr.operand());
 			}
 			break;
-		}
+		case OP_HEAP: // value
+			// ALT = HEA, HEA = HEA + value
+			if (!canOverwriteRegister(cip + instr.size(), REG_ALT)) {
+				as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
+			}
+			if (instr.operand() >= 0) {
+				as->add(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), instr.operand());
+			} else {
+				as->sub(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), -instr.operand());
+			}
+			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
 			as->push(ebp);
@@ -1546,73 +1525,25 @@ int JIT::exec(int index, cell *retval) {
 	return call(address, retval);
 }
 
-void JIT::halt(int error) {
-	if (unlikely(haltHelper_ == 0)) {
-		X86Assembler as;
+bool JIT::canOverwriteRegister(cell address, AMXRegister reg) const {
+	AMXDisassembler disas(amx_);
+	disas.setIp(address);
 
-		as.mov(eax, dword_ptr(esp, 4));
-		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->error)), eax);
-		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
-		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
-		as.ret();
-
-		haltHelper_ = (HaltHelper)as.make();
-	}
-
-	haltHelper_(error);
-}
-
-void JIT::jump(cell address, void *stackBase, void *stackPtr) {
-	CodeMap::const_iterator it = codeMap_.find(address);
-
-	if (it != codeMap_.end()) {
-		void *dest = getInstrPtr(address);
-
-		if (unlikely(jumpHelper_ == 0)) {
-			X86Assembler as;
-
-			as.mov(eax, dword_ptr(esp, 4));  // dest
-			as.mov(ebp, dword_ptr(esp, 8));  // stackBase
-			as.mov(esp, dword_ptr(esp, 12)); // stackPtr
-			as.jmp(eax);
-
-			jumpHelper_ = (JumpHelper)as.make();
+	AMXInstruction instr;
+	while (disas.decode(instr)) {
+		if (instr.inputRegisters() & reg) {
+			// The registers is read by one or more of subsequent instructions, so
+			// it can't be overwritten.
+			return false;
 		}
-
-		jumpHelper_(dest, stackPtr, stackBase);
-	}
-}
-
-void JIT::sysreqC(cell index, void *stackBase, void *stackPtr) {
-	cell address = amx_.getNativeAddress(index);
-	if (address == 0) {
-		halt(AMX_ERR_NOTFOUND);
-	}
-	sysreqD(address, stackBase, stackPtr);
-}
-
-void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
-	if (unlikely(sysreqHelper_ == 0)) {
-		X86Assembler as;
-
-		as.mov(eax, dword_ptr(esp, 4));  // address
-		as.mov(ebp, dword_ptr(esp, 8));  // stackBase
-		as.mov(esp, dword_ptr(esp, 12)); // stackPtr
-		as.mov(ecx, esp); // params
-		endJitCode(&as);
-			as.push(ecx);
-			as.push(reinterpret_cast<int>(amx_.amx()));
-			as.call(eax);
-			as.add(esp, 8);
-		beginJitCode(&as);
-		as.sub(esp, 20);
-		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
-		as.ret();
-
-		sysreqHelper_ = (SysreqHelper)as.make();
+		if (instr.outputRegisters() & reg) {
+			// OK - something overwrites it anyway, it must be safe to modify it.
+			return true;
+		}
 	}
 
-	sysreqHelper_(address, stackBase, stackPtr);
+	// Nothing reads or writes the register.
+	return true;
 }
 
 bool JIT::getJumpRefs(std::set<cell> &refs) const {
@@ -1673,10 +1604,47 @@ Label &JIT::L(X86Assembler *as, cell address, const std::string &name) {
 	}
 }
 
+void JIT::jump(cell address, void *stackBase, void *stackPtr) {
+	CodeMap::const_iterator it = codeMap_.find(address);
+
+	if (it != codeMap_.end()) {
+		void *dest = getInstrPtr(address);
+
+		if (unlikely(jumpHelper_ == 0)) {
+			X86Assembler as;
+
+			as.mov(eax, dword_ptr(esp, 4));  // dest
+			as.mov(ebp, dword_ptr(esp, 8));  // stackBase
+			as.mov(esp, dword_ptr(esp, 12)); // stackPtr
+			as.jmp(eax);
+
+			jumpHelper_ = (JumpHelper)as.make();
+		}
+
+		jumpHelper_(dest, stackPtr, stackBase);
+	}
+}
+
 // static
 void JIT_CDECL JIT::doJump(JIT *jit, cell address, void *stackBase, void *stackPtr) {
 	jit->jump(address, stackBase, stackPtr);
 	doHalt(jit, AMX_ERR_INVINSTR);
+}
+
+void JIT::halt(int error) {
+	if (unlikely(haltHelper_ == 0)) {
+		X86Assembler as;
+
+		as.mov(eax, dword_ptr(esp, 4));
+		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->error)), eax);
+		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
+		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
+		as.ret();
+
+		haltHelper_ = (HaltHelper)as.make();
+	}
+
+	haltHelper_(error);
 }
 
 // static
@@ -1684,9 +1652,41 @@ void JIT_CDECL JIT::doHalt(JIT *jit, int error) {
 	jit->halt(error);
 }
 
+void JIT::sysreqC(cell index, void *stackBase, void *stackPtr) {
+	cell address = amx_.getNativeAddress(index);
+	if (address == 0) {
+		halt(AMX_ERR_NOTFOUND);
+	}
+	sysreqD(address, stackBase, stackPtr);
+}
+
 // static
 void JIT_CDECL JIT::doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr) {
 	jit->sysreqC(index, stackBase, stackPtr);
+}
+
+void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
+	if (unlikely(sysreqHelper_ == 0)) {
+		X86Assembler as;
+
+		as.mov(eax, dword_ptr(esp, 4));  // address
+		as.mov(ebp, dword_ptr(esp, 8));  // stackBase
+		as.mov(esp, dword_ptr(esp, 12)); // stackPtr
+		as.mov(ecx, esp); // params
+		endJitCode(&as);
+			as.push(ecx);
+			as.push(reinterpret_cast<int>(amx_.amx()));
+			as.call(eax);
+			as.add(esp, 8);
+		beginJitCode(&as);
+		as.sub(esp, 20);
+		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
+		as.ret();
+
+		sysreqHelper_ = (SysreqHelper)as.make();
+	}
+
+	sysreqHelper_(address, stackBase, stackPtr);
 }
 
 // static
