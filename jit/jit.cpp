@@ -48,10 +48,10 @@ namespace jit {
 using namespace AsmJit;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// AmxInstruction implementation
+// AMXInstruction implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const AmxInstruction::StaticInfoTableEntry AmxInstruction::info[NUM_AMX_OPCODES] = {
+const AMXInstruction::StaticInfoTableEntry AMXInstruction::info[NUM_AMX_OPCODES] = {
 	{"none",           REG_NONE,             REG_NONE},
 	{"load.pri",       REG_NONE,             REG_PRI},
 	{"load.alt",       REG_NONE,             REG_ALT},
@@ -212,36 +212,36 @@ const AmxInstruction::StaticInfoTableEntry AmxInstruction::info[NUM_AMX_OPCODES]
 	{"break",          REG_NONE,             REG_NONE}
 };
 
-AmxInstruction::AmxInstruction() 
+AMXInstruction::AMXInstruction() 
 	: address_(0), opcode_(OP_NONE), operands_() 
 {
 }
 
-const char *AmxInstruction::getName() const {
+const char *AMXInstruction::name() const {
 	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
 		return info[opcode_].name;
 	}
 	return 0;
 }
 
-int AmxInstruction::getInputRegisters() const {
+int AMXInstruction::inputRegisters() const {
 	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
 		return info[opcode_].inputRegisters;
 	}
 	return 0;
 }
 
-int AmxInstruction::getOutputRegisters() const {
+int AMXInstruction::outputRegisters() const {
 	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
 		return info[opcode_].outputRegisters;
 	}
 	return 0;
 }
 
-std::string AmxInstruction::asString() const {
+std::string AMXInstruction::string() const {
 	std::stringstream stream;
-	if (getName() != 0) {
-		stream << getName();
+	if (name() != 0) {
+		stream << name();
 	} else {
 		stream << std::setw(8) << std::setfill('0') << std::hex << opcode_;
 	}
@@ -252,100 +252,105 @@ std::string AmxInstruction::asString() const {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// AmxVm implementation
+// AMXScript implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-cell AmxVm::getPublicAddress(cell index) const {
+AMXScript::AMXScript(AMX *amx)
+	: amx_(amx)
+{
+}
+
+cell AMXScript::getPublicAddress(cell index) const {
 	if (index == AMX_EXEC_MAIN) {
-		return getHeader()->cip;
+		return amxHeader()->cip;
 	}
-	if (index < 0 || index >= getNumPublics()) {
+	if (index < 0 || index >= numPublics()) {
 		return 0;
 	}
-	return getPublics()[index].address;
+	return publics()[index].address;
 }
 
-cell AmxVm::getNativeAddress(int index) const {
-	if (index < 0 || index >= getNumNatives()) {
+cell AMXScript::getNativeAddress(int index) const {
+	if (index < 0 || index >= numNatives()) {
 		return 0;
 	}
-	return getNatives()[index].address;
+	return natives()[index].address;
 }
 
-int AmxVm::getPublicIndex(cell address) const {
-	for (int i = 0; i < getNumPublics(); i++) {
-		if (getPublics()[i].address == address) {
+int AMXScript::getPublicIndex(cell address) const {
+	for (int i = 0; i < numPublics(); i++) {
+		if (publics()[i].address == address) {
 			return i;
 		}
 	}
 	return -1;
 }
 
-int AmxVm::getNativeIndex(cell address) const {
-	for (int i = 0; i < getNumNatives(); i++) {
-		if (getNatives()[i].address == address) {
+int AMXScript::getNativeIndex(cell address) const {
+	for (int i = 0; i < numNatives(); i++) {
+		if (natives()[i].address == address) {
 			return i;
 		}
 	}
 	return -1;
 }
 
-const char *AmxVm::getPublicName(int index) const {
-	if (index < 0 || index >= getNumPublics()) {
+const char *AMXScript::getPublicName(int index) const {
+	if (index < 0 || index >= numPublics()) {
 		return 0;
 	}
-	return reinterpret_cast<char*>(amx_->base + getPublics()[index].nameofs);
+	return reinterpret_cast<char*>(amx_->base + publics()[index].nameofs);
 }
 
-const char *AmxVm::getNativeName(int index) const {
-	if (index < 0 || index >= getNumNatives()) {
+const char *AMXScript::getNativeName(int index) const {
+	if (index < 0 || index >= numNatives()) {
 		return 0;
 	}
-	return reinterpret_cast<char*>(amx_->base + getNatives()[index].nameofs);
+	return reinterpret_cast<char*>(amx_->base + natives()[index].nameofs);
 }
 
-cell *AmxVm::pushStack(cell value) {
+cell *AMXScript::push(cell value) {
 	amx_->stk -= sizeof(cell);
-	cell *stack = getStack();
-	*stack = value;
-	return stack;
+	cell *s = stack();
+	*s = value;
+	return s;
 }
 
-cell AmxVm::popStack() {
-	cell *stack = getStack();
+cell AMXScript::pop() {
+	cell *s = stack();
 	amx_->stk += sizeof(cell);
-	return *stack;
+	return *s;
 }
 
-void AmxVm::popStack(int ncells) {
+void AMXScript::pop(int ncells) {
 	amx_->stk += ncells * sizeof(cell);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// AmxDisassembler implementation
+// AMXDisassembler implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AmxDisassembler::AmxDisassembler(AmxVm vm)
-	: vm_(vm)
+AMXDisassembler::AMXDisassembler(const AMXScript &amx)
+	: amx_(amx)
 	, opcodeTable_(0)
 	, ip_(0)
 {
 }
 
-bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
+bool AMXDisassembler::decode(AMXInstruction &instr, bool *error) {
 	if (error != 0) {
 		*error = false;
 	}
 
-	if (ip_ < 0 || vm_.getHeader()->cod + ip_ >= vm_.getHeader()->dat) {
+	if (ip_ < 0 || amx_.amxHeader()->cod + ip_ >= amx_.amxHeader()->dat) {
 		// Went out of the code section.
 		return false;
 	}
 
-	instr.getOperands().clear();
+	instr.operands().clear();
 	instr.setAddress(ip_);
 
-	cell opcode = *reinterpret_cast<cell*>(vm_.getCode() + ip_);
+	cell opcode = *reinterpret_cast<cell*>(amx_.code() + ip_);
 	if (opcodeTable_ != 0) {
 		// Lookup this opcode in the opcode relocation table.
 		bool found = false;
@@ -358,7 +363,7 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 	}
 
 	ip_ += sizeof(cell);
-	instr.setOpcode(static_cast<AmxOpcode>(opcode));
+	instr.setOpcode(static_cast<AMXOpcode>(opcode));
 
 	switch (opcode) {
 	// Instructions with one operand.
@@ -380,7 +385,7 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 	case OP_DEC:        case OP_DEC_S:      case OP_MOVS:       case OP_CMPS:
 	case OP_FILL:       case OP_HALT:       case OP_BOUNDS:     case OP_CALL:
 	case OP_SYSREQ_C:   case OP_PUSH_ADR:   case OP_SYSREQ_D:   case OP_SWITCH:
-		instr.addOperand(*reinterpret_cast<cell*>(vm_.getCode() + ip_));
+		instr.addOperand(*reinterpret_cast<cell*>(amx_.code() + ip_));
 		ip_ += sizeof(cell);
 		break;
 
@@ -404,10 +409,10 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 
 	// Special instructions.
 	case OP_CASETBL: {
-		int num = *reinterpret_cast<cell*>(vm_.getCode() + ip_) + 1;
+		int num = *reinterpret_cast<cell*>(amx_.code() + ip_) + 1;
 		// num case records follow, each is 2 cells big.
 		for (int i = 0; i < num * 2; i++) {
-			instr.addOperand(*reinterpret_cast<cell*>(vm_.getCode() + ip_));
+			instr.addOperand(*reinterpret_cast<cell*>(amx_.code() + ip_));
 			ip_ += sizeof(cell);
 		}
 		break;
@@ -424,24 +429,24 @@ bool AmxDisassembler::decode(AmxInstruction &instr, bool *error) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Jitter implementation
+// JIT implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // JIT compiler intrinsics.
-Jitter::Intrinsic Jitter::intrinsics_[] = {
-	{"float",       &Jitter::native_float},
-	{"float",       &Jitter::native_float},
-	{"floatabs",    &Jitter::native_floatabs},
-	{"floatadd",    &Jitter::native_floatadd},
-	{"floatsub",    &Jitter::native_floatsub},
-	{"floatmul",    &Jitter::native_floatmul},
-	{"floatdiv",    &Jitter::native_floatdiv},
-	{"floatsqroot", &Jitter::native_floatsqroot},
-	{"floatlog",    &Jitter::native_floatlog}
+JIT::Intrinsic JIT::intrinsics_[] = {
+	{"float",       &JIT::native_float},
+	{"float",       &JIT::native_float},
+	{"floatabs",    &JIT::native_floatabs},
+	{"floatadd",    &JIT::native_floatadd},
+	{"floatsub",    &JIT::native_floatsub},
+	{"floatmul",    &JIT::native_floatmul},
+	{"floatdiv",    &JIT::native_floatdiv},
+	{"floatsqroot", &JIT::native_floatsqroot},
+	{"floatlog",    &JIT::native_floatlog}
 };
 
-Jitter::Jitter(AMX *amx)
-	: vm_(amx)
+JIT::JIT(AMXScript amx)
+	: amx_(amx)
 	, opcodeTable_(0)
 	, assembler_(0)
 	, code_(0)
@@ -455,7 +460,7 @@ Jitter::Jitter(AMX *amx)
 {
 }
 
-Jitter::~Jitter() {
+JIT::~JIT() {
 	MemoryManager *mem = MemoryManager::getGlobal();
 	mem->free(code_);
 	mem->free((void*)haltHelper_);
@@ -464,7 +469,7 @@ Jitter::~Jitter() {
 	mem->free((void*)sysreqHelper_);
 }
 
-void *Jitter::getInstrPtr(cell address) const {
+void *JIT::getInstrPtr(cell address) const {
 	int native_ip = getInstrOffset(address);
 	if (native_ip >= 0) {
 		return reinterpret_cast<void*>(reinterpret_cast<int>(code_) + native_ip);
@@ -472,7 +477,7 @@ void *Jitter::getInstrPtr(cell address) const {
 	return 0;
 }
 
-int Jitter::getInstrOffset(cell address) const {
+int JIT::getInstrOffset(cell address) const {
 	CodeMap::const_iterator iterator = codeMap_.find(address);
 	if (iterator != codeMap_.end()) {
 		return iterator->second;
@@ -480,10 +485,10 @@ int Jitter::getInstrOffset(cell address) const {
 	return -1;
 }
 
-bool Jitter::compile(CompileErrorHandler errorHandler) {
-	assert(code_ == 0 && "You can't compile() twice, create a new Jitter instead");
+bool JIT::compile(CompileErrorHandler errorHandler) {
+	assert(code_ == 0 && "You can't compile() twice, create a new JIT instead");
 
-	AmxDisassembler disas(vm_);
+	AMXDisassembler disas(amx_);
 	disas.setOpcodeTable(opcodeTable_);
 
 	X86Assembler *as;
@@ -501,16 +506,16 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	Logger *logger = as->getLogger();
 
 	bool error = false;
-	AmxInstruction instr;
+	AMXInstruction instr;
 
 	while (disas.decode(instr, &error)) {
-		cell cip = instr.getAddress();
+		cell cip = instr.address();
 
 		if (logger != 0) {
-			if (instr.getOpcode() == OP_PROC) {
+			if (instr.opcode() == OP_PROC) {
 				logger->logString("\n\n\n");
 			}
-			logger->logFormat("\t; @%08x %s\n", cip, instr.asString().c_str());
+			logger->logFormat("\t; @%08x %s\n", cip, instr.string().c_str());
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
@@ -519,41 +524,41 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 
 		codeMap_.insert(std::make_pair(cip, as->getCodeSize()));
 
-		switch (instr.getOpcode()) {
+		switch (instr.opcode()) {
 		case OP_LOAD_PRI: // address
 			// PRI = [address]
-			as->mov(eax, dword_ptr(ebx, instr.getOperand()));
+			as->mov(eax, dword_ptr(ebx, instr.operand()));
 			break;
 		case OP_LOAD_ALT: // address
 			// ALT = [address]
-			as->mov(ecx, dword_ptr(ebx, instr.getOperand()));
+			as->mov(ecx, dword_ptr(ebx, instr.operand()));
 			break;
 		case OP_LOAD_S_PRI: // offset
 			// PRI = [FRM + offset]
-			as->mov(eax, dword_ptr(ebp, instr.getOperand()));
+			as->mov(eax, dword_ptr(ebp, instr.operand()));
 			break;
 		case OP_LOAD_S_ALT: // offset
 			// ALT = [FRM + offset]
-			as->mov(ecx, dword_ptr(ebp, instr.getOperand()));
+			as->mov(ecx, dword_ptr(ebp, instr.operand()));
 			break;
 		case OP_LREF_PRI: // address
 			// PRI = [ [address] ]
-			as->mov(edx, dword_ptr(ebx, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebx, instr.operand()));
 			as->mov(eax, dword_ptr(ebx, edx));
 			break;
 		case OP_LREF_ALT: // address
 			// ALT = [ [address] ]
-			as->mov(edx, dword_ptr(ebx, + instr.getOperand()));
+			as->mov(edx, dword_ptr(ebx, + instr.operand()));
 			as->mov(ecx, dword_ptr(ebx, edx));
 			break;
 		case OP_LREF_S_PRI: // offset
 			// PRI = [ [FRM + offset] ]
-			as->mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebp, instr.operand()));
 			as->mov(eax, dword_ptr(ebx, edx));
 			break;
 		case OP_LREF_S_ALT: // offset
 			// PRI = [ [FRM + offset] ]
-			as->mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebp, instr.operand()));
 			as->mov(ecx, dword_ptr(ebx, edx));
 			break;
 		case OP_LOAD_I:
@@ -562,7 +567,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_LODB_I: // number
 			// PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
-			switch (instr.getOperand()) {
+			switch (instr.operand()) {
 			case 1:
 				as->movzx(eax, byte_ptr(ebx, eax));
 				break;
@@ -576,64 +581,64 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_CONST_PRI: // value
 			// PRI = value
-			if (instr.getOperand() == 0) {
+			if (instr.operand() == 0) {
 				as->xor_(eax, eax);
 			} else {
-				as->mov(eax, instr.getOperand());
+				as->mov(eax, instr.operand());
 			}
 			break;
 		case OP_CONST_ALT: // value
 			// ALT = value
-			if (instr.getOperand() == 0) {
+			if (instr.operand() == 0) {
 				as->xor_(ecx, ecx);
 			} else {
-				as->mov(ecx, instr.getOperand());
+				as->mov(ecx, instr.operand());
 			}
 			break;
 		case OP_ADDR_PRI: // offset
 			// PRI = FRM + offset
-			as->lea(eax, dword_ptr(ebp, instr.getOperand()));
+			as->lea(eax, dword_ptr(ebp, instr.operand()));
 			as->sub(eax, ebx);
 			break;
 		case OP_ADDR_ALT: // offset
 			// ALT = FRM + offset
-			as->lea(ecx, dword_ptr(ebp, instr.getOperand()));
+			as->lea(ecx, dword_ptr(ebp, instr.operand()));
 			as->sub(ecx, ebx);
 			break;
 		case OP_STOR_PRI: // address
 			// [address] = PRI
-			as->mov(dword_ptr(ebx, instr.getOperand()), eax);
+			as->mov(dword_ptr(ebx, instr.operand()), eax);
 			break;
 		case OP_STOR_ALT: // address
 			// [address] = ALT
-			as->mov(dword_ptr(ebx, instr.getOperand()), ecx);
+			as->mov(dword_ptr(ebx, instr.operand()), ecx);
 			break;
 		case OP_STOR_S_PRI: // offset
 			// [FRM + offset] = ALT
-			as->mov(dword_ptr(ebp, instr.getOperand()), eax);
+			as->mov(dword_ptr(ebp, instr.operand()), eax);
 			break;
 		case OP_STOR_S_ALT: // offset
 			// [FRM + offset] = ALT
-			as->mov(dword_ptr(ebp, instr.getOperand()), ecx);
+			as->mov(dword_ptr(ebp, instr.operand()), ecx);
 			break;
 		case OP_SREF_PRI: // address
 			// [ [address] ] = PRI
-			as->mov(edx, dword_ptr(ebx, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebx, instr.operand()));
 			as->mov(dword_ptr(ebx, edx), eax);
 			break;
 		case OP_SREF_ALT: // address
 			// [ [address] ] = ALT
-			as->mov(edx, dword_ptr(ebx, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebx, instr.operand()));
 			as->mov(dword_ptr(ebx, edx), ecx);
 			break;
 		case OP_SREF_S_PRI: // offset
 			// [ [FRM + offset] ] = PRI
-			as->mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebp, instr.operand()));
 			as->mov(dword_ptr(ebx, edx), eax);
 			break;
 		case OP_SREF_S_ALT: // offset
 			// [ [FRM + offset] ] = ALT
-			as->mov(edx, dword_ptr(ebp, instr.getOperand()));
+			as->mov(edx, dword_ptr(ebp, instr.operand()));
 			as->mov(dword_ptr(ebx, edx), ecx);
 			break;
 		case OP_STOR_I:
@@ -642,7 +647,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_STRB_I: // number
 			// "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
-			switch (instr.getOperand()) {
+			switch (instr.operand()) {
 			case 1:
 				as->mov(byte_ptr(ebx, ecx), al);
 				break;
@@ -662,7 +667,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_LIDX_B: // shift
 			// PRI = [ ALT + (PRI << shift) ]
 			as->lea(edx, dword_ptr(ebx, ecx));
-			as->mov(eax, dword_ptr(edx, eax, instr.getOperand()));
+			as->mov(eax, dword_ptr(edx, eax, instr.operand()));
 			break;
 		case OP_IDXADDR:
 			// PRI = ALT + (PRI x cell size) (calculate indexed address)
@@ -670,21 +675,21 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_IDXADDR_B: // shift
 			// PRI = ALT + (PRI << shift) (calculate indexed address)
-			as->lea(eax, dword_ptr(ecx, eax, instr.getOperand()));
+			as->lea(eax, dword_ptr(ecx, eax, instr.operand()));
 			break;
 		case OP_ALIGN_PRI: // number
 			// Little Endian: PRI ^= cell size - number
 			#if BYTE_ORDER == LITTLE_ENDIAN
-				if (instr.getOperand() < sizeof(cell)) {
-					as->xor_(eax, sizeof(cell) - instr.getOperand());
+				if (instr.operand() < sizeof(cell)) {
+					as->xor_(eax, sizeof(cell) - instr.operand());
 				}
 			#endif
 			break;
 		case OP_ALIGN_ALT: // number
 			// Little Endian: ALT ^= cell size - number
 			#if BYTE_ORDER == LITTLE_ENDIAN
-				if (instr.getOperand() < sizeof(cell)) {
-					as->xor_(ecx, sizeof(cell) - instr.getOperand());
+				if (instr.operand() < sizeof(cell)) {
+					as->xor_(ecx, sizeof(cell) - instr.operand());
 				}
 			#endif
 			break;
@@ -692,15 +697,15 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// PRI is set to the current value of any of the special registers.
 			// The index parameter must be: 0=COD, 1=DAT, 2=HEA,
 			// 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
-			switch (instr.getOperand()) {
+			switch (instr.operand()) {
 			case 0:
-				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getHeader()->cod)));
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_.amxHeader()->cod)));
 				break;
 			case 1:
-				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&vm_.getHeader()->dat)));
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_.amxHeader()->dat)));
 				break;
 			case 2:
-				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
 				break;
 			case 4:
 				as->mov(eax, esp);
@@ -711,7 +716,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->sub(eax, ebx);
 				break;
 			case 6: {
-				as->mov(eax, instr.getAddress() + instr.getSize());
+				as->mov(eax, instr.address() + instr.size());
 				break;
 			}
 			default:
@@ -722,9 +727,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// set the indexed special registers to the value in PRI.
 			// The index parameter must be: 2=HEA, 4=STK, 5=FRM,
 			// 6=CIP
-			switch (instr.getOperand()) {
+			switch (instr.operand()) {
 			case 2:
-				as->mov(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), eax);
+				as->mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), eax);
 				break;
 			case 4:
 				as->lea(esp, dword_ptr(ebx, eax));
@@ -736,7 +741,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->push(esp);
 				as->push(eax);
 				as->push(reinterpret_cast<int>(this));
-				as->call(reinterpret_cast<int>(Jitter::doJump));
+				as->call(reinterpret_cast<int>(JIT::doJump));
 				break;
 			default:
 				goto compile_error;
@@ -764,15 +769,15 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PUSH_C: // value
 			// [STK] = value, STK = STK - cell size
-			as->push(instr.getOperand());
+			as->push(instr.operand());
 			break;
 		case OP_PUSH: // address
 			// [STK] = [address], STK = STK - cell size
-			as->push(dword_ptr(ebx, instr.getOperand()));
+			as->push(dword_ptr(ebx, instr.operand()));
 			break;
 		case OP_PUSH_S: // offset
 			// [STK] = [FRM + offset], STK = STK - cell size
-			as->push(dword_ptr(ebp, instr.getOperand()));
+			as->push(dword_ptr(ebp, instr.operand()));
 			break;
 		case OP_POP_PRI:
 			// STK = STK + cell size, PRI = [STK]
@@ -786,41 +791,41 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_HEAP: {
 			bool needAlt = true;
 			{
-				AmxInstruction instr;
-				cell ip = disas.getIp();
+				AMXInstruction instr;
+				cell ip = disas.ip();
 				while (disas.decode(instr)) {
-					if (instr.getInputRegisters() & REG_ALT) {
+					if (instr.inputRegisters() & REG_ALT) {
 						break;
 					}
-					if (instr.getOutputRegisters() & REG_ALT) {
+					if (instr.outputRegisters() & REG_ALT) {
 						needAlt = false;
 						break;
 					}
 				}
 				disas.setIp(ip);
 			}
-			switch (instr.getOpcode()) {
+			switch (instr.opcode()) {
 				case OP_STACK: // value
 					// ALT = STK, STK = STK + value
 					if (needAlt) {
 						as->mov(ecx, esp);
 						as->sub(ecx, ebx);
 					}
-					if (instr.getOperand() >= 0) {
-						as->add(esp, instr.getOperand());
+					if (instr.operand() >= 0) {
+						as->add(esp, instr.operand());
 					} else {
-						as->sub(esp, -instr.getOperand());
+						as->sub(esp, -instr.operand());
 					}
 					break;
 				case OP_HEAP: // value
 					// ALT = HEA, HEA = HEA + value
 					if (needAlt) {
-						as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)));
+						as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
 					}
-					if (instr.getOperand() >= 0) {
-						as->add(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), instr.getOperand());
+					if (instr.operand() >= 0) {
+						as->add(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), instr.operand());
 					} else {
-						as->sub(dword_ptr_abs(reinterpret_cast<void*>(&vm_->hea)), -instr.getOperand());
+						as->sub(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), -instr.operand());
 					}
 					break;
 			}
@@ -859,7 +864,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// address of the next sequential instruction on the stack.
 			// The address jumped to is relative to the current CIP,
 			// but the address on the stack is an absolute address.
-			as->call(L(as, instr.getOperand() - reinterpret_cast<cell>(vm_.getCode())));
+			as->call(L(as, instr.operand() - reinterpret_cast<cell>(amx_.code())));
 			break;
 		case OP_JUMP_PRI:
 			// CIP = PRI (indirect jump)
@@ -867,8 +872,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->lea(edx, dword_ptr(esp, -12));
 			as->push(edx);                         // stackPtr
 			as->push(eax);                         // address
-			as->push(reinterpret_cast<int>(this)); // jitter
-			as->call(reinterpret_cast<int>(Jitter::doJump));
+			as->push(reinterpret_cast<int>(this)); // jit
+			as->call(reinterpret_cast<int>(JIT::doJump));
 			break;
 		case OP_JUMP:
 		case OP_JZER:
@@ -883,10 +888,10 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_JSLEQ:
 		case OP_JSGRTR:
 		case OP_JSGEQ: {
-			cell dest = instr.getOperand() - reinterpret_cast<cell>(vm_.getCode());
+			cell dest = instr.operand() - reinterpret_cast<cell>(amx_.code());
 			Label &L_dest = L(as, dest);
 
-			switch (instr.getOpcode()) {
+			switch (instr.opcode()) {
 				case OP_JUMP: // offset
 					// CIP = CIP + offset (jump to the address relative from
 					// the current position)
@@ -970,19 +975,19 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_SHL_C_PRI: // value
 			// PRI = PRI << value
-			as->shl(eax, static_cast<unsigned char>(instr.getOperand()));
+			as->shl(eax, static_cast<unsigned char>(instr.operand()));
 			break;
 		case OP_SHL_C_ALT: // value
 			// ALT = ALT << value
-			as->shl(ecx, static_cast<unsigned char>(instr.getOperand()));
+			as->shl(ecx, static_cast<unsigned char>(instr.operand()));
 			break;
 		case OP_SHR_C_PRI: // value
 			// PRI = PRI >> value (without sign extension)
-			as->shr(eax, static_cast<unsigned char>(instr.getOperand()));
+			as->shr(eax, static_cast<unsigned char>(instr.operand()));
 			break;
 		case OP_SHR_C_ALT: // value
 			// PRI = PRI >> value (without sign extension)
-			as->shl(ecx, static_cast<unsigned char>(instr.getOperand()));
+			as->shl(ecx, static_cast<unsigned char>(instr.operand()));
 			break;
 		case OP_SMUL:
 			// PRI = PRI * ALT (signed multiply)
@@ -1063,11 +1068,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_ADD_C: // value
 			// PRI = PRI + value
-			as->add(eax, instr.getOperand());
+			as->add(eax, instr.operand());
 			break;
 		case OP_SMUL_C: // value
 			// PRI = PRI * value
-			as->imul(eax, instr.getOperand());
+			as->imul(eax, instr.operand());
 			break;
 		case OP_ZERO_PRI:
 			// PRI = 0
@@ -1079,11 +1084,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_ZERO: // address
 			// [address] = 0
-			as->mov(dword_ptr(ebx, instr.getOperand()), 0);
+			as->mov(dword_ptr(ebx, instr.operand()), 0);
 			break;
 		case OP_ZERO_S: // offset
 			// [FRM + offset] = 0
-			as->mov(dword_ptr(ebp, instr.getOperand()), 0);
+			as->mov(dword_ptr(ebp, instr.operand()), 0);
 			break;
 		case OP_SIGN_PRI:
 			// sign extent the byte in PRI to a cell
@@ -1155,13 +1160,13 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_EQ_C_PRI: // value
 			// PRI = PRI == value ? 1 : 0
-			as->cmp(eax, instr.getOperand());
+			as->cmp(eax, instr.operand());
 			as->sete(al);
 			as->movzx(eax, al);
 			break;
 		case OP_EQ_C_ALT: // value
 			// PRI = ALT == value ? 1 : 0
-			as->cmp(ecx, instr.getOperand());
+			as->cmp(ecx, instr.operand());
 			as->sete(al);
 			as->movzx(eax, al);
 			break;
@@ -1175,11 +1180,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_INC: // address
 			// [address] = [address] + 1
-			as->inc(dword_ptr(ebx, instr.getOperand()));
+			as->inc(dword_ptr(ebx, instr.operand()));
 			break;
 		case OP_INC_S: // offset
 			// [FRM + offset] = [FRM + offset] + 1
-			as->inc(dword_ptr(ebp, instr.getOperand()));
+			as->inc(dword_ptr(ebp, instr.operand()));
 			break;
 		case OP_INC_I:
 			// [PRI] = [PRI] + 1
@@ -1195,11 +1200,11 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_DEC: // address
 			// [address] = [address] - 1
-			as->dec(dword_ptr(ebx, instr.getOperand()));
+			as->dec(dword_ptr(ebx, instr.operand()));
 			break;
 		case OP_DEC_S: // offset
 			// [FRM + offset] = [FRM + offset] - 1
-			as->dec(dword_ptr(ebp, instr.getOperand()));
+			as->dec(dword_ptr(ebp, instr.operand()));
 			break;
 		case OP_DEC_I:
 			// [PRI] = [PRI] - 1
@@ -1212,14 +1217,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->lea(esi, dword_ptr(ebx, eax));
 			as->lea(edi, dword_ptr(ebx, ecx));
 			as->push(ecx);
-			if (instr.getOperand() % 4 == 0) {
-				as->mov(ecx, instr.getOperand() / 4);
+			if (instr.operand() % 4 == 0) {
+				as->mov(ecx, instr.operand() / 4);
 				as->rep_movsd();
-			} else if (instr.getOperand() % 2 == 0) {
-				as->mov(ecx, instr.getOperand() / 2);
+			} else if (instr.operand() % 2 == 0) {
+				as->mov(ecx, instr.operand() / 2);
 				as->rep_movsw();
 			} else {
-				as->mov(ecx, instr.getOperand());
+				as->mov(ecx, instr.operand());
 				as->rep_movsb();
 			}
 			as->pop(ecx);
@@ -1236,7 +1241,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				as->lea(edi, dword_ptr(ebx, eax));
 				as->lea(esi, dword_ptr(ebx, ecx));
 				as->push(ecx);
-				as->mov(ecx, instr.getOperand());
+				as->mov(ecx, instr.operand());
 				as->repe_cmpsb();
 				as->pop(ecx);
 				as->ja(L_above);
@@ -1259,7 +1264,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			// of the cell size.
 			as->lea(edi, dword_ptr(ebx, ecx));
 			as->push(ecx);
-			as->mov(ecx, instr.getOperand() / sizeof(cell));
+			as->mov(ecx, instr.operand() / sizeof(cell));
 			as->rep_stosd();
 			as->pop(ecx);
 			break;
@@ -1267,14 +1272,14 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
-			as->mov(ecx, instr.getOperand());
+			as->mov(ecx, instr.operand());
 			as->jmp(L_halt_);
 			break;
 		case OP_BOUNDS: { // value
 			// Abort execution if PRI > value or if PRI < 0.
 			Label &L_halt = L(as, cip, "halt");
 			Label &L_good = L(as, cip, "good");
-				as->cmp(eax, instr.getOperand());
+				as->cmp(eax, instr.operand());
 			as->jg(L_halt);
 				as->cmp(eax, 0);
 				as->jl(L_halt);
@@ -1290,8 +1295,8 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			as->push(esp);                         // stackPtr
 			as->push(ebp);                         // stackBase
 			as->push(eax);                         // index
-			as->push(reinterpret_cast<int>(this)); // jitter
-			as->call(reinterpret_cast<int>(Jitter::doSysreqC));
+			as->push(reinterpret_cast<int>(this)); // jit
+			as->call(reinterpret_cast<int>(JIT::doSysreqC));
 			as->add(esp, 16);
 			break;
 		}
@@ -1299,12 +1304,12 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 		case OP_SYSREQ_D: { // address
 			// call system service
 			const char *nativeName = 0;
-			switch (instr.getOpcode()) {
+			switch (instr.opcode()) {
 				case OP_SYSREQ_C:
-					nativeName = vm_.getNativeName(instr.getOperand());
+					nativeName = amx_.getNativeName(instr.operand());
 					break;
 				case OP_SYSREQ_D: {
-					nativeName = vm_.getNativeName(vm_.getNativeIndex(instr.getOperand()));
+					nativeName = amx_.getNativeName(amx_.getNativeIndex(instr.operand()));
 					break;
 				}
 			}
@@ -1322,13 +1327,13 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			goto ordinary_native;
 
 		ordinary_native:
-			switch (instr.getOpcode()) {
+			switch (instr.opcode()) {
 				case OP_SYSREQ_C: {
 					as->push(esp);                         // stackPtr
 					as->push(ebp);                         // stackBase
-					as->push(instr.getOperand());          // index
-					as->push(reinterpret_cast<int>(this)); // jitter
-					as->call(reinterpret_cast<int>(Jitter::doSysreqC));
+					as->push(instr.operand());          // index
+					as->push(reinterpret_cast<int>(this)); // jit
+					as->call(reinterpret_cast<int>(JIT::doSysreqC));
 					as->add(esp, 16);
 					break;
 				}
@@ -1336,9 +1341,9 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 					as->mov(edi, esp);
 					as->push(esp);                         // stackPtr
 					as->push(ebp);                         // stackBase
-					as->push(instr.getOperand());          // address
-					as->push(reinterpret_cast<int>(this)); // jitter
-					as->call(reinterpret_cast<int>(Jitter::doSysreqD));
+					as->push(instr.operand());          // address
+					as->push(reinterpret_cast<int>(this)); // jit
+					as->call(reinterpret_cast<int>(JIT::doSysreqD));
 					as->add(esp, 16);
 					break;
 			}
@@ -1361,13 +1366,13 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			} *case_table;
 
 			// Get pointer to the start of the case table.
-			case_table = reinterpret_cast<case_record*>(instr.getOperand() + sizeof(cell));
+			case_table = reinterpret_cast<case_record*>(instr.operand() + sizeof(cell));
 
 			// Get address of the "default" record.
-			cell default_addr = case_table[0].address - reinterpret_cast<cell>(vm_.getCode());
+			cell default_addr = case_table[0].address - reinterpret_cast<cell>(amx_.code());
 
 			// The number of cases follows the CASETBL opcode (which follows the SWITCH).
-			int num_cases = *(reinterpret_cast<cell*>(instr.getOperand()) + 1);
+			int num_cases = *(reinterpret_cast<cell*>(instr.operand()) + 1);
 
 			if (num_cases > 0) {
 				// Get minimum and maximum values.
@@ -1395,7 +1400,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 				// this in future...
 				for (int i = 0; i < num_cases; i++) {
 					as->cmp(eax, case_table[i + 1].value);
-					as->je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(vm_.getCode())));
+					as->je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(amx_.code())));
 				}
 			}
 
@@ -1417,7 +1422,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PUSH_ADR: // offset
 			// [STK] = FRM + offset, STK = STK - cell size
-			as->lea(edx, dword_ptr(ebp, instr.getOperand()));
+			as->lea(edx, dword_ptr(ebp, instr.operand()));
 			as->sub(edx, ebx);
 			as->push(edx);
 			break;
@@ -1438,7 +1443,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 	as->bind(L_halt_);
 		as->push(ecx);
 		as->push(reinterpret_cast<int>(this));
-		as->call(reinterpret_cast<int>(Jitter::doHalt));
+		as->call(reinterpret_cast<int>(JIT::doHalt));
 
 	if (error) {
 		goto compile_error;
@@ -1455,7 +1460,7 @@ bool Jitter::compile(CompileErrorHandler errorHandler) {
 
 compile_error:
 	if (errorHandler != 0) {
-		errorHandler(vm_, instr);
+		errorHandler(amx_, instr);
 	}
 
 	if (as != assembler_) {
@@ -1465,19 +1470,19 @@ compile_error:
 	return false;
 }
 
-int Jitter::call(cell address, cell *retval) {
-	if (vm_->hea >= vm_->stk) {
+int JIT::call(cell address, cell *retval) {
+	if (amx_->hea >= amx_->stk) {
 		return AMX_ERR_STACKERR;
 	}
-	if (vm_->hea < vm_->hlw) {
+	if (amx_->hea < amx_->hlw) {
 		return AMX_ERR_HEAPLOW;
 	}
-	if (vm_->stk > vm_->stp) {
+	if (amx_->stk > amx_->stp) {
 		return AMX_ERR_STACKLOW;
 	}
 
 	// Make sure all natives are registered.
-	if ((vm_->flags & AMX_FLAG_NTVREG) == 0) {
+	if ((amx_->flags & AMX_FLAG_NTVREG) == 0) {
 		return AMX_ERR_NOTFOUND;
 	}
 
@@ -1494,7 +1499,7 @@ int Jitter::call(cell address, cell *retval) {
 			as.lea(ecx, dword_ptr(esp, - 4));
 			as.mov(dword_ptr_abs(&haltEsp_), ecx);
 			as.mov(dword_ptr_abs(&haltEbp_), ebp);
-			as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
+			as.mov(ebx, reinterpret_cast<int>(amx_.data()));
 			as.call(eax);
 		endJitCode(&as);
 		as.pop(edx);
@@ -1507,7 +1512,7 @@ int Jitter::call(cell address, cell *retval) {
 		callHelper_ = (CallHelper)as.make();
 	}
 
-	vm_->error = AMX_ERR_NONE;
+	amx_->error = AMX_ERR_NONE;
 
 	void *start = getInstrPtr(address);
 	assert(start != 0);
@@ -1523,28 +1528,28 @@ int Jitter::call(cell address, cell *retval) {
 	haltEbp_ = haltEbp;
 	haltEsp_ = haltEsp;
 
-	return vm_->error;
+	return amx_->error;
 }
 
-int Jitter::exec(int index, cell *retval) {
-	cell address = vm_.getPublicAddress(index);
+int JIT::exec(int index, cell *retval) {
+	cell address = amx_.getPublicAddress(index);
 	if (address == 0) {
 		return AMX_ERR_INDEX;
 	}
 
 	// Push size of arguments and reset parameter count.
-	vm_.pushStack(vm_->paramcount * sizeof(cell));
-	vm_->paramcount = 0;
+	amx_.push(amx_->paramcount * sizeof(cell));
+	amx_->paramcount = 0;
 
 	return call(address, retval);
 }
 
-void Jitter::halt(int error) {
+void JIT::halt(int error) {
 	if (unlikely(haltHelper_ == 0)) {
 		X86Assembler as;
 
 		as.mov(eax, dword_ptr(esp, 4));
-		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&vm_->error)), eax);
+		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->error)), eax);
 		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
 		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
 		as.ret();
@@ -1555,7 +1560,7 @@ void Jitter::halt(int error) {
 	haltHelper_(error);
 }
 
-void Jitter::jump(cell address, void *stackBase, void *stackPtr) {
+void JIT::jump(cell address, void *stackBase, void *stackPtr) {
 	CodeMap::const_iterator it = codeMap_.find(address);
 
 	if (it != codeMap_.end()) {
@@ -1576,15 +1581,15 @@ void Jitter::jump(cell address, void *stackBase, void *stackPtr) {
 	}
 }
 
-void Jitter::sysreqC(cell index, void *stackBase, void *stackPtr) {
-	cell address = vm_.getNativeAddress(index);
+void JIT::sysreqC(cell index, void *stackBase, void *stackPtr) {
+	cell address = amx_.getNativeAddress(index);
 	if (address == 0) {
 		halt(AMX_ERR_NOTFOUND);
 	}
 	sysreqD(address, stackBase, stackPtr);
 }
 
-void Jitter::sysreqD(cell address, void *stackBase, void *stackPtr) {
+void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
 	if (unlikely(sysreqHelper_ == 0)) {
 		X86Assembler as;
 
@@ -1594,12 +1599,12 @@ void Jitter::sysreqD(cell address, void *stackBase, void *stackPtr) {
 		as.mov(ecx, esp); // params
 		endJitCode(&as);
 			as.push(ecx);
-			as.push(reinterpret_cast<int>(vm_.getAmx()));
+			as.push(reinterpret_cast<int>(amx_.amx()));
 			as.call(eax);
 			as.add(esp, 8);
 		beginJitCode(&as);
 		as.sub(esp, 20);
-		as.mov(ebx, reinterpret_cast<int>(vm_.getData()));
+		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
 		as.ret();
 
 		sysreqHelper_ = (SysreqHelper)as.make();
@@ -1608,15 +1613,15 @@ void Jitter::sysreqD(cell address, void *stackBase, void *stackPtr) {
 	sysreqHelper_(address, stackBase, stackPtr);
 }
 
-bool Jitter::getJumpRefs(std::set<cell> &refs) const {
-	AmxDisassembler disas(vm_);
+bool JIT::getJumpRefs(std::set<cell> &refs) const {
+	AMXDisassembler disas(amx_);
 	disas.setOpcodeTable(opcodeTable_);
 
-	AmxInstruction instr;
+	AMXInstruction instr;
 	bool error = false;
 
 	while (disas.decode(instr, &error)) {
-		AmxOpcode opcode = instr.getOpcode();
+		AMXOpcode opcode = instr.opcode();
 		switch (opcode) {
 			case OP_JUMP:
 			case OP_JZER:
@@ -1632,17 +1637,17 @@ bool Jitter::getJumpRefs(std::set<cell> &refs) const {
 			case OP_JSGRTR:
 			case OP_JSGEQ:
 			case OP_CALL:
-				refs.insert(instr.getOperand() - reinterpret_cast<int>(vm_.getCode()));
+				refs.insert(instr.operand() - reinterpret_cast<int>(amx_.code()));
 				break;
 			case OP_CASETBL: {
-				int n = instr.getNumOperands();
+				int n = instr.numOperands();
 				for (int i = 1; i < n; i += 2) {
-					refs.insert(instr.getOperand(i) - reinterpret_cast<int>(vm_.getCode()));
+					refs.insert(instr.operand(i) - reinterpret_cast<int>(amx_.code()));
 				}
 				break;
 			}
 			case OP_PROC:
-				refs.insert(instr.getAddress());
+				refs.insert(instr.address());
 				break;
 		}
 	}
@@ -1650,11 +1655,11 @@ bool Jitter::getJumpRefs(std::set<cell> &refs) const {
 	return !error;
 }
 
-Label &Jitter::L(X86Assembler *as, cell address) {
+Label &JIT::L(X86Assembler *as, cell address) {
 	return L(as, address, std::string());
 }
 
-Label &Jitter::L(X86Assembler *as, cell address, const std::string &name) {
+Label &JIT::L(X86Assembler *as, cell address, const std::string &name) {
 	std::pair<cell, std::string> key = std::make_pair(address, name);
 	LabelMap::iterator iterator = labelMap_.find(key);
 	if (iterator != labelMap_.end()) {
@@ -1667,27 +1672,27 @@ Label &Jitter::L(X86Assembler *as, cell address, const std::string &name) {
 }
 
 // static
-void JIT_CDECL Jitter::doJump(Jitter *jitter, cell address, void *stackBase, void *stackPtr) {
-	jitter->jump(address, stackBase, stackPtr);
-	doHalt(jitter, AMX_ERR_INVINSTR);
+void JIT_CDECL JIT::doJump(JIT *jit, cell address, void *stackBase, void *stackPtr) {
+	jit->jump(address, stackBase, stackPtr);
+	doHalt(jit, AMX_ERR_INVINSTR);
 }
 
 // static
-void JIT_CDECL Jitter::doHalt(Jitter *jitter, int error) {
-	jitter->halt(error);
+void JIT_CDECL JIT::doHalt(JIT *jit, int error) {
+	jit->halt(error);
 }
 
 // static
-void JIT_CDECL Jitter::doSysreqC(Jitter *jitter, cell index, void *stackBase, void *stackPtr) {
-	jitter->sysreqC(index, stackBase, stackPtr);
+void JIT_CDECL JIT::doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr) {
+	jit->sysreqC(index, stackBase, stackPtr);
 }
 
 // static
-void JIT_CDECL Jitter::doSysreqD(Jitter *jitter, cell address, void *stackBase, void *stackPtr) {
-	jitter->sysreqD(address, stackBase, stackPtr);
+void JIT_CDECL JIT::doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr) {
+	jit->sysreqD(address, stackBase, stackPtr);
 }
 
-void Jitter::native_float(X86Assembler *as) {
+void JIT::native_float(X86Assembler *as) {
 	as->fild(dword_ptr(esp, 4));
 	as->sub(esp, 4);
 	as->fstp(dword_ptr(esp));
@@ -1695,7 +1700,7 @@ void Jitter::native_float(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatabs(X86Assembler *as) {
+void JIT::native_floatabs(X86Assembler *as) {
 	as->fld(dword_ptr(esp, 4));
 	as->fabs();
 	as->sub(esp, 4);
@@ -1704,7 +1709,7 @@ void Jitter::native_floatabs(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatadd(X86Assembler *as) {
+void JIT::native_floatadd(X86Assembler *as) {
 	as->fld(dword_ptr(esp, 4));
 	as->fadd(dword_ptr(esp, 8));
 	as->sub(esp, 4);
@@ -1713,7 +1718,7 @@ void Jitter::native_floatadd(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatsub(X86Assembler *as) {
+void JIT::native_floatsub(X86Assembler *as) {
 	as->fld(dword_ptr(esp, 4));
 	as->fsub(dword_ptr(esp, 8));
 	as->sub(esp, 4);
@@ -1722,7 +1727,7 @@ void Jitter::native_floatsub(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatmul(X86Assembler *as) {
+void JIT::native_floatmul(X86Assembler *as) {
 	as->fld(dword_ptr(esp, 4));
 	as->fmul(dword_ptr(esp, 8));
 	as->sub(esp, 4);
@@ -1731,7 +1736,7 @@ void Jitter::native_floatmul(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatdiv(X86Assembler *as) {
+void JIT::native_floatdiv(X86Assembler *as) {
 	as->fld(dword_ptr(esp, 4));
 	as->fdiv(dword_ptr(esp, 8));
 	as->sub(esp, 4);
@@ -1740,7 +1745,7 @@ void Jitter::native_floatdiv(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatsqroot(X86Assembler *as) {
+void JIT::native_floatsqroot(X86Assembler *as) {
 	as->fld(dword_ptr(esp, 4));
 	as->fsqrt();
 	as->sub(esp, 4);
@@ -1749,7 +1754,7 @@ void Jitter::native_floatsqroot(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::native_floatlog(X86Assembler *as) {
+void JIT::native_floatlog(X86Assembler *as) {
 	as->fld1();
 	as->fld(dword_ptr(esp, 8));
 	as->fyl2x();
@@ -1763,24 +1768,24 @@ void Jitter::native_floatlog(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-void Jitter::endJitCode(X86Assembler *as) {
+void JIT::endJitCode(X86Assembler *as) {
 	// Do NOT use EBX here!!
-	as->lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(vm_.getData())));
-	as->mov(dword_ptr_abs(&vm_->frm), edx);
+	as->lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(amx_.data())));
+	as->mov(dword_ptr_abs(&amx_->frm), edx);
 	as->mov(ebp, dword_ptr_abs(&ebp_));
-	as->lea(edx, dword_ptr(esp, -reinterpret_cast<int>(vm_.getData())));
-	as->mov(dword_ptr_abs(&vm_->stk), edx);
+	as->lea(edx, dword_ptr(esp, -reinterpret_cast<int>(amx_.data())));
+	as->mov(dword_ptr_abs(&amx_->stk), edx);
 	as->mov(esp, dword_ptr_abs(&esp_));
 }
 
-void Jitter::beginJitCode(X86Assembler *as) {
+void JIT::beginJitCode(X86Assembler *as) {
 	// Do NOT use EBX here!!
 	as->mov(dword_ptr_abs(&ebp_), ebp);
-	as->mov(edx, dword_ptr_abs(&vm_->frm));
-	as->lea(ebp, dword_ptr(edx, reinterpret_cast<int>(vm_.getData())));
+	as->mov(edx, dword_ptr_abs(&amx_->frm));
+	as->lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
 	as->mov(dword_ptr_abs(&esp_), esp);
-	as->mov(edx, dword_ptr_abs(&vm_->stk));
-	as->lea(esp, dword_ptr(edx, reinterpret_cast<int>(vm_.getData())));
+	as->mov(edx, dword_ptr_abs(&amx_->stk));
+	as->lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
 }
 
 } // namespace jit

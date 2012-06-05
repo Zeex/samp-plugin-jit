@@ -37,12 +37,14 @@
 #include "plugin.h"
 #include "version.h"
 
+using namespace jit;
+
 extern void *pAMXFunctions;
 
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, jit::Jitter*> AmxToJitterMap;
+typedef std::map<AMX*, JIT*> AmxToJitterMap;
 static AmxToJitterMap amx2jitter;
 
 static JumpX86 amx_Exec_hook;
@@ -62,15 +64,15 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
 		JumpX86::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
 	} else {
-		jit::Jitter *jitter = iterator->second;
-		return jitter->exec(index, retval);
+		JIT *jit = iterator->second;
+		return jit->exec(index, retval);
 	}
 }
 
-static void CompileError(const jit::AmxVm &vm, const jit::AmxInstruction &instr)
+static void CompileError(const AMXScript &amx, const AMXInstruction &instr)
 {
-	logprintf("JIT failed to compile instruction at %08x:", instr.getAddress());
-	logprintf("  %s", instr.asString().c_str());
+	logprintf("JIT failed to compile instruction at %08x:", instr.address());
+	logprintf("  %s", instr.string().c_str());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
@@ -129,13 +131,13 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload()
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 {
-	jit::Jitter *jitter = new jit::Jitter(amx);
+	JIT *jit = new JIT(amx);
 	#if defined __GNUC__ && defined LINUX
-		jitter->setOpcodeTable(::opcodeTable);
+		jit->setOpcodeTable(::opcodeTable);
 	#endif
 
 	AsmJit::X86Assembler as;
-	jitter->setAssembler(&as);
+	jit->setAssembler(&as);
 
 	AsmJit::FileLogger logger;
 	as.setLogger(&logger);
@@ -154,24 +156,24 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 		as.setLogger(0);
 	}
 	
-	if (!jitter->compile(CompileError)) {
-		delete jitter;
+	if (!jit->compile(CompileError)) {
+		delete jit;
 	} else {
 		if (logger.getStream() != 0) {
 			std::fclose(logger.getStream());
 		}
-		jitter->setAssembler(0);
+		jit->setAssembler(0);
 
 		if (Options::Get().dump_bin()) {
 			std::string binPath = amxPath + ".bin";
 			std::FILE *bin = std::fopen(binPath.c_str(), "w");
 			if (bin != 0) {
-				std::fwrite(jitter->getCode(), jitter->getCodeSize(), 1, bin);
+				std::fwrite(jit->code(), jit->codeSize(), 1, bin);
 				std::fclose(bin);
 			}
 		}
 
-		::amx2jitter.insert(std::make_pair(amx, jitter));
+		::amx2jitter.insert(std::make_pair(amx, jit));
 	}
 
 	return AMX_ERR_NONE;
