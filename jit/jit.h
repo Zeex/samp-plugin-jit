@@ -310,11 +310,6 @@ private:
 	// Get code locations referred to by JUMP/JCC/CALL instructions.
 	bool getJumpRefs(std::set<cell> &refs) const;
 
-	// Get addresses of function calls. This information can be used for example
-	// to determine the number of arguments that a particular function takes.
-	// The "calls" parameter is a destination <-> source address map.
-	bool getCalls(std::multimap<cell, cell> &calls) const;
-
 	// See if we can safely change the value of a register.
 	bool canOverwriteRegister(cell address, AMXRegister reg) const;
 
