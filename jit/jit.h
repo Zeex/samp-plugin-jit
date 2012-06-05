@@ -52,7 +52,7 @@ namespace jit {
 	#undef REG_NONE
 #endif
 
-enum AmxRegisters {
+enum AMXRegister {
 	REG_NONE = 0,
 	REG_PRI = (2 << 0),
 	REG_ALT = (2 << 1),
@@ -65,7 +65,7 @@ enum AmxRegisters {
 	REG_CIP = (2 << 8),
 };
 
-enum AmxOpcode {
+enum AMXOpcode {
 	OP_NONE,         OP_LOAD_PRI,     OP_LOAD_ALT,     OP_LOAD_S_PRI,
 	OP_LOAD_S_ALT,   OP_LREF_PRI,     OP_LREF_ALT,     OP_LREF_S_PRI,
 	OP_LREF_S_ALT,   OP_LOAD_I,       OP_LODB_I,       OP_CONST_PRI,
@@ -100,41 +100,43 @@ enum AmxOpcode {
 	OP_FILE,         OP_LINE,         OP_SYMBOL,       OP_SRANGE,
 	OP_JUMP_PRI,     OP_SWITCH,       OP_CASETBL,      OP_SWAP_PRI,
 	OP_SWAP_ALT,     OP_PUSH_ADR,     OP_NOP,          OP_SYSREQ_D,
-	OP_SYMTAG,       OP_BREAK,
-	NUM_AMX_OPCODES
+	OP_SYMTAG,       OP_BREAK
 };
 
-class AmxInstruction {
-public:
-	AmxInstruction();
+const int NUM_AMX_OPCODES = OP_BREAK + 1;
 
-	inline int getSize() const {
+class AMXInstruction {
+public:
+	AMXInstruction();
+
+public:
+	inline int size() const {
 		return sizeof(cell) * (1 + operands_.size());
 	}
 
-	inline const cell getAddress() const {
+	inline const cell address() const {
 		return address_; 
 	}
 	inline void setAddress(cell address) {
 		address_ = address;
 	}
 
-	inline AmxOpcode getOpcode() const {
+	inline AMXOpcode opcode() const {
 		return opcode_;
 	}
-	inline void setOpcode(AmxOpcode opcode) {
+	inline void setOpcode(AMXOpcode opcode) {
 		opcode_ = opcode;
 	}
 
-	inline cell getOperand(unsigned int index = 0u) {
+	inline cell operand(unsigned int index = 0u) {
 		assert(index >= 0 && index < operands_.size());
 		return operands_[index];
 	}
 
-	inline std::vector<cell> &getOperands() {
+	inline std::vector<cell> &operands() {
 		return operands_;
 	}
-	inline const std::vector<cell> &getOperands() const {
+	inline const std::vector<cell> &operands() const {
 		return operands_;
 	}
 	inline void setOperands(std::vector<cell> operands) {
@@ -145,20 +147,21 @@ public:
 		operands_.push_back(value);
 	}
 
-	inline int getNumOperands() const {
+	inline int numOperands() const {
 		return operands_.size();
 	}
 
-	const char *getName() const;
+public:
+	const char *name() const;
 
-	int getInputRegisters() const;
-	int getOutputRegisters() const;
+	int inputRegisters() const;
+	int outputRegisters() const;
 
-	std::string asString() const;
+	std::string string() const;
 
 private:
 	cell address_;
-	AmxOpcode opcode_;
+	AMXOpcode opcode_;
 	std::vector<cell> operands_;
 
 private:
@@ -170,41 +173,47 @@ private:
 	static const StaticInfoTableEntry info[NUM_AMX_OPCODES];
 };
 
-class AmxVm {
+class AMXScript {
 public:
-	AmxVm(AMX *amx) : amx_(amx) {}
+	AMXScript(AMX *amx);
 
-	AMX *operator->() {
+public:
+	inline AMX *amx() const {
 		return amx_;
 	}
-
-	inline AMX *getAmx() const {
-		return amx_;
-	}
-	inline AMX_HEADER *getHeader() const {
+	inline AMX_HEADER *amxHeader() const {
 		return reinterpret_cast<AMX_HEADER*>(amx_->base);
 	}
-	inline unsigned char *getData() const {
-		return amx_->data != 0 ? amx_->data : amx_->base + getHeader()->dat;
+	inline unsigned char *data() const {
+		return amx_->data != 0 ? amx_->data : amx_->base + amxHeader()->dat;
 	}
-	inline unsigned char *getCode() const {
-		return amx_->base + getHeader()->cod;
-	}
-
-	inline int getNumPublics() const {
-		return (getHeader()->natives - getHeader()->publics) / getHeader()->defsize;
-	}
-	inline int getNumNatives() const {
-		return (getHeader()->libraries - getHeader()->natives) / getHeader()->defsize;
+	inline unsigned char *code() const {
+		return amx_->base + amxHeader()->cod;
 	}
 
-	inline AMX_FUNCSTUBNT *getPublics() const {
-		return reinterpret_cast<AMX_FUNCSTUBNT*>(getHeader()->publics + amx_->base);
+	inline int numPublics() const {
+		return (amxHeader()->natives - amxHeader()->publics) / amxHeader()->defsize;
 	}
-	inline AMX_FUNCSTUBNT *getNatives() const {
-		return reinterpret_cast<AMX_FUNCSTUBNT*>(getHeader()->natives + amx_->base);
+	inline int numNatives() const {
+		return (amxHeader()->libraries - amxHeader()->natives) / amxHeader()->defsize;
 	}
 
+	inline AMX_FUNCSTUBNT *publics() const {
+		return reinterpret_cast<AMX_FUNCSTUBNT*>(amxHeader()->publics + amx_->base);
+	}
+	inline AMX_FUNCSTUBNT *natives() const {
+		return reinterpret_cast<AMX_FUNCSTUBNT*>(amxHeader()->natives + amx_->base);
+	}
+
+public:
+	inline operator AMX*() {
+		return amx();
+	}
+	inline AMX *operator->() {
+		return amx();
+	}
+
+public:
 	cell getPublicAddress(int index) const;
 	cell getNativeAddress(int index) const;
 
@@ -214,53 +223,58 @@ public:
 	const char *getPublicName(int index) const;
 	const char *getNativeName(int index) const;
 
-	inline cell *getStack() const {
-		return reinterpret_cast<cell*>(getData() + amx_->stk);
+public:
+	inline cell *stack() const {
+		return reinterpret_cast<cell*>(data() + amx_->stk);
 	}
 
-	cell *pushStack(cell value);
-	cell  popStack();
-	void  popStack(int ncells);
+	cell *push(cell value);
+	cell  pop();
+	void  pop(int ncells);
 
 private:
 	AMX *amx_;
 };
 
-class AmxDisassembler {
+class AMXDisassembler {
 public:
-	AmxDisassembler(AmxVm vm);
+	AMXDisassembler(const AMXScript &amx);
 
+public:
 	inline void setOpcodeTable(cell *opcodeTable) {
 		opcodeTable_ = opcodeTable;
 	}
 
+	inline cell ip() const {
+		return ip_;
+	}
 	inline void setIp(cell ip) {
 		ip_ = ip;
 	}
-	inline cell getIp() const {
-		return ip_;
-	}
 
-	bool decode(AmxInstruction &instr, bool *error = 0);
+public:
+	bool decode(AMXInstruction &instr, bool *error = 0);
 
 private:
-	AmxVm vm_;
+	AMXScript amx_;
 	cell *opcodeTable_;
 	cell ip_;
 };
 
-class Jitter {
+class JIT {
 public:
-	typedef void (*CompileErrorHandler)(const AmxVm &vm, const AmxInstruction &instr);
+	JIT(AMXScript amx);
+	~JIT();
+
+private:
+	JIT(const JIT &);
+	JIT &operator=(const JIT &);
 
 public:
-	Jitter(AMX *amx);
-	~Jitter();
-
-	inline void *getCode() const {
+	inline void *code() const {
 		return code_;
 	}
-	inline std::size_t getCodeSize() const {
+	inline std::size_t codeSize() const {
 		return codeSize_;
 	}
 
@@ -270,25 +284,27 @@ public:
 	inline void setOpcodeTable(cell *opcodeTable) {
 		opcodeTable_ = opcodeTable;
 	}
-	inline cell *getOpcodeTable() const {
+	inline cell *opcodeTable() const {
 		return opcodeTable_;
 	}
 
 	inline void setAssembler(AsmJit::X86Assembler *assembler) {
 		assembler_ = assembler;
 	}
-	inline AsmJit::X86Assembler *getAssembler() const {
+	inline AsmJit::X86Assembler *assembler() const {
 		return assembler_;
 	}
 
+public:
+	typedef void (*CompileErrorHandler)(
+		const AMXScript &amx,
+		const AMXInstruction &instr
+	);
 	bool compile(CompileErrorHandler errorHandler = 0);
 
+public:
 	int call(cell address, cell *retval);
 	int exec(cell index, cell *retval);	
-
-private:
-	Jitter(const Jitter &);
-	Jitter &operator=(const Jitter &);
 
 private:
 	bool getJumpRefs(std::set<cell> &refs) const;
@@ -297,19 +313,19 @@ private:
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
 	void jump(cell address, void *stackBase, void *stackPtr);
-	static void JIT_CDECL doJump(Jitter *jitter, cell address, void *stackBase, void *stackPtr);
+	static void JIT_CDECL doJump(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
 	void halt(int error);
-	static void JIT_CDECL doHalt(Jitter *jitter, int error);
+	static void JIT_CDECL doHalt(JIT *jit, int error);
 
 	void sysreqC(cell index, void *stackBase, void *stackPtr);
-	static void JIT_CDECL doSysreqC(Jitter *jitter, cell index, void *stackBase, void *stackPtr);
+	static void JIT_CDECL doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr);
 
 	void sysreqD(cell address, void *stackBase, void *stackPtr);
-	static void JIT_CDECL doSysreqD(Jitter *jitter, cell address, void *stackBase, void *stackPtr);
+	static void JIT_CDECL doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
 private:
-	typedef void (Jitter::*IntrinsicImpl)(AsmJit::X86Assembler *as);
+	typedef void (JIT::*IntrinsicImpl)(AsmJit::X86Assembler *as);
 
 	struct Intrinsic {
 		std::string   name;
@@ -332,7 +348,7 @@ private:
 	void endJitCode(AsmJit::X86Assembler *as);
 
 private:
-	AmxVm vm_;
+	AMXScript amx_;
 	cell *opcodeTable_;
 
 	AsmJit::X86Assembler *assembler_;
