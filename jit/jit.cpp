@@ -503,12 +503,6 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 	std::set<cell> jumpRefs;
 	getJumpRefs(jumpRefs);
 
-	std::multimap<cell, cell> calls;
-	getCalls(calls);
-
-	// Address of the current function.
-	cell function = 0;
-
 	Logger *logger = as->getLogger();
 
 	bool error = false;
@@ -818,7 +812,6 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_PROC:
 			// [STK] = FRM, STK = STK - cell size, FRM = STK
-			function = cip;
 			as->push(ebp);
 			as->mov(ebp, esp);
 			as->sub(dword_ptr(esp), ebx);
@@ -830,42 +823,19 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			as->add(ebp, ebx);
 			as->ret();
 			break;
-		case OP_RETN: {
+		case OP_RETN:
 			// STK = STK + cell size, FRM = [STK],
 			// CIP = [STK], STK = STK + cell size
 			// The RETN instruction removes a specified number of bytes
 			// from the stack. The value to adjust STK with must be
 			// pushed prior to the call.
-			int nargs = -1;
-			if (function != 0) {
-				// Try to statically determine the number of arguments this function takes.
-				// This should work for all non-variadic non-public function.
-				std::pair<
-					std::multimap<cell, cell>::const_iterator,
-					std::multimap<cell, cell>::const_iterator
-				> range = calls.equal_range(function);
-				for (std::multimap<cell, cell>::const_iterator iterator = range.first;
-						iterator != range.second; ++iterator) {
-					cell *ptr = reinterpret_cast<cell*>(amx_.code() + iterator->second - 2*sizeof(cell));
-					if (*ptr == OP_PUSH_C) {
-						nargs = *(ptr + 1) / sizeof(cell);
-						break;
-					}
-				}
-			}
 			as->pop(ebp);
 			as->add(ebp, ebx);
 			as->pop(edx);
-			if (nargs >= 0) {
-				as->push(edx);
-				as->ret(4 + nargs * sizeof(cell));
-			} else {
-				as->add(esp, dword_ptr(esp));
-				as->push(edx);
-				as->ret(4);
-			}
+			as->add(esp, dword_ptr(esp));
+			as->push(edx);
+			as->ret(4);
 			break;
-		}
 		case OP_CALL: // offset
 			// [STK] = CIP + 5, STK = STK - cell size
 			// CIP = CIP + offset
@@ -1628,25 +1598,6 @@ bool JIT::getJumpRefs(std::set<cell> &refs) const {
 			case OP_PROC:
 				refs.insert(instr.address());
 				break;
-		}
-	}
-
-	return !error;
-}
-
-bool JIT::getCalls(std::multimap<cell, cell> &calls) const {
-	AMXDisassembler disas(amx_);
-	disas.setOpcodeTable(opcodeTable_);
-
-	AMXInstruction instr;
-	bool error = false;
-
-	while (disas.decode(instr, &error)) {
-		AMXOpcode opcode = instr.opcode();
-		if (opcode == OP_CALL) {
-			cell dest = instr.operand() - reinterpret_cast<int>(amx_.code());
-			cell source = instr.address();
-			calls.insert(std::make_pair(dest, source));
 		}
 	}
 
