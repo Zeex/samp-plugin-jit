@@ -1291,7 +1291,6 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			as->push(eax);                         // index
 			as->push(reinterpret_cast<int>(this)); // jit
 			as->call(reinterpret_cast<int>(JIT::doSysreqC));
-			as->add(esp, 16);
 			break;
 		}
 		case OP_SYSREQ_C:   // index
@@ -1325,20 +1324,17 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 				case OP_SYSREQ_C: {
 					as->push(esp);                         // stackPtr
 					as->push(ebp);                         // stackBase
-					as->push(instr.operand());          // index
+					as->push(instr.operand());             // index
 					as->push(reinterpret_cast<int>(this)); // jit
 					as->call(reinterpret_cast<int>(JIT::doSysreqC));
-					as->add(esp, 16);
 					break;
 				}
 				case OP_SYSREQ_D:
-					as->mov(edi, esp);
 					as->push(esp);                         // stackPtr
 					as->push(ebp);                         // stackBase
-					as->push(instr.operand());          // address
+					as->push(instr.operand());             // address
 					as->push(reinterpret_cast<int>(this)); // jit
 					as->call(reinterpret_cast<int>(JIT::doSysreqD));
-					as->add(esp, 16);
 					break;
 			}
 			break;
@@ -1482,20 +1478,34 @@ int JIT::call(cell address, cell *retval) {
 
 	if (unlikely(callHelper_ == 0)) {
 		X86Assembler as;
-		
+
 		as.mov(eax, dword_ptr(esp, 4));
 		as.push(esi);
 		as.push(edi);
 		as.push(ebx);
 		as.push(ecx);
 		as.push(edx);
-		beginJitCode(&as);
-			as.lea(ecx, dword_ptr(esp, - 4));
-			as.mov(dword_ptr_abs(&haltEsp_), ecx);
-			as.mov(dword_ptr_abs(&haltEbp_), ebp);
-			as.mov(ebx, reinterpret_cast<int>(amx_.data()));
-			as.call(eax);
-		endJitCode(&as);
+
+		as.mov(dword_ptr_abs(&ebp_), ebp);
+		as.mov(edx, dword_ptr_abs(&amx_->frm));
+		as.lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
+		as.mov(dword_ptr_abs(&esp_), esp);
+		as.mov(edx, dword_ptr_abs(&amx_->stk));
+		as.lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
+
+		as.lea(ecx, dword_ptr(esp, - 4));
+		as.mov(dword_ptr_abs(&haltEsp_), ecx);
+		as.mov(dword_ptr_abs(&haltEbp_), ebp);
+		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
+		as.call(eax);
+
+		as.lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(amx_.data())));
+		as.mov(dword_ptr_abs(&amx_->frm), edx);
+		as.mov(ebp, dword_ptr_abs(&ebp_));
+		as.lea(edx, dword_ptr(esp, -reinterpret_cast<int>(amx_.data())));
+		as.mov(dword_ptr_abs(&amx_->stk), edx);
+		as.mov(esp, dword_ptr_abs(&esp_));
+
 		as.pop(edx);
 		as.pop(ecx);
 		as.pop(ebx);
@@ -1682,17 +1692,32 @@ void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
 	if (unlikely(sysreqHelper_ == 0)) {
 		X86Assembler as;
 
-		as.mov(eax, dword_ptr(esp, 4));  // address
-		as.mov(ebp, dword_ptr(esp, 8));  // stackBase
-		as.mov(esp, dword_ptr(esp, 12)); // stackPtr
-		as.mov(ecx, esp); // params
-		endJitCode(&as);
-			as.push(ecx);
-			as.push(reinterpret_cast<int>(amx_.amx()));
-			as.call(eax);
-			as.add(esp, 8);
-		beginJitCode(&as);
-		as.sub(esp, 20);
+		as.mov(eax, dword_ptr(esp, 4));   // address
+		as.mov(ebp, dword_ptr(esp, 8));   // stackBase
+		as.mov(esp, dword_ptr(esp, 12));  // stackPtr
+		as.mov(ecx, esp);                 // params
+		as.mov(ebx, dword_ptr(esp, -20)); // return address
+
+		as.lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(amx_.data())));
+		as.mov(dword_ptr_abs(&amx_->frm), edx);
+		as.mov(ebp, dword_ptr_abs(&ebp_));
+		as.lea(edx, dword_ptr(esp, -reinterpret_cast<int>(amx_.data())));
+		as.mov(dword_ptr_abs(&amx_->stk), edx);
+		as.mov(esp, dword_ptr_abs(&esp_));
+
+		as.push(ecx);
+		as.push(reinterpret_cast<int>(amx_.amx()));
+		as.call(eax);
+		as.add(esp, 8);
+
+		as.mov(dword_ptr_abs(&ebp_), ebp);
+		as.mov(edx, dword_ptr_abs(&amx_->frm));
+		as.lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
+		as.mov(dword_ptr_abs(&esp_), esp);
+		as.mov(edx, dword_ptr_abs(&amx_->stk));
+		as.lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
+		
+		as.push(ebx);
 		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
 		as.ret();
 
@@ -1781,26 +1806,6 @@ void JIT::native_floatlog(X86Assembler *as) {
 	as->fstp(dword_ptr(esp));
 	as->mov(eax, dword_ptr(esp));
 	as->add(esp, 4);
-}
-
-void JIT::endJitCode(X86Assembler *as) {
-	// Do NOT use EBX here!!
-	as->lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(amx_.data())));
-	as->mov(dword_ptr_abs(&amx_->frm), edx);
-	as->mov(ebp, dword_ptr_abs(&ebp_));
-	as->lea(edx, dword_ptr(esp, -reinterpret_cast<int>(amx_.data())));
-	as->mov(dword_ptr_abs(&amx_->stk), edx);
-	as->mov(esp, dword_ptr_abs(&esp_));
-}
-
-void JIT::beginJitCode(X86Assembler *as) {
-	// Do NOT use EBX here!!
-	as->mov(dword_ptr_abs(&ebp_), ebp);
-	as->mov(edx, dword_ptr_abs(&amx_->frm));
-	as->lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
-	as->mov(dword_ptr_abs(&esp_), esp);
-	as->mov(edx, dword_ptr_abs(&amx_->stk));
-	as->lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
 }
 
 } // namespace jit
