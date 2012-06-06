@@ -515,7 +515,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			if (instr.opcode() == OP_PROC) {
 				logger->logString("\n\n\n");
 			}
-			logger->logFormat("\t; @%08x %s\n", cip, instr.string().c_str());
+			logger->logFormat("\t; %08x %s\n", cip, instr.string().c_str());
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
@@ -867,9 +867,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 		case OP_JSLEQ:
 		case OP_JSGRTR:
 		case OP_JSGEQ: {
-			cell dest = instr.operand() - reinterpret_cast<cell>(amx_.code());
-			Label &L_dest = L(as, dest);
-
+			Label &L_dest = L(as, instr.operand() - reinterpret_cast<cell>(amx_.code()));
 			switch (instr.opcode()) {
 				case OP_JUMP: // offset
 					// CIP = CIP + offset (jump to the address relative from
@@ -939,7 +937,6 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			}
 			break;
 		}
-
 		case OP_SHL:
 			// PRI = PRI << ALT
 			as->shl(eax, cl);
