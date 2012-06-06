@@ -1486,6 +1486,9 @@ int JIT::call(cell address, cell *retval) {
 		as.push(ecx);
 		as.push(edx);
 
+		as.push(dword_ptr_abs(&ebp_));
+		as.push(dword_ptr_abs(&esp_));
+
 		as.mov(dword_ptr_abs(&ebp_), ebp);
 		as.mov(edx, dword_ptr_abs(&amx_->frm));
 		as.lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
@@ -1505,6 +1508,9 @@ int JIT::call(cell address, cell *retval) {
 		as.lea(edx, dword_ptr(esp, -reinterpret_cast<int>(amx_.data())));
 		as.mov(dword_ptr_abs(&amx_->stk), edx);
 		as.mov(esp, dword_ptr_abs(&esp_));
+
+		as.pop(dword_ptr_abs(&esp_));
+		as.pop(dword_ptr_abs(&ebp_));
 
 		as.pop(edx);
 		as.pop(ecx);
@@ -1698,6 +1704,9 @@ void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
 		as.mov(ecx, esp);                 // params
 		as.mov(ebx, dword_ptr(esp, -20)); // return address
 
+		as.mov(esi, dword_ptr_abs(&amx_->frm));
+		as.mov(edi, dword_ptr_abs(&amx_->stk));
+
 		as.lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(amx_.data())));
 		as.mov(dword_ptr_abs(&amx_->frm), edx);
 		as.mov(ebp, dword_ptr_abs(&ebp_));
@@ -1716,6 +1725,9 @@ void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
 		as.mov(dword_ptr_abs(&esp_), esp);
 		as.mov(edx, dword_ptr_abs(&amx_->stk));
 		as.lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
+
+		as.mov(dword_ptr_abs(&amx_->stk), edi);
+		as.mov(dword_ptr_abs(&amx_->frm), esi);
 		
 		as.push(ebx);
 		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
