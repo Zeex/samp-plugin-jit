@@ -692,6 +692,10 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
       *buf++ = ' ';
       *buf++ = (d < 0) ? '-' : '+';
       *buf++ = ' ';
+      if (d > 9 || d < -9) {
+        *buf++ = '0';
+		*buf++ = 'x';
+      }
       buf = StringUtil::utoa(buf, d < 0 ? -d : d, 16);
     }
 
@@ -700,8 +704,12 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
   }
   else if (op->isImm())
   {
-    const Imm& i = reinterpret_cast<const Imm&>(*op);
-    return StringUtil::utoa(buf, (sysint_t)i.getValue(), 16U);
+    sysint_t i = reinterpret_cast<const Imm&>(*op).getValue();
+    if (i > 9 || i < -9) {
+      *buf++ = '0';
+      *buf++ = 'x';
+    }
+    return StringUtil::utoa(buf, i, 16U);
   }
   else if (op->isLabel())
   {
