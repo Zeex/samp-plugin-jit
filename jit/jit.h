@@ -187,11 +187,19 @@ public:
 	inline AMX_HEADER *amxHeader() const {
 		return reinterpret_cast<AMX_HEADER*>(amx_->base);
 	}
+
+	inline unsigned char *code() const {
+		return amx_->base + amxHeader()->cod;
+	}
+	inline std::size_t codeSize() const {
+		return amxHeader()->dat - amxHeader()->cod;
+	}
+
 	inline unsigned char *data() const {
 		return amx_->data != 0 ? amx_->data : amx_->base + amxHeader()->dat;
 	}
-	inline unsigned char *code() const {
-		return amx_->base + amxHeader()->cod;
+	inline std::size_t dataSize() const {
+		return amxHeader()->hea - amxHeader()->dat;
 	}
 
 	inline int numPublics() const {
@@ -229,6 +237,9 @@ public:
 public:
 	inline cell *stack() const {
 		return reinterpret_cast<cell*>(data() + amx_->stk);
+	}
+	inline cell stackSize() const {
+		return amxHeader()->stp - amxHeader()->hea;
 	}
 
 	cell *push(cell value);
