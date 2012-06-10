@@ -799,8 +799,10 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_STACK: // value
 			// ALT = STK, STK = STK + value
-			as->mov(ecx, esp);
-			as->sub(ecx, ebx);
+			if (!canOverwriteRegister(cip + instr.size(), REG_ALT)) {
+				as->mov(ecx, esp);
+				as->sub(ecx, ebx);
+			}
 			if (instr.operand() >= 0) {
 				as->add(esp, instr.operand());
 			} else {
@@ -809,7 +811,9 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_HEAP: // value
 			// ALT = HEA, HEA = HEA + value
-			as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
+			if (!canOverwriteRegister(cip + instr.size(), REG_ALT)) {
+				as->mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
+			}
 			if (instr.operand() >= 0) {
 				as->add(dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)), instr.operand());
 			} else {
@@ -1192,14 +1196,17 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			// [PRI] = [PRI] - 1
 			as->dec(dword_ptr(ebx, eax));
 			break;
-		case OP_MOVS: // number
+		case OP_MOVS: { // number
 			// Copy memory from [PRI] to [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
 			// overlap.
+			bool needALT = !canOverwriteRegister(cip + instr.size(), REG_ALT);
 			as->cld();
 			as->lea(esi, dword_ptr(ebx, eax));
 			as->lea(edi, dword_ptr(ebx, ecx));
-			as->push(ecx);
+			if (needALT) {
+				as->push(ecx);
+			}
 			if (instr.operand() % 4 == 0) {
 				as->mov(ecx, instr.operand() / 4);
 				as->rep_movsd();
@@ -1210,8 +1217,11 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 				as->mov(ecx, instr.operand());
 				as->rep_movsb();
 			}
-			as->pop(ecx);
+			if (needALT) {
+				as->pop(ecx);
+			}
 			break;
+		}
 		case OP_CMPS: { // number
 			// Compare memory blocks at [PRI] and [ALT]. The parameter
 			// specifies the number of bytes. The blocks should not
@@ -1220,13 +1230,18 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			Label L_below(L(as, cip, "below"));
 			Label L_equal(L(as, cip, "equal"));
 			Label L_continue(L(as, cip, "continue"));
+			bool needALT = !canOverwriteRegister(cip + instr.size(), REG_ALT);
 				as->cld();
 				as->lea(edi, dword_ptr(ebx, eax));
 				as->lea(esi, dword_ptr(ebx, ecx));
-				as->push(ecx);
+				if (needALT) {
+					as->push(ecx);
+				}
 				as->mov(ecx, instr.operand());
 				as->repe_cmpsb();
-				as->pop(ecx);
+				if (needALT) {
+					as->pop(ecx);
+				}
 				as->ja(L_above);
 				as->jb(L_below);
 				as->jz(L_equal);
@@ -1241,17 +1256,23 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			as->bind(L_continue);
 			break;
 		}
-		case OP_FILL: // number
+		case OP_FILL: { // number
 			// Fill memory at [ALT] with value in [PRI]. The parameter
 			// specifies the number of bytes, which must be a multiple
 			// of the cell size.
+			bool needALT = !canOverwriteRegister(cip + instr.size(), REG_ALT);
 			as->cld();
 			as->lea(edi, dword_ptr(ebx, ecx));
-			as->push(ecx);
+			if (needALT) {
+				as->push(ecx);
+			}
 			as->mov(ecx, instr.operand() / sizeof(cell));
 			as->rep_stosd();
-			as->pop(ecx);
+			if (needALT) {
+				as->pop(ecx);
+			}
 			break;
+		}
 		case OP_HALT: // number
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
@@ -1541,6 +1562,31 @@ int JIT::exec(int index, cell *retval) {
 	amx_->paramcount = 0;
 
 	return call(address, retval);
+}
+
+bool JIT::canOverwriteRegister(cell address, AMXRegister reg) const {
+	// This needs more investigation...
+#if 0
+	AMXDisassembler disas(amx_);
+	disas.setIp(address);
+
+	AMXInstruction instr;
+	while (disas.decode(instr)) {
+		if (instr.inputRegisters() & reg) {
+			// The registers is read by one or more of subsequent instructions, so
+			// it can't be overwritten.
+			return false;
+		}
+		if (instr.outputRegisters() & reg) {
+			// OK - something overwrites it anyway, it must be safe to modify it.
+			return true;
+		}
+	}
+
+	// Nothing reads or writes the register.
+	return true;
+#endif
+	return false;
 }
 
 bool JIT::getJumpRefs(std::set<cell> &refs) const {
