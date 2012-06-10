@@ -705,7 +705,7 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
   else if (op->isImm())
   {
     sysint_t i = reinterpret_cast<const Imm&>(*op).getValue();
-    if (i > 9 || i < -9) {
+    if (i > 9 || i < 0) {
       *buf++ = '0';
       *buf++ = 'x';
     }
