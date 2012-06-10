@@ -325,11 +325,12 @@ private:
 	// Get code locations referred to by JUMP/JCC/CALL instructions.
 	bool getJumpRefs(std::set<cell> &refs) const;
 
-	// See if we can safely change the value of a register.
+	// See if we can safely write to a register because it is overwritten any way by
+	// following instructions.
 	bool canOverwriteRegister(cell address, AMXRegister reg) const;
 
 	// Sets a label at the specified address. Used for complex instructions involving
-	// conditional jumps (e.g. SWITCH, BOUNDS).
+	// conditional jumps e.g. SWITCH, BOUNDS, etc.
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
@@ -366,30 +367,20 @@ private:
 	void native_floatlog(AsmJit::X86Assembler *as);
 
 private:
-	// The AMX instance that is being JIT-compiled.
 	AMXScript amx_;
 
-	// The opcode relocation table.
-	// This table exists in GCC version of AMX, consult the AMX source code for
-	// details (hint: lookup "opcode_list" variable).
+	// This is the opcode relocation table. It exists only in GCC version of AMX,
+	// consult the AMX source code for details (hint: lookup "opcode_list" variable).
 	cell *opcodeTable_;
 
-	// A custom assembler instance that is set via setAssembler().
-	// Can be NULL.
 	AsmJit::X86Assembler *assembler_;
 
-	// The buffer containing JIT code and its size in bytes.
 	void        *code_;
 	std::size_t  codeSize_;
 
-	// When switching between the AMX stack and the native stack we store the
-	// EBP and ESP registers' values here.
 	void *ebp_;
 	void *esp_;
 
-	// The values of EBP and ESP registers are placed to these variables upon
-	// function call to be able to terminate the function quickly further on.
-	// Used mainly by the HALT instruction implementation, hence the name.
 	void *haltEbp_;
 	void *haltEsp_;
 
