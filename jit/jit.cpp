@@ -1565,6 +1565,8 @@ int JIT::exec(int index, cell *retval) {
 }
 
 bool JIT::canOverwriteRegister(cell address, AMXRegister reg) const {
+	// This needs more investigation...
+#if 0
 	AMXDisassembler disas(amx_);
 	disas.setIp(address);
 
@@ -1583,6 +1585,8 @@ bool JIT::canOverwriteRegister(cell address, AMXRegister reg) const {
 
 	// Nothing reads or writes the register.
 	return true;
+#endif
+	return false;
 }
 
 bool JIT::getJumpRefs(std::set<cell> &refs) const {
