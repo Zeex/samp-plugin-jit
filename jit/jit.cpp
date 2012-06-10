@@ -513,7 +513,17 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 
 		if (logger != 0) {
 			if (instr.opcode() == OP_PROC) {
-				logger->logString("\n\n\n");
+				const char *functionName = 0;
+				if (cip == amx_.amxHeader()->cip) {
+					functionName = "main";
+				} else {
+					functionName = amx_.getPublicName(amx_.getPublicIndex(cip));
+				}
+				if (functionName != 0) {
+					logger->logFormat("\n\n\n; %s\n", functionName);
+				} else {
+					logger->logString("\n\n\n");
+				}
 			}
 			logger->logFormat("\t; %08x %s\n", cip, instr.string().c_str());
 		}
