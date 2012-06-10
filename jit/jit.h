@@ -325,10 +325,6 @@ private:
 	// Get code locations referred to by JUMP/JCC/CALL instructions.
 	bool getJumpRefs(std::set<cell> &refs) const;
 
-	// See if we can safely write to a register because it is overwritten any way by
-	// following instructions.
-	bool canOverwriteRegister(cell address, AMXRegister reg) const;
-
 	// Sets a label at the specified address. Used for complex instructions involving
 	// conditional jumps e.g. SWITCH, BOUNDS, etc.
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
