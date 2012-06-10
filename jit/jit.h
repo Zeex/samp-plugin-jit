@@ -366,10 +366,6 @@ private:
 	void native_floatlog(AsmJit::X86Assembler *as);
 
 private:
-	void beginJitCode(AsmJit::X86Assembler *as);
-	void endJitCode(AsmJit::X86Assembler *as);
-
-private:
 	// The AMX instance that is being JIT-compiled.
 	AMXScript amx_;
 
