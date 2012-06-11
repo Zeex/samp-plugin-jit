@@ -302,7 +302,6 @@ public:
 		return opcodeTable_;
 	}
 
-	// Sets an assembler to be used by compile().
 	inline void setAssembler(AsmJit::X86Assembler *assembler) {
 		assembler_ = assembler;
 	}
@@ -311,14 +310,25 @@ public:
 	}
 
 public:
+	// Compile error handler specified to compile().
 	typedef void (*CompileErrorHandler)(
 		const AMXScript &amx,
 		const AMXInstruction &instr
 	);
+
+	// compile() is used to JIT-compile the AMX script to be able to calls its function with
+	// call() and exec(). If an error occurds during compilation, such as invalid instruction,
+	// it calls an optional errorHandler.
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 public:
+	// Calls a function at the specified address and returns one of the AMX_ERROR_* codes.
+	// Function arguments should be pushed onto the AMX stack prior invoking this method,
+	// for example using amx_Push*() routines.
 	int call(cell address, cell *retval);
+
+	// This is basically the same as call() but for public functions. Can be used as a drop-in
+	// replacemenet for amx_Exec().
 	int exec(cell index, cell *retval);
 
 private:
@@ -329,21 +339,38 @@ private:
 	// following instructions.
 	bool canOverwriteRegister(cell address, AMXRegister reg) const;
 
-	// Sets a label at the specified address. Used for complex instructions involving
-	// conditional jumps e.g. SWITCH, BOUNDS, etc.
+	// Sets a label at the specified AMX address. The address should be relative to the
+	// start of the code section.
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
+	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and jumps
+	// to JIT code mapped to the specified AMX address. The address must be relative
+	// to the start of the of code section.
 	void jump(cell address, void *stackBase, void *stackPtr);
+
+	// A static wrapper around jump() called from within JIT code.
 	static void JIT_CDECL doJump(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
+	// Resets EBP and ESP and jumps to the place of the previous call() invocation setting
+	// amx.error to error.
 	void halt(int error);
+
+	// A static wrapper around halt() called from within JIT code.
 	static void JIT_CDECL doHalt(JIT *jit, int error);
 
+	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and executes
+	// a native functions at the specified index. If there is no function at that index
+	// or the index is out of native table bounds the halt() method is called.
 	void sysreqC(cell index, void *stackBase, void *stackPtr);
+
+	// A static wrapper around sysreqC() called from within JIT code.
 	static void JIT_CDECL doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr);
 
+	// Same as sysreqC() but takes an address instead of an index.
 	void sysreqD(cell address, void *stackBase, void *stackPtr);
+
+	// A static wrapper around sysreqD() called from within JIT code.
 	static void JIT_CDECL doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
 private:
@@ -356,7 +383,7 @@ private:
 
 	static Intrinsic intrinsics_[];
 
-	// Optimized version of AMX floating-point library natives.
+	// Optimized versions of AMX floating-point natives.
 	void native_float(AsmJit::X86Assembler *as);
 	void native_floatabs(AsmJit::X86Assembler *as);
 	void native_floatadd(AsmJit::X86Assembler *as);
