@@ -501,7 +501,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 	L_halt_ = as->newLabel();
 
 	std::set<cell> jumpRefs;
-	getJumpRefs(jumpRefs);
+	collectJumpAddresses(jumpRefs);
 
 	Logger *logger = as->getLogger();
 
@@ -1593,7 +1593,7 @@ bool JIT::canOverwriteRegister(cell address, AMXRegister reg) const {
 	return true;
 }
 
-bool JIT::getJumpRefs(std::set<cell> &refs) const {
+bool JIT::collectJumpAddresses(std::set<cell> &refs) const {
 	AMXDisassembler disas(amx_);
 	disas.setOpcodeTable(opcodeTable_);
 
