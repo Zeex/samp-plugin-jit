@@ -49,22 +49,22 @@
 
 namespace jit {
 
-// REG_NONE is defined in WinNT.h
+// REG_NONE is defined in WinNT.h.
 #ifdef REG_NONE
 	#undef REG_NONE
 #endif
 
 enum AMXRegister {
 	REG_NONE = 0,
-	REG_PRI = (2 << 0),
-	REG_ALT = (2 << 1),
-	REG_COD = (2 << 2),
-	REG_DAT = (2 << 3),
-	REG_HEA = (2 << 4),
-	REG_STP = (2 << 5),
-	REG_STK = (2 << 6),
-	REG_FRM = (2 << 7),
-	REG_CIP = (2 << 8),
+	REG_PRI = (2 << 0), // Primary register.
+	REG_ALT = (2 << 1), // Alternative register.
+	REG_COD = (2 << 2), // Offset to the start of code.
+	REG_DAT = (2 << 3), // Offset to the start of data.
+	REG_HEA = (2 << 4), // Heap pointer.
+	REG_STP = (2 << 5), // Stack top.
+	REG_STK = (2 << 6), // Stack pointer.
+	REG_FRM = (2 << 7), // Stack frame pointer.
+	REG_CIP = (2 << 8), // Current instruction pointer.
 };
 
 enum AMXOpcode {
@@ -176,6 +176,7 @@ private:
 	static const StaticInfoTableEntry info[NUM_AMX_OPCODES];
 };
 
+// A wrapper around the AMX C structure that adds a few extra methods.
 class AMXScript {
 public:
 	AMXScript(AMX *amx);
@@ -255,18 +256,24 @@ public:
 	AMXDisassembler(const AMXScript &amx);
 
 public:
+	// Sets opcode relocation table. See JIT::setOpcodeTalbe() for details.
 	inline void setOpcodeTable(cell *opcodeTable) {
 		opcodeTable_ = opcodeTable;
 	}
 
+	// Returns current instruction pointer.
 	inline cell ip() const {
 		return ip_;
 	}
+
+	// Sets current instruction pointer.
 	inline void setIp(cell ip) {
 		ip_ = ip;
 	}
 
 public:
+	// Decodes current instruction and returns true until end of code is reached
+	// or an error occured. The optional error argument is set to true on error.
 	bool decode(AMXInstruction &instr, bool *error = 0);
 
 private:
@@ -281,44 +288,65 @@ public:
 	~JIT();
 
 private:
+	// Disallow copying and assignement.
 	JIT(const JIT &);
 	JIT &operator=(const JIT &);
 
 public:
+	// Returns a pointer to the JIT code buffer or NULL if the AMX has not ben
+	// compiled yet with compile().
 	inline void *code() const {
 		return code_;
 	}
+
+	// Returns the size of the JIT code or 0 if the AMX has not been compiled yet
+	// with compile()
 	inline std::size_t codeSize() const {
 		return codeSize_;
 	}
 
+	// Returns a pointer to a machine instruction mapped to a given AMX instruction.
+	// The address is realtive to the start of the AMX code.
 	void *getInstrPtr(cell address) const;
-	int   getInstrOffset(cell address) const;
 
+	// Same as above but returns an offset to code() instead of a pointer.
+	int getInstrOffset(cell address) const;
+
+	// Sets an opcode relocation table to be used. This table only exists in the
+	// GCC version of AMX where they use a GCC extension to C's goto statement instead
+	// of a simple switch/case statement to minimize opcode dispatching overhead.
 	inline void setOpcodeTable(cell *opcodeTable) {
 		opcodeTable_ = opcodeTable;
 	}
+
+	// Returns a pointer to the opcode relocation table if it was previously set with
+	// setOpcodeTable() or NULL if not.
 	inline cell *opcodeTable() const {
 		return opcodeTable_;
 	}
 
+	// Sets a custom assembler to be used to compile() the code. If no assembler is set
+	// or setAssembler() is called with NULL argument the default assembler is used.
 	inline void setAssembler(AsmJit::X86Assembler *assembler) {
 		assembler_ = assembler;
 	}
+
+	// Returns the currently set assembler or NULL if no custom assembler is set.
 	inline AsmJit::X86Assembler *assembler() const {
 		return assembler_;
 	}
 
 public:
-	// Compile error handler specified to compile().
+	// Compile error handler passed to compile(). The two arguments are the AMX being compiled
+	// and the current instruction at which the error occurs.
 	typedef void (*CompileErrorHandler)(
 		const AMXScript &amx,
 		const AMXInstruction &instr
 	);
 
 	// compile() is used to JIT-compile the AMX script to be able to calls its function with
-	// call() and exec(). If an error occurds during compilation, such as invalid instruction,
-	// it calls an optional errorHandler.
+	// call() and exec(). If an error occurs during compilation, such as invalid instruction,
+	// an optionally specified errorHandler is called. See CompileErrorHandler above.
 	bool compile(CompileErrorHandler errorHandler = 0);
 
 public:
@@ -374,6 +402,9 @@ private:
 	static void JIT_CDECL doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
 private:
+	// An "intrinsic" (couldn't find a better term for this) is a portion of
+	// machine code that substitutes calls to certain native functions and is
+	// generally is a highly optimized version of such.
 	typedef void (JIT::*IntrinsicImpl)(AsmJit::X86Assembler *as);
 
 	struct Intrinsic {
@@ -383,7 +414,7 @@ private:
 
 	static Intrinsic intrinsics_[];
 
-	// Optimized versions of AMX floating-point natives.
+	// AMX floating-point natives.
 	void native_float(AsmJit::X86Assembler *as);
 	void native_floatabs(AsmJit::X86Assembler *as);
 	void native_floatadd(AsmJit::X86Assembler *as);
@@ -396,8 +427,6 @@ private:
 private:
 	AMXScript amx_;
 
-	// This is the opcode relocation table. It exists only in GCC version of AMX,
-	// consult the AMX source code for details (hint: lookup "opcode_list" variable).
 	cell *opcodeTable_;
 
 	AsmJit::X86Assembler *assembler_;
@@ -427,6 +456,7 @@ private:
 	typedef cell (JIT_CDECL *SysreqHelper)(cell address, void *stackBase, void *stackPtr);
 	SysreqHelper sysreqHelper_;
 
+private:
 	typedef std::map<cell, int> CodeMap;
 	CodeMap codeMap_;
 
