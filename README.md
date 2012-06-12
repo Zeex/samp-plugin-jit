@@ -8,8 +8,7 @@ Introduction
 
 This package contains a Just-In-Time compiler for AMX version 3.2 and a SA-MP
 (San Andreas Multiplayer) server plugin. Since SA-MP server runs only on x86 this
-implementation supports only x86 (but may be extented to support x86_64 in
-future...).
+implementation supports only that architecture.
 
 Installation
 ------------
