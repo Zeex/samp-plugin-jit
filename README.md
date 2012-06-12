@@ -11,10 +11,33 @@ This package contains a Just-In-Time compiler for AMX version 3.2 and a SA-MP
 implementation supports only x86 (but may be extented to support x86_64 in
 future...).
 
-Plugin configuration
---------------------
+Installation
+------------
 
-The following `server.cfg` options are recognized by the plugin:
+*	Windows
+
+	Copy `jit.dll` to the `plugins` folder inside your server's root (create it
+	if it doesn't exist) and add `jit` to the list of plugins in `server.cfg`.
+
+*	Linux
+
+	Copy `jit.so` to the `plugins` folder inside your server's root (create it
+	if it doesn't exist) and add `jit.so` to the list of plugins in `server.cfg`.
+
+Compilation
+-----------
+
+The simplest way of building this plugin from source is using CMake:
+
+http://cmake.org
+
+CMake is a cross-platform tool that can generate projects for the majority of
+build systems and IDEs on both Linux and Windows.
+
+Configuration
+-------------
+
+The following `server.cfg` options are recognized by the this plugin:
 
 * `jit_dump_asm 0/1`
 
