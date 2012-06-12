@@ -44,8 +44,8 @@ extern void *pAMXFunctions;
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, JIT*> AmxToJitterMap;
-static AmxToJitterMap amx2jitter;
+typedef std::map<AMX*, JIT*> AmxToJitMap;
+static AmxToJitMap amx2jit;
 
 static JumpX86 amx_Exec_hook;
 static cell *opcodeTable = 0;
@@ -59,8 +59,8 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
 			return AMX_ERR_NONE;
 		}
 	#endif
-	AmxToJitterMap::iterator iterator = ::amx2jitter.find(amx);
-	if (iterator == ::amx2jitter.end()) {
+	AmxToJitMap::iterator iterator = ::amx2jit.find(amx);
+	if (iterator == ::amx2jit.end()) {
 		JumpX86::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
 	} else {
@@ -124,7 +124,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload()
 {
-	for (AmxToJitterMap::iterator it = amx2jitter.begin(); it != amx2jitter.end(); ++it) {
+	for (AmxToJitMap::iterator it = amx2jit.begin(); it != amx2jit.end(); ++it) {
 		delete it->second;
 	}
 }
@@ -173,7 +173,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 			}
 		}
 
-		::amx2jitter.insert(std::make_pair(amx, jit));
+		::amx2jit.insert(std::make_pair(amx, jit));
 	}
 
 	return AMX_ERR_NONE;
@@ -181,10 +181,10 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx)
 {
-	AmxToJitterMap::iterator it = amx2jitter.find(amx);
-	if (it != amx2jitter.end()) {
+	AmxToJitMap::iterator it = amx2jit.find(amx);
+	if (it != amx2jit.end()) {
 		delete it->second;
-		amx2jitter.erase(it);
+		amx2jit.erase(it);
 	}
 	return AMX_ERR_NONE;
 }
