@@ -46,14 +46,3 @@ The following `server.cfg` options are recognized by the this plugin:
 * `jit_dump_bin 0/1`
 
   Dumps raw code to a binary file named `<amx_path>/<amx_name>.bin`
-
-Useful Links
-------------
-
-SA-MP website:
-
-http://www.sa-mp.com
-
-Plugin's topic at SA-MP forum (outdated):
-
-http://forum.sa-mp.com/showthread.php?t=326980
