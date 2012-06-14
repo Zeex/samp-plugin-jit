@@ -7,8 +7,8 @@ https://github.com/Zeex/samp-jit-plugin
 Introduction
 ------------
 
-This package contains a Just-In-Time compiler for AMX version 3.2 and a SA-MP
-(San Andreas Multiplayer) server plugin. Since SA-MP server runs only on 32-bit
+This package contains a Just-In-Time compiler for AMX version 3.2 and a
+[SA-MP](http://www.sa-mp.com) server plugin. Since SA-MP runs only on 32-bit
 x86 this implementation supports only that architecture.
 
 
