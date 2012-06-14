@@ -15,6 +15,9 @@ x86 this implementation supports only that architecture.
 Installation
 ------------
 
+Download a zip or tar.gz from [here](https://github.com/Zeex/samp-jit-plugin/downloads),
+unpack it and follow instructions below:
+
 *	Windows
 
 	Copy `jit.dll` to the `plugins` folder inside your server's root (create it
