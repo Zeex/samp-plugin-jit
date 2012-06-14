@@ -94,7 +94,6 @@ configure_file(
 )
 
 install(TARGETS ${PLUGIN_TARGET} LIBRARY DESTINATION ".")
-install(FILES "README.md" DESTINATION ".")
 
 if(MSVC)
 	set(PDB_NAME "jit.pdb")
