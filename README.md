@@ -22,16 +22,7 @@ Installation
 
 	Copy `jit.so` to the `plugins` folder inside your server's root (create it
 	if it doesn't exist) and add `jit.so` to the list of plugins in `server.cfg`.
-
-Compilation
------------
-
-The simplest way of building this plugin from source is using CMake:
-
-http://cmake.org
-
-CMake is a cross-platform tool that can generate projects for the majority of
-build systems and IDEs on both Linux and Windows.
+	
 
 Configuration
 -------------
