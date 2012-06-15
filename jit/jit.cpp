@@ -1565,32 +1565,28 @@ int JIT::exec(int index, cell *retval) {
 }
 
 bool JIT::canOverwriteRegister(cell address, AMXRegister reg) const {
-	assert(reg != REG_CIP);
-
+	// This needs more investigation...
+#if 0
 	AMXDisassembler disas(amx_);
 	disas.setIp(address);
 
 	AMXInstruction instr;
 	while (disas.decode(instr)) {
 		if (instr.inputRegisters() & reg) {
-			// The register is read by at least one of subsequent instructions, so
+			// The registers is read by one or more of subsequent instructions, so
 			// it can't be overwritten.
 			return false;
 		}
 		if (instr.outputRegisters() & reg) {
-			// OK, something overwrites it anyway, it must be safe to modify it.
+			// OK - something overwrites it anyway, it must be safe to modify it.
 			return true;
-		}
-		if (instr.outputRegisters() & REG_CIP) {
-			// This instruction changes the instruction pointer. We can't guarantee
-			// that the register isn't read after the jump is made (a bit more analysis
-			// is needed).
-			return false;
 		}
 	}
 
-	// End of code..
+	// Nothing reads or writes the register.
 	return true;
+#endif
+	return false;
 }
 
 bool JIT::collectJumpAddresses(std::set<cell> &refs) const {
