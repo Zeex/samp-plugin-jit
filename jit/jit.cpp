@@ -47,6 +47,8 @@ namespace jit {
 
 using namespace AsmJit;
 
+const int kProcAlignment = 16;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AMXInstruction implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -510,6 +512,13 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 
 	while (disas.decode(instr, &error)) {
 		cell cip = instr.address();
+
+		if (instr.opcode() == OP_PROC) {
+			// Align procedure body by kProcAlignment bytes.
+			while (as->getCodeSize() % kProcAlignment != 0) {
+				as->int3();
+			}
+		}
 
 		if (logger != 0) {
 			if (instr.opcode() == OP_PROC) {
