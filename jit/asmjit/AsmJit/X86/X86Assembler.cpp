@@ -2718,7 +2718,7 @@ void X86Assembler::embedLabel(const Label& label) ASMJIT_NOTHROW
 void X86Assembler::align(uint32_t m) ASMJIT_NOTHROW
 {
   if (!canEmit()) return;
-  if (_logger) _logger->logFormat(".align %u", (uint)m);
+  if (_logger) _logger->logFormat(".align %u\n", (uint)m);
 
   if (!m) return;
 
