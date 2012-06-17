@@ -1475,9 +1475,6 @@ int JIT::call(cell address, cell *retval) {
 		as.push(ecx);
 		as.push(edx);
 
-		as.push(dword_ptr_abs(&ebp_));
-		as.push(dword_ptr_abs(&esp_));
-
 		as.mov(dword_ptr_abs(&ebp_), ebp);
 		as.mov(edx, dword_ptr_abs(&amx_->frm));
 		as.lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
@@ -1498,9 +1495,6 @@ int JIT::call(cell address, cell *retval) {
 		as.mov(dword_ptr_abs(&amx_->stk), edx);
 		as.mov(esp, dword_ptr_abs(&esp_));
 
-		as.pop(dword_ptr_abs(&esp_));
-		as.pop(dword_ptr_abs(&ebp_));
-
 		as.pop(edx);
 		as.pop(ecx);
 		as.pop(ebx);
@@ -1516,6 +1510,9 @@ int JIT::call(cell address, cell *retval) {
 	void *start = getInstrPtr(address);
 	assert(start != 0);
 
+	void *ebp = ebp_;
+	void *esp = esp_;
+
 	void *haltEbp = haltEbp_;
 	void *haltEsp = haltEsp_;
 
@@ -1526,6 +1523,9 @@ int JIT::call(cell address, cell *retval) {
 
 	haltEbp_ = haltEbp;
 	haltEsp_ = haltEsp;
+
+	ebp_ = ebp;
+	esp_ = esp;
 
 	return amx_->error;
 }
