@@ -513,13 +513,6 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 	while (disas.decode(instr, &error)) {
 		cell cip = instr.address();
 
-		if (instr.opcode() == OP_PROC) {
-			// Align procedure body by kProcAlignment bytes.
-			while (as->getCodeSize() % kProcAlignment != 0) {
-				as->int3();
-			}
-		}
-
 		if (logger != 0) {
 			if (instr.opcode() == OP_PROC) {
 				const char *functionName = 0;
@@ -535,6 +528,11 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 				}
 			}
 			logger->logFormat("\t; %08x %s\n", cip, instr.string().c_str());
+		}
+
+		if (instr.opcode() == OP_PROC) {
+			// Align procedure body by kProcAlignment bytes.
+			as->align(kProcAlignment);
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
