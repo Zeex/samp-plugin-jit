@@ -437,9 +437,6 @@ private:
 	void *haltEsp_;
 
 private:
-	AsmJit::Label L_halt_;
-
-private:
 	typedef void (JIT_CDECL *HaltHelper)(int error);
 	HaltHelper haltHelper_;
 
