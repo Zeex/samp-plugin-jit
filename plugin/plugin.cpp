@@ -80,12 +80,6 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
-#if defined WIN32
-	#define SAMP_SERVER_BINARY "samp-server.exe"
-#else
-	#define SAMP_SERVER_BINARY "samp03svr"
-#endif
-
 static void *AMXAPI amx_Align(void *v) { return v; }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
@@ -100,7 +94,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 	void *ptr = JumpX86::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
 	if (ptr != 0) {
 		std::string module = fileutils::GetFileName(os::GetModulePath(ptr));
-		if (!module.empty() && module != SAMP_SERVER_BINARY) {
+		if (!module.empty()) {
 			logprintf("  JIT must be loaded before %s", module.c_str());
 			return false;
 		}
