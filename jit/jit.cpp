@@ -500,7 +500,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 		as = assembler_;
 	}
 
-	L_halt_ = as->newLabel();
+	Label haltLabel = as->newLabel();
 
 	std::set<cell> jumpRefs;
 	collectJumpAddresses(jumpRefs);
@@ -1263,7 +1263,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			// Abort execution (exit value in PRI), parameters other than 0
 			// have a special meaning.
 			as->mov(ecx, instr.operand());
-			as->jmp(L_halt_);
+			as->jmp(haltLabel);
 			break;
 		case OP_BOUNDS: { // value
 			// Abort execution if PRI > value or if PRI < 0.
@@ -1276,7 +1276,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 				as->jmp(L_good);
 			as->bind(L_halt);
 				as->mov(ecx, AMX_ERR_BOUNDS);
-				as->jmp(L_halt_);
+				as->jmp(haltLabel);
 			as->bind(L_good);
 			break;
 		}
@@ -1426,7 +1426,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 	if (logger != 0) {
 		logger->logString("\n\n\n");
 	}
-	as->bind(L_halt_);
+	as->bind(haltLabel);
 		as->push(ecx);
 		as->push(reinterpret_cast<int>(this));
 		as->call(reinterpret_cast<int>(JIT::doHalt));
