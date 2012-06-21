@@ -1057,7 +1057,11 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			break;
 		case OP_ADD_C: // value
 			// PRI = PRI + value
-			as->add(eax, instr.operand());
+			if (instr.operand() >= 0) {
+				as->add(eax, instr.operand());
+			} else {
+				as->sub(eax, -instr.operand());
+			}
 			break;
 		case OP_SMUL_C: // value
 			// PRI = PRI * value
