@@ -132,7 +132,7 @@ public:
 	}
 
 	inline cell operand(unsigned int index = 0u) {
-		assert(index >= 0 && index < operands_.size());
+		assert(index < operands_.size());
 		return operands_[index];
 	}
 
