@@ -31,7 +31,7 @@
 #include "amxpathfinder.h"
 #include "fileutils.h"
 #include "jit.h"
-#include "jump-x86.h"
+#include "hook.h"
 #include "options.h"
 #include "os.h"
 #include "plugin.h"
@@ -47,7 +47,7 @@ static logprintf_t logprintf;
 typedef std::map<AMX*, JIT*> AmxToJitMap;
 static AmxToJitMap amx2jit;
 
-static JumpX86 amx_Exec_hook;
+static Hook amx_Exec_hook;
 static cell *opcodeTable = 0;
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
@@ -61,7 +61,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
 	#endif
 	AmxToJitMap::iterator iterator = ::amx2jit.find(amx);
 	if (iterator == ::amx2jit.end()) {
-		JumpX86::ScopedRemove r(&amx_Exec_hook);
+		Hook::ScopedRemove r(&amx_Exec_hook);
 		return amx_Exec(amx, retval, index);
 	} else {
 		JIT *jit = iterator->second;
@@ -91,7 +91,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (void*)amx_Align;
 	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align64] = (void*)amx_Align;
 
-	void *ptr = JumpX86::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
+	void *ptr = Hook::GetTargetAddress(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
 	if (ptr != 0) {
 		std::string module = fileutils::GetFileName(os::GetModulePath(ptr));
 		if (!module.empty()) {

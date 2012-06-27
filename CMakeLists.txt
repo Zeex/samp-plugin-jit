@@ -39,8 +39,8 @@ set(PLUGIN_SOURCES
 	"plugin/configreader.h"
 	"plugin/fileutils.cpp"
 	"plugin/fileutils.h"
-	"plugin/jump-x86.cpp"
-	"plugin/jump-x86.h"
+	"plugin/hook.cpp"
+	"plugin/hook.h"
 	"plugin/os.h"
 	"plugin/options.cpp"
 	"plugin/options.h"
@@ -51,8 +51,10 @@ set(PLUGIN_SOURCES
 )
 
 if(WIN32)
+	list(APPEND PLUGIN_SOURCES "plugin/hook-win32.cpp")
 	list(APPEND PLUGIN_SOURCES "plugin/os-win32.cpp")
 elseif(UNIX)
+	list(APPEND PLUGIN_SOURCES "plugin/hook-unix.cpp")
 	list(APPEND PLUGIN_SOURCES "plugin/os-unix.cpp")
 endif()
 
