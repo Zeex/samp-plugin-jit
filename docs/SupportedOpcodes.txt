@@ -28,9 +28,10 @@ idxaddr
 idxaddr.b
 align.pri
 align.alt
-lctrl 0 (useless)
+lctrl 0
 lctrl 1
 lctrl 2
+lctrl 3
 lctrl 4
 lctrl 5
 lctrl 6
