@@ -1357,52 +1357,52 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			// is passed as an offset from CIP) and jump to the associated
 			// the address in the matching record.
 
-			struct case_record {
+			struct CaseRecord {
 				cell value;    // case value
 				cell address;  // address to jump to (absolute)
-			} *case_table;
+			} *caseTable;
 
 			// Get pointer to the start of the case table.
-			case_table = reinterpret_cast<case_record*>(instr.operand() + sizeof(cell));
+			caseTable = reinterpret_cast<CaseRecord*>(instr.operand() + sizeof(cell));
 
 			// Get address of the "default" record.
-			cell default_addr = case_table[0].address - reinterpret_cast<cell>(amx_.code());
+			cell defaultCase = caseTable[0].address - reinterpret_cast<cell>(amx_.code());
 
 			// The number of cases follows the CASETBL opcode (which follows the SWITCH).
-			int num_cases = *(reinterpret_cast<cell*>(instr.operand()) + 1);
+			int numberOfRecords = *(reinterpret_cast<cell*>(instr.operand()) + 1);
 
-			if (num_cases > 0) {
+			if (numberOfRecords > 0) {
 				// Get minimum and maximum values.
-				cell *min_value = 0;
-				cell *max_value = 0;
-				for (int i = 0; i < num_cases; i++) {
-					cell *value = &case_table[i + 1].value;
-					if (min_value == 0 || *value < *min_value) {
-						min_value = value;
+				cell *minValue = 0;
+				cell *maxValue = 0;
+				for (int i = 0; i < numberOfRecords; i++) {
+					cell *value = &caseTable[i + 1].value;
+					if (minValue == 0 || *value < *minValue) {
+						minValue = value;
 					}
-					if (max_value == 0 || *value > *max_value) {
-						max_value = value;
+					if (maxValue == 0 || *value > *maxValue) {
+						maxValue = value;
 					}
 				}
 
 				// Check if the value in eax is in the allowed range.
 				// If not, jump to the default case (i.e. no match).
-				as->cmp(eax, *min_value);
-				as->jl(L(as, default_addr));
-				as->cmp(eax, *max_value);
-				as->jg(L(as, default_addr));
+				as->cmp(eax, *minValue);
+				as->jl(L(as, defaultCase));
+				as->cmp(eax, *maxValue);
+				as->jg(L(as, defaultCase));
 
 				// OK now sequentially compare eax with each value.
 				// This is pretty slow so I probably should optimize
 				// this in future...
-				for (int i = 0; i < num_cases; i++) {
-					as->cmp(eax, case_table[i + 1].value);
-					as->je(L(as, case_table[i + 1].address - reinterpret_cast<cell>(amx_.code())));
+				for (int i = 0; i < numberOfRecords; i++) {
+					as->cmp(eax, caseTable[i + 1].value);
+					as->je(L(as, caseTable[i + 1].address - reinterpret_cast<cell>(amx_.code())));
 				}
 			}
 
 			// No match found - go for default case.
-			as->jmp(L(as, default_addr));
+			as->jmp(L(as, defaultCase));
 			break;
 		}
 		case OP_CASETBL: // ...
