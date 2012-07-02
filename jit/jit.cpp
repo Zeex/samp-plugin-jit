@@ -724,6 +724,9 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			case 2:
 				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
 				break;
+			case 3:
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_->stp)));
+				break;
 			case 4:
 				as->mov(eax, esp);
 				as->sub(eax, ebx);
