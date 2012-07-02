@@ -63,6 +63,8 @@ source_group("plugin" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/[^/
 source_group("plugin\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/[^/\\]+\\..*")
 source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/amx/[^/\\]+\\..*")
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
 	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
