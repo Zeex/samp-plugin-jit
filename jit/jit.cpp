@@ -594,6 +594,8 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			case 4:
 				as->mov(eax, dword_ptr(ebx, eax));
 				break;
+			default:
+				goto compile_error;
 			}
 			break;
 		case OP_CONST_PRI: // value
@@ -674,6 +676,8 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 			case 4:
 				as->mov(dword_ptr(ebx, ecx), eax);
 				break;
+			default:
+				goto compile_error;
 			}
 			break;
 		case OP_LIDX:
