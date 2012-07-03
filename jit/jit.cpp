@@ -739,10 +739,12 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 				as->mov(eax, ebp);
 				as->sub(eax, ebx);
 				break;
-			case 6: {
+			case 6:
 				as->mov(eax, instr.address() + instr.size());
 				break;
-			}
+			case 7:
+				as->mov(eax, 1);
+				break;
 			default:
 				goto compile_error;
 			}
