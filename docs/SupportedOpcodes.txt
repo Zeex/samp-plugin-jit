@@ -35,6 +35,7 @@ lctrl 3
 lctrl 4
 lctrl 5
 lctrl 6
+lctrl 7 (special)
 sctrl 2
 sctrl 4
 sctrl 5
