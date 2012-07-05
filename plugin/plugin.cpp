@@ -137,9 +137,9 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 	as.setLogger(&logger);
 
 	AMXPathFinder finder;
-	finder.AddSearchPath("./");
-	finder.AddSearchPath("gamemodes/");
-	finder.AddSearchPath("filterscripts/");
+	finder.AddSearchPath(".");
+	finder.AddSearchPath("gamemodes");
+	finder.AddSearchPath("filterscripts");
 
 	std::string amxPath = finder.FindAMX(amx);
 
