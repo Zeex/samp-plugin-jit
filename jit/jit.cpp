@@ -487,7 +487,7 @@ int JIT::getInstrOffset(cell address) const {
 	return -1;
 }
 
-bool JIT::compile(CompileErrorHandler errorHandler) {
+bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 	assert(code_ == 0 && "You can't compile() twice, create a new JIT instead");
 
 	AMXDisassembler disas(amx_);
@@ -1459,7 +1459,7 @@ bool JIT::compile(CompileErrorHandler errorHandler) {
 
 compile_error:
 	if (errorHandler != 0) {
-		errorHandler(amx_, instr);
+		errorHandler->execute(instr);
 	}
 
 	if (as != assembler_) {

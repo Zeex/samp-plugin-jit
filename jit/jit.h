@@ -282,6 +282,8 @@ private:
 	cell ip_;
 };
 
+class JITCompileErrorHandler;
+
 class JIT {
 public:
 	JIT(AMXScript amx);
@@ -293,6 +295,14 @@ private:
 	JIT &operator=(const JIT &);
 
 public:
+	// Returns the AMX script this JIT deals with.
+	inline AMXScript &amx() {
+		return amx_;
+	}
+	inline const AMXScript &amx() const {
+		return amx_;
+	}
+
 	// Returns a pointer to the JIT code buffer or NULL if the AMX has not ben
 	// compiled yet with compile().
 	inline void *code() const {
@@ -337,17 +347,10 @@ public:
 	}
 
 public:
-	// Compile error handler passed to compile(). The two arguments are the AMX being compiled
-	// and the current instruction at which the error occurs.
-	typedef void (*CompileErrorHandler)(
-		const AMXScript &amx,
-		const AMXInstruction &instr
-	);
-
 	// compile() is used to JIT-compile the AMX script to be able to calls its function with
 	// call() and exec(). If an error occurs during compilation, such as invalid instruction,
-	// an optionally specified errorHandler is called. See CompileErrorHandler above.
-	bool compile(CompileErrorHandler errorHandler = 0);
+	// an optional error handler is executed.
+	bool compile(JITCompileErrorHandler *errorHandler = 0);
 
 public:
 	// Calls a function at the specified address and returns one of the AMX_ERROR_* codes.
@@ -455,6 +458,13 @@ private:
 
 	typedef std::map<std::pair<cell, std::string>, AsmJit::Label> LabelMap;
 	LabelMap labelMap_;
+};
+
+// Inherit from this class to pass your custom error handler to JIT::compile().
+class JITCompileErrorHandler {
+public:
+	virtual ~JITCompileErrorHandler() {}
+	virtual void execute(const AMXInstruction &instr) = 0;
 };
 
 } // namespace jit

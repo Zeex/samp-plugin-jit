@@ -69,11 +69,18 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
 	}
 }
 
-static void CompileError(const AMXScript &amx, const AMXInstruction &instr)
-{
-	logprintf("[jit] Invalid or unsupported instruction at address %p:", instr.address());
-	logprintf("[jit]  => %s", instr.string().c_str());
-}
+class CompileErrorHandler : public JITCompileErrorHandler {
+public:
+	CompileErrorHandler(JIT *jit) : jit_(jit) {}
+
+	virtual void execute(const AMXInstruction &instr) {
+		logprintf("[jit] Invalid or unsupported instruction at address %p:", instr.address());
+		logprintf("[jit]  => %s", instr.string().c_str());
+	}
+
+private:
+	JIT *jit_;
+};
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
 {
@@ -150,27 +157,28 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 		as.setLogger(0);
 	}
 	
-	if (!jit->compile(CompileError)) {
+	CompileErrorHandler errorHandler(jit);
+	if (!jit->compile(&errorHandler)) {
 		logprintf("[jit] Failed to compile script '%s'", amxPath.c_str());
 		delete jit;
-	} else {
-		if (logger.getStream() != 0) {
-			std::fclose(logger.getStream());
-		}
-		jit->setAssembler(0);
-
-		if (Options::Get().dump_bin()) {
-			std::string binPath = amxPath + ".bin";
-			std::FILE *bin = std::fopen(binPath.c_str(), "w");
-			if (bin != 0) {
-				std::fwrite(jit->code(), jit->codeSize(), 1, bin);
-				std::fclose(bin);
-			}
-		}
-
-		::amx2jit.insert(std::make_pair(amx, jit));
+		return AMX_ERR_NONE;
 	}
 
+	jit->setAssembler(0);
+	if (logger.getStream() != 0) {
+		std::fclose(logger.getStream());
+	}
+
+	if (Options::Get().dump_bin()) {
+		std::string binPath = amxPath + ".bin";
+		std::FILE *bin = std::fopen(binPath.c_str(), "w");
+		if (bin != 0) {
+			std::fwrite(jit->code(), jit->codeSize(), 1, bin);
+			std::fclose(bin);
+		}
+	}
+
+	::amx2jit.insert(std::make_pair(amx, jit));
 	return AMX_ERR_NONE;
 }
 
