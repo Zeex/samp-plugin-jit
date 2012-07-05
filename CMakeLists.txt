@@ -8,62 +8,62 @@ include(AmxConfig)
 include(GetGitRevisionDescription)
 
 set(ASMJIT_BUILD_STATIC_LIBRARY TRUE)
-add_subdirectory("jit/asmjit")
+add_subdirectory("lib/asmjit")
 
-include_directories("jit")
-include_directories("jit/asmjit")
-include_directories("plugin/SDK")
-include_directories("plugin/SDK/amx")
+include_directories("lib/asmjit")
+include_directories("src/SDK")
+include_directories("src/SDK/amx")
 
 add_definitions(-DASMJIT_STATIC)
 
-set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
-set(PLUGIN_DEF "${CMAKE_CURRENT_SOURCE_DIR}/plugin/plugin.def")
+set(PLUGIN_NAME "${CMAKE_PROJECT_NAME}")
+set(PLUGIN_DEF "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.def")
 set(PLUGIN_DESCRIPTION "JIT plugin for SA-MP server")
 set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
 
 set(PLUGIN_SOURCES
-	"jit/jit.cpp"
-	"jit/jit.h"
-	"plugin/SDK/amx/amx.h"
-	"plugin/SDK/amx/amxaux.c"
-	"plugin/SDK/amx/amxaux.h"
-	"plugin/SDK/amx/getch.h"
-	"plugin/SDK/amx/sclinux.h"
-	"plugin/SDK/plugin.h"
-	"plugin/SDK/plugincommon.h"
-	"plugin/SDK/amxplugin.cpp"
-	"plugin/amxpathfinder.cpp"
-	"plugin/amxpathfinder.h"
-	"plugin/configreader.cpp"
-	"plugin/configreader.h"
-	"plugin/fileutils.cpp"
-	"plugin/fileutils.h"
-	"plugin/hook.cpp"
-	"plugin/hook.h"
-	"plugin/os.h"
-	"plugin/options.cpp"
-	"plugin/options.h"
-	"plugin/plugin.cpp"
-	"plugin/plugin.def"
-	"plugin/plugin.rc"
-	"plugin/version.h"
+	"src/jit.cpp"
+	"src/jit.h"
+	"src/SDK/amx/amx.h"
+	"src/SDK/amx/amxaux.c"
+	"src/SDK/amx/amxaux.h"
+	"src/SDK/amx/getch.h"
+	"src/SDK/amx/sclinux.h"
+	"src/SDK/plugin.h"
+	"src/SDK/plugincommon.h"
+	"src/SDK/amxplugin.cpp"
+	"src/amxpathfinder.cpp"
+	"src/amxpathfinder.h"
+	"src/configreader.cpp"
+	"src/configreader.h"
+	"src/fileutils.cpp"
+	"src/fileutils.h"
+	"src/hook.cpp"
+	"src/hook.h"
+	"src/os.h"
+	"src/options.cpp"
+	"src/options.h"
+	"src/plugin.cpp"
+	"src/plugin.def"
+	"src/plugin.rc"
+	"src/version.h"
 )
 
 if(WIN32)
-	list(APPEND PLUGIN_SOURCES "plugin/hook-win32.cpp")
-	list(APPEND PLUGIN_SOURCES "plugin/os-win32.cpp")
+	list(APPEND PLUGIN_SOURCES "src/hook-win32.cpp")
+	list(APPEND PLUGIN_SOURCES "src/os-win32.cpp")
 elseif(UNIX)
-	list(APPEND PLUGIN_SOURCES "plugin/hook-unix.cpp")
-	list(APPEND PLUGIN_SOURCES "plugin/os-unix.cpp")
+	list(APPEND PLUGIN_SOURCES "src/hook-unix.cpp")
+	list(APPEND PLUGIN_SOURCES "src/os-unix.cpp")
 endif()
 
-source_group("jit" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/jit/[^/\\]+\\..*")
-source_group("plugin" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/[^/\\]+\\..*")
-source_group("plugin\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/[^/\\]+\\..*")
-source_group("plugin\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/plugin/SDK/amx/[^/\\]+\\..*")
+source_group("lib" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/lib/[^/\\]+\\..*")
+source_group("src" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/[^/\\]+\\..*")
+source_group("src\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/[^/\\]+\\..*")
+source_group("src\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/amx/[^/\\]+\\..*")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set_property(TARGET AsmJit PROPERTY FOLDER "lib")
 
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
@@ -87,13 +87,13 @@ include(SampPlugin)
 target_link_libraries(${PLUGIN_TARGET} AsmJit)
 
 configure_file(
-	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/plugin.rc.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/plugin.rc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc"
 	@ONLY
 )
 configure_file(
-	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/version.h.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/plugin/version.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h"
 	@ONLY
 )
 
