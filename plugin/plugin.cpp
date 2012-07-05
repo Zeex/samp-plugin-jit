@@ -71,8 +71,8 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
 
 static void CompileError(const AMXScript &amx, const AMXInstruction &instr)
 {
-	logprintf("JIT failed to compile instruction at %08x:", instr.address());
-	logprintf("  %s", instr.string().c_str());
+	logprintf("[jit] Invalid or unsupported instruction at address %p:", instr.address());
+	logprintf("[jit]  => %s", instr.string().c_str());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
@@ -95,7 +95,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 	if (ptr != 0) {
 		std::string module = fileutils::GetFileName(os::GetModulePath(ptr));
 		if (!module.empty()) {
-			logprintf("  JIT must be loaded before %s", module.c_str());
+			logprintf("  JIT must be loaded before '%s'", module.c_str());
 			return false;
 		}
 	}
@@ -151,6 +151,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 	}
 	
 	if (!jit->compile(CompileError)) {
+		logprintf("[jit] Failed to compile script '%s'", amxPath.c_str());
 		delete jit;
 	} else {
 		if (logger.getStream() != 0) {
