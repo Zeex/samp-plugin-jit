@@ -247,8 +247,16 @@ std::string AMXInstruction::string() const {
 	} else {
 		stream << std::setw(8) << std::setfill('0') << std::hex << opcode_;
 	}
-	for (std::vector<cell>::const_iterator it = operands_.begin(); it != operands_.end(); ++it) {
-		stream << ' ' << std::setw(8) << std::setfill('0') << std::hex << *it;
+	for (std::vector<cell>::const_iterator iterator = operands_.begin();
+			iterator != operands_.end(); ++iterator) {
+		stream << ' ';
+		cell oper = *iterator;
+		if (oper < 0 || oper > 9) {
+			stream << "0x" << std::hex;
+		} else {
+			stream << std::dec;
+		}
+		stream << oper;
 	}
 	return stream.str();
 }
@@ -527,7 +535,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 					logger->logString("\n\n\n");
 				}
 			}
-			logger->logFormat("\t; %08x %s\n", cip, instr.string().c_str());
+			logger->logFormat("\t; %p:\n\t; %s\n", cip, instr.string().c_str());
 		}
 
 		if (instr.opcode() == OP_PROC) {
