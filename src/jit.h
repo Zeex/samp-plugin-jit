@@ -346,6 +346,12 @@ public:
 		return assembler_;
 	}
 
+	// Makes procedures aligned to numBytes boundary. By default function are alignment on
+	// 16-byte boundary.
+	inline void setFunctionAlignment(int numBytes) {
+		functionAlignBytes_ = numBytes;
+	}
+
 public:
 	// compile() is used to JIT-compile the AMX script to be able to calls its function with
 	// call() and exec(). If an error occurs during compilation, such as invalid instruction,
@@ -436,8 +442,10 @@ private:
 	void *ebp_;
 	void *esp_;
 
-	void *haltEbp_;
-	void *haltEsp_;
+	void *resetEbp_;
+	void *resetEsp_;
+
+	int functionAlignBytes_;
 
 private:
 	typedef void (JIT_CDECL *HaltHelper)(int error);
@@ -453,11 +461,11 @@ private:
 	SysreqHelper sysreqHelper_;
 
 private:
-	typedef std::map<cell, int> CodeMap;
-	CodeMap codeMap_;
+	typedef std::map<cell, int> PcodeToNativeMap;
+	PcodeToNativeMap pcodeToNative_;
 
-	typedef std::map<std::pair<cell, std::string>, AsmJit::Label> LabelMap;
-	LabelMap labelMap_;
+	typedef std::map<std::pair<cell, std::string>, AsmJit::Label> AddressNameToLabel;
+	AddressNameToLabel addressNameToLabel_;
 };
 
 // Inherit from this class to pass your custom error handler to JIT::compile().

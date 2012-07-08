@@ -47,8 +47,6 @@ namespace jit {
 
 using namespace AsmJit;
 
-const int kProcAlignment = 16;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AMXInstruction implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -461,8 +459,9 @@ JIT::JIT(AMXScript amx)
 	, assembler_(0)
 	, code_(0)
 	, codeSize_(0)
-	, haltEsp_(0)
-	, haltEbp_(0)
+	, resetEbp_(0)
+	, resetEsp_(0)
+	, functionAlignBytes_(16)
 	, haltHelper_(0)
 	, jumpHelper_(0)
 	, callHelper_(0)
@@ -488,8 +487,8 @@ void *JIT::getInstrPtr(cell address) const {
 }
 
 int JIT::getInstrOffset(cell address) const {
-	CodeMap::const_iterator iterator = codeMap_.find(address);
-	if (iterator != codeMap_.end()) {
+	PcodeToNativeMap::const_iterator iterator = pcodeToNative_.find(address);
+	if (iterator != pcodeToNative_.end()) {
 		return iterator->second;
 	}
 	return -1;
@@ -518,7 +517,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 	bool error = false;
 	AMXInstruction instr;
 
-	while (disas.decode(instr, &error)) {
+	while (!error && disas.decode(instr, &error)) {
 		cell cip = instr.address();
 
 		if (logger != 0) {
@@ -539,15 +538,14 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 		}
 
 		if (instr.opcode() == OP_PROC) {
-			// Align procedure body by kProcAlignment bytes.
-			as->align(kProcAlignment);
+			as->align(functionAlignBytes_);
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
 			as->bind(L(as, cip));
 		}
 
-		codeMap_.insert(std::make_pair(cip, as->getCodeSize()));
+		pcodeToNative_.insert(std::make_pair(cip, as->getCodeSize()));
 
 		switch (instr.opcode()) {
 		case OP_LOAD_PRI: // address
@@ -603,7 +601,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 				as->mov(eax, dword_ptr(ebx, eax));
 				break;
 			default:
-				goto compile_error;
+				error = true;
 			}
 			break;
 		case OP_CONST_PRI: // value
@@ -685,7 +683,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 				as->mov(dword_ptr(ebx, ecx), eax);
 				break;
 			default:
-				goto compile_error;
+				error = true;
 			}
 			break;
 		case OP_LIDX:
@@ -754,7 +752,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 				as->mov(eax, 1);
 				break;
 			default:
-				goto compile_error;
+				error = true;
 			}
 			break;
 		case OP_SCTRL: // index
@@ -778,7 +776,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 				as->call(reinterpret_cast<int>(JIT::doJump));
 				break;
 			default:
-				goto compile_error;
+				error = true;
 			}
 			break;
 		case OP_MOVE_PRI:
@@ -1323,20 +1321,18 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 					break;
 				}
 			}
-			if (nativeName == 0) {
-				goto invalid_native;
-			}
-
-			// Replace calls to various natives with their optimized equivalents.
-			for (int i = 0; i < sizeof(intrinsics_) / sizeof(*intrinsics_); i++) {
-				if (intrinsics_[i].name == nativeName) {
-					(*this.*(intrinsics_[i].impl))(as);
-					goto special_native;
+			if (nativeName != 0) {
+				for (int i = 0; i < sizeof(intrinsics_) / sizeof(*intrinsics_); i++) {
+					if (intrinsics_[i].name == nativeName) {
+						(*this.*(intrinsics_[i].impl))(as);
+						goto special_native;
+					}
 				}
+			} else {
+				error = true;
+				break;
 			}
-			goto ordinary_native;
 
-		ordinary_native:
 			switch (instr.opcode()) {
 				case OP_SYSREQ_C: {
 					as->push(esp);                         // stackPtr
@@ -1357,10 +1353,8 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 			break;
 
 		special_native:
+			// Already processed above.
 			break;
-
-		invalid_native:
-			goto compile_error;
 		}
 		case OP_SWITCH: { // offset
 			// Compare PRI to the values in the case table (whose address
@@ -1440,7 +1434,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 			// conditional breakpoint
 			break;
 		default:
-			goto compile_error;
+			error = true;
 		}
 	}
 
@@ -1453,28 +1447,19 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 		as->call(reinterpret_cast<int>(JIT::doHalt));
 
 	if (error) {
-		goto compile_error;
-	}
-
-	code_     = as->make();
-	codeSize_ = as->getCodeSize();
-
-	if (as != assembler_) {
-		delete as;
-	}
-
-	return true;
-
-compile_error:
-	if (errorHandler != 0) {
-		errorHandler->execute(instr);
+		if (errorHandler != 0) {
+			errorHandler->execute(instr);
+		}
+	} else {
+		code_ = as->make();
+		codeSize_ = as->getCodeSize();
 	}
 
 	if (as != assembler_) {
 		delete as;
 	}
 
-	return false;
+	return !error;
 }
 
 int JIT::call(cell address, cell *retval) {
@@ -1514,8 +1499,8 @@ int JIT::call(cell address, cell *retval) {
 		as.lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
 
 		as.lea(ecx, dword_ptr(esp, - 4));
-		as.mov(dword_ptr_abs(&haltEsp_), ecx);
-		as.mov(dword_ptr_abs(&haltEbp_), ebp);
+		as.mov(dword_ptr_abs(&resetEsp_), ecx);
+		as.mov(dword_ptr_abs(&resetEbp_), ebp);
 		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
 		as.call(eax);
 
@@ -1544,16 +1529,16 @@ int JIT::call(cell address, cell *retval) {
 	void *start = getInstrPtr(address);
 	assert(start != 0);
 
-	void *haltEbp = haltEbp_;
-	void *haltEsp = haltEsp_;
+	void *haltEbp = resetEbp_;
+	void *haltEsp = resetEsp_;
 
 	cell retval_ = callHelper_(start);
 	if (retval != 0) {
 		*retval = retval_;
 	}
 
-	haltEbp_ = haltEbp;
-	haltEsp_ = haltEsp;
+	resetEbp_ = haltEbp;
+	resetEsp_ = haltEsp;
 
 	return amx_->error;
 }
@@ -1619,20 +1604,20 @@ Label &JIT::L(X86Assembler *as, cell address) {
 
 Label &JIT::L(X86Assembler *as, cell address, const std::string &name) {
 	std::pair<cell, std::string> key = std::make_pair(address, name);
-	LabelMap::iterator iterator = labelMap_.find(key);
-	if (iterator != labelMap_.end()) {
+	AddressNameToLabel::iterator iterator = addressNameToLabel_.find(key);
+	if (iterator != addressNameToLabel_.end()) {
 		return iterator->second;
 	} else {
-		std::pair<LabelMap::iterator, bool> where =
-				labelMap_.insert(std::make_pair(key, as->newLabel()));
+		std::pair<AddressNameToLabel::iterator, bool> where =
+				addressNameToLabel_.insert(std::make_pair(key, as->newLabel()));
 		return where.first->second;
 	}
 }
 
 void JIT::jump(cell address, void *stackBase, void *stackPtr) {
-	CodeMap::const_iterator it = codeMap_.find(address);
+	PcodeToNativeMap::const_iterator it = pcodeToNative_.find(address);
 
-	if (it != codeMap_.end()) {
+	if (it != pcodeToNative_.end()) {
 		void *dest = getInstrPtr(address);
 
 		if (unlikely(jumpHelper_ == 0)) {
@@ -1662,8 +1647,8 @@ void JIT::halt(int error) {
 
 		as.mov(eax, dword_ptr(esp, 4));
 		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->error)), eax);
-		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&haltEsp_)));
-		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&haltEbp_)));
+		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&resetEsp_)));
+		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&resetEbp_)));
 		as.ret();
 
 		haltHelper_ = (HaltHelper)as.make();
