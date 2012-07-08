@@ -49,6 +49,11 @@ set(PLUGIN_SOURCES
 	"src/version.h"
 )
 
+if(MSVC)
+	set_source_files_properties("src/plugin.cpp" "src/SDK/amx/amxaux.c" PROPERTIES
+		COMPILE_DEFINITIONS "_CRT_SECURE_NO_WARNINGS")
+endif()
+
 if(WIN32)
 	list(APPEND PLUGIN_SOURCES "src/hook-win32.cpp")
 	list(APPEND PLUGIN_SOURCES "src/os-win32.cpp")
