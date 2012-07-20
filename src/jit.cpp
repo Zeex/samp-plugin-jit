@@ -1529,16 +1529,16 @@ int JIT::call(cell address, cell *retval) {
 	void *start = getInstrPtr(address);
 	assert(start != 0);
 
-	void *haltEbp = resetEbp_;
-	void *haltEsp = resetEsp_;
+	void *resetEbp = resetEbp_;
+	void *resetEsp = resetEsp_;
 
 	cell retval_ = callHelper_(start);
 	if (retval != 0) {
 		*retval = retval_;
 	}
 
-	resetEbp_ = haltEbp;
-	resetEsp_ = haltEsp;
+	resetEbp_ = resetEbp;
+	resetEsp_ = resetEsp;
 
 	return amx_->error;
 }
