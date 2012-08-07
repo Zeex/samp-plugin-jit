@@ -1532,9 +1532,6 @@ int JIT::call(cell address, cell *retval) {
 	void *resetEbp = resetEbp_;
 	void *resetEsp = resetEsp_;
 
-	cell stk = amx_->stk;
-	cell hea = amx_->hea;
-
 	cell retval_ = callHelper_(start);
 	if (retval != 0) {
 		*retval = retval_;
@@ -1542,9 +1539,6 @@ int JIT::call(cell address, cell *retval) {
 
 	resetEbp_ = resetEbp;
 	resetEsp_ = resetEsp;
-
-	amx_->stk = stk;
-	amx_->hea = hea;
 
 	return amx_->error;
 }
