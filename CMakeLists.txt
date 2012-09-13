@@ -2,14 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 project(jit)
 
-set(PLUGIN_NAME        "${CMAKE_PROJECT_NAME}")
-set(PLUGIN_DESCRIPTION "JIT plugin for SA-MP server")
-set(PLUGIN_COPYRIGHT   "Copyright (c) 2011-2012 Zeex")
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
-include(AmxConfig)
 include(GetGitRevisionDescription)
+include(SampPlugin)
 
 add_subdirectory("lib")
 
@@ -86,9 +82,7 @@ string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc}
 set(PLUGIN_VERSION ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
 
-include(SampPlugin)
-
-target_link_libraries(${PLUGIN_TARGET} asmjit)
+add_samp_plugin(jit ${PLUGIN_SOURCES})
 
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
@@ -103,6 +97,8 @@ if(WIN32)
 		@ONLY
 	)
 endif()
+
+target_link_libraries(jit asmjit)
 
 install(TARGETS ${PLUGIN_TARGET} LIBRARY DESTINATION ".")
 

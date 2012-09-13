@@ -12,13 +12,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 	{
 		BLOCK "04090025"
 		{
-			VALUE "FileDescription",  "@PLUGIN_DESCRIPTION@"
 			VALUE "FileVersion",      "@PLUGIN_VERSION@"
 			VALUE "ProductVersion",   "@PLUGIN_VERSION@"
-			VALUE "InternalName",     "@PLUGIN_NAME@"
-			VALUE "LegalCopyright",   "@PLUGIN_COPYRIGHT@"
-			VALUE "OriginalFilename", "@PLUGIN_NAME@.dll"
-			VALUE "ProductName",      "@PLUGIN_NAME@"
 		}
 	}
 	BLOCK "VarFileInfo"
