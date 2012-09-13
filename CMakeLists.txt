@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 project(jit)
 
+set(PLUGIN_NAME        "${CMAKE_PROJECT_NAME}")
+set(PLUGIN_DESCRIPTION "JIT plugin for SA-MP server")
+set(PLUGIN_COPYRIGHT   "Copyright (c) 2011-2012 Zeex")
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
@@ -11,11 +15,6 @@ add_subdirectory("lib")
 
 include_directories("src/SDK")
 include_directories("src/SDK/amx")
-
-set(PLUGIN_NAME "${CMAKE_PROJECT_NAME}")
-set(PLUGIN_DEF "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.def")
-set(PLUGIN_DESCRIPTION "JIT plugin for SA-MP server")
-set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
 
 set(PLUGIN_SOURCES
 	"src/jit.cpp"
@@ -40,8 +39,6 @@ set(PLUGIN_SOURCES
 	"src/options.cpp"
 	"src/options.h"
 	"src/plugin.cpp"
-	"src/plugin.def"
-	"src/plugin.rc"
 	"src/version.h"
 )
 
@@ -51,11 +48,17 @@ if(MSVC)
 endif()
 
 if(WIN32)
-	list(APPEND PLUGIN_SOURCES "src/hook-win32.cpp")
-	list(APPEND PLUGIN_SOURCES "src/os-win32.cpp")
+	list(APPEND PLUGIN_SOURCES
+		"src/hook-win32.cpp"
+		"src/os-win32.cpp"
+		"src/plugin.def"
+		"src/plugin.rc"
+	)
 elseif(UNIX)
-	list(APPEND PLUGIN_SOURCES "src/hook-unix.cpp")
-	list(APPEND PLUGIN_SOURCES "src/os-unix.cpp")
+	list(APPEND PLUGIN_SOURCES
+		"src/hook-unix.cpp"
+		"src/os-unix.cpp"
+	)
 endif()
 
 source_group("lib" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/lib/[^/\\]+\\..*")
@@ -88,15 +91,18 @@ include(SampPlugin)
 target_link_libraries(${PLUGIN_TARGET} asmjit)
 
 configure_file(
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc"
-	@ONLY
-)
-configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h"
 	@ONLY
 )
+
+if(WIN32)
+	configure_file(
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc.in"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc"
+		@ONLY
+	)
+endif()
 
 install(TARGETS ${PLUGIN_TARGET} LIBRARY DESTINATION ".")
 
