@@ -63,7 +63,6 @@ source_group("src\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/
 source_group("src\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/amx/[^/\\]+\\..*")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-set_property(TARGET asmjit PROPERTY FOLDER "lib")
 
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
