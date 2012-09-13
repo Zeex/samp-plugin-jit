@@ -692,6 +692,10 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
       *buf++ = ' ';
       *buf++ = (d < 0) ? '-' : '+';
       *buf++ = ' ';
+      if (d > 9 || d < -9) {
+        *buf++ = '0';
+        *buf++ = 'x';
+      }
       buf = StringUtil::utoa(buf, d < 0 ? -d : d);
     }
 
@@ -700,8 +704,12 @@ char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType
   }
   else if (op->isImm())
   {
-    const Imm& i = reinterpret_cast<const Imm&>(*op);
-    return StringUtil::itoa(buf, (sysint_t)i.getValue());
+    sysint_t i = reinterpret_cast<const Imm&>(*op).getValue();
+    if (i > 9 || i < 0) {
+      *buf++ = '0';
+      *buf++ = 'x';
+    }
+    return StringUtil::utoa(buf, i, 16U);
   }
   else if (op->isLabel())
   {
@@ -720,6 +728,9 @@ static char* X86Assembler_dumpInstruction(char* buf,
   const Operand* o2,
   uint32_t memRegType) ASMJIT_NOTHROW
 {
+  // Prefix with TAB for readability.
+  buf = StringUtil::copy(buf, "\t", 1);
+
   if (emitOptions & kX86EmitOptionRex)
     buf = StringUtil::copy(buf, "rex ", 4);
   
@@ -2707,7 +2718,7 @@ void X86Assembler::embedLabel(const Label& label) ASMJIT_NOTHROW
 void X86Assembler::align(uint32_t m) ASMJIT_NOTHROW
 {
   if (!canEmit()) return;
-  if (_logger) _logger->logFormat(".align %u", (uint)m);
+  if (_logger) _logger->logFormat(".align %u\n", (uint)m);
 
   if (!m) return;
 
