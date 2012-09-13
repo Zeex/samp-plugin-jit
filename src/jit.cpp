@@ -31,7 +31,9 @@
 #include <string>
 
 #include <amx/amx.h>
-#include <AsmJit/AsmJit.h>
+
+#include <asmjit/core.h>
+#include <asmjit/x86.h>
 
 #include "jit.h"
 

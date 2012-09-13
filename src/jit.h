@@ -35,7 +35,9 @@
 #include <utility>
 
 #include <amx/amx.h>
-#include <AsmJit/AsmJit.h>
+
+#include <asmjit/core.h>
+#include <asmjit/x86.h>
 
 #if defined _MSC_VER
 	#define JIT_CDECL __cdecl

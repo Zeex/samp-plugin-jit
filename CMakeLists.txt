@@ -7,14 +7,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 include(AmxConfig)
 include(GetGitRevisionDescription)
 
-set(ASMJIT_BUILD_STATIC_LIBRARY TRUE)
-add_subdirectory("lib/asmjit")
+add_subdirectory("lib")
 
-include_directories("lib/asmjit")
 include_directories("src/SDK")
 include_directories("src/SDK/amx")
-
-add_definitions(-DASMJIT_STATIC)
 
 set(PLUGIN_NAME "${CMAKE_PROJECT_NAME}")
 set(PLUGIN_DEF "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.def")
@@ -68,7 +64,7 @@ source_group("src\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/
 source_group("src\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/amx/[^/\\]+\\..*")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-set_property(TARGET AsmJit PROPERTY FOLDER "lib")
+set_property(TARGET asmjit PROPERTY FOLDER "lib")
 
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
@@ -89,7 +85,7 @@ set(PLUGIN_VERSION_RC ${version_rc})
 
 include(SampPlugin)
 
-target_link_libraries(${PLUGIN_TARGET} AsmJit)
+target_link_libraries(${PLUGIN_TARGET} asmjit)
 
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc.in"

@@ -1,141 +1,201 @@
-# Reguire minimum version of CMake
-CMake_Minimum_Required(VERSION 2.6)
+# =============================================================================
+# [AsmJit - CMakeLists.txt]
+# =============================================================================
 
-# AsmJit project - Need to use both C and C++
-Project(AsmJit C CXX)
+CMake_Minimum_Required(VERSION 2.8.7)
 
-# If ASMJIT_DIR is not specified, assume that we are building it from here
-If(NOT ASMJIT_DIR)
-  Set(ASMJIT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+# =============================================================================
+# [AsmJit - Configuration]
+# =============================================================================
+
+# Whether to build static library (default FALSE).
+# Set(ASMJIT_STATIC FALSE)
+
+# Whether to build samples (default FALSE).
+# Set(ASMJIT_BUILD_SAMPLES FALSE)
+
+# =============================================================================
+# [AsmJit - Build]
+# =============================================================================
+
+# Create AsmJit project. In case that you called Project() before the AsmJit
+# CMakeLists.txt the project won't be created (just included).
+Set(ASMJIT_PROJECT_STR "")
+
+If(NOT CMAKE_PROJECT_NAME)
+  Project(asmjit C CXX)
+  Set(ASMJIT_PROJECT_STR "Project")
+Else()
+  # Do not create a project if this CMakeLists.txt is included by a different
+  # project. This allows easy static library build including debugger support.
+  Set(ASMJIT_PROJECT_STR "Included")
 EndIf()
 
-# AsmJit.
-Set(ASMJIT_ROOT_SOURCES
-)
+If(ASMJIT_STATIC)
+  Set(ASMJIT_PROJECT_STR "${ASMJIT_PROJECT_STR}|Static")
+Else()
+  Set(ASMJIT_PROJECT_STR "${ASMJIT_PROJECT_STR}|Shared")
+EndIf()
 
-Set(ASMJIT_ROOT_HEADERS
-  AsmJit/AsmJit.h
-  AsmJit/Core.h
-  AsmJit/Config.h
-  AsmJit/X86.h
-)
+Message("")
+Message("== ====================================================")
+Message("== [AsmJit ${ASMJIT_PROJECT_STR}]")
+Message("== ====================================================")
+Message("")
 
-Source_Group("AsmJit" FILES
-  ${ASMJIT_ROOT_SOURCES}
-  ${ASMJIT_ROOT_HEADERS}
-)
+# =============================================================================
+# [AsmJit - Directory]
+# =============================================================================
 
-# AsmJit/Core.
-Set(ASMJIT_CORE_SOURCES
-  AsmJit/Core/Assembler.cpp
-  AsmJit/Core/Assert.cpp
-  AsmJit/Core/Buffer.cpp
-  AsmJit/Core/Compiler.cpp
-  AsmJit/Core/CompilerContext.cpp
-  AsmJit/Core/CompilerFunc.cpp
-  AsmJit/Core/CompilerItem.cpp
-  AsmJit/Core/Context.cpp
-  AsmJit/Core/CpuInfo.cpp
-  AsmJit/Core/Defs.cpp
-  AsmJit/Core/Func.cpp
-  AsmJit/Core/Logger.cpp
-  AsmJit/Core/MemoryManager.cpp
-  AsmJit/Core/MemoryMarker.cpp
-  AsmJit/Core/Operand.cpp
-  AsmJit/Core/PodVector.cpp
-  AsmJit/Core/StringBuilder.cpp
-  AsmJit/Core/StringUtil.cpp
-  AsmJit/Core/VirtualMemory.cpp
-  AsmJit/Core/ZoneMemory.cpp
-)
+If(NOT ASMJIT_DIR)
+  Set(ASMJIT_DIR ${CMAKE_CURRENT_LIST_DIR})
+  Set(ASMJIT_SRC_DIR "src")
+  Message("-- Initializing ASMJIT_DIR=${ASMJIT_DIR}")
+Else()
+  Set(ASMJIT_SRC_DIR "{$ASMJIT_DIR}/src")
+  Message("-- Using Custom ASMJIT_DIR=${ASMJIT_DIR}")
+EndIf()
 
-Set(ASMJIT_CORE_HEADERS
-  AsmJit/Core/ApiBegin.h
-  AsmJit/Core/ApiEnd.h
-  AsmJit/Core/Assembler.h
-  AsmJit/Core/Assert.h
-  AsmJit/Core/Build.h
-  AsmJit/Core/Buffer.h
-  AsmJit/Core/Compiler.h
-  AsmJit/Core/CompilerContext.h
-  AsmJit/Core/CompilerFunc.h
-  AsmJit/Core/CompilerItem.h
-  AsmJit/Core/Context.h
-  AsmJit/Core/CpuInfo.h
-  AsmJit/Core/Defs.h
-  AsmJit/Core/Func.h
-  AsmJit/Core/IntUtil.h
-  AsmJit/Core/Lock.h
-  AsmJit/Core/Logger.h
-  AsmJit/Core/MemoryManager.h
-  AsmJit/Core/MemoryMarker.h
-  AsmJit/Core/Operand.h
-  AsmJit/Core/PodVector.h
-  AsmJit/Core/StringBuilder.h
-  AsmJit/Core/StringUtil.h
-  AsmJit/Core/VirtualMemory.h
-  AsmJit/Core/ZoneMemory.h
-)
+# =============================================================================
+# [AsmJit - Libraries]
+# =============================================================================
 
-Source_Group("AsmJit/Core" FILES
-  ${ASMJIT_CORE_SOURCES}
-  ${ASMJIT_CORE_HEADERS}
-)
-
-# AsmJit/X86.
-Set(ASMJIT_X86_SOURCES
-  AsmJit/X86/X86Assembler.cpp
-  AsmJit/X86/X86Compiler.cpp
-  AsmJit/X86/X86CompilerContext.cpp
-  AsmJit/X86/X86CompilerFunc.cpp
-  AsmJit/X86/X86CompilerItem.cpp
-  AsmJit/X86/X86CpuInfo.cpp
-  AsmJit/X86/X86Defs.cpp
-  AsmJit/X86/X86Func.cpp
-  AsmJit/X86/X86Operand.cpp
-  AsmJit/X86/X86Util.cpp
-)
-
-Set(ASMJIT_X86_HEADERS
-  AsmJit/X86/X86Assembler.h
-  AsmJit/X86/X86Compiler.h
-  AsmJit/X86/X86CompilerContext.h
-  AsmJit/X86/X86CompilerFunc.h
-  AsmJit/X86/X86CompilerItem.h
-  AsmJit/X86/X86CpuInfo.h
-  AsmJit/X86/X86Defs.h
-  AsmJit/X86/X86Func.h
-  AsmJit/X86/X86Operand.h
-  AsmJit/X86/X86Util.h
-)
-
-Source_Group("AsmJit/X86" FILES
-  ${ASMJIT_X86_SOURCES}
-  ${ASMJIT_X86_HEADERS}
-)
-
-# AsmJit/All.
-Set(ASMJIT_ALL_SOURCES
-  ${ASMJIT_ROOT_SOURCES}
-  ${ASMJIT_CORE_SOURCES}
-  ${ASMJIT_HOST_SOURCES}
-  ${ASMJIT_X86_SOURCES}
-)
-
-Set(ASMJIT_ALL_HEADERS
-  ${ASMJIT_ROOT_HEADERS}
-  ${ASMJIT_CORE_HEADERS}
-  ${ASMJIT_HOST_HEADERS}
-  ${ASMJIT_X86_HEADERS}
-)
-
-# Include AsmJit to be able to use #include <AsmJit/...>
-Include_Directories(${ASMJIT_DIR})
+Set(ASMJIT_DEPS "")
 
 # pthread library is needed for non-windows OSes.
 If(NOT WIN32)
-  Link_Libraries(pthread)
+  List(APPEND ASMJIT_DEPS pthread)
 EndIf()
+
+# =============================================================================
+# [AsmJit - Include]
+# =============================================================================
+
+Include_Directories(${ASMJIT_SRC_DIR})
+
+# =============================================================================
+# [AsmJit - Macros]
+# =============================================================================
+
+Macro(AsmJitAddSrc dst_var base_path)
+  Set(dst_src "")
+  Set(dst_hdr "")
+  Set(dst_test "")
+  
+  Set(dst_path "${ASMJIT_SRC_DIR}/${base_path}")
+
+  ForEach(file ${ARGN})
+    Set(file_p "${dst_path}/${file}")
+
+    If(file MATCHES "\\.c|\\.cc|\\.cpp|\\.cxx|\\.m|\\.mm")
+      Set(file_cflags "")
+
+      # Not ready for now...
+      If(file MATCHES "_test\\.")
+        List(APPEND dst_test ${file_p})
+      Else()
+        List(APPEND dst_src ${file_p})
+      EndIf()
+
+      If(optimize)
+        Set_Source_Files_Properties(${file_p} PROPERTIES COMPILE_FLAGS ${file_cflags})
+      EndIf()
+    EndIf()
+
+    If(file MATCHES "\\.h|\\.hh|\\.hpp|\\.hxx|\\.inc")
+      List(APPEND dst_hdr ${file_p})
+    EndIf()
+  EndForEach()
+
+  List(APPEND "${dst_var}" ${dst_src} ${dst_hdr})
+  List(APPEND "${dst_var}_TEST" ${dst_test})
+  Source_Group(${dst_path} FILES ${dst_src} ${dst_hdr} ${dst_test})
+EndMacro()
+
+# =============================================================================
+# [AsmJit - Sources]
+# =============================================================================
+
+Set(ASMJIT_SRC "")
+Set(ASMJIT_SRC_TEST "")
+
+AsmJitAddSrc(ASMJIT_SRC asmjit
+  asmjit.h
+  core.h
+  config.h
+  x86.h
+)
+
+AsmJitAddSrc(ASMJIT_SRC asmjit/core
+  apibegin.h
+  apiend.h
+  build.h
+
+  assembler.cpp
+  assembler.h
+  assert.cpp
+  assert.h
+  buffer.cpp
+  buffer.h
+  compiler.cpp
+  compiler.h
+  compilercontext.cpp
+  compilercontext.h
+  compilerfunc.cpp
+  compilerfunc.h
+  compileritem.cpp
+  compileritem.h
+  context.cpp
+  context.h
+  cpuinfo.cpp
+  cpuinfo.h
+  defs.cpp
+  defs.h
+  func.cpp
+  func.h
+  intutil.h
+  lock.h
+  logger.cpp
+  logger.h
+  memorymanager.cpp
+  memorymanager.h
+  memorymarker.cpp
+  memorymarker.h
+  operand.cpp
+  operand.h
+  podvector.h
+  stringbuilder.cpp
+  stringbuilder.h
+  stringutil.cpp
+  stringutil.h
+  virtualmemory.cpp
+  virtualmemory.h
+  zonememory.cpp
+  zonememory.h
+)
+
+AsmJitAddSrc(ASMJIT_SRC asmjit/x86
+  x86assembler.cpp
+  x86assembler.h
+  x86compiler.cpp
+  x86compiler.h
+  x86compilercontext.cpp
+  x86compilercontext.h
+  x86compilerfunc.cpp
+  x86compilerfunc.h
+  x86compileritem.cpp
+  x86compileritem.h
+  x86cpuinfo.cpp
+  x86cpuinfo.h
+  x86defs.cpp
+  x86defs.h
+  x86func.cpp
+  x86func.h
+  x86operand.cpp
+  x86operand.h
+  x86util.cpp
+  x86util.h
+)
 
 # Build-Type.
 If(${CMAKE_BUILD_TYPE})
@@ -146,42 +206,52 @@ If(${CMAKE_BUILD_TYPE})
   EndIf()
 EndIf()
 
-If(ASMJIT_BUILD_STATIC_LIBRARY OR AMSJIT_BUILD_SHARED_LIBRARY)
-  Set(ASMJIT_BUILD_LIBRARY TRUE)
+# =============================================================================
+# [Setup - Headers]
+# =============================================================================
+
+If(NOT ASMJIT_STATIC)
+  ForEach(i ${ASMJIT_SRC})
+    Get_Filename_Component(path ${i} PATH)
+    Get_Filename_Component(name ${i} NAME)
+    If(${name} MATCHES ".h$")
+      If(NOT "${name}" MATCHES "_p.h$")
+        Install(FILES ${i} DESTINATION "include/${path}")
+      EndIf()
+    EndIf()
+  EndForEach()
 EndIf()
 
-# Build AsmJit library?
-If(ASMJIT_BUILD_LIBRARY)
-  If(ASMJIT_BUILD_STATIC_LIBRARY)
-    Add_Definitions(-DASMJIT_STATIC)
-    Add_Library(AsmJit STATIC ${ASMJIT_ALL_SOURCES} ${ASMJIT_ALL_HEADERS})
-  ElseIf(ASMJIT_BUILD_SHARED_LIBRARY)
-    Add_Library(AsmJit SHARED ${ASMJIT_ALL_SOURCES} ${ASMJIT_ALL_HEADERS})
-  EndIf()
+# =============================================================================
+# [Setup - Lib - asmjit]
+# =============================================================================
 
-  # Install library and header files?
-  If(ASMJIT_INSTALL)
-    Install(TARGETS AsmJit DESTINATION lib${LIB_SUFFIX})
-    ForEach(i ${ASMJIT_ALL_HEADERS})
-      Get_Filename_Component(path ${i} PATH)
-      Install(FILES ${i} DESTINATION "include/${path}")
-    EndForEach(i)
-  EndIf()
+If(NOT ASMJIT_STATIC)
+  Add_Library(asmjit SHARED ${ASMJIT_SRC})
+  Target_Link_Libraries(asmjit ${ASMJIT_DEPS})
+  Install(TARGETS asmjit DESTINATION lib)
+Else()
+  Add_Library(asmjit STATIC ${ASMJIT_SRC})
+  Target_Link_Libraries(asmjit ${ASMJIT_DEPS})
 EndIf()
+
+# =============================================================================
+# [Setup - App - test]
+# =============================================================================
 
 # Build AsmJit test executables?
-If(ASMJIT_BUILD_TEST)
-  Set(ASMJIT_TEST_FILES
-    TestCpu
-    TestDummy
-    TestMem
-    TestOpCode
-    TestSizeOf
-    TestX86
+If(ASMJIT_BUILD_SAMPLES)
+  Set(ASMJIT_SRC_SAMPLES
+    testcpu
+    testdummy
+    testmem
+    testopcode
+    testsizeOf
+    testx86
   )
 
-  ForEach(file ${ASMJIT_TEST_FILES})
-    Add_Executable(${file} Test/${file}.cpp)
-    Target_Link_Libraries(${file} AsmJit)
+  ForEach(file ${ASMJIT_SRC_SAMPLES})
+    Add_Executable(${file} src/app/test/${file}.cpp)
+    Target_Link_Libraries(${file} asmjit ${ASMJIT_DEPS})
   EndForEach(file)
 EndIf()

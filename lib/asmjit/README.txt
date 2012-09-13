@@ -64,12 +64,12 @@ Configuring
 ===========
 
 AsmJit is designed to be easily embeddable into any project. It's only needed to
-add the C++ files into your project and sometimes to setup AsmJit/Config.h file.
+add the C++ files into your project and sometimes to setup src/asmjit/config.h file.
 This file contains set of C macros which can be used to configure AsmJit to use
 your memory allocation functions, visibility attributes, and error handling. The
 standard way to build AsmJit is to create a dynamically linked library. To build
-AsmJit statically edit AsmJit/Config.h and uncomment // #define ASMJIT_API macro.
-See http://code.google.com/p/asmjit/wiki/Configuring section for details.
+AsmJit statically edit src/asmjit/config.h and uncomment // #define ASMJIT_API 
+macro. See http://code.google.com/p/asmjit/wiki/Configuring section for details.
 
 AsmJit contains also CMakeLists.txt which can be used by cmake to generate project
 files for many platforms and compilers. If you don't know what cmake is, visit its
@@ -91,16 +91,23 @@ Examples
 Directory Structure
 ===================
 
-  - AsmJit        - Public header files (always include files here!),
-  - AsmJit/Core   - Core files used by all AsmJit backends,
-  - AsmJit/X86    - X86 platform support and code-generation.
+  - extras          - Extras.
+  - extras/doc      - Documentation generator files.
+  - extras/contrib  - Contribution (source code/headers), not official part of 
+                      AsmJit.
+  - scripts         - Scripts, including project generators.
+  - src             - Source code
+  - src/asmjit      - Public header files (always include files here!),
+  - src/asmjit/core - Core files used by all AsmJit backends,
+  - src/asmjit/x86  - X86 platform support and code-generation.
 
 Supported Compilers
 ===================
 
-  - BorlandC,
-  - GNU (3.4.X+, 4.0+, including MinGW),
-  - MSVC (VC6.0, VC7.1, VC8.0),
+  - BorlandC++,
+  - GNU (3.4.X+, 4.0+),
+  - MinGW,
+  - MSVC (VC6.0, VS2005, VS2008, VS2010),
   - Other compilers require testing.
 
 Supported Platforms
