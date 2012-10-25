@@ -99,7 +99,7 @@ endif()
 
 target_link_libraries(jit asmjit)
 
-install(TARGETS ${PLUGIN_TARGET} LIBRARY DESTINATION ".")
+install(TARGETS jit LIBRARY DESTINATION ".")
 
 if(MSVC)
 	set(PDB_NAME "jit.pdb")
