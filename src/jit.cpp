@@ -1483,34 +1483,59 @@ int JIT::call(cell address, cell *retval) {
 	if (unlikely(callHelper_ == 0)) {
 		X86Assembler as;
 
+		// Store the function address in eax.
 		as.mov(eax, dword_ptr(esp, 4));
+
+		// esi and edi are not saved across function bounds but generally
+		// can be utilized in JIT code (for instance, in MOVS).
 		as.push(esi);
 		as.push(edi);
+
+		// These are caller-saved registers in JIT code:
+		//  eax - primary register (PRI)
+		//  ecx - alternate register (ALT)
+		//  ebx - data base pointer (DAT + amx->base)
+		//  edx - temporary storage
+		// There's no point in saving eax here, it used for return address.
 		as.push(ebx);
 		as.push(ecx);
 		as.push(edx);
 
+		// Store old ebp and esp on the stack.
 		as.push(dword_ptr_abs(&ebp_));
 		as.push(dword_ptr_abs(&esp_));
 
+		// Most recent ebp and esp are stored in member variables.
 		as.mov(dword_ptr_abs(&ebp_), ebp);
+		as.mov(dword_ptr_abs(&esp_), esp);
+
+		// Switch from native stack to AMX stack.
 		as.mov(edx, dword_ptr_abs(&amx_->frm));
 		as.lea(ebp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
-		as.mov(dword_ptr_abs(&esp_), esp);
 		as.mov(edx, dword_ptr_abs(&amx_->stk));
 		as.lea(esp, dword_ptr(edx, reinterpret_cast<int>(amx_.data())));
 
+		// In order to make halt() work we have to be able to return to this
+		// point somehow. The easiest way it to set the stack registers as
+		// if we called the offending instruction directly from here.
 		as.lea(ecx, dword_ptr(esp, - 4));
 		as.mov(dword_ptr_abs(&resetEsp_), ecx);
 		as.mov(dword_ptr_abs(&resetEbp_), ebp);
+
+		// All functions assume that ebx is set to point to the AMX data
+		// section on function entry.
 		as.mov(ebx, reinterpret_cast<int>(amx_.data()));
 		as.call(eax);
 
+		// Keep AMX stack registers up-to-date. This wouldn't be necessary if
+		// RETN didn't modify them (it pops all arguments off the stack).
 		as.lea(edx, dword_ptr(ebp, -reinterpret_cast<int>(amx_.data())));
 		as.mov(dword_ptr_abs(&amx_->frm), edx);
-		as.mov(ebp, dword_ptr_abs(&ebp_));
 		as.lea(edx, dword_ptr(esp, -reinterpret_cast<int>(amx_.data())));
 		as.mov(dword_ptr_abs(&amx_->stk), edx);
+
+		// Switch back to native stack.
+		as.mov(ebp, dword_ptr_abs(&ebp_));
 		as.mov(esp, dword_ptr_abs(&esp_));
 
 		as.pop(dword_ptr_abs(&esp_));
@@ -1521,6 +1546,7 @@ int JIT::call(cell address, cell *retval) {
 		as.pop(ebx);
 		as.pop(edi);
 		as.pop(esi);
+
 		as.ret();
 
 		callHelper_ = (CallHelper)as.make();
@@ -1647,9 +1673,13 @@ void JIT::halt(int error) {
 	if (unlikely(haltHelper_ == 0)) {
 		X86Assembler as;
 
+		// Since there's currently no way detect whether the function returns
+		// normally or by executing halt there's no way if transmitting the
+		// error code other than through a member variable.
 		as.mov(eax, dword_ptr(esp, 4));
 		as.mov(dword_ptr_abs(&amx_->error), eax);
 
+		// Reset stack so we can return right to call().
 		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&resetEsp_)));
 		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&resetEbp_)));
 
