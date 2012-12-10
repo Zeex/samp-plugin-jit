@@ -73,6 +73,8 @@ EndIf()
 
 If(ASMJIT_STATIC)
   Add_Definitions(-DASMJIT_API=)
+  Set_Property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
+               COMPILE_DEFINITIONS "SUBHOOK_STATIC")
 EndIf()
 
 # =============================================================================
@@ -80,6 +82,8 @@ EndIf()
 # =============================================================================
 
 Include_Directories(${ASMJIT_SRC_DIR})
+Set_Property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
+             INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # =============================================================================
 # [AsmJit - Macros]
