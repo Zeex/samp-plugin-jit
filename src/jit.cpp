@@ -1650,9 +1650,7 @@ void JIT::halt(int error) {
 		as.mov(eax, dword_ptr(esp, 4));
 		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->error)), eax);
 		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&resetEsp_)));
-		as.mov(dword_ptr_abs(&esp_), esp);
 		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&resetEbp_)));
-		as.mov(dword_ptr_abs(&ebp_), ebp);
 		as.ret();
 
 		haltHelper_ = (HaltHelper)as.make();
