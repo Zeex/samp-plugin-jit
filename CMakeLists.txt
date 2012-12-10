@@ -29,8 +29,6 @@ set(PLUGIN_SOURCES
 	"src/configreader.h"
 	"src/fileutils.cpp"
 	"src/fileutils.h"
-	"src/hook.cpp"
-	"src/hook.h"
 	"src/os.h"
 	"src/options.cpp"
 	"src/options.h"
@@ -45,14 +43,12 @@ endif()
 
 if(WIN32)
 	list(APPEND PLUGIN_SOURCES
-		"src/hook-win32.cpp"
 		"src/os-win32.cpp"
 		"src/plugin.def"
 		"src/plugin.rc"
 	)
 elseif(UNIX)
 	list(APPEND PLUGIN_SOURCES
-		"src/hook-unix.cpp"
 		"src/os-unix.cpp"
 	)
 endif()
@@ -97,7 +93,7 @@ if(WIN32)
 	)
 endif()
 
-target_link_libraries(jit asmjit)
+target_link_libraries(jit asmjit subhook)
 
 install(TARGETS jit LIBRARY DESTINATION ".")
 
