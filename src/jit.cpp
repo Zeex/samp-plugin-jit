@@ -1648,9 +1648,17 @@ void JIT::halt(int error) {
 		X86Assembler as;
 
 		as.mov(eax, dword_ptr(esp, 4));
-		as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx_->error)), eax);
+		as.mov(dword_ptr_abs(&amx_->error), eax);
+
 		as.mov(esp, dword_ptr_abs(reinterpret_cast<void*>(&resetEsp_)));
 		as.mov(ebp, dword_ptr_abs(reinterpret_cast<void*>(&resetEbp_)));
+
+		// Pop public arguments as it would otherwise be done by RETN.
+		as.pop(eax);
+		as.add(esp, dword_ptr(esp));
+		as.add(esp, 4);
+		as.push(eax);
+
 		as.ret();
 
 		haltHelper_ = (HaltHelper)as.make();
