@@ -371,8 +371,8 @@ public:
 	int exec(cell index, cell *retval);
 
 private:
-	// Get addresses of all functions and jump instructions' destinations.
-	bool collectJumpAddresses(std::set<cell> &refs) const;
+	// Get addresses of all functions and jump destinations.
+	bool getJumpRefs(std::set<cell> &refs) const;
 
 	// Sets a label at the specified AMX address. The address should be relative to the
 	// start of the code section.

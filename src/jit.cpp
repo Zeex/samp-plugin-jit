@@ -512,7 +512,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 	Label haltLabel = as->newLabel();
 
 	std::set<cell> jumpRefs;
-	collectJumpAddresses(jumpRefs);
+	getJumpRefs(jumpRefs);
 
 	Logger *logger = as->getLogger();
 
@@ -1584,7 +1584,7 @@ int JIT::exec(int index, cell *retval) {
 	return call(address, retval);
 }
 
-bool JIT::collectJumpAddresses(std::set<cell> &refs) const {
+bool JIT::getJumpRefs(std::set<cell> &refs) const {
 	AMXDisassembler disas(amx_);
 	disas.setOpcodeTable(opcodeTable_);
 
