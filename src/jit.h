@@ -348,12 +348,6 @@ public:
 		return assembler_;
 	}
 
-	// Makes procedures aligned to numBytes boundary. By default function are alignment on
-	// 16-byte boundary.
-	inline void setFunctionAlignment(int numBytes) {
-		functionAlignBytes_ = numBytes;
-	}
-
 public:
 	// compile() is used to JIT-compile the AMX script to be able to calls its function with
 	// call() and exec(). If an error occurs during compilation, such as invalid instruction,
@@ -446,8 +440,6 @@ private:
 
 	void *resetEbp_;
 	void *resetEsp_;
-
-	int functionAlignBytes_;
 
 private:
 	typedef void (JIT_CDECL *HaltHelper)(int error);

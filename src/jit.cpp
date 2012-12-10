@@ -463,7 +463,6 @@ JIT::JIT(AMXScript amx)
 	, codeSize_(0)
 	, resetEbp_(0)
 	, resetEsp_(0)
-	, functionAlignBytes_(16)
 	, haltHelper_(0)
 	, jumpHelper_(0)
 	, callHelper_(0)
@@ -540,7 +539,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 		}
 
 		if (instr.opcode() == OP_PROC) {
-			as->align(functionAlignBytes_);
+			as->align(16);
 		}
 
 		if (jumpRefs.find(cip) != jumpRefs.end()) {
