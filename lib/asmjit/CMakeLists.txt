@@ -49,7 +49,7 @@ Message("")
 
 If(NOT ASMJIT_DIR)
   Set(ASMJIT_DIR ${CMAKE_CURRENT_LIST_DIR})
-  Set(ASMJIT_SRC_DIR "src")
+  Set(ASMJIT_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
   Message("-- Initializing ASMJIT_DIR=${ASMJIT_DIR}")
 Else()
   Set(ASMJIT_SRC_DIR "{$ASMJIT_DIR}/src")
@@ -72,18 +72,16 @@ EndIf()
 # =============================================================================
 
 If(ASMJIT_STATIC)
-  Add_Definitions(-DASMJIT_API=)
   Set_Property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-               COMPILE_DEFINITIONS "SUBHOOK_STATIC")
+               COMPILE_DEFINITIONS "ASMJIT_API=")
 EndIf()
 
 # =============================================================================
 # [AsmJit - Include]
 # =============================================================================
 
-Include_Directories(${ASMJIT_SRC_DIR})
 Set_Property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-             INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src")
+             INCLUDE_DIRECTORIES "${ASMJIT_SRC_DIR}")
 
 # =============================================================================
 # [AsmJit - Macros]
