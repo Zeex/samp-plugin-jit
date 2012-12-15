@@ -1,25 +1,26 @@
-// Copyright (c) 2012, Zeex
+// Copyright (c) 2012 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer.
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
 //    and/or other materials provided with the distribution.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-// ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE//
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef JIT_H
 #define JIT_H
@@ -58,15 +59,15 @@ namespace jit {
 
 enum AMXRegister {
 	REG_NONE = 0,
-	REG_PRI = (2 << 0), // Primary register.
-	REG_ALT = (2 << 1), // Alternative register.
-	REG_COD = (2 << 2), // Offset to the start of code.
-	REG_DAT = (2 << 3), // Offset to the start of data.
-	REG_HEA = (2 << 4), // Heap pointer.
-	REG_STP = (2 << 5), // Stack top.
-	REG_STK = (2 << 6), // Stack pointer.
-	REG_FRM = (2 << 7), // Stack frame pointer.
-	REG_CIP = (2 << 8), // Current instruction pointer.
+	REG_PRI = (2 << 0),
+	REG_ALT = (2 << 1),
+	REG_COD = (2 << 2),
+	REG_DAT = (2 << 3),
+	REG_HEA = (2 << 4),
+	REG_STP = (2 << 5),
+	REG_STK = (2 << 6),
+	REG_FRM = (2 << 7),
+	REG_CIP = (2 << 8)
 };
 
 enum AMXOpcode {
@@ -115,52 +116,49 @@ public:
 	AMXInstruction();
 
 public:
-	inline int size() const {
+	int size() const {
 		return sizeof(cell) * (1 + operands_.size());
 	}
 
-	inline const cell address() const {
+	const cell address() const {
 		return address_;
 	}
-	inline void setAddress(cell address) {
+	void setAddress(cell address) {
 		address_ = address;
 	}
 
-	inline AMXOpcode opcode() const {
+	AMXOpcode opcode() const {
 		return opcode_;
 	}
-	inline void setOpcode(AMXOpcode opcode) {
+	void setOpcode(AMXOpcode opcode) {
 		opcode_ = opcode;
 	}
 
-	inline cell operand(unsigned int index = 0u) {
+	cell operand(unsigned int index = 0u) {
 		assert(index < operands_.size());
 		return operands_[index];
 	}
-
-	inline std::vector<cell> &operands() {
+	std::vector<cell> &operands() {
 		return operands_;
 	}
-	inline const std::vector<cell> &operands() const {
+	const std::vector<cell> &operands() const {
 		return operands_;
 	}
-	inline void setOperands(std::vector<cell> operands) {
+	void setOperands(std::vector<cell> operands) {
 		operands_ = operands;
 	}
-
-	inline void addOperand(cell value) {
+	void addOperand(cell value) {
 		operands_.push_back(value);
 	}
-
-	inline int numOperands() const {
+	int numOperands() const {
 		return operands_.size();
 	}
 
 public:
 	const char *name() const;
 
-	int inputRegisters() const;
-	int outputRegisters() const;
+	int getSrcRegs() const;
+	int getDestRegs() const;
 
 	std::string string() const;
 
@@ -172,82 +170,76 @@ private:
 private:
 	struct StaticInfoTableEntry {
 		const char *name;
-		int inputRegisters;
-		int outputRegisters;
+		int srcRegs;
+		int destRegs;
 	};
 	static const StaticInfoTableEntry info[NUM_AMX_OPCODES];
 };
 
-// A wrapper around the AMX C structure that adds a few extra methods.
-class AMXScript {
+class AMXInstance {
 public:
-	AMXScript(AMX *amx);
+	AMXInstance(AMX *amx);
 
 public:
-	inline AMX *amx() const {
+	operator AMX*() { return amx(); }
+	AMX *operator->() { return amx(); }
+
+public:
+	AMX *amx() const {
 		return amx_;
 	}
-	inline AMX_HEADER *amxHeader() const {
-		return reinterpret_cast<AMX_HEADER*>(amx_->base);
+	AMX_HEADER *hdr() const {
+		return reinterpret_cast<AMX_HEADER*>(amx()->base);
 	}
 
-	inline unsigned char *code() const {
-		return amx_->base + amxHeader()->cod;
+	unsigned char *code() const {
+		return amx()->base + hdr()->cod;
 	}
-	inline std::size_t codeSize() const {
-		return amxHeader()->dat - amxHeader()->cod;
-	}
-
-	inline unsigned char *data() const {
-		return amx_->data != 0 ? amx_->data : amx_->base + amxHeader()->dat;
-	}
-	inline std::size_t dataSize() const {
-		return amxHeader()->hea - amxHeader()->dat;
+	std::size_t codeSize() const {
+		return hdr()->dat - hdr()->cod;
 	}
 
-	inline int numPublics() const {
-		return (amxHeader()->natives - amxHeader()->publics) / amxHeader()->defsize;
+	unsigned char *data() const {
+		return amx()->data != 0 ? amx()->data : amx()->base + hdr()->dat;
 	}
-	inline int numNatives() const {
-		return (amxHeader()->libraries - amxHeader()->natives) / amxHeader()->defsize;
-	}
-
-	inline AMX_FUNCSTUBNT *publics() const {
-		return reinterpret_cast<AMX_FUNCSTUBNT*>(amxHeader()->publics + amx_->base);
-	}
-	inline AMX_FUNCSTUBNT *natives() const {
-		return reinterpret_cast<AMX_FUNCSTUBNT*>(amxHeader()->natives + amx_->base);
+	std::size_t dataSize() const {
+		return hdr()->hea - hdr()->dat;
 	}
 
-public:
-	inline operator AMX*() {
-		return amx();
+	int numPublics() const {
+		return (hdr()->natives - hdr()->publics) / hdr()->defsize;
 	}
-	inline AMX *operator->() {
-		return amx();
+	int numNatives() const {
+		return (hdr()->libraries - hdr()->natives) / hdr()->defsize;
 	}
 
-public:
-	cell getPublicAddress(int index) const;
-	cell getNativeAddress(int index) const;
+	AMX_FUNCSTUBNT *publics() const {
+		return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr()->publics + amx()->base);
+	}
+	AMX_FUNCSTUBNT *natives() const {
+		return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr()->natives + amx()->base);
+	}
 
-	int getPublicIndex(cell address) const;
-	int getNativeIndex(cell address) const;
+	cell getPublicAddr(int index) const;
+	cell getNativeAddr(int index) const;
 
 	const char *getPublicName(int index) const;
 	const char *getNativeName(int index) const;
 
+	int findPublic(cell address) const;
+	int findNative(cell address) const;
+
 public:
-	inline cell *stack() const {
-		return reinterpret_cast<cell*>(data() + amx_->stk);
+	cell *stack() const {
+		return reinterpret_cast<cell*>(data() + amx()->stk);
 	}
-	inline cell stackSize() const {
-		return amxHeader()->stp - amxHeader()->hea;
+	cell stackSize() const {
+		return hdr()->stp - hdr()->hea;
 	}
 
 	cell *push(cell value);
-	cell  pop();
-	void  pop(int ncells);
+	cell pop();
+	void pop(int ncells);
 
 private:
 	AMX *amx_;
@@ -255,32 +247,27 @@ private:
 
 class AMXDisassembler {
 public:
-	AMXDisassembler(const AMXScript &amx);
+	AMXDisassembler(const AMXInstance &amx);
 
 public:
-	// Sets opcode relocation table. See JIT::setOpcodeTalbe() for details.
-	inline void setOpcodeTable(cell *opcodeTable) {
-		opcodeTable_ = opcodeTable;
-	}
+	// See JIT::setOpcodeMap() for details.
+	void setOpcodeMap(cell *opcodeMap) { opcodeMap_ = opcodeMap; }
 
-	// Returns current instruction pointer.
-	inline cell ip() const {
-		return ip_;
-	}
+	// Returns address of currently executing instruction (instruction pointer).
+	cell ip() const { return ip_; }
 
-	// Sets current instruction pointer.
-	inline void setIp(cell ip) {
-		ip_ = ip;
-	}
+	// Sets instruction pointer.
+	void setIp(cell ip) { ip_ = ip; }
 
 public:
-	// Decodes current instruction and returns true until end of code is reached
-	// or an error occured. The optional error argument is set to true on error.
+	// Decodes current instruction and returns true until the end of code gets
+	// reached or an error occurs. The optional error argument is set to true
+	// on error.
 	bool decode(AMXInstruction &instr, bool *error = 0);
 
 private:
-	AMXScript amx_;
-	cell *opcodeTable_;
+	AMXInstance amx_;
+	cell *opcodeMap_;
 	cell ip_;
 };
 
@@ -288,118 +275,99 @@ class JITCompileErrorHandler;
 
 class JIT {
 public:
-	JIT(AMXScript amx);
+	JIT(AMXInstance amx);
 	~JIT();
 
 private:
-	// Disallow copying and assignement.
+	// Disallow copying and assignment.
 	JIT(const JIT &);
 	JIT &operator=(const JIT &);
 
 public:
-	// Returns the AMX script this JIT deals with.
-	inline AMXScript &amx() {
-		return amx_;
-	}
-	inline const AMXScript &amx() const {
-		return amx_;
-	}
+	AMXInstance &amx() { return amx_; }
+	const AMXInstance &amx() const { return amx_; }
 
-	// Returns a pointer to the JIT code buffer or NULL if the AMX has not ben
-	// compiled yet with compile().
-	inline void *code() const {
-		return code_;
-	}
+	// These return pointer to JIT code buffer and its size.
+	void *code() const { return code_; }
+	std::size_t codeSize() const { return codeSize_; }
 
-	// Returns the size of the JIT code or 0 if the AMX has not been compiled yet
-	// with compile()
-	inline std::size_t codeSize() const {
-		return codeSize_;
-	}
-
-	// Returns a pointer to a machine instruction mapped to a given AMX instruction.
-	// The address is realtive to the start of the AMX code.
+	// Returns a pointer to a machine instruction mapped to a given AMX
+	// instruction. The address is realtive to start of the AMX code.
 	void *getInstrPtr(cell address) const;
 
 	// Same as above but returns an offset to code() instead of a pointer.
 	int getInstrOffset(cell address) const;
 
 	// Sets an opcode relocation table to be used. This table only exists in the
-	// GCC version of AMX where they use a GCC extension to C's goto statement instead
-	// of a simple switch/case statement to minimize opcode dispatching overhead.
-	inline void setOpcodeTable(cell *opcodeTable) {
-		opcodeTable_ = opcodeTable;
-	}
+	// GCC version of AMX where they use a GCC extension to C's goto statement
+	// instead of a simple switch to minimize opcode dispatching overhead.
+	void setOpcodeMap(cell *opcodeMap) { opcodeMap_ = opcodeMap; }
 
-	// Returns a pointer to the opcode relocation table if it was previously set with
-	// setOpcodeTable() or NULL if not.
-	inline cell *opcodeTable() const {
-		return opcodeTable_;
-	}
+	// Returns a pointer to the opcode relocation table if it was previously set
+	// with setOpcodeMap() or NULL if not.
+	cell *opcodeMap() const { return opcodeMap_; }
 
-	// Sets a custom assembler to be used to compile() the code. If no assembler is set
-	// or setAssembler() is called with NULL argument the default assembler is used.
-	inline void setAssembler(AsmJit::X86Assembler *assembler) {
-		assembler_ = assembler;
-	}
+	// Sets a custom assembler to be used to compile() the code. If no assembler
+	// is set or setAssembler() is called with NULL argument the default
+	// assembler is used.
+	void setAssembler(AsmJit::X86Assembler *as) { as_ = as; }
 
-	// Returns the currently set assembler or NULL if no custom assembler is set.
-	inline AsmJit::X86Assembler *assembler() const {
-		return assembler_;
-	}
+	// Returns currently set assembler or NULL if no assembler set.
+	AsmJit::X86Assembler *assembler() const { return as_; }
 
 public:
-	// compile() is used to JIT-compile the AMX script to be able to calls its function with
-	// call() and exec(). If an error occurs during compilation, such as invalid instruction,
-	// an optional error handler is executed.
+	// compile() is used to JIT-compile the AMX script to be able to calls its
+	// function with call() and exec(). If an error occurs during compilation,
+	// such as invalid instruction, an optional error handler is executed.
 	bool compile(JITCompileErrorHandler *errorHandler = 0);
 
 public:
-	// Calls a function at the specified address and returns one of the AMX_ERROR_* codes.
-	// Function arguments should be pushed onto the AMX stack prior invoking this method,
-	// for example using amx_Push*() routines.
+	// Calls a function at the specified address and returns one of the
+	// AMX_ERROR_* codes. Function arguments should be pushed onto the AMX stack
+	// prior invoking this method, for example using amx_Push*() routines.
 	int call(cell address, cell *retval);
 
-	// This is basically the same as call() but for public functions. Can be used as a drop-in
-	// replacemenet for amx_Exec().
+	// This is basically the same as call() but for public functions. Can be
+	// used as a drop-in replacemenet for amx_Exec().
 	int exec(cell index, cell *retval);
 
 private:
 	// Get addresses of all functions and jump destinations.
 	bool getJumpRefs(std::set<cell> &refs) const;
 
-	// Sets a label at the specified AMX address. The address should be relative to the
-	// start of the code section.
+	// Sets a label at the specified AMX address. The address should be relative
+	// to the start of the code section.
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address);
 	AsmJit::Label &L(AsmJit::X86Assembler *as, cell address, const std::string &name);
 
-	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and jumps
-	// to JIT code mapped to the specified AMX address. The address must be relative
-	// to the start of the of code section.
+	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and
+	// jumps to JIT code mapped to the specified AMX address. The address must
+	// be relative to the start of the of code section.
 	void jump(cell address, void *stackBase, void *stackPtr);
 
 	// A static wrapper around jump() called from within JIT code.
 	static void JIT_CDECL doJump(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
-	// Resets EBP and ESP and jumps to the place of the previous call() invocation setting
-	// amx.error to error.
+	// Resets EBP and ESP and jumps to the place of the previous call()
+	// invocation setting amx->error to error.
 	void halt(int error);
 
-	// A static wrapper around halt() called from within JIT code.
+	// A wrapper around halt() that is called from JIT code.
 	static void JIT_CDECL doHalt(JIT *jit, int error);
 
-	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and executes
-	// a native functions at the specified index. If there is no function at that index
-	// or the index is out of native table bounds the halt() method is called.
+	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and
+	// executes a native functions at the specified index. If there is no
+	// function at that index or the index is out of native table bounds the
+	// halt() method is called.
 	void sysreqC(cell index, void *stackBase, void *stackPtr);
 
-	// A static wrapper around sysreqC() called from within JIT code.
+	// A wrapper around sysreqC() that is called from JIT code.
 	static void JIT_CDECL doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr);
 
 	// Same as sysreqC() but takes an address instead of an index.
 	void sysreqD(cell address, void *stackBase, void *stackPtr);
 
-	// A static wrapper around sysreqD() called from within JIT code.
+	// A wrapper around sysreqD() that is called from JIT code.
 	static void JIT_CDECL doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr);
 
 private:
@@ -426,18 +394,16 @@ private:
 	void native_floatlog(AsmJit::X86Assembler *as);
 
 private:
-	AMXScript amx_;
+	AMXInstance amx_;
 
-	cell *opcodeTable_;
+	cell *opcodeMap_;
+	AsmJit::X86Assembler *as_;
 
-	AsmJit::X86Assembler *assembler_;
-
-	void        *code_;
-	std::size_t  codeSize_;
+	void *code_;
+	std::size_t codeSize_;
 
 	void *ebp_;
 	void *esp_;
-
 	void *resetEbp_;
 	void *resetEsp_;
 

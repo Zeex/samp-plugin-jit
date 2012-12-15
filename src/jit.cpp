@@ -1,25 +1,26 @@
-// Copyright (c) 2012, Zeex
+// Copyright (c) 2012 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer.
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
 //    and/or other materials provided with the distribution.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-// ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE//
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
 #include <cstddef>
@@ -226,16 +227,16 @@ const char *AMXInstruction::name() const {
 	return 0;
 }
 
-int AMXInstruction::inputRegisters() const {
+int AMXInstruction::getSrcRegs() const {
 	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
-		return info[opcode_].inputRegisters;
+		return info[opcode_].srcRegs;
 	}
 	return 0;
 }
 
-int AMXInstruction::outputRegisters() const {
+int AMXInstruction::getDestRegs() const {
 	if (opcode_ >= 0 && opcode_ < NUM_AMX_OPCODES) {
-		return info[opcode_].outputRegisters;
+		return info[opcode_].destRegs;
 	}
 	return 0;
 }
@@ -265,14 +266,14 @@ std::string AMXInstruction::string() const {
 // AMXScript implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AMXScript::AMXScript(AMX *amx)
+AMXInstance::AMXInstance(AMX *amx)
 	: amx_(amx)
 {
 }
 
-cell AMXScript::getPublicAddress(cell index) const {
+cell AMXInstance::getPublicAddr(cell index) const {
 	if (index == AMX_EXEC_MAIN) {
-		return amxHeader()->cip;
+		return hdr()->cip;
 	}
 	if (index < 0 || index >= numPublics()) {
 		return 0;
@@ -280,14 +281,14 @@ cell AMXScript::getPublicAddress(cell index) const {
 	return publics()[index].address;
 }
 
-cell AMXScript::getNativeAddress(int index) const {
+cell AMXInstance::getNativeAddr(int index) const {
 	if (index < 0 || index >= numNatives()) {
 		return 0;
 	}
 	return natives()[index].address;
 }
 
-int AMXScript::getPublicIndex(cell address) const {
+int AMXInstance::findPublic(cell address) const {
 	for (int i = 0; i < numPublics(); i++) {
 		if (publics()[i].address == address) {
 			return i;
@@ -296,7 +297,7 @@ int AMXScript::getPublicIndex(cell address) const {
 	return -1;
 }
 
-int AMXScript::getNativeIndex(cell address) const {
+int AMXInstance::findNative(cell address) const {
 	for (int i = 0; i < numNatives(); i++) {
 		if (natives()[i].address == address) {
 			return i;
@@ -305,34 +306,34 @@ int AMXScript::getNativeIndex(cell address) const {
 	return -1;
 }
 
-const char *AMXScript::getPublicName(int index) const {
+const char *AMXInstance::getPublicName(int index) const {
 	if (index < 0 || index >= numPublics()) {
 		return 0;
 	}
 	return reinterpret_cast<char*>(amx_->base + publics()[index].nameofs);
 }
 
-const char *AMXScript::getNativeName(int index) const {
+const char *AMXInstance::getNativeName(int index) const {
 	if (index < 0 || index >= numNatives()) {
 		return 0;
 	}
 	return reinterpret_cast<char*>(amx_->base + natives()[index].nameofs);
 }
 
-cell *AMXScript::push(cell value) {
+cell *AMXInstance::push(cell value) {
 	amx_->stk -= sizeof(cell);
 	cell *s = stack();
 	*s = value;
 	return s;
 }
 
-cell AMXScript::pop() {
+cell AMXInstance::pop() {
 	cell *s = stack();
 	amx_->stk += sizeof(cell);
 	return *s;
 }
 
-void AMXScript::pop(int ncells) {
+void AMXInstance::pop(int ncells) {
 	amx_->stk += ncells * sizeof(cell);
 }
 
@@ -340,9 +341,9 @@ void AMXScript::pop(int ncells) {
 // AMXDisassembler implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AMXDisassembler::AMXDisassembler(const AMXScript &amx)
+AMXDisassembler::AMXDisassembler(const AMXInstance &amx)
 	: amx_(amx)
-	, opcodeTable_(0)
+	, opcodeMap_(0)
 	, ip_(0)
 {
 }
@@ -352,7 +353,7 @@ bool AMXDisassembler::decode(AMXInstruction &instr, bool *error) {
 		*error = false;
 	}
 
-	if (ip_ < 0 || amx_.amxHeader()->cod + ip_ >= amx_.amxHeader()->dat) {
+	if (ip_ < 0 || amx_.hdr()->cod + ip_ >= amx_.hdr()->dat) {
 		// Went out of the code section.
 		return false;
 	}
@@ -361,11 +362,11 @@ bool AMXDisassembler::decode(AMXInstruction &instr, bool *error) {
 	instr.setAddress(ip_);
 
 	cell opcode = *reinterpret_cast<cell*>(amx_.code() + ip_);
-	if (opcodeTable_ != 0) {
+	if (opcodeMap_ != 0) {
 		// Lookup this opcode in the opcode relocation table.
 		bool found = false;
 		for (int i = 0; i < NUM_AMX_OPCODES; i++) {
-			if (opcodeTable_[i] == opcode) {
+			if (opcodeMap_[i] == opcode) {
 				opcode = i;
 				break;
 			}
@@ -455,10 +456,10 @@ JIT::Intrinsic JIT::intrinsics_[] = {
 	{"floatlog",    &JIT::native_floatlog}
 };
 
-JIT::JIT(AMXScript amx)
+JIT::JIT(AMXInstance amx)
 	: amx_(amx)
-	, opcodeTable_(0)
-	, assembler_(0)
+	, opcodeMap_(0)
+	, as_(0)
 	, code_(0)
 	, codeSize_(0)
 	, resetEbp_(0)
@@ -499,13 +500,13 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 	assert(code_ == 0 && "You can't compile() twice, create a new JIT instead");
 
 	AMXDisassembler disas(amx_);
-	disas.setOpcodeTable(opcodeTable_);
+	disas.setOpcodeMap(opcodeMap_);
 
 	X86Assembler *as;
-	if (assembler_ == 0) {
+	if (as_ == 0) {
 		as = new X86Assembler;
 	} else {
-		as = assembler_;
+		as = as_;
 	}
 
 	Label haltLabel = as->newLabel();
@@ -524,10 +525,10 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 		if (logger != 0) {
 			if (instr.opcode() == OP_PROC) {
 				const char *functionName = 0;
-				if (cip == amx_.amxHeader()->cip) {
+				if (cip == amx_.hdr()->cip) {
 					functionName = "main";
 				} else {
-					functionName = amx_.getPublicName(amx_.getPublicIndex(cip));
+					functionName = amx_.getPublicName(amx_.findPublic(cip));
 				}
 				if (functionName != 0) {
 					logger->logFormat("\n\n\n; %s\n", functionName);
@@ -727,10 +728,10 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 			// 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
 			switch (instr.operand()) {
 			case 0:
-				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_.amxHeader()->cod)));
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_.hdr()->cod)));
 				break;
 			case 1:
-				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_.amxHeader()->dat)));
+				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_.hdr()->dat)));
 				break;
 			case 2:
 				as->mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx_->hea)));
@@ -1318,7 +1319,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 					nativeName = amx_.getNativeName(instr.operand());
 					break;
 				case OP_SYSREQ_D: {
-					nativeName = amx_.getNativeName(amx_.getNativeIndex(instr.operand()));
+					nativeName = amx_.getNativeName(amx_.findNative(instr.operand()));
 					break;
 				}
 			}
@@ -1456,7 +1457,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 		codeSize_ = as->getCodeSize();
 	}
 
-	if (as != assembler_) {
+	if (as != as_) {
 		delete as;
 	}
 
@@ -1571,7 +1572,7 @@ int JIT::call(cell address, cell *retval) {
 }
 
 int JIT::exec(int index, cell *retval) {
-	cell address = amx_.getPublicAddress(index);
+	cell address = amx_.getPublicAddr(index);
 	if (address == 0) {
 		return AMX_ERR_INDEX;
 	}
@@ -1585,7 +1586,7 @@ int JIT::exec(int index, cell *retval) {
 
 bool JIT::getJumpRefs(std::set<cell> &refs) const {
 	AMXDisassembler disas(amx_);
-	disas.setOpcodeTable(opcodeTable_);
+	disas.setOpcodeMap(opcodeMap_);
 
 	AMXInstruction instr;
 	bool error = false;
@@ -1702,7 +1703,7 @@ void JIT_CDECL JIT::doHalt(JIT *jit, int error) {
 }
 
 void JIT::sysreqC(cell index, void *stackBase, void *stackPtr) {
-	cell address = amx_.getNativeAddress(index);
+	cell address = amx_.getNativeAddr(index);
 	if (address == 0) {
 		halt(AMX_ERR_NOTFOUND);
 	}
