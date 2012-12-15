@@ -1491,12 +1491,11 @@ int JIT::call(cell address, cell *retval) {
 		as.push(esi);
 		as.push(edi);
 
-		// These are caller-saved registers in JIT code:
+		// In JIT code these are caller-saved registers:
 		//  eax - primary register (PRI)
 		//  ecx - alternate register (ALT)
 		//  ebx - data base pointer (DAT + amx->base)
 		//  edx - temporary storage
-		// There's no point in saving eax here, it used for return address.
 		as.push(ebx);
 		as.push(ecx);
 		as.push(edx);
