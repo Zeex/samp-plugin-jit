@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 project(jit)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+	include("cmake/GlobalBuildConfig.cmake")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 include(GetGitRevisionDescription)
