@@ -6,7 +6,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	include("cmake/GlobalBuildConfig.cmake")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+list(APPEND CMAKE_MODULE_PATH
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules"
+)
 
 include(GetGitRevisionDescription)
 include(SampPlugin)
@@ -16,7 +18,7 @@ add_subdirectory("lib")
 include_directories("src/SDK")
 include_directories("src/SDK/amx")
 
-set(PLUGIN_SOURCES
+set(SOURCES
 	"src/jit.cpp"
 	"src/jit.h"
 	"src/SDK/amx/amx.h"
@@ -46,13 +48,13 @@ if(MSVC)
 endif()
 
 if(WIN32)
-	list(APPEND PLUGIN_SOURCES
+	list(APPEND SOURCES
 		"src/os-win32.cpp"
 		"src/plugin.def"
 		"src/plugin.rc"
 	)
 elseif(UNIX)
-	list(APPEND PLUGIN_SOURCES
+	list(APPEND SOURCES
 		"src/os-unix.cpp"
 	)
 endif()
@@ -78,10 +80,10 @@ string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
-set(PLUGIN_VERSION ${version})
-set(PLUGIN_VERSION_RC ${version_rc})
+set(PROJECT_VERSION    ${version})
+set(PROJECT_VERSION_RC ${version_rc})
 
-add_samp_plugin(jit ${PLUGIN_SOURCES})
+add_samp_plugin(jit ${SOURCES})
 
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
@@ -109,10 +111,10 @@ endif()
 
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 if(WIN32)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PLUGIN_VERSION}-win32")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-win32")
 	set(CPACK_GENERATOR ZIP)
 elseif(UNIX)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PLUGIN_VERSION}-linux")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-linux")
 	set(CPACK_GENERATOR TGZ)
 endif()
 
