@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8)
-
 project(jit)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -83,7 +82,7 @@ string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc}
 set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
-add_samp_plugin(jit ${SOURCES})
+add_samp_plugin(${PROJECT_NAME} ${SOURCES})
 
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
@@ -99,12 +98,12 @@ if(WIN32)
 	)
 endif()
 
-target_link_libraries(jit asmjit subhook)
+target_link_libraries(${PROJECT_NAME} asmjit subhook)
 
-install(TARGETS jit LIBRARY DESTINATION ".")
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ".")
 
 if(MSVC)
-	set(PDB_NAME "jit.pdb")
+	set(PDB_NAME "${PROJECT_NAME}.pdb")
 	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
 	install(FILES ${PDB_PATH} DESTINATION ".")
 endif()
