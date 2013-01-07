@@ -100,7 +100,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} asmjit subhook)
 
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ".")
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}")
 
 if(MSVC)
 	set(PDB_NAME "${PROJECT_NAME}.pdb")
