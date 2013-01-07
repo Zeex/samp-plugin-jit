@@ -121,7 +121,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 		((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
 		(void*)amx_Exec_JIT);
 
-	logprintf("  JIT plugin v%s is OK.", PLUGIN_VERSION_STRING);
+	logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
 	return true;
 }
 
