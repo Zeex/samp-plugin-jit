@@ -10,6 +10,7 @@ macro(test name)
 endmacro()
 
 test("bugs/bug8")
+test("bugs/bug21")
 
 test("intrinsics/float")
 test("intrinsics/floatabs")
