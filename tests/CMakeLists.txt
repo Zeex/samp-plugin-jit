@@ -9,6 +9,7 @@ macro(test name)
 	add_samp_plugin_test(${name} TARGET ${PROJECT_NAME} OUT_FILE "${name}.out")
 endmacro()
 
+test("intrinsics/float")
 test("intrinsics/floatabs")
 test("intrinsics/floatadd")
 test("intrinsics/floatsub")
