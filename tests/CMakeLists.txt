@@ -11,3 +11,4 @@ endmacro()
 
 test("intrinsics/floatadd")
 test("intrinsics/floatsub")
+test("intrinsics/floatmul")
