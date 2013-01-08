@@ -1,13 +1,17 @@
 #include <a_samp>
 
-forward Test();
+native jit_exit(code = 0);
+
+public Test();
 
 public OnGameModeInit() {
 	CallLocalFunction("Test", "");
 	printf("CallLocalFunction returned");
 }
 
-main() {}
+main() {
+	jit_exit();
+}
 
 public Test()
 {

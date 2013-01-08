@@ -52,6 +52,11 @@ static AmxToJitMap amx2jit;
 static SubHook amx_Exec_hook;
 static cell *opcodeTable = 0;
 
+static cell AMX_NATIVE_CALL n_jit_exit(AMX *amx, cell *params) {
+	std::exit(params[1]);
+	return 0;
+}
+
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
 {
 	#if defined __GNUC__ && !defined WIN32
@@ -181,6 +186,11 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 	}
 
 	::amx2jit.insert(std::make_pair(amx, jit));
+
+	if (Options::Get().testing()) {
+		amx_RegisterFunc(amx, "jit_exit", n_jit_exit);
+	}
+
 	return AMX_ERR_NONE;
 }
 

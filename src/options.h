@@ -37,6 +37,10 @@ public:
 		return dump_bin_;
 	}
 
+	inline bool testing() const {
+		return testing_;
+	}
+
 private:
 	Options();
 	Options(const char *filename);
@@ -44,6 +48,7 @@ private:
 private:
 	bool dump_asm_;
 	bool dump_bin_;
+	bool testing_;
 };
 
 #endif // !OPTIONS_H
