@@ -10,3 +10,4 @@ macro(test name)
 endmacro()
 
 test("intrinsics/floatadd")
+test("intrinsics/floatsub")
