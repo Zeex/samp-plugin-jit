@@ -1567,7 +1567,10 @@ int JIT::call(cell address, cell *retval) {
 	resetEbp_ = resetEbp;
 	resetEsp_ = resetEsp;
 
-	return amx_->error;
+	int error = amx_->error;
+	amx_->error = AMX_ERR_NONE;
+
+	return error;
 }
 
 int JIT::exec(int index, cell *retval) {
