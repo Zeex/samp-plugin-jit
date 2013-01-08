@@ -1,7 +1,5 @@
 #include <a_samp>
 
-#include "constants"
-
 enum int_float {
 	if_int,
 	Float:if_float
