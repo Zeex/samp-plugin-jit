@@ -10,6 +10,7 @@ macro(test name)
 		SCRIPT   "${CMAKE_CURRENT_SOURCE_DIR}/${name}/test"
 		TARGET   "${PROJECT_NAME}"
 		OUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${name}/full_output.txt"
+		TIMEOUT  "0.1"
 	)
 endmacro()
 
