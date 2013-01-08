@@ -12,6 +12,7 @@ endmacro()
 test("bugs/bug8")
 test("bugs/bug21")
 test("bugs/bug24")
+test("bugs/bug30")
 
 test("intrinsics/float")
 test("intrinsics/floatabs")
