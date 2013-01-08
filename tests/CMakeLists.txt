@@ -27,4 +27,6 @@ test("intrinsics/floatdiv")
 test("intrinsics/floatsqroot")
 test("intrinsics/floatlog")
 
+test("misc/halt")
+test("misc/halt_deep")
 test("misc/native_call")
