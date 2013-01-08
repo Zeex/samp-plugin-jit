@@ -11,6 +11,7 @@ list(APPEND CMAKE_MODULE_PATH
 
 include(GetGitRevisionDescription)
 include(SampPlugin)
+include(CTest)
 
 add_subdirectory("lib")
 
@@ -108,7 +109,7 @@ if(MSVC)
 	install(FILES ${PDB_PATH} DESTINATION ".")
 endif()
 
-set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 if(WIN32)
 	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-win32")
 	set(CPACK_GENERATOR ZIP)
@@ -118,3 +119,5 @@ elseif(UNIX)
 endif()
 
 include(CPack)
+
+add_subdirectory("tests")
