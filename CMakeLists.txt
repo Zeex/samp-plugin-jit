@@ -85,6 +85,11 @@ set(PROJECT_VERSION_RC ${version_rc})
 
 add_samp_plugin(${PROJECT_NAME} ${SOURCES})
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
+		COMPILE_FLAGS " -Wno-attributes -Wno-ignored-attributes")
+endif()
+
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h"
