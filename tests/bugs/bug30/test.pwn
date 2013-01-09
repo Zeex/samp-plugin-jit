@@ -1,6 +1,10 @@
 #include <a_samp>
 #include <test>
 
+#if debug < 1
+	#error Compile this script with run-time checks turned on
+#endif
+
 public Test();
 
 public OnGameModeInit() {
@@ -17,6 +21,4 @@ public Test()
 	new a[2];
 	new b = -1;
 	a[b] = 0;
-
-	print("Compile this script with array bounds checks turned on");
 }
