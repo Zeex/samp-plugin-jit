@@ -1,7 +1,6 @@
 #include <a_samp>
+#include <float_const>
 #include <test>
-
-#include "../constants"
 
 static Float:test_cases[][3] = {
 	{0.0, 0.0, 0.0},
