@@ -1,6 +1,5 @@
 #include <a_samp>
-
-native jit_exit(code = 0);
+#include <test>
 
 enum int_float {
 	if_int,
@@ -18,6 +17,5 @@ main() {
 	for (new i = 0; i < sizeof(test_cases); i++) {
 		printf("%d: %d", i, float(test_cases[i][if_int]) == test_cases[i][if_float]);
 	}
-
-	jit_exit();
+	TestExit();
 }

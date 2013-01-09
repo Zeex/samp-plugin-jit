@@ -1,6 +1,5 @@
 #include <a_samp>
-
-native jit_exit(code = 0);
+#include <test>
 
 static Float:test_cases[][2] = {
 	{0.0, 0.0},
@@ -15,6 +14,5 @@ main() {
 	for (new i = 0; i < sizeof(test_cases); i++) {
 		printf("%d: %d", i, floatsqroot(test_cases[i][0]) == test_cases[i][1]);
 	}
-
-	jit_exit();
+	TestExit();
 }

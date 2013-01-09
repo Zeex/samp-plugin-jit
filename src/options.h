@@ -29,17 +29,8 @@ class Options {
 public:
 	static Options &Get();
 
-	inline bool dump_asm() const {
-		return dump_asm_;
-	}
-
-	inline bool dump_bin() const {
-		return dump_bin_;
-	}
-
-	inline bool testing() const {
-		return testing_;
-	}
+	bool dump_asm() const { return dump_asm_; }
+	bool dump_bin() const { return dump_bin_; }
 
 private:
 	Options();
@@ -48,7 +39,6 @@ private:
 private:
 	bool dump_asm_;
 	bool dump_bin_;
-	bool testing_;
 };
 
 #endif // !OPTIONS_H

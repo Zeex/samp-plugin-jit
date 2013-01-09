@@ -1,6 +1,5 @@
 #include <a_samp>
-
-native jit_exit(code = 0);
+#include <test>
 
 public Test();
 
@@ -10,7 +9,7 @@ public OnGameModeInit() {
 }
 
 main() {
-	jit_exit();
+	TestExit();
 }
 
 public Test()

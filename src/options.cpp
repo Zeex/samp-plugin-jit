@@ -36,5 +36,4 @@ Options::Options(const char *filename) {
 
 	dump_asm_ = reader.GetOption("jit_dump_asm", false);
 	dump_bin_ = reader.GetOption("jit_dump_bin", false);
-	testing_  = reader.GetOption("jit_testing",  false);
 }
