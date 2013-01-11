@@ -23,11 +23,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
-#include <cstddef>
+#include <cstdio>
 #include <cstdlib>
-#include <fstream>
 #include <map>
 #include <string>
+#include <utility>
 
 #include <subhook.h>
 
