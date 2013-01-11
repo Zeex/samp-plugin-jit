@@ -19,8 +19,6 @@ include_directories("src/SDK")
 include_directories("src/SDK/amx")
 
 set(SOURCES
-	"src/jit.cpp"
-	"src/jit.h"
 	"src/SDK/amx/amx.h"
 	"src/SDK/amx/amxaux.c"
 	"src/SDK/amx/amxaux.h"
@@ -29,6 +27,8 @@ set(SOURCES
 	"src/SDK/plugin.h"
 	"src/SDK/plugincommon.h"
 	"src/SDK/amxplugin.cpp"
+	"src/amxjit.cpp"
+	"src/amxjit.h"
 	"src/amxpathfinder.cpp"
 	"src/amxpathfinder.h"
 	"src/configreader.cpp"

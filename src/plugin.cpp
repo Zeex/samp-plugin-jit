@@ -31,9 +31,9 @@
 
 #include <subhook.h>
 
+#include "amxjit.h"
 #include "amxpathfinder.h"
 #include "fileutils.h"
-#include "jit.h"
 #include "options.h"
 #include "os.h"
 #include "plugin.h"
