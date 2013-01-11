@@ -39,7 +39,7 @@
 #include "plugin.h"
 #include "version.h"
 
-using namespace jit;
+using namespace amxjit;
 
 extern void *pAMXFunctions;
 

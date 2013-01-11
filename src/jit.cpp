@@ -46,7 +46,7 @@
 	#define unlikely(x)       (x)
 #endif
 
-namespace jit {
+namespace amxjit {
 
 using namespace AsmJit;
 
@@ -1666,7 +1666,7 @@ void JIT::jump(cell address, void *stackBase, void *stackPtr) {
 }
 
 // static
-void JIT_CDECL JIT::doJump(JIT *jit, cell address, void *stackBase, void *stackPtr) {
+void AMXJIT_CDECL JIT::doJump(JIT *jit, cell address, void *stackBase, void *stackPtr) {
 	jit->jump(address, stackBase, stackPtr);
 	doHalt(jit, AMX_ERR_INVINSTR);
 }
@@ -1700,7 +1700,7 @@ void JIT::halt(int error) {
 }
 
 // static
-void JIT_CDECL JIT::doHalt(JIT *jit, int error) {
+void AMXJIT_CDECL JIT::doHalt(JIT *jit, int error) {
 	jit->halt(error);
 }
 
@@ -1713,7 +1713,7 @@ void JIT::sysreqC(cell index, void *stackBase, void *stackPtr) {
 }
 
 // static
-void JIT_CDECL JIT::doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr) {
+void AMXJIT_CDECL JIT::doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr) {
 	jit->sysreqC(index, stackBase, stackPtr);
 }
 
@@ -1763,7 +1763,7 @@ void JIT::sysreqD(cell address, void *stackBase, void *stackPtr) {
 }
 
 // static
-void JIT_CDECL JIT::doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr) {
+void AMXJIT_CDECL JIT::doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr) {
 	jit->sysreqD(address, stackBase, stackPtr);
 }
 
@@ -1843,4 +1843,4 @@ void JIT::native_floatlog(X86Assembler *as) {
 	as->add(esp, 4);
 }
 
-} // namespace jit
+} // namespace amxjit

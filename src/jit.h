@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_H
-#define JIT_H
+#ifndef AMXJIT_H
+#define AMXJIT_H
 
 #include <cassert>
 #include <cstddef>
@@ -41,16 +41,16 @@
 #include <asmjit/x86.h>
 
 #if defined _MSC_VER
-	#define JIT_CDECL __cdecl
-	#define JIT_STDCALL __stdcall
+	#define AMXJIT_CDECL __cdecl
+	#define AMXJIT_STDCALL __stdcall
 #elif defined __GNUC__
-	#define JIT_CDECL __attribute__((cdecl))
-	#define JIT_STDCALL __attribute__((stdcall))
+	#define AMXJIT_CDECL __attribute__((cdecl))
+	#define AMXJIT_STDCALL __attribute__((stdcall))
 #else
 	#error Unsupported compiler
 #endif
 
-namespace jit {
+namespace amxjit {
 
 // REG_NONE is defined in WinNT.h.
 #ifdef REG_NONE
@@ -346,14 +346,14 @@ private:
 	void jump(cell address, void *stackBase, void *stackPtr);
 
 	// A static wrapper around jump() called from within JIT code.
-	static void JIT_CDECL doJump(JIT *jit, cell address, void *stackBase, void *stackPtr);
+	static void AMXJIT_CDECL doJump(JIT *amxjit, cell address, void *stackBase, void *stackPtr);
 
 	// Resets EBP and ESP and jumps to the place of the previous call()
 	// invocation setting amx->error to error.
 	void halt(int error);
 
 	// A wrapper around halt() that is called from JIT code.
-	static void JIT_CDECL doHalt(JIT *jit, int error);
+	static void AMXJIT_CDECL doHalt(JIT *amxjit, int error);
 
 	// Sets the EBP and ESP registers to stackBase and stackPtr repectively and
 	// executes a native functions at the specified index. If there is no
@@ -362,13 +362,13 @@ private:
 	void sysreqC(cell index, void *stackBase, void *stackPtr);
 
 	// A wrapper around sysreqC() that is called from JIT code.
-	static void JIT_CDECL doSysreqC(JIT *jit, cell index, void *stackBase, void *stackPtr);
+	static void AMXJIT_CDECL doSysreqC(JIT *amxjit, cell index, void *stackBase, void *stackPtr);
 
 	// Same as sysreqC() but takes an address instead of an index.
 	void sysreqD(cell address, void *stackBase, void *stackPtr);
 
 	// A wrapper around sysreqD() that is called from JIT code.
-	static void JIT_CDECL doSysreqD(JIT *jit, cell address, void *stackBase, void *stackPtr);
+	static void AMXJIT_CDECL doSysreqD(JIT *amxjit, cell address, void *stackBase, void *stackPtr);
 
 private:
 	// An "intrinsic" (couldn't find a better term for this) is a portion of
@@ -408,16 +408,16 @@ private:
 	void *resetEsp_;
 
 private:
-	typedef void (JIT_CDECL *HaltHelper)(int error);
+	typedef void (AMXJIT_CDECL *HaltHelper)(int error);
 	HaltHelper haltHelper_;
 
-	typedef void (JIT_CDECL *JumpHelper)(void *dest, void *stackBase, void *stackPtr);
+	typedef void (AMXJIT_CDECL *JumpHelper)(void *dest, void *stackBase, void *stackPtr);
 	JumpHelper jumpHelper_;
 
-	typedef cell (JIT_CDECL *CallHelper)(void *start);
+	typedef cell (AMXJIT_CDECL *CallHelper)(void *start);
 	CallHelper callHelper_;
 
-	typedef cell (JIT_CDECL *SysreqHelper)(cell address, void *stackBase, void *stackPtr);
+	typedef cell (AMXJIT_CDECL *SysreqHelper)(cell address, void *stackBase, void *stackPtr);
 	SysreqHelper sysreqHelper_;
 
 private:
@@ -435,6 +435,6 @@ public:
 	virtual void execute(const AMXInstruction &instr) = 0;
 };
 
-} // namespace jit
+} // namespace amxjit
 
-#endif // !JIT_H
+#endif // !AMXJIT_H
