@@ -40,6 +40,10 @@
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
 
+#if !defined _M_IX86 && !defined __i386__
+	#error Unsupported architecture
+#endif
+
 #if defined _MSC_VER
 	#define AMXJIT_CDECL __cdecl
 	#define AMXJIT_STDCALL __stdcall
