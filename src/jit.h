@@ -176,9 +176,9 @@ private:
 	static const StaticInfoTableEntry info[NUM_AMX_OPCODES];
 };
 
-class AMXInstance {
+class AMXScript {
 public:
-	AMXInstance(AMX *amx);
+	AMXScript(AMX *amx);
 
 public:
 	operator AMX*() { return amx(); }
@@ -247,7 +247,7 @@ private:
 
 class AMXDisassembler {
 public:
-	AMXDisassembler(const AMXInstance &amx);
+	AMXDisassembler(const AMXScript &amx);
 
 public:
 	// See JIT::setOpcodeMap() for details.
@@ -266,7 +266,7 @@ public:
 	bool decode(AMXInstruction &instr, bool *error = 0);
 
 private:
-	AMXInstance amx_;
+	AMXScript amx_;
 	cell *opcodeMap_;
 	cell ip_;
 };
@@ -275,7 +275,7 @@ class JITCompileErrorHandler;
 
 class JIT {
 public:
-	JIT(AMXInstance amx);
+	JIT(AMXScript amx);
 	~JIT();
 
 private:
@@ -284,8 +284,8 @@ private:
 	JIT &operator=(const JIT &);
 
 public:
-	AMXInstance &amx() { return amx_; }
-	const AMXInstance &amx() const { return amx_; }
+	AMXScript &amx() { return amx_; }
+	const AMXScript &amx() const { return amx_; }
 
 	// These return pointer to JIT code buffer and its size.
 	void *code() const { return code_; }
@@ -394,7 +394,7 @@ private:
 	void native_floatlog(AsmJit::X86Assembler *as);
 
 private:
-	AMXInstance amx_;
+	AMXScript amx_;
 
 	cell *opcodeMap_;
 	AsmJit::X86Assembler *as_;

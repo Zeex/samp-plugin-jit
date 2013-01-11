@@ -266,12 +266,12 @@ std::string AMXInstruction::string() const {
 // AMXScript implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AMXInstance::AMXInstance(AMX *amx)
+AMXScript::AMXScript(AMX *amx)
 	: amx_(amx)
 {
 }
 
-cell AMXInstance::getPublicAddr(cell index) const {
+cell AMXScript::getPublicAddr(cell index) const {
 	if (index == AMX_EXEC_MAIN) {
 		return hdr()->cip;
 	}
@@ -281,14 +281,14 @@ cell AMXInstance::getPublicAddr(cell index) const {
 	return publics()[index].address;
 }
 
-cell AMXInstance::getNativeAddr(int index) const {
+cell AMXScript::getNativeAddr(int index) const {
 	if (index < 0 || index >= numNatives()) {
 		return 0;
 	}
 	return natives()[index].address;
 }
 
-int AMXInstance::findPublic(cell address) const {
+int AMXScript::findPublic(cell address) const {
 	for (int i = 0; i < numPublics(); i++) {
 		if (publics()[i].address == address) {
 			return i;
@@ -297,7 +297,7 @@ int AMXInstance::findPublic(cell address) const {
 	return -1;
 }
 
-int AMXInstance::findNative(cell address) const {
+int AMXScript::findNative(cell address) const {
 	for (int i = 0; i < numNatives(); i++) {
 		if (natives()[i].address == address) {
 			return i;
@@ -306,34 +306,34 @@ int AMXInstance::findNative(cell address) const {
 	return -1;
 }
 
-const char *AMXInstance::getPublicName(int index) const {
+const char *AMXScript::getPublicName(int index) const {
 	if (index < 0 || index >= numPublics()) {
 		return 0;
 	}
 	return reinterpret_cast<char*>(amx_->base + publics()[index].nameofs);
 }
 
-const char *AMXInstance::getNativeName(int index) const {
+const char *AMXScript::getNativeName(int index) const {
 	if (index < 0 || index >= numNatives()) {
 		return 0;
 	}
 	return reinterpret_cast<char*>(amx_->base + natives()[index].nameofs);
 }
 
-cell *AMXInstance::push(cell value) {
+cell *AMXScript::push(cell value) {
 	amx_->stk -= sizeof(cell);
 	cell *s = stack();
 	*s = value;
 	return s;
 }
 
-cell AMXInstance::pop() {
+cell AMXScript::pop() {
 	cell *s = stack();
 	amx_->stk += sizeof(cell);
 	return *s;
 }
 
-void AMXInstance::pop(int ncells) {
+void AMXScript::pop(int ncells) {
 	amx_->stk += ncells * sizeof(cell);
 }
 
@@ -341,7 +341,7 @@ void AMXInstance::pop(int ncells) {
 // AMXDisassembler implementation
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AMXDisassembler::AMXDisassembler(const AMXInstance &amx)
+AMXDisassembler::AMXDisassembler(const AMXScript &amx)
 	: amx_(amx)
 	, opcodeMap_(0)
 	, ip_(0)
@@ -456,7 +456,7 @@ JIT::Intrinsic JIT::intrinsics_[] = {
 	{"floatlog",    &JIT::native_floatlog}
 };
 
-JIT::JIT(AMXInstance amx)
+JIT::JIT(AMXScript amx)
 	: amx_(amx)
 	, opcodeMap_(0)
 	, as_(0)
