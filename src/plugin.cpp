@@ -100,7 +100,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (void*)amx_Align;
 	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align64] = (void*)amx_Align;
 
-	void *ptr = subhook_read_destination(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
+	void *ptr = SubHook::ReadDst(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
 	if (ptr != 0) {
 		std::string module = fileutils::GetFileName(os::GetModulePath(ptr));
 		if (!module.empty()) {
