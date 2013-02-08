@@ -19,16 +19,21 @@ include_directories("src/SDK")
 include_directories("src/SDK/amx")
 
 set(SOURCES
-	"src/SDK/amx/amx.h"
-	"src/SDK/amx/amxaux.c"
-	"src/SDK/amx/amxaux.h"
-	"src/SDK/amx/getch.h"
-	"src/SDK/amx/sclinux.h"
-	"src/SDK/plugin.h"
-	"src/SDK/plugincommon.h"
-	"src/SDK/amxplugin.cpp"
-	"src/amxjit.cpp"
-	"src/amxjit.h"
+	"src/sdk/amx/amx.h"
+	"src/sdk/amx/amxaux.c"
+	"src/sdk/amx/amxaux.h"
+	"src/sdk/amx/getch.h"
+	"src/sdk/amx/sclinux.h"
+	"src/sdk/plugin.h"
+	"src/sdk/plugincommon.h"
+	"src/sdk/amxplugin.cpp"
+	"src/jit/amxdisasm.cpp"
+	"src/jit/amxdisasm.h"
+	"src/jit/amxopcode.h"
+	"src/jit/amxscript.cpp"
+	"src/jit/amxscript.h"
+	"src/jit/jit.cpp"
+	"src/jit/jit.h"
 	"src/amxpathfinder.cpp"
 	"src/amxpathfinder.h"
 	"src/configreader.cpp"
@@ -61,8 +66,9 @@ endif()
 
 source_group("lib" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/lib/[^/\\]+\\..*")
 source_group("src" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/[^/\\]+\\..*")
-source_group("src\\SDK" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/[^/\\]+\\..*")
-source_group("src\\SDK\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/SDK/amx/[^/\\]+\\..*")
+source_group("src\\jit" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/jit/[^/\\]+\\..*")
+source_group("src\\sdk" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/sdk/[^/\\]+\\..*")
+source_group("src\\sdk\\amx" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/src/sdk/amx/[^/\\]+\\..*")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

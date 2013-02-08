@@ -31,15 +31,16 @@
 
 #include <subhook.h>
 
-#include "amxjit.h"
 #include "amxpathfinder.h"
 #include "fileutils.h"
 #include "options.h"
 #include "os.h"
 #include "plugin.h"
 #include "version.h"
+#include "jit/jit.h"
+#include "jit/amxdisasm.h"
 
-using namespace amxjit;
+using namespace jit;
 
 extern void *pAMXFunctions;
 
