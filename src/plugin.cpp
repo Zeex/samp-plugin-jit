@@ -25,172 +25,180 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <string>
-#include <utility>
-
+#include <vector>
+#ifdef _WIN32
+  #include <windows.h>
+#else
+  #ifndef _GNU_SOURCE
+    #define _GNU_SOURCE 1 // for dl_addr()
+  #endif
+  #include <dlfcn.h>
+#endif
 #include <subhook.h>
-
-#include "amxpathfinder.h"
-#include "fileutils.h"
-#include "options.h"
-#include "os.h"
-#include "plugin.h"
 #include "version.h"
-#include "jit/jit.h"
 #include "jit/amxdisasm.h"
-
-using namespace jit;
+#include "jit/backend-asmjit.h"
+#include "jit/compiler.h"
+#include "jit/jit.h"
+#include "sdk/plugin.h"
 
 extern void *pAMXFunctions;
 
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, JIT*> AmxToJitMap;
-static AmxToJitMap amx2jit;
+typedef std::map<AMX*, jit::JIT*> AmxToJitMap;
+static AmxToJitMap amx_to_jit;
 
 static SubHook amx_Exec_hook;
-static cell *opcodeTable = 0;
+static cell *opcode_map = 0;
 
-static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index)
+static std::string GetModulePath(void *address,
+                                 std::size_t max_length = FILENAME_MAX)
 {
-	#if defined __GNUC__ && !defined WIN32
-		if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-			assert(::opcodeTable != 0);
-			*retval = reinterpret_cast<cell>(::opcodeTable);
-			return AMX_ERR_NONE;
-		}
-	#endif
-	AmxToJitMap::iterator iterator = ::amx2jit.find(amx);
-	if (iterator == ::amx2jit.end()) {
-		SubHook::ScopedRemove r(&amx_Exec_hook);
-		return amx_Exec(amx, retval, index);
-	} else {
-		JIT *jit = iterator->second;
-		return jit->exec(index, retval);
-	}
+  #ifdef _WIN32
+    std::vector<char> name(max_length + 1);
+    if (address != 0) {
+      MEMORY_BASIC_INFORMATION mbi;
+      VirtualQuery(address, &mbi, sizeof(mbi));
+      GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], max_length);
+    }
+    return std::string(&name[0]);
+  #else
+    std::vector<char> name(max_length + 1);
+    if (address != 0) {
+      Dl_info info;
+      dladdr(address, &info);
+      strncpy(&name[0], info.dli_fname, max_length);
+    }  
+    return std::string(&name[0]);
+  #endif
 }
 
-class CompileErrorHandler : public JITCompileErrorHandler {
-public:
-	CompileErrorHandler(JIT *jit) : jit_(jit) {}
+static std::string GetFileName(const std::string &path) {
+  std::string::size_type pos = path.find_last_of("/\\");
+  if (pos != std::string::npos) {
+    return path.substr(pos + 1);
+  }
+  return path;
+}
 
-	virtual void execute(const AMXInstruction &instr) {
-		logprintf("[jit] Invalid or unsupported instruction at address %p:", instr.address());
-		logprintf("[jit]  => %s", instr.string().c_str());
-	}
+static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
+  #if defined __GNUC__
+    if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
+      assert(::opcode_map != 0);
+      *retval = reinterpret_cast<cell>(::opcode_map);
+      return AMX_ERR_NONE;
+    }
+  #endif
+  AmxToJitMap::iterator iterator = ::amx_to_jit.find(amx);
+  if (iterator == ::amx_to_jit.end()) {
+    SubHook::ScopedRemove r(&amx_Exec_hook);
+    return amx_Exec(amx, retval, index);
+  } else {
+    jit::JIT *jit = iterator->second;
+    return jit->exec(index, retval);
+  }
+}
 
-private:
-	JIT *jit_;
+class CompileErrorHandler : public jit::CompileErrorHandler {
+ public:
+  CompileErrorHandler(jit::JIT *jit) : jit_(jit) {}
+  virtual void execute(const jit::AMXInstruction &instr) {
+    logprintf("[jit] Invalid or unsupported instruction at address %p:",
+              instr.address());
+    logprintf("[jit]   => %s", instr.string().c_str());
+  }
+ private:
+  jit::JIT *jit_;
 };
 
-PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
-{
-	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
+PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
+  return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 static void *AMXAPI amx_Align(void *v) { return v; }
 
-PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
-{
-	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
-	pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
+PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
+  logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
+  pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 
-	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align16] = (void*)amx_Align;
-	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (void*)amx_Align;
-	((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align64] = (void*)amx_Align;
+  ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align16] = (void*)amx_Align;
+  ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (void*)amx_Align;
+  ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align64] = (void*)amx_Align;
 
-	void *ptr = SubHook::ReadDst(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
-	if (ptr != 0) {
-		std::string module = fileutils::GetFileName(os::GetModulePath(ptr));
-		if (!module.empty()) {
-			logprintf("  JIT must be loaded before '%s'", module.c_str());
-			return false;
-		}
-	}
+  void *ptr = SubHook::ReadDst(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
+  if (ptr != 0) {
+    std::string module = GetFileName(GetModulePath(ptr));
+    if (!module.empty()) {
+      logprintf("  JIT must be loaded before '%s'", module.c_str());
+      return false;
+    }
+  }
 
-	#if defined __GNUC__ && !defined WIN32
-		// Get opcode list before we hook amx_Exec().
-		AMX amx = {0};
-		amx.flags |= AMX_FLAG_BROWSE;
-		amx_Exec(&amx, reinterpret_cast<cell*>(&::opcodeTable), 0);
-		amx.flags &= ~AMX_FLAG_BROWSE;
-	#endif
+  #if defined __GNUC__
+    // Get opcode table before we hook amx_Exec().
+    AMX amx = {0};
+    amx.flags |= AMX_FLAG_BROWSE;
+    amx_Exec(&amx, reinterpret_cast<cell*>(&::opcode_map), 0);
+    amx.flags &= ~AMX_FLAG_BROWSE;
+  #endif
 
-	amx_Exec_hook.Install(
-		((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
-		(void*)amx_Exec_JIT);
+  amx_Exec_hook.Install(
+    ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
+    (void*)amx_Exec_JIT);
 
-	logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
-	return true;
+  logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
+  return true;
 }
 
-PLUGIN_EXPORT void PLUGIN_CALL Unload()
-{
-	for (AmxToJitMap::iterator it = amx2jit.begin(); it != amx2jit.end(); ++it) {
-		delete it->second;
-	}
+PLUGIN_EXPORT void PLUGIN_CALL Unload() {
+  for (AmxToJitMap::iterator it = amx_to_jit.begin();
+       it != amx_to_jit.end(); ++it) {
+    delete it->second;
+  }
 }
 
-PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
-{
-	JIT *jit = new JIT(amx);
-	#if defined __GNUC__ && defined LINUX
-		jit->setOpcodeMap(::opcodeTable);
-	#endif
+PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+  jit::JIT *jit = new jit::JIT(amx);
 
-	AsmJit::X86Assembler as;
-	jit->setAssembler(&as);
+  const char *backend_string = getenv("JIT_BACKEND");
+  if (backend_string == 0) {
+    backend_string = "asmjit";
+  }
 
-	AsmJit::FileLogger logger;
-	as.setLogger(&logger);
+  jit::Backend *backend = 0;
+  if (std::strcmp(backend_string, "asmjit") == 0) {
+    backend = new jit::AsmjitBackend;
+  } else {
+    logprintf("[jit] Unknown backend '%s'", backend_string);
+  }
 
-	AMXPathFinder finder;
-	finder.AddSearchPath(".");
-	finder.AddSearchPath("gamemodes");
-	finder.AddSearchPath("filterscripts");
+  jit::Compiler compiler(backend);
 
-	std::string amxPath = finder.FindAMX(amx);
+  if (backend != 0) {
+    CompileErrorHandler error_handler(jit);
+    if (!jit->compile(&compiler, &error_handler)) {
+      delete jit;
+      delete backend;
+      return AMX_ERR_NONE;
+    }
+  } else {
+    return AMX_ERR_NONE;
+  }
 
-	if (Options::Get().dump_asm()) {
-		std::string asmPath = amxPath + ".asm";
-		logger.setStream(std::fopen(asmPath.c_str(), "w"));
-	} else {
-		as.setLogger(0);
-	}
-	
-	CompileErrorHandler errorHandler(jit);
-	if (!jit->compile(&errorHandler)) {
-		logprintf("[jit] Failed to compile script '%s'", amxPath.c_str());
-		delete jit;
-		return AMX_ERR_NONE;
-	}
-
-	jit->setAssembler(0);
-	if (logger.getStream() != 0) {
-		std::fclose(logger.getStream());
-	}
-
-	if (Options::Get().dump_bin()) {
-		std::string binPath = amxPath + ".bin";
-		std::FILE *bin = std::fopen(binPath.c_str(), "w");
-		if (bin != 0) {
-			std::fwrite(jit->code(), jit->codeSize(), 1, bin);
-			std::fclose(bin);
-		}
-	}
-
-	::amx2jit.insert(std::make_pair(amx, jit));
-	return AMX_ERR_NONE;
+  ::amx_to_jit.insert(std::make_pair(amx, jit));
+  return AMX_ERR_NONE;
 }
 
-PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx)
-{
-	AmxToJitMap::iterator it = amx2jit.find(amx);
-	if (it != amx2jit.end()) {
-		delete it->second;
-		amx2jit.erase(it);
-	}
-	return AMX_ERR_NONE;
+PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
+  AmxToJitMap::iterator it = amx_to_jit.find(amx);
+  if (it != amx_to_jit.end()) {
+    delete it->second;
+    amx_to_jit.erase(it);
+  }
+  return AMX_ERR_NONE;
 }

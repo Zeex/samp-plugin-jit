@@ -22,44 +22,79 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_JIT_H
-#define JIT_JIT_H
-
-#include <amx/amx.h>
 #include "amxptr.h"
-#include "callconv.h"
-#include "macros.h"
 
 namespace jit {
 
-class Compiler;
-class CompilerOutput;
-class CompileErrorHandler;
+AMXPtr::AMXPtr(AMX *amx)
+  : amx_(amx)
+{
+}
 
-class JIT {
- public:
-  typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
+cell AMXPtr::get_public_addr(cell index) const {
+  if (index == AMX_EXEC_MAIN) {
+    return hdr()->cip;
+  }
+  if (index < 0 || index >= num_publics()) {
+    return 0;
+  }
+  return publics()[index].address;
+}
 
-  JIT(AMXPtr amx);
-  ~JIT();
+cell AMXPtr::get_native_addr(int index) const {
+  if (index < 0 || index >= num_natives()) {
+    return 0;
+  }
+  return natives()[index].address;
+}
 
-  // This method JIT-compiles a script and stores the resulting code.
-  // If an error occurs during compilation process it calls provided error
-  // handler and returns false.
-  bool compile(Compiler *compiler, CompileErrorHandler *error_handler = 0);
+int AMXPtr::find_public(cell address) const {
+  for (int i = 0; i < num_publics(); i++) {
+    if (publics()[i].address == address) {
+      return i;
+    }
+  }
+  return -1;
+}
 
-  // Executes a public function and returns one of the AMX error codes. Use
-  // this method as a drop-in replacement for amx_Exec().
-  int exec(cell index, cell *retval);
+int AMXPtr::find_native(cell address) const {
+  for (int i = 0; i < num_natives(); i++) {
+    if (natives()[i].address == address) {
+      return i;
+    }
+  }
+  return -1;
+}
 
- private:
-  AMXPtr amx_;
-  CompilerOutput *output_;
+const char *AMXPtr::get_public_name(int index) const {
+  if (index < 0 || index >= num_publics()) {
+    return 0;
+  }
+  return reinterpret_cast<char*>(amx_->base + publics()[index].nameofs);
+}
 
- private:
-  JIT_DISALLOW_COPY_AND_ASSIGN(JIT);
-};
+const char *AMXPtr::get_native_name(int index) const {
+  if (index < 0 || index >= num_natives()) {
+    return 0;
+  }
+  return reinterpret_cast<char*>(amx_->base + natives()[index].nameofs);
+}
+
+cell *AMXPtr::push(cell value) {
+  amx_->stk -= sizeof(cell);
+  cell *s = stack();
+  *s = value;
+  return s;
+}
+
+cell AMXPtr::pop() {
+  cell *s = stack();
+  amx_->stk += sizeof(cell);
+  return *s;
+}
+
+void AMXPtr::pop(int ncells) {
+  amx_->stk += ncells * sizeof(cell);
+}
 
 } // namespace jit
-
-#endif // !JIT_JIT_H

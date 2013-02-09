@@ -15,8 +15,8 @@ include(CTest)
 
 add_subdirectory("lib")
 
-include_directories("src/SDK")
-include_directories("src/SDK/amx")
+include_directories("src/sdk")
+include_directories("src/sdk/amx")
 
 set(SOURCES
 	"src/sdk/amx/amx.h"
@@ -29,39 +29,28 @@ set(SOURCES
 	"src/sdk/amxplugin.cpp"
 	"src/jit/amxdisasm.cpp"
 	"src/jit/amxdisasm.h"
+	"src/jit/amxopcode.cpp"
 	"src/jit/amxopcode.h"
-	"src/jit/amxscript.cpp"
-	"src/jit/amxscript.h"
+	"src/jit/amxptr.cpp"
+	"src/jit/amxptr.h"
+	"src/jit/backend.h"
+	"src/jit/backend-asmjit.cpp"
+	"src/jit/backend-asmjit.h"
+	"src/jit/callconv.h"
+	"src/jit/compiler.cpp"
+	"src/jit/compiler.h"
 	"src/jit/jit.cpp"
 	"src/jit/jit.h"
-	"src/amxpathfinder.cpp"
-	"src/amxpathfinder.h"
-	"src/configreader.cpp"
-	"src/configreader.h"
-	"src/fileutils.cpp"
-	"src/fileutils.h"
-	"src/os.h"
-	"src/options.cpp"
-	"src/options.h"
+	"src/jit/macros.h"
 	"src/plugin.cpp"
+	"src/plugin.def"
+	"src/plugin.rc"
 	"src/version.h"
 )
 
 if(MSVC)
 	set_source_files_properties("src/plugin.cpp" "src/SDK/amx/amxaux.c" PROPERTIES
 		COMPILE_DEFINITIONS "_CRT_SECURE_NO_WARNINGS")
-endif()
-
-if(WIN32)
-	list(APPEND SOURCES
-		"src/os-win32.cpp"
-		"src/plugin.def"
-		"src/plugin.rc"
-	)
-elseif(UNIX)
-	list(APPEND SOURCES
-		"src/os-unix.cpp"
-	)
 endif()
 
 source_group("lib" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/lib/[^/\\]+\\..*")

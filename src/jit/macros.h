@@ -1,4 +1,4 @@
-// Copyright (c) 2012 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,38 +22,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "os.h"
+#ifndef JIT_MACROS_H
+#define JIT_MACROS_H
 
-#include <string>
-#include <vector>
+#define JIT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
+  TypeName(const TypeName &); \
+  void operator=(const TypeName &)
 
-#include <Windows.h>
-
-const char os::kDirSepChar = '\\';
-
-#undef GetModulePath
-
-std::string os::GetModulePath(void *address, std::size_t maxLength) {
-	std::vector<char> name(maxLength + 1);
-	if (address != 0) {
-		MEMORY_BASIC_INFORMATION mbi;
-		VirtualQuery(address, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], maxLength);
-	}
-	return std::string(&name[0]);
-}
-
-void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
-		bool (*callback)(const char *, void *), void *userData) 
-{
-	WIN32_FIND_DATA findFileData;
-	HANDLE hFindFile = FindFirstFile((directory + kDirSepChar + pattern).c_str(), &findFileData);
-	if (hFindFile != INVALID_HANDLE_VALUE) {
-		do {
-			if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-				callback(findFileData.cFileName, userData);
-			}
-		} while (FindNextFile(hFindFile, &findFileData) != 0);
-		FindClose(hFindFile);
-	}
-}
+#endif // !JIT_MACROS_H

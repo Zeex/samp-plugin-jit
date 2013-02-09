@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2013 Zeex
+// Copyright (c) 2012 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,44 +22,65 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_JIT_H
-#define JIT_JIT_H
+#ifndef JIT_COMPILER_H
+#define JIT_COMPILER_H
 
-#include <amx/amx.h>
 #include "amxptr.h"
-#include "callconv.h"
 #include "macros.h"
 
 namespace jit {
 
-class Compiler;
-class CompilerOutput;
+class AMXInstruction;
+class Backend;
+class BackendOutput;
 class CompileErrorHandler;
 
-class JIT {
+// Compiler output represents the output blob of the Compiler.
+// The only requirement to it is that the first 4 bytes must point to the
+// exec() function which is invoked by the JIT at any time later on.
+//
+// WARNING: Do not copy the code into another buffer! There are hard-coded
+// data references in it - they simply will be not valid in the new buffer.
+class CompilerOutput {
  public:
-  typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
+  CompilerOutput(BackendOutput *backend_output);
+  ~CompilerOutput();
 
-  JIT(AMXPtr amx);
-  ~JIT();
-
-  // This method JIT-compiles a script and stores the resulting code.
-  // If an error occurs during compilation process it calls provided error
-  // handler and returns false.
-  bool compile(Compiler *compiler, CompileErrorHandler *error_handler = 0);
-
-  // Executes a public function and returns one of the AMX error codes. Use
-  // this method as a drop-in replacement for amx_Exec().
-  int exec(cell index, cell *retval);
+  void *code() const;
+  std::size_t code_size() const;
 
  private:
-  AMXPtr amx_;
-  CompilerOutput *output_;
+  BackendOutput *backend_output_;
 
  private:
-  JIT_DISALLOW_COPY_AND_ASSIGN(JIT);
+  JIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutput);
+};
+
+class Compiler {
+ public:
+  Compiler(Backend *backend = 0);
+
+  // Gets or sets compiler backend.
+  Backend *backend() const { return backend_; }
+  void set_backend(Backend *backend) { backend_ = backend; }
+
+  // Compiles the specified AMX script. The optional error hander is either
+  // never called or called only once - on first compilation error (if any).
+  CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
+
+ private:
+  Backend *backend_;
+  
+ private:
+  JIT_DISALLOW_COPY_AND_ASSIGN(Compiler);
+};
+
+class CompileErrorHandler {
+public:
+  virtual ~CompileErrorHandler() {}
+  virtual void execute(const AMXInstruction &instr) = 0;
 };
 
 } // namespace jit
 
-#endif // !JIT_JIT_H
+#endif // !JIT_COMPILER_H

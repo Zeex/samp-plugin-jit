@@ -22,23 +22,48 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef OPTIONS_H
-#define OPTIONS_H
+#include <cassert>
+#include "amxptr.h"
+#include "backend.h"
+#include "compiler.h"
 
-class Options {
-public:
-	static Options &Get();
+namespace jit {
 
-	bool dump_asm() const { return dump_asm_; }
-	bool dump_bin() const { return dump_bin_; }
+CompilerOutput::CompilerOutput(BackendOutput *backend_output)
+  : backend_output_(backend_output)
+{
+}
 
-private:
-	Options();
-	Options(const char *filename);
+void *CompilerOutput::code() const {
+  if (backend_output_ != 0) {
+    return backend_output_->code();
+  }
+  return 0;
+}
 
-private:
-	bool dump_asm_;
-	bool dump_bin_;
-};
+std::size_t CompilerOutput::code_size() const {
+  if (backend_output_ != 0) {
+    return backend_output_->code_size();
+  }
+  return 0;
+}
 
-#endif // !OPTIONS_H
+CompilerOutput::~CompilerOutput() {
+  delete backend_output_;
+}
+
+Compiler::Compiler(Backend *backend)
+  : backend_(backend)
+{
+}
+
+CompilerOutput *Compiler::compile(AMXPtr amx, CompileErrorHandler *error_handler) {
+  assert(backend_ != 0 && "Backend must not be NULL");
+  BackendOutput *output = backend_->compile(amx, error_handler);
+  if (output != 0) {
+    return new CompilerOutput(output);
+  }
+  return 0;
+}
+
+} // namespace jit

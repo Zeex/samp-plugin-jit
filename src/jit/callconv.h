@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2012 Zeex
+// Copyright (c) 2012-2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,50 +22,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <ctime>
-#include <string>
-#include <vector>
+#ifndef JIT_CALLCONV_H
+#define JIT_CALLCONV_H
 
-#include <sys/stat.h>
+#if defined _M_IX86 || defined __i386__
+  #if defined _MSC_VER
+    #define JIT_CDECL __cdecl
+    #define JIT_STDCALL __stdcall
+  #elif defined __GNUC__
+    #define JIT_CDECL __attribute__((cdecl))
+    #define JIT_STDCALL __attribute__((stdcall))
+  #else
+    #error Unsupported compiler
+  #endif
+#else
+  #error Unsupported architecture
+#endif
 
-#include "fileutils.h"
-#include "os.h"
-
-std::string fileutils::GetFileName(const std::string &path) {
-	std::string::size_type lastSep = path.find_last_of("/\\");
-	if (lastSep != std::string::npos) {
-		return path.substr(lastSep + 1);
-	}
-	return path;
-}
-
-std::string fileutils::GetExtenstion(const std::string &path) {
-	std::string ext;
-	std::string::size_type period = path.rfind('.');
-	if (period != std::string::npos) {
-		ext = path.substr(period + 1);
-	} 
-	return ext;
-}
-
-std::time_t fileutils::GetModificationTime(const std::string &path) {
-	struct stat attrib;
-	if (stat(path.c_str(), &attrib) == 0) {
-		return attrib.st_mtime;
-	}
-	return 0;
-}
-
-typedef std::vector<std::string> StringVector;
-
-static bool ListCallback(const char *filename, void *param) {
-	StringVector *files = reinterpret_cast<StringVector*>(param);
-	files->push_back(filename);
-	return true;
-}
-
-void fileutils::GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
-		std::vector<std::string> &files) 
-{
-	os::ListDirectoryFiles(directory, pattern, ListCallback, &files);
-}
+#endif // !JIT_CALLCONV_H

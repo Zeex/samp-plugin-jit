@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2012 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,25 +22,36 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef FILEUTILS_H
-#define FILEUTILS_H
+#ifndef JIT_BACKEND_H
+#define JIT_BACKEND_H
 
-#include <string>
-#include <vector>
+#include "amxptr.h"
 
-#include <ctime>
+namespace jit {
 
-namespace fileutils {
+class CompileErrorHandler;
 
-std::string GetFileName(const std::string &path);
-std::string GetExtenstion(const std::string &path);
+class BackendOutput {
+ public:
+  virtual ~BackendOutput() {}
 
-std::time_t GetModificationTime(const std::string &path);
+  virtual void *code() const = 0;
+  virtual std::size_t code_size() const = 0;
+};
 
-void GetDirectoryFiles(const std::string &directory,
-                       const std::string &pattern,
-                       std::vector<std::string> &files);
+class Backend {
+ public:
+  virtual ~Backend() {};
 
-} // namespace fileutils
+  virtual BackendOutput *compile(AMXPtr amx,
+                                 CompileErrorHandler *error_handler) = 0;
+};
 
-#endif // !FILEUTILS_H
+enum BackendRuntimeDataIndex {
+  BackendRuntimeDataExec = 0, // Pointer to the exec() function
+  BackendRuntimeDataLast
+};
+
+} // namespace jit
+
+#endif // !JIT_BACKEND_H

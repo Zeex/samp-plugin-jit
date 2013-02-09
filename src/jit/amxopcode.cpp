@@ -1,4 +1,4 @@
-// Copyright (c) 2012 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,43 +22,50 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "os.h"
+#include <cassert>
+#include <amx/amx.h>
+#include "amxopcode.h"
 
-#include <cstring>
-#include <string>
-#include <vector>
+namespace jit {
 
-#include <dirent.h>
-#include <fnmatch.h>
-
-#ifndef _GNU_SOURCE
-	#define _GNU_SOURCE 1 // for dladdr()
-#endif
-#include <dlfcn.h> 
-
-const char os::kDirSepChar = '/';
-
-std::string os::GetModulePath(void *address, std::size_t maxLength) {
-	std::vector<char> name(maxLength + 1);
-	if (address != 0) {
-		Dl_info info;
-		dladdr(address, &info);
-		strncpy(&name[0], info.dli_fname, maxLength);
-	}	
-	return std::string(&name[0]);
+static cell *get_opcode_map() {
+  #if defined __GNUC__
+    cell *opcode_map;
+    AMX amx = {0};
+    amx.flags |= AMX_FLAG_BROWSE;
+    amx_Exec(&amx, reinterpret_cast<cell*>(&opcode_map), 0);
+    amx.flags &= ~AMX_FLAG_BROWSE;
+    return opcode_map;
+  #else
+    return 0;
+  #endif
 }
 
-void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
-		bool (*callback)(const char *, void *), void *userData) 
-{
-	DIR *dp;
-	if ((dp = opendir(directory.c_str())) != 0) {
-		struct dirent *dirp;
-		while ((dirp = readdir(dp)) != 0) {
-			if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
-				callback(dirp->d_name, userData);
-			}
-		}
-		closedir(dp);
-	}
+static cell lookup_opcode(cell *opcode_map, cell opcode) {
+  #if defined __GNUC__
+    if (opcode_map != 0) {
+      // Search for this opcode in the opcode relocation table.
+      for (int i = 0; i < NUM_AMX_OPCODES; i++) {
+        if (opcode_map[i] == opcode) {
+          return i;
+        }
+      }
+    }
+    assert(0 && "Could not relocated opcode");
+  #else
+    return opcode;
+  #endif
 }
+
+AMXOpcodeID relocate_opcode(cell opcode) {
+  #if defined __GNUC__
+    static cell *opcode_map = 0;
+    if (opcode_map == 0) {
+      opcode_map = get_opcode_map();
+    }
+    opcode = lookup_opcode(opcode_map, opcode);
+  #endif
+	return static_cast<AMXOpcodeID>(opcode);
+}
+
+} // namespace jit
