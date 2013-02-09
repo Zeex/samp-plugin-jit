@@ -147,9 +147,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     amx.flags &= ~AMX_FLAG_BROWSE;
   #endif
 
-  amx_Exec_hook.Install(
-    ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
-    (void*)amx_Exec_JIT);
+  amx_Exec_hook.Install(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
+                        (void*)amx_Exec_JIT);
 
   logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
   return true;
@@ -183,14 +182,13 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     CompileErrorHandler error_handler(jit);
     if (!jit->compile(&compiler, &error_handler)) {
       delete jit;
-      delete backend;
-      return AMX_ERR_NONE;
+      ::amx_to_jit.insert(std::make_pair(amx, jit));
     }
   } else {
-    return AMX_ERR_NONE;
+    delete jit;
   }
 
-  ::amx_to_jit.insert(std::make_pair(amx, jit));
+  delete backend;
   return AMX_ERR_NONE;
 }
 
