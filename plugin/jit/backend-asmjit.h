@@ -32,47 +32,25 @@
 #include <vector>
 #include <utility>
 #include <amx/amx.h>
-#include <asmjit/core.h>
-#include <asmjit/x86.h>
 #include "amxptr.h"
 #include "backend.h"
 #include "callconv.h"
 #include "macros.h"
 
+namespace AsmJit {
+  struct Label;
+  struct X86Assembler;
+}
+
 namespace jit {
 
+class AsmjitBackendImpl;
 class CompileErrorHandler;
-
-class AsmjitOutput : public BackendOutput {
- public:
-  AsmjitOutput(void *code, std::size_t code_size)
-    : code_(code), code_size_(code_size)
-  {
-  }
-
-  virtual ~AsmjitOutput() {
-    AsmJit::MemoryManager::getGlobal()->free(code_);
-  }
-
-  virtual void *code() const {
-    return code_;
-  }
-  virtual std::size_t code_size() const {
-    return code_size_;
-  }
-
- private:
-  void *code_;
-  std::size_t code_size_;
-  
- private:
-  JIT_DISALLOW_COPY_AND_ASSIGN(AsmjitOutput);
-};
 
 class AsmjitBackend : public Backend {
  public:
   // Maps AMX addresses to labels. The string part (the tag) is optional.
-  typedef std::map<std::pair<cell, std::string>, AsmJit::Label> LabelMap;
+  typedef std::map<std::pair<cell, std::string>, AsmJit::Label*> LabelMap;
 
   enum RuntimeDataIndex {
     RuntimeDataExecPtr = BackendRuntimeDataExec,
@@ -152,16 +130,11 @@ class AsmjitBackend : public Backend {
   void emit_sysreq_d_helper(AsmJit::X86Assembler &as) const;
 
   // Returns pointer to next instruction.
-  void *get_next_instr_ptr(AsmJit::X86Assembler &as) const {
-    intptr_t ip = reinterpret_cast<intptr_t>(as.getCode()) + as.getCodeSize();
-    return reinterpret_cast<void*>(ip);
-  }
+  void *get_next_instr_ptr(AsmJit::X86Assembler &as) const;
 
   // Returns current pointer to the RuntimeData array (value can change as
   // more code is emitted by the assembler).
-  intptr_t *get_runtime_data(AsmJit::X86Assembler &as) const {
-    return reinterpret_cast<intptr_t*>(as.getCode());
-  }
+  intptr_t *get_runtime_data(AsmJit::X86Assembler &as) const;
 
   // Sets the value of a RuntimeData element located at the specified index.
   void set_runtime_data(AsmJit::X86Assembler &as, int index,
@@ -194,20 +167,8 @@ class AsmjitBackend : public Backend {
   static void *JIT_CDECL get_instr_ptr(void *instr_map, cell address);
 
  private:
-  AsmJit::Label L_exec_ptr_;
-  AsmJit::Label L_amx_ptr_;
-  AsmJit::Label L_amx_data_ptr_;
-  AsmJit::Label L_exec_;
-  AsmJit::Label L_exec_helper_;
-  AsmJit::Label L_halt_helper_;
-  AsmJit::Label L_jump_helper_;
-  AsmJit::Label L_sysreq_c_helper_;
-  AsmJit::Label L_sysreq_d_helper_;
-  AsmJit::Label L_ebp_;
-  AsmJit::Label L_esp_;
-  AsmJit::Label L_reset_ebp_;
-  AsmJit::Label L_reset_esp_;
-  AsmJit::Label L_instr_map_ptr_;
+  struct Labels;
+  Labels *labels_;
 
  private:
   LabelMap label_map_;
@@ -215,6 +176,26 @@ class AsmjitBackend : public Backend {
   
  private:
   JIT_DISALLOW_COPY_AND_ASSIGN(AsmjitBackend);
+};
+
+class AsmjitBackendOutput : public BackendOutput {
+ public:
+  AsmjitBackendOutput(void *code, std::size_t code_size);
+  virtual ~AsmjitBackendOutput();
+
+  virtual void *code() const {
+    return code_;
+  }
+  virtual std::size_t code_size() const {
+   return code_size_;
+  }
+
+ private:
+  void *code_;
+  std::size_t code_size_;
+  
+ private:
+  JIT_DISALLOW_COPY_AND_ASSIGN(AsmjitBackendOutput);
 };
 
 } // namespace jit

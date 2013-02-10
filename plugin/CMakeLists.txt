@@ -2,7 +2,6 @@ include(AmxConfig)
 include(SampPlugin)
 
 include_directories(.)
-include_directories(jit/asmjit/src)
 include_directories(sdk)
 include_directories(sdk/amx)
 include_directories(subhook)

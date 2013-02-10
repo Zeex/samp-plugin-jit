@@ -124,7 +124,35 @@ DEFINE_INTRINSIC(native_floatlog) {
 
 namespace jit {
 
-AsmjitBackend::AsmjitBackend() {
+struct AsmjitBackend::Labels {
+  Label exec_ptr;
+  Label amx_ptr;
+  Label amx_data_ptr;
+  Label exec;
+  Label exec_helper;
+  Label halt_helper;
+  Label jump_helper;
+  Label sysreq_c_helper;
+  Label sysreq_d_helper;
+  Label ebp;
+  Label esp;
+  Label reset_ebp;
+  Label reset_esp;
+  Label instr_map_ptr;
+};
+
+AsmjitBackendOutput::AsmjitBackendOutput(void *code, std::size_t code_size)
+  : code_(code), code_size_(code_size)
+{
+}
+
+AsmjitBackendOutput::~AsmjitBackendOutput() {
+  AsmJit::MemoryManager::getGlobal()->free(code_);
+}
+
+AsmjitBackend::AsmjitBackend()
+  : labels_(new Labels)
+{
   intrinsics_.push_back(new native_float("float")),
   intrinsics_.push_back(new native_floatabs("floatabs"));
   intrinsics_.push_back(new native_floatadd("floatadd"));
@@ -140,6 +168,11 @@ AsmjitBackend::~AsmjitBackend() {
        it != intrinsics_.end(); ++it) {
     delete *it;
   }
+  for (LabelMap::const_iterator it = label_map_.begin();
+       it != label_map_.end(); ++it) {
+    delete it->second;
+  }
+  delete labels_;
 }
 
 BackendOutput *AsmjitBackend::compile(AMXPtr amx,
@@ -400,7 +433,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
         as.push(esp);
         as.push(eax);
         as.push(reinterpret_cast<intptr_t>(this));
-        as.call(L_jump_helper_);
+        as.call(labels_->jump_helper);
         break;
       default:
         error = true;
@@ -507,7 +540,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       as.push(edx);                         // stack_ptr
       as.push(eax);                         // address
       as.push(reinterpret_cast<intptr_t>(this)); // jit
-      as.call(L_jump_helper_);
+      as.call(labels_->jump_helper);
       break;
     case OP_JUMP:
     case OP_JZER:
@@ -931,7 +964,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       as.push(esp); // stack_ptr
       as.push(ebp); // stack_base
       as.push(eax); // index
-      as.call(L_sysreq_c_helper_);
+      as.call(labels_->sysreq_c_helper);
       break;
     }
     case OP_SYSREQ_C:   // index
@@ -966,14 +999,14 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
           as.push(esp); // stack_ptr
           as.push(ebp); // stack_base
           as.push(instr.operand()); // index
-          as.call(L_sysreq_c_helper_);
+          as.call(labels_->sysreq_c_helper);
           break;
         }
         case OP_SYSREQ_D:
           as.push(esp); // stack_ptr
           as.push(ebp); // stack_base
           as.push(instr.operand()); // address
-          as.call(L_sysreq_d_helper_);
+          as.call(labels_->sysreq_d_helper);
           break;
       }
       break;
@@ -1066,7 +1099,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
 
   as.bind(L_do_halt);
     as.push(ecx);
-    as.call(L_halt_helper_);
+    as.call(labels_->halt_helper);
 
   // If compilation fails the code is incomplete and thus not runnable.
   if (error) {
@@ -1095,42 +1128,42 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
     entry->jit_addr = reinterpret_cast<void*>(instr_map[i].second + code_ptr);
   }
 
-  return new AsmjitOutput(reinterpret_cast<void*>(code_ptr), code_size);
+  return new AsmjitBackendOutput(reinterpret_cast<void*>(code_ptr), code_size);
 }
 
 void AsmjitBackend::emit_runtime_data(AMXPtr amx, AsmJit::X86Assembler &as) {
   // Create and initialize labels.
-  L_exec_ptr_ = as.newLabel();
-  L_amx_ptr_ = as.newLabel();
-  L_amx_data_ptr_ = as.newLabel();
-  L_exec_ = as.newLabel();
-  L_exec_helper_ = as.newLabel();
-  L_halt_helper_ = as.newLabel();
-  L_jump_helper_ = as.newLabel();
-  L_sysreq_c_helper_ = as.newLabel();
-  L_sysreq_d_helper_ = as.newLabel();
-  L_ebp_ = as.newLabel();
-  L_esp_ = as.newLabel();
-  L_reset_ebp_ = as.newLabel();
-  L_reset_esp_ = as.newLabel();
-  L_instr_map_ptr_ = as.newLabel();
+  labels_->exec_ptr = as.newLabel();
+  labels_->amx_ptr = as.newLabel();
+  labels_->amx_data_ptr = as.newLabel();
+  labels_->exec = as.newLabel();
+  labels_->exec_helper = as.newLabel();
+  labels_->halt_helper = as.newLabel();
+  labels_->jump_helper = as.newLabel();
+  labels_->sysreq_c_helper = as.newLabel();
+  labels_->sysreq_d_helper = as.newLabel();
+  labels_->ebp = as.newLabel();
+  labels_->esp = as.newLabel();
+  labels_->reset_ebp = as.newLabel();
+  labels_->reset_esp = as.newLabel();
+  labels_->instr_map_ptr = as.newLabel();
 
   // Write the header. Some fields will be filled later.
-  as.bind(L_exec_ptr_);
+  as.bind(labels_->exec_ptr);
     as.dd(0);
-  as.bind(L_amx_ptr_);
+  as.bind(labels_->amx_ptr);
     as.dintptr(reinterpret_cast<intptr_t>(amx.amx()));
-  as.bind(L_amx_data_ptr_);
+  as.bind(labels_->amx_data_ptr);
     as.dintptr(reinterpret_cast<intptr_t>(amx.data()));
-  as.bind(L_ebp_);
+  as.bind(labels_->ebp);
     as.dd(0);
-  as.bind(L_esp_);
+  as.bind(labels_->esp);
     as.dd(0);
-  as.bind(L_reset_ebp_);
+  as.bind(labels_->reset_ebp);
     as.dd(0);
-  as.bind(L_reset_esp_);
+  as.bind(labels_->reset_esp);
     as.dd(0);
-  as.bind(L_instr_map_ptr_);
+  as.bind(labels_->instr_map_ptr);
     as.dd(0);
 
   // Reserve space for the instruction map.
@@ -1162,7 +1195,7 @@ void AsmjitBackend::emit_instr_map(AsmJit::X86Assembler &as,
 
 void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
   set_runtime_data(as, RuntimeDataExecPtr, as.getCodeSize());
-  as.bind(L_exec_);
+  as.bind(labels_->exec);
 
   Label L_do_call = as.newLabel();
   Label L_check_heap = as.newLabel();
@@ -1184,7 +1217,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.sub(esp, 12); // for locals
 
     as.push(esi);
-    as.mov(esi, dword_ptr(L_amx_ptr_));
+    as.mov(esi, dword_ptr(labels_->amx_ptr));
 
     // if (amx->hea >= amx->stk) return AMX_ERR_STACKERR;
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
@@ -1228,7 +1261,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
 
     // Get address of the public function.
     as.push(dword_ptr(ebp, arg_index));
-    as.push(dword_ptr(L_amx_ptr_));
+    as.push(dword_ptr(labels_->amx_ptr));
     as.call((void*)&get_public_addr);
     as.add(esp, 8);
   
@@ -1242,7 +1275,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
 
     // Get pointer to the start of the function.
     as.push(eax);
-    as.push(dword_ptr(L_instr_map_ptr_));
+    as.push(dword_ptr(labels_->instr_map_ptr));
     as.call((void*)&get_instr_ptr);
     as.add(esp, 8);
     as.mov(dword_ptr(ebp, -4), eax);
@@ -1257,14 +1290,14 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.mov(dword_ptr(esi, offsetof(AMX, paramcount)), 0);
 
     // Keep a copy of the old reset_ebp and reset_esp on the stack.
-    as.mov(eax, dword_ptr(L_reset_ebp_));
+    as.mov(eax, dword_ptr(labels_->reset_ebp));
     as.mov(dword_ptr(ebp, var_reset_ebp), eax);
-    as.mov(eax, dword_ptr(L_reset_esp_));
+    as.mov(eax, dword_ptr(labels_->reset_esp));
     as.mov(dword_ptr(ebp, var_reset_esp), eax);
 
     // Call the function.
     as.push(dword_ptr(ebp, var_address));
-    as.call(L_exec_helper_);
+    as.call(labels_->exec_helper);
     as.add(esp, 4);
 
     // Copt the return value if retval is not NULL.
@@ -1276,9 +1309,9 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
   as.bind(L_cleanup);
     // Restore reset_ebp and reset_esp (remember they are kept in locals?).
     as.mov(eax, dword_ptr(ebp, var_reset_ebp));
-    as.mov(dword_ptr(L_reset_ebp_), eax);
+    as.mov(dword_ptr(labels_->reset_ebp), eax);
     as.mov(eax, dword_ptr(ebp, var_reset_esp));
-    as.mov(dword_ptr(L_reset_esp_), eax);
+    as.mov(dword_ptr(labels_->reset_esp), eax);
 
     as.mov(eax, AMX_ERR_NONE);
     as.xchg(eax, dword_ptr(esi, offsetof(AMX, error)));
@@ -1291,7 +1324,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
 }
 
 void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
-  as.bind(L_exec_helper_);
+  as.bind(labels_->exec_helper);
 
   // Store the function address in eax.
   as.mov(eax, dword_ptr(esp, 4));
@@ -1311,18 +1344,18 @@ void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
   as.push(edx);
 
   // All functions assume that ebx points to the AMX data.
-  as.mov(ebx, dword_ptr(L_amx_data_ptr_));
+  as.mov(ebx, dword_ptr(labels_->amx_data_ptr));
 
   // Store old ebp and esp on the stack.
-  as.push(dword_ptr(L_ebp_));
-  as.push(dword_ptr(L_esp_));
+  as.push(dword_ptr(labels_->ebp));
+  as.push(dword_ptr(labels_->esp));
 
   // Most recent ebp and esp are stored in member variables.
-  as.mov(dword_ptr(L_ebp_), ebp);
-  as.mov(dword_ptr(L_esp_), esp);
+  as.mov(dword_ptr(labels_->ebp), ebp);
+  as.mov(dword_ptr(labels_->esp), esp);
 
   // Switch from the native stack to the AMX stack.
-  as.mov(ecx, dword_ptr(L_amx_ptr_));
+  as.mov(ecx, dword_ptr(labels_->amx_ptr));
   as.mov(edx, dword_ptr(ecx, offsetof(AMX, frm)));
   as.lea(ebp, dword_ptr(ebx, edx)); // ebp = amx_data + amx->frm
   as.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
@@ -1332,8 +1365,8 @@ void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
   // point somehow. The easiest way it to set the stack registers as
   // if we called the offending instruction directly from here.
   as.lea(ecx, dword_ptr(esp, - 4));
-  as.mov(dword_ptr(L_reset_esp_), ecx);
-  as.mov(dword_ptr(L_reset_ebp_), ebp);
+  as.mov(dword_ptr(labels_->reset_esp), ecx);
+  as.mov(dword_ptr(labels_->reset_ebp), ebp);
 
   // Call the function. Prior to his point ebx should point to the
   // AMX data and the both stack pointers should point to somewhere
@@ -1342,7 +1375,7 @@ void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
 
   // Keep the AMX stack registers up-to-date. This wouldn't be necessary if
   // RETN didn't modify them (it pops all arguments off the stack).
-  as.mov(eax, dword_ptr(L_amx_ptr_));
+  as.mov(eax, dword_ptr(labels_->amx_ptr));
   as.mov(edx, ebp);
   as.sub(edx, ebx);
   as.mov(dword_ptr(eax, offsetof(AMX, frm)), edx); // amx->frm = ebp - amx_data
@@ -1351,11 +1384,11 @@ void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
   as.mov(dword_ptr(eax, offsetof(AMX, stk)), edx); // amx->stk = esp - amx_data
 
   // Switch back to the native stack.
-  as.mov(ebp, dword_ptr(L_ebp_));
-  as.mov(esp, dword_ptr(L_esp_));
+  as.mov(ebp, dword_ptr(labels_->ebp));
+  as.mov(esp, dword_ptr(labels_->esp));
 
-  as.pop(dword_ptr(L_esp_));
-  as.pop(dword_ptr(L_ebp_));
+  as.pop(dword_ptr(labels_->esp));
+  as.pop(dword_ptr(labels_->ebp));
     
   as.pop(edx);
   as.pop(ecx);
@@ -1367,18 +1400,18 @@ void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
 }
 
 void AsmjitBackend::emit_halt_helper(AsmJit::X86Assembler &as) const {
-  as.bind(L_halt_helper_);
+  as.bind(labels_->halt_helper);
 
   // Since there's currently no way detect whether the function returns
   // normally or by executing halt there's no way if transmitting the
   // error code other than through a member variable.
   as.mov(eax, dword_ptr(esp, 4));
-  as.mov(ecx, dword_ptr(L_amx_ptr_));
+  as.mov(ecx, dword_ptr(labels_->amx_ptr));
   as.mov(dword_ptr(ecx, offsetof(AMX, error)), eax);
 
   // Reset stack so we can return right to call().
-  as.mov(esp, dword_ptr(L_reset_esp_));
-  as.mov(ebp, dword_ptr(L_reset_ebp_));
+  as.mov(esp, dword_ptr(labels_->reset_esp));
+  as.mov(ebp, dword_ptr(labels_->reset_ebp));
 
   // Pop public arguments as it would otherwise be done by RETN.
   as.pop(eax);
@@ -1390,13 +1423,13 @@ void AsmjitBackend::emit_halt_helper(AsmJit::X86Assembler &as) const {
 }
 
 void AsmjitBackend::emit_jump_helper(AsmJit::X86Assembler &as) const {
-  as.bind(L_jump_helper_);
+  as.bind(labels_->jump_helper);
 
   Label L_do_jump = as.newLabel();
 
     // Get pointer to the JIT code corresponding to the function.
     as.push(dword_ptr(esp, 4));           // address
-    as.push(dword_ptr(L_instr_map_ptr_)); // instr_map
+    as.push(dword_ptr(labels_->instr_map_ptr)); // instr_map
     as.call((void*)&get_instr_ptr);
     as.add(esp, 8);
       
@@ -1414,7 +1447,7 @@ void AsmjitBackend::emit_jump_helper(AsmJit::X86Assembler &as) const {
 }
 
 void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
-  as.bind(L_sysreq_c_helper_);
+  as.bind(labels_->sysreq_c_helper);
 
   Label L_call = as.newLabel();
   Label L_return = as.newLabel();
@@ -1427,7 +1460,7 @@ void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
     as.mov(ebp, esp);
 
     as.push(dword_ptr(ebp, arg_index));
-    as.push(dword_ptr(L_amx_ptr_));
+    as.push(dword_ptr(labels_->amx_ptr));
     as.call((void*)&get_native_addr);
     as.add(esp, 8);
 
@@ -1440,7 +1473,7 @@ void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
     as.push(dword_ptr(ebp, arg_stack_ptr));
     as.push(dword_ptr(ebp, arg_stack_base));
     as.push(eax); // address
-    as.call(L_sysreq_d_helper_);
+    as.call(labels_->sysreq_d_helper);
     as.add(esp, 12);
 
   as.bind(L_return);
@@ -1450,7 +1483,7 @@ void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
 }
 
 void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
-  as.bind(L_sysreq_d_helper_);
+  as.bind(labels_->sysreq_d_helper);
 
   as.mov(eax, dword_ptr(esp, 4));   // address
   as.mov(ebp, dword_ptr(esp, 8));   // stack_base
@@ -1460,22 +1493,22 @@ void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
 
   // AMX natives use the cdecl calling convetion in which esi and edi
   // are callee-saved (but not edx, thus it will be loaded again below).
-  as.mov(edx, dword_ptr(L_amx_ptr_));
+  as.mov(edx, dword_ptr(labels_->amx_ptr));
   as.mov(esi, dword_ptr(edx, offsetof(AMX, frm))); // saved_frm
   as.mov(edi, dword_ptr(edx, offsetof(AMX, stk))); // saved_stk
 
   // ebx is callee-saved as well so no worries. But we have to save it
   // on the stack because we already hold the return address in it...
   as.push(ebx);
-  as.mov(ebx, dword_ptr(L_amx_data_ptr_));
+  as.mov(ebx, dword_ptr(labels_->amx_data_ptr));
 
   // Switch to the native stack.
-  as.sub(ebp, dword_ptr(L_amx_data_ptr_));
+  as.sub(ebp, dword_ptr(labels_->amx_data_ptr));
   as.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - amx_data
-  as.mov(ebp, dword_ptr(L_ebp_));
-  as.sub(esp, dword_ptr(L_amx_data_ptr_));
+  as.mov(ebp, dword_ptr(labels_->ebp));
+  as.sub(esp, dword_ptr(labels_->amx_data_ptr));
   as.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - amx_data
-  as.mov(esp, dword_ptr(L_esp_));
+  as.mov(esp, dword_ptr(labels_->esp));
 
   // Call the native function.
   as.push(ecx); // params
@@ -1485,11 +1518,11 @@ void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
   // eax contains return value, the code below must not overwrite it!!
 
   // Switch back to the AMX stack.
-  as.mov(edx, dword_ptr(L_amx_ptr_));
-  as.mov(dword_ptr(L_ebp_), ebp);
+  as.mov(edx, dword_ptr(labels_->amx_ptr));
+  as.mov(dword_ptr(labels_->ebp), ebp);
   as.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
   as.lea(ebp, dword_ptr(ebx, ecx)); // ebp = amx_data + amx->frm
-  as.mov(dword_ptr(L_esp_), esp);
+  as.mov(dword_ptr(labels_->esp), esp);
   as.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
   as.lea(esp, dword_ptr(ebx, ecx)); // ebp = amx_data + amx->stk
 
@@ -1501,6 +1534,17 @@ void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
   // At this point we desired return addres happens to be on the stack already
   // and already ebx points to the AMX data like it should.
   as.ret();
+}
+
+void *AsmjitBackend::get_next_instr_ptr(AsmJit::X86Assembler &as) const {
+  intptr_t ip = reinterpret_cast<intptr_t>(as.getCode()) + as.getCodeSize();
+  return reinterpret_cast<void*>(ip);
+}
+
+// Returns current pointer to the RuntimeData array (value can change as
+// more code is emitted by the assembler).
+intptr_t *AsmjitBackend::get_runtime_data(AsmJit::X86Assembler &as) const {
+  return reinterpret_cast<intptr_t*>(as.getCode());
 }
 
 bool AsmjitBackend::collect_jump_targets(AMXPtr amx,
@@ -1547,13 +1591,13 @@ bool AsmjitBackend::collect_jump_targets(AMXPtr amx,
 
 Label &AsmjitBackend::amx_label(X86Assembler &as, cell address, const std::string &name) {
   std::pair<cell, std::string> key = std::make_pair(address, name);
-  LabelMap::iterator iterator = label_map_.find(key);
-  if (iterator != label_map_.end()) {
-    return iterator->second;
+  LabelMap::iterator it = label_map_.find(key);
+  if (it != label_map_.end()) {
+    return *it->second;
   } else {
-    std::pair<LabelMap::iterator, bool> where =
-        label_map_.insert(std::make_pair(key, as.newLabel()));
-    return where.first->second;
+    std::pair<LabelMap::iterator, bool> it_inserted =
+        label_map_.insert(std::make_pair(key, new Label(as.newLabel())));
+    return *it_inserted.first->second;
   }
 }
 
