@@ -39,6 +39,7 @@
 #include "macros.h"
 
 namespace AsmJit {
+  struct GpReg;
   struct Label;
   struct X86Assembler;
 }
@@ -55,8 +56,7 @@ class AsmjitBackend : public Backend {
 
   enum RuntimeDataIndex {
     RuntimeDataExecPtr = BackendRuntimeDataExec,
-    RuntimeDataAmxPtr ,    // Pointer to the corresponding AMX instance
-    RuntimeDataAmxDataPtr, // Pointer to the AMX data block
+    RuntimeDataAmxPtr,
     RuntimeDataEbp,
     RuntimeDataEsp,
     RuntimeDataResetEbp,
@@ -103,6 +103,12 @@ class AsmjitBackend : public Backend {
     CompileErrorHandler *error_handler) JIT_FINAL_OVERRIDE;
 
  private:
+  // The following emit_* functions emit code for common operations and
+  // helper functions. Those that are not functions should not have side
+  // effects. Functions may change the value of the eax, ecx and edx 
+  // registers (i.e. cdecl calling convention).
+  // ---------------------------------------------------------------------
+
   // The code begins with a little block of data containing variaous
   // runtime info like saved stack registers, pointer to the AMX, etc.
   void emit_runtime_data(AMXPtr amx, AsmJit::X86Assembler &as);
@@ -139,6 +145,15 @@ class AsmjitBackend : public Backend {
   // cell sysreqD(void *address, void *stack_base, void *stack_ptr).
   void emit_sysreq_d_helper(AsmJit::X86Assembler &as) const;
 
+  // Emits code for copying the AMX pointer to reg.
+  void emit_get_amx_ptr(AsmJit::X86Assembler &as,
+                        const AsmJit::GpReg &reg) const;
+
+  // Emits code for copying the AMX data pointer to reg.
+  void emit_get_amx_data_ptr(AsmJit::X86Assembler &as,
+                             const AsmJit::GpReg &reg) const;
+
+ private:
   // Returns pointer to next instruction.
   void *get_next_instr_ptr(AsmJit::X86Assembler &as) const;
 
