@@ -1223,8 +1223,8 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
 
     as.push(esi);
     emit_get_amx_ptr(as, esi);
-    as.push(edi);
-    emit_get_amx_data_ptr(as, edi);
+    as.push(ebx);
+    emit_get_amx_data_ptr(as, ebx);
 
     // if (amx->hea >= amx->stk) return AMX_ERR_STACKERR;
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
@@ -1299,7 +1299,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.imul(eax, eax, sizeof(cell));
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, stk)));
     as.sub(ecx, sizeof(cell));
-    as.mov(dword_ptr(edi, ecx), eax);
+    as.mov(dword_ptr(ebx, ecx), eax);
     as.mov(dword_ptr(esi, offsetof(AMX, stk)), ecx);
     as.mov(dword_ptr(esi, offsetof(AMX, paramcount)), 0);
 
@@ -1331,7 +1331,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.xchg(eax, dword_ptr(esi, offsetof(AMX, error)));
 
   as.bind(L_return);
-    as.pop(edi);
+    as.pop(ebx);
     as.pop(esi);
     as.mov(esp, ebp);
     as.pop(ebp);
@@ -1340,9 +1340,6 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
 
 void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
   as.bind(labels_->exec_helper);
-
-  // All functions assume that ebx points to the AMX data.
-  emit_get_amx_data_ptr(as, ebx);
 
   // Store the function address in eax.
   as.mov(eax, dword_ptr(esp, 4));
