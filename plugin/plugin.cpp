@@ -182,6 +182,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     CompileErrorHandler error_handler(jit);
     if (!jit->compile(&compiler, &error_handler)) {
       delete jit;
+    } else {
       ::amx_to_jit.insert(std::make_pair(amx, jit));
     }
   } else {
