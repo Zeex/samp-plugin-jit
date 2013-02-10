@@ -18,4 +18,11 @@ add_library(jit STATIC
   macros.h
 )
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+  if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")
+    set_property(TARGET jit APPEND_STRING PROPERTY
+                 COMPILE_FLAGS " -Wno-attributes")
+  endif()
+endif()
+
 target_link_libraries(jit asmjit sdk)

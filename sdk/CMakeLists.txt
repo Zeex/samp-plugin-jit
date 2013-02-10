@@ -1,9 +1,10 @@
 include(AmxConfig)
 
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY INCLUDE_DIRECTORIES
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/amx
-)
+if(UNIX)
+  add_definitions(-DLINUX)
+endif()
+
+include_directories(amx)
 
 add_library(sdk STATIC
   amx/amx.h
@@ -13,3 +14,10 @@ add_library(sdk STATIC
   plugin.h
   plugincommon.h
 )
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+  if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")
+    set_property(TARGET sdk APPEND_STRING PROPERTY
+                 COMPILE_FLAGS " -Wno-attributes")
+  endif()
+endif()

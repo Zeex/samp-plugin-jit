@@ -28,9 +28,12 @@ set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
 include_directories(.)
+include_directories(sdk)
+include_directories(sdk/amx)
 
 set(ASMJIT_STATIC TRUE)
 add_subdirectory(asmjit)
+
 set(SUBHOOK_STATIC TRUE)
 add_subdirectory(subhook)
 
@@ -40,10 +43,6 @@ add_subdirectory(plugin)
 set_target_properties(plugin PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
 add_subdirectory(tests)
-
-if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_C_COMPILER_VERSION VERSION_GREATER "4.0")
-  set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-attributes")
-endif()
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 if(WIN32)
