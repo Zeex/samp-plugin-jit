@@ -157,10 +157,6 @@ class AsmjitBackend : public Backend {
   // Returns address of a native function or 0 if the index is not valid.
   static cell JIT_CDECL get_native_addr(AMX *amx, int index);
 
-  // Pushes a cell onto the AMX stack but unlike amx_Push() it doesn't
-  // change amx->paramcount.
-  static void JIT_CDECL push_amx_stack(AMX *amx, cell value);
-
   // Returns a pointer to a machine instruction corresponding to the
   // specified AMX instruction. The address is realtive to the start of
   // the AMX code.

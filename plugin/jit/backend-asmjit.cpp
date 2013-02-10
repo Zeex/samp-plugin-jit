@@ -1281,12 +1281,18 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.mov(dword_ptr(ebp, -4), eax);
     
     // Push size of arguments and reset parameter count.
+    // Pseudo code:
+    //   stk = amx->stk - sizeof(cell);
+    //   *(amx_data + stk) = amx->paramcount;
+    //   amx->stk = stk;
+    //   amx->paramcount = 0;
     as.mov(eax, dword_ptr(esi, offsetof(AMX, paramcount)));
     as.imul(eax, eax, sizeof(cell));
-    as.push(eax); // amx->paramcount * sizeof(cell)
-    as.push(esi); // amx
-    as.call((void*)&push_amx_stack);
-    as.add(esp, 8);
+    as.mov(ecx, dword_ptr(esi, offsetof(AMX, stk)));
+    as.sub(ecx, sizeof(cell));
+    as.mov(edx, dword_ptr(labels_->amx_data_ptr));
+    as.mov(dword_ptr(edx, ecx), eax);
+    as.mov(dword_ptr(esi, offsetof(AMX, stk)), ecx);
     as.mov(dword_ptr(esi, offsetof(AMX, paramcount)), 0);
 
     // Keep a copy of the old reset_ebp and reset_esp on the stack.
@@ -1609,11 +1615,6 @@ cell JIT_CDECL AsmjitBackend::get_public_addr(AMX *amx, int index) {
 // static
 cell JIT_CDECL AsmjitBackend::get_native_addr(AMX *amx, int index) {
   return AMXPtr(amx).get_native_addr(index);
-}
-
-// static
-void JIT_CDECL AsmjitBackend::push_amx_stack(AMX *amx, cell value) {
-  AMXPtr(amx).push(value);
 }
 
 // static
