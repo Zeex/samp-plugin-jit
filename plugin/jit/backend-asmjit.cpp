@@ -1502,17 +1502,9 @@ void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
   as.mov(ebp, dword_ptr(esp, 8));   // stack_base
   as.mov(esp, dword_ptr(esp, 12));  // stack_ptr
   as.mov(ecx, esp);                 // params
-  as.mov(ebx, dword_ptr(esp, -16)); // return address
+  as.mov(esi, dword_ptr(esp, -16)); // return address
 
-  // AMX natives use the cdecl calling convetion in which esi and edi
-  // are callee-saved (but not edx, thus it will be loaded again below).
   emit_get_amx_ptr(as, edx);
-  as.mov(esi, dword_ptr(edx, offsetof(AMX, frm))); // saved_frm
-  as.mov(edi, dword_ptr(edx, offsetof(AMX, stk))); // saved_stk
-
-  // Save the return address and load AMX data into the same register.
-  as.push(ebx);
-  emit_get_amx_data_ptr(as, ebx);
 
   // Switch to the native stack.
   as.sub(ebp, ebx);
@@ -1538,13 +1530,8 @@ void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
   as.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
   as.lea(esp, dword_ptr(ebx, ecx)); // ebp = amx_data + amx->stk
 
-  // Restore frm and stk to the values they had before the call.
-  // This is to stop natives from messing up the AMX stack.
-  as.mov(dword_ptr(edx, offsetof(AMX, frm)), esi); // amx->frm = saved_frm
-  as.mov(dword_ptr(edx, offsetof(AMX, stk)), edi); // amx->stk = saved_stk
-
-  // At this point we desired return addres happens to be on the stack already
-  // and already ebx points to the AMX data like it should.
+  // Alter return address to we return directly to the point of call.
+  as.push(esi);
   as.ret();
 }
 
