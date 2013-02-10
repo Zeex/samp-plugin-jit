@@ -72,8 +72,7 @@ EndIf()
 # =============================================================================
 
 If(ASMJIT_STATIC)
-  Set_Property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-               COMPILE_DEFINITIONS "ASMJIT_API=")
+  add_definitions(-DASMJIT_STATIC)
 EndIf()
 
 # =============================================================================

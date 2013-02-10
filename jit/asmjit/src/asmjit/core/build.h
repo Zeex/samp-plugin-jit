@@ -62,6 +62,10 @@
 // [AsmJit - API]
 // ============================================================================
 
+#if defined(ASMJIT_STATIC)
+# define ASMJIT_API
+#endif
+
 // Make AsmJit as shared library by default.
 #if !defined(ASMJIT_API)
 # if defined(ASMJIT_WINDOWS)

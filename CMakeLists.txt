@@ -31,9 +31,6 @@ include_directories(.)
 include_directories(sdk)
 include_directories(sdk/amx)
 
-set(ASMJIT_STATIC TRUE)
-add_subdirectory(asmjit)
-
 set(SUBHOOK_STATIC TRUE)
 add_subdirectory(subhook)
 

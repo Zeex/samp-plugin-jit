@@ -25,4 +25,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
 endif()
 
+set(ASMJIT_STATIC TRUE)
+add_definitions(-DASMJIT_STATIC)
+add_subdirectory(asmjit)
+include_directories(asmjit/src)
+
 target_link_libraries(jit asmjit sdk)
