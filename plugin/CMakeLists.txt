@@ -5,7 +5,10 @@ include_directories(.)
 include_directories(jit/asmjit/src)
 include_directories(sdk)
 include_directories(sdk/amx)
+include_directories(subhook)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+add_definitions(-DSUBHOOK_STATIC)
 
 if(UNIX)
   add_definitions(-DLINUX)
@@ -34,6 +37,9 @@ endif()
 
 add_subdirectory(jit)
 add_subdirectory(sdk)
+
+set(SUBHOOK_STATIC TRUE)
+add_subdirectory(subhook)
 
 target_link_libraries(plugin jit sdk subhook)
 
