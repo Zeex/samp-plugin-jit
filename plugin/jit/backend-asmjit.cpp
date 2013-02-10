@@ -1542,9 +1542,19 @@ void AsmjitBackend::emit_get_amx_ptr(AsmJit::X86Assembler &as,
 
 void AsmjitBackend::emit_get_amx_data_ptr(AsmJit::X86Assembler &as,
                                           const AsmJit::GpReg &reg) const {
-  emit_get_amx_ptr(as, reg);
-  as.mov(reg, dword_ptr(reg, offsetof(AMX, base)));
-  as.add(reg, dword_ptr(reg, offsetof(AMX_HEADER, dat)));
+  Label L_quit = as.newLabel();
+
+    emit_get_amx_ptr(as, eax);
+
+    as.mov(reg, dword_ptr(eax, offsetof(AMX, data)));
+    as.cmp(reg, 0);
+    as.jnz(L_quit);
+
+    as.mov(reg, dword_ptr(eax, offsetof(AMX, base)));
+    as.mov(eax, dword_ptr(reg, offsetof(AMX_HEADER, dat)));
+    as.add(reg, eax);
+
+  as.bind(L_quit);
 }
 
 void *AsmjitBackend::get_next_instr_ptr(AsmJit::X86Assembler &as) const {
