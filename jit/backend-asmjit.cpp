@@ -25,6 +25,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 #include <amx/amx.h>
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
@@ -36,25 +37,109 @@
 
 using namespace AsmJit;
 
+#define DEFINE_INTRINSIC(Name)                                      \
+  class Name : public jit::AsmjitBackend::Intrinsic {               \
+   public:                                                          \
+    Name(const char *name) : jit::AsmjitBackend::Intrinsic(name) {} \
+    virtual ~Name() {}                                              \
+    virtual void emit(X86Assembler &as)
+
+DEFINE_INTRINSIC(native_float) {
+  as.fild(dword_ptr(esp, 4));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatabs) {
+  as.fld(dword_ptr(esp, 4));
+  as.fabs();
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatadd) {
+  as.fld(dword_ptr(esp, 4));
+  as.fadd(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatsub) {
+  as.fld(dword_ptr(esp, 4));
+  as.fsub(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatmul) {
+  as.fld(dword_ptr(esp, 4));
+  as.fmul(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatdiv) {
+  as.fld(dword_ptr(esp, 4));
+  as.fdiv(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatsqroot) {
+  as.fld(dword_ptr(esp, 4));
+  as.fsqrt();
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+DEFINE_INTRINSIC(native_floatlog) {
+  as.fld1();
+  as.fld(dword_ptr(esp, 8));
+  as.fyl2x();
+  as.fld1();
+  as.fdivrp(st(1));
+  as.fld(dword_ptr(esp, 4));
+  as.fyl2x();
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}};
+
+#undef DEFINE_INTRINSIC
+
 namespace jit {
 
-// JIT compiler intrinsics.
-AsmjitBackend::Intrinsic AsmjitBackend::intrinsics_[] = {
-  {"float",       &AsmjitBackend::native_float},
-  {"float",       &AsmjitBackend::native_float},
-  {"floatabs",    &AsmjitBackend::native_floatabs},
-  {"floatadd",    &AsmjitBackend::native_floatadd},
-  {"floatsub",    &AsmjitBackend::native_floatsub},
-  {"floatmul",    &AsmjitBackend::native_floatmul},
-  {"floatdiv",    &AsmjitBackend::native_floatdiv},
-  {"floatsqroot", &AsmjitBackend::native_floatsqroot},
-  {"floatlog",    &AsmjitBackend::native_floatlog}
-};
-
 AsmjitBackend::AsmjitBackend() {
+  intrinsics_.push_back(new native_float("float")),
+  intrinsics_.push_back(new native_floatabs("floatabs"));
+  intrinsics_.push_back(new native_floatadd("floatadd"));
+  intrinsics_.push_back(new native_floatsub("floatsub"));
+  intrinsics_.push_back(new native_floatmul("floatmul"));
+  intrinsics_.push_back(new native_floatdiv("floatdiv"));
+  intrinsics_.push_back(new native_floatsqroot("floatsqroot"));
+  intrinsics_.push_back(new native_floatlog("floatlog"));
 }
 
 AsmjitBackend::~AsmjitBackend() {
+  for (std::vector<Intrinsic*>::const_iterator it = intrinsics_.begin();
+       it != intrinsics_.end(); ++it) {
+    delete *it;
+  }
 }
 
 BackendOutput *AsmjitBackend::compile(AMXPtr amx,
@@ -863,9 +948,11 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
         }
       }
       if (native_name != 0) {
-        for (int i = 0; i < sizeof(intrinsics_) / sizeof(*intrinsics_); i++) {
-          if (intrinsics_[i].name == native_name) {
-            (*this.*(intrinsics_[i].impl))(as);
+        for (std::vector<Intrinsic*>::const_iterator it = intrinsics_.begin();
+             it != intrinsics_.end(); ++it) {
+          Intrinsic *intr = *it;
+          if (intr->name() == native_name) {
+            intr->emit(as);
             goto special_native;
           }
         }
@@ -1499,82 +1586,6 @@ void *JIT_CDECL AsmjitBackend::get_instr_ptr(void *instr_map, cell address) {
   }
 
   return 0;
-}
-
-void AsmjitBackend::native_float(X86Assembler &as) {
-  as.fild(dword_ptr(esp, 4));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatabs(X86Assembler &as) {
-  as.fld(dword_ptr(esp, 4));
-  as.fabs();
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatadd(X86Assembler &as) {
-  as.fld(dword_ptr(esp, 4));
-  as.fadd(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatsub(X86Assembler &as) {
-  as.fld(dword_ptr(esp, 4));
-  as.fsub(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatmul(X86Assembler &as) {
-  as.fld(dword_ptr(esp, 4));
-  as.fmul(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatdiv(X86Assembler &as) {
-  as.fld(dword_ptr(esp, 4));
-  as.fdiv(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatsqroot(X86Assembler &as) {
-  as.fld(dword_ptr(esp, 4));
-  as.fsqrt();
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void AsmjitBackend::native_floatlog(X86Assembler &as) {
-  as.fld1();
-  as.fld(dword_ptr(esp, 8));
-  as.fyl2x();
-  as.fld1();
-  as.fdivrp(st(1));
-  as.fld(dword_ptr(esp, 4));
-  as.fyl2x();
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
 }
 
 } // namespace jit

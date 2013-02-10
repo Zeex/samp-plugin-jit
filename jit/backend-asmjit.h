@@ -29,6 +29,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 #include <utility>
 #include <amx/amx.h>
 #include <asmjit/core.h>
@@ -73,16 +74,6 @@ class AsmjitBackend : public Backend {
   // Maps AMX addresses to labels. The string part (the tag) is optional.
   typedef std::map<std::pair<cell, std::string>, AsmJit::Label> LabelMap;
 
-  // An "intrinsic" (couldn't find a better term for this) is a portion of
-  // machine code that substitutes calls to certain native functions with
-  // optimized versions of those.
-  typedef void (AsmjitBackend::*IntrinsicImpl)(AsmJit::X86Assembler &as);
-
-  struct Intrinsic {
-    const char *name;
-    IntrinsicImpl impl;
-  };
-
   enum RuntimeDataIndex {
     RuntimeDataExecPtr = BackendRuntimeDataExec,
     RuntimeDataAmxPtr ,    // Pointer to the corresponding AMX instance
@@ -94,9 +85,25 @@ class AsmjitBackend : public Backend {
     RuntimeDataInstrMapPtr
   };
 
+  // This struct represents an entry of the instruction map.
   struct InstrMapEntry {
     cell  amx_addr;
     void *jit_addr;
+  };
+
+  // An "intrinsic" (couldn't find a better term for this) is a portion of
+  // machine code that substitutes calls to certain native functions with
+  // optimized versions of those.
+  class Intrinsic {
+   public:
+    Intrinsic(const char *name) : name_(name) {}
+    virtual ~Intrinsic() {}
+
+    std::string name() const { return name_; }
+    virtual void emit(AsmJit::X86Assembler &as) = 0;
+
+   private:
+    std::string name_;
   };
 
  public:
@@ -202,18 +209,9 @@ class AsmjitBackend : public Backend {
   AsmJit::Label L_reset_esp_;
   AsmJit::Label L_instr_map_ptr_;
 
-  void native_float(AsmJit::X86Assembler &as);
-  void native_floatabs(AsmJit::X86Assembler &as);
-  void native_floatadd(AsmJit::X86Assembler &as);
-  void native_floatsub(AsmJit::X86Assembler &as);
-  void native_floatmul(AsmJit::X86Assembler &as);
-  void native_floatdiv(AsmJit::X86Assembler &as);
-  void native_floatsqroot(AsmJit::X86Assembler &as);
-  void native_floatlog(AsmJit::X86Assembler &as);
-
  private:
   LabelMap label_map_;
-  static Intrinsic intrinsics_[];
+  std::vector<Intrinsic*> intrinsics_;
   
  private:
   JIT_DISALLOW_COPY_AND_ASSIGN(AsmjitBackend);
