@@ -27,15 +27,9 @@ string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc}
 set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
-include_directories(.)
-include_directories(sdk)
-include_directories(sdk/amx)
-
 set(SUBHOOK_STATIC TRUE)
 add_subdirectory(subhook)
 
-add_subdirectory(sdk)
-add_subdirectory(jit)
 add_subdirectory(plugin)
 set_target_properties(plugin PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 

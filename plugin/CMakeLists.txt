@@ -1,6 +1,10 @@
 include(AmxConfig)
 include(SampPlugin)
 
+include_directories(.)
+include_directories(jit/asmjit/src)
+include_directories(sdk)
+include_directories(sdk/amx)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 if(UNIX)
@@ -27,6 +31,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
                  COMPILE_FLAGS " -Wno-attributes")
   endif()
 endif()
+
+add_subdirectory(jit)
+add_subdirectory(sdk)
 
 target_link_libraries(plugin jit sdk subhook)
 
