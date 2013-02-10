@@ -96,11 +96,11 @@ class AsmjitBackend : public Backend {
 
  public:
   AsmjitBackend();
-  virtual ~AsmjitBackend();
+  virtual ~AsmjitBackend() JIT_OVERRIDE;
 
   // Inherited from Backend.
-  virtual BackendOutput *compile(AMXPtr amx, 
-                                 CompileErrorHandler *error_handler);
+  virtual BackendOutput *compile(AMXPtr amx,
+    CompileErrorHandler *error_handler) JIT_FINAL_OVERRIDE;
 
  private:
   // The code begins with a little block of data containing variaous
