@@ -26,6 +26,7 @@
 #define JIT_BACKEND_ASMJIT_H
 
 #include <cstddef>
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -60,6 +61,7 @@ class AsmjitBackend : public Backend {
     RuntimeDataEsp,
     RuntimeDataResetEbp,
     RuntimeDataResetEsp,
+    RuntimeDataInstrMapSize,
     RuntimeDataInstrMapPtr
   };
 
@@ -67,6 +69,14 @@ class AsmjitBackend : public Backend {
   struct InstrMapEntry {
     cell  amx_addr;
     void *jit_addr;
+  };
+
+  class CompareInstrMapEntries
+    : std::binary_function<const InstrMapEntry&, const InstrMapEntry&, bool> {
+   public:
+     bool operator()(const InstrMapEntry &lhs, const InstrMapEntry &rhs) const {
+      return lhs.amx_addr < rhs.amx_addr;
+     }
   };
 
   // An "intrinsic" (couldn't find a better term for this) is a portion of
@@ -157,10 +167,11 @@ class AsmjitBackend : public Backend {
   // Returns address of a native function or 0 if the index is not valid.
   static cell JIT_CDECL get_native_addr(AMX *amx, int index);
 
-  // Returns a pointer to a machine instruction corresponding to the
+  // Returns a pointer to the machine instruction corresponding to the
   // specified AMX instruction. The address is realtive to the start of
   // the AMX code.
-  static void *JIT_CDECL get_instr_ptr(void *instr_map, cell address);
+  static void *JIT_CDECL get_instr_ptr(cell address, void *instr_map,
+                                       std::size_t instr_map_size);
 
  private:
   struct Labels;

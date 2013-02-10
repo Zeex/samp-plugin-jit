@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -138,6 +139,7 @@ struct AsmjitBackend::Labels {
   Label esp;
   Label reset_ebp;
   Label reset_esp;
+  Label instr_map_size;
   Label instr_map_ptr;
 };
 
@@ -1146,6 +1148,7 @@ void AsmjitBackend::emit_runtime_data(AMXPtr amx, AsmJit::X86Assembler &as) {
   labels_->esp = as.newLabel();
   labels_->reset_ebp = as.newLabel();
   labels_->reset_esp = as.newLabel();
+  labels_->instr_map_size = as.newLabel();
   labels_->instr_map_ptr = as.newLabel();
 
   // Write the header. Some fields will be filled later.
@@ -1162,6 +1165,8 @@ void AsmjitBackend::emit_runtime_data(AMXPtr amx, AsmJit::X86Assembler &as) {
   as.bind(labels_->reset_ebp);
     as.dd(0);
   as.bind(labels_->reset_esp);
+    as.dd(0);
+  as.bind(labels_->instr_map_size);
     as.dd(0);
   as.bind(labels_->instr_map_ptr);
     as.dd(0);
@@ -1181,16 +1186,20 @@ void AsmjitBackend::emit_runtime_data(AMXPtr amx, AsmJit::X86Assembler &as) {
 void AsmjitBackend::emit_instr_map(AsmJit::X86Assembler &as,
                                    AMXPtr amx) const 
 {
-  set_runtime_data(as, RuntimeDataInstrMapPtr, as.getCodeSize());
-
   AMXDisassembler disas(amx);
   AMXInstruction instr;
-
-  InstrMapEntry dummy_entry = {0};
+  int size = 0;
   while (disas.decode(instr)) {
-    as.dstruct(dummy_entry);
+    size++;
   }
-  as.dstruct(dummy_entry); // terminator
+
+  set_runtime_data(as, RuntimeDataInstrMapSize, size);
+  set_runtime_data(as, RuntimeDataInstrMapPtr, as.getCodeSize());
+
+  InstrMapEntry dummy = {0};
+  for (int i = 0; i < size; i++) {
+    as.dstruct(dummy);
+  }
 }
 
 void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
@@ -1274,11 +1283,12 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
   as.bind(L_do_call);
 
     // Get pointer to the start of the function.
-    as.push(eax);
+    as.push(dword_ptr(labels_->instr_map_size));
     as.push(dword_ptr(labels_->instr_map_ptr));
+    as.push(eax);
     as.call((void*)&get_instr_ptr);
-    as.add(esp, 8);
-    as.mov(dword_ptr(ebp, -4), eax);
+    as.add(esp, 12);
+    as.mov(dword_ptr(ebp, var_address), eax);
     
     // Push size of arguments and reset parameter count.
     // Pseudo code:
@@ -1618,16 +1628,18 @@ cell JIT_CDECL AsmjitBackend::get_native_addr(AMX *amx, int index) {
 }
 
 // static
-void *JIT_CDECL AsmjitBackend::get_instr_ptr(void *instr_map, cell address) {
+void *JIT_CDECL AsmjitBackend::get_instr_ptr(cell address, void *instr_map,
+                                             std::size_t instr_map_size) {
   assert(instr_map != 0);
-  InstrMapEntry *entry = reinterpret_cast<InstrMapEntry*>(instr_map);
+  InstrMapEntry *begin = reinterpret_cast<InstrMapEntry*>(instr_map);
+  InstrMapEntry target = {address, 0};
 
-  // TODO: Convert this to binary search.
-  while (entry->jit_addr != 0) {
-    if (entry->amx_addr == address) {
-      return entry->jit_addr;
-    }
-    entry++;
+  std::pair<InstrMapEntry*, InstrMapEntry*> result;
+  result = std::equal_range(begin, begin + instr_map_size, target,
+                            CompareInstrMapEntries());
+
+  if (result.first != result.second) {
+    return result.first->jit_addr;
   }
 
   return 0;
