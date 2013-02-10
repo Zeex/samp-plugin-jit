@@ -25,41 +25,8 @@
 #ifndef JIT_MACROS_H
 #define JIT_MACROS_H
 
-#if defined __GNUC__
-  #include <features.h> // __GNUC_PREREQ()
-#endif
-
-#if defined __GNUC__
-  #if __GNUC_PREREQ(4,4)
-    #define JIT_DELETE = delete
-  #endif
-  #if __GNUC_PREREQ(4,7)
-    #define JIT_OVERRIDE override
-    #define JIT_FINAL final
-  #endif
-#endif
-
-#if defined _MSC_VER
-  #if _MSC_VER >= 1700
-    #define JIT_OVERRIDE override
-    #define JIT_FINAL final
-  #endif
-#endif
-
-#if !defined JIT_OVERRIDE
-  #define JIT_OVERRIDE
-#endif
-#if !defined JIT_FINAL
-  #define JIT_FINAL
-#endif
-#if !defined JIT_DELETE
-  #define JIT_DELETE
-#endif
-
-#define JIT_FINAL_OVERRIDE JIT_FINAL JIT_OVERRIDE
-
 #define JIT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName &) JIT_DELETE; \
-  void operator=(const TypeName &) JIT_DELETE
+  TypeName(const TypeName &); \
+  void operator=(const TypeName &)
 
 #endif // !JIT_MACROS_H

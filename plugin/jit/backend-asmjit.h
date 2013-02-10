@@ -96,11 +96,11 @@ class AsmjitBackend : public Backend {
 
  public:
   AsmjitBackend();
-  virtual ~AsmjitBackend() JIT_OVERRIDE;
+  virtual ~AsmjitBackend();
 
   // Inherited from Backend.
-  virtual BackendOutput *compile(AMXPtr amx,
-    CompileErrorHandler *error_handler) JIT_FINAL_OVERRIDE;
+  virtual BackendOutput *compile(AMXPtr amx, 
+                                 CompileErrorHandler *error_handler);
 
  private:
   // The following emit_* functions emit code for common operations and
