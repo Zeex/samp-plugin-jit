@@ -1270,7 +1270,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.push(dword_ptr(ebp, arg_index));
     emit_get_amx_ptr(as, eax);
     as.push(eax);
-    as.call((void*)&get_public_addr);
+    as.call(asmjit_cast<void*>(&get_public_addr));
     as.add(esp, 8);
   
     // If the function was not found, exit with error.
@@ -1285,7 +1285,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.push(dword_ptr(labels_->instr_map_size));
     as.push(dword_ptr(labels_->instr_map_ptr));
     as.push(eax);
-    as.call((void*)&get_instr_ptr);
+    as.call(asmjit_cast<void*>(&get_instr_ptr));
     as.add(esp, 12);
     as.mov(dword_ptr(ebp, var_address), eax);
     
@@ -1442,7 +1442,7 @@ void AsmjitBackend::emit_jump_helper(AsmJit::X86Assembler &as) const {
     // Get pointer to the JIT code corresponding to the function.
     as.push(dword_ptr(esp, 4));                 // address
     as.push(dword_ptr(labels_->instr_map_ptr)); // instr_map
-    as.call((void*)&get_instr_ptr);
+    as.call(asmjit_cast<void*>(&get_instr_ptr));
     as.add(esp, 8);
       
     // If the address wasn't valid, ignore continue execution as if
@@ -1474,7 +1474,7 @@ void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
     as.push(dword_ptr(ebp, arg_index));
     emit_get_amx_ptr(as, eax);
     as.push(eax);
-    as.call((void*)&get_native_addr);
+    as.call(asmjit_cast<void*>(&get_native_addr));
     as.add(esp, 8);
 
     as.cmp(eax, 0);
