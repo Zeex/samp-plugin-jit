@@ -432,8 +432,8 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
         break;
       case 6:
         as.push(esp);
+        as.push(ebp);
         as.push(eax);
-        as.push(reinterpret_cast<intptr_t>(this));
         as.call(labels_->jump_helper);
         break;
       default:
@@ -536,11 +536,9 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       break;
     case OP_JUMP_PRI:
       // CIP = PRI (indirect jump)
-      as.push(ebp);                         // stack_base
-      as.lea(edx, dword_ptr(esp, -12));
-      as.push(edx);                         // stack_ptr
-      as.push(eax);                         // address
-      as.push(reinterpret_cast<intptr_t>(this)); // jit
+      as.push(esp);
+      as.push(ebp);
+      as.push(eax);
       as.call(labels_->jump_helper);
       break;
     case OP_JUMP:
@@ -1224,6 +1222,8 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
 
     as.push(esi);
     emit_get_amx_ptr(as, esi);
+
+    // JIT code expects AMX data pointer to be in ebx.
     as.push(ebx);
     emit_get_amx_data_ptr(as, ebx);
 
@@ -1443,22 +1443,30 @@ void AsmjitBackend::emit_jump_helper(AsmJit::X86Assembler &as) const {
 
   Label L_do_jump = as.newLabel();
 
+  int arg_address = 4;
+  int arg_stack_base = 8;
+  int arg_stack_ptr = 12;
+
+    as.mov(eax, dword_ptr(esp, arg_address));
+
     // Get pointer to the JIT code corresponding to the function.
-    as.push(dword_ptr(esp, 4));                 // address
-    as.push(dword_ptr(labels_->instr_map_ptr)); // instr_map
+    as.push(dword_ptr(labels_->instr_map_size));
+    as.push(dword_ptr(labels_->instr_map_ptr));
+    as.push(eax);
     as.call(asmjit_cast<void*>(&get_instr_ptr));
-    as.add(esp, 8);
+    as.add(esp, 12);
       
-    // If the address wasn't valid, ignore continue execution as if
-    // no jump was initiated (this is how AMX does this).
+    // If the address wasn't valid, continue execution as if no jump
+    // was initiated (this is what AMX does).
     as.cmp(eax, 0);
     as.jne(L_do_jump);
     as.ret();
 
   as.bind(L_do_jump);
-    as.mov(eax, dword_ptr(esp, 4));  // address
-    as.mov(ebp, dword_ptr(esp, 8));  // stack_base
-    as.mov(esp, dword_ptr(esp, 12)); // stack_ptr
+
+    // Jump to the destination address.
+    as.mov(ebp, dword_ptr(esp, arg_stack_base));
+    as.mov(esp, dword_ptr(esp, arg_stack_ptr));
     as.jmp(eax);
 }
 
