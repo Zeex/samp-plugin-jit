@@ -96,7 +96,6 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   #endif
   AmxToJitMap::iterator iterator = ::amx_to_jit.find(amx);
   if (iterator == ::amx_to_jit.end()) {
-    logprintf("[jit] Falling back to default mode");
     SubHook::ScopedRemove r(&amx_Exec_hook);
     return amx_Exec(amx, retval, index);
   } else {
