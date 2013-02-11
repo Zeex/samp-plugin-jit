@@ -119,7 +119,7 @@ class AsmjitBackend : public Backend {
   void emit_instr_map(AsmJit::X86Assembler &as, AMXPtr amx) const;
 
   // Emits code for:
-  // int JIT_CDECL exec(cell index, cell *retval).
+  // int JIT_CDECL exec(cell index, cell *retval)
   //
   // The exec() function is the entry point into the JIT code and has
   // to be present in all Backends. The _helper functions below are not
@@ -127,22 +127,23 @@ class AsmjitBackend : public Backend {
   void emit_exec(AsmJit::X86Assembler &as) const;
 
   // Emits code for:
-  // cell JIT_CDECL exec_helper(void *address).
+  // cell JIT_CDECL exec_helper(void *address)
   void emit_exec_helper(AsmJit::X86Assembler &as) const;
 
-  // Emits code for: void JIT_CDECL halt(int error)
+  // Emits code for:
+  // void JIT_CDECL halt_helper(int error)
   void emit_halt_helper(AsmJit::X86Assembler &as) const;
 
   // Emits code for:
-  // void JIT_CDECL jump(void *address, void *stack_base, void *stack_ptr).
+  // void JIT_CDECL jump_helper(void *address, void *stack_base, void *stack_ptr)
   void emit_jump_helper(AsmJit::X86Assembler &as) const;
 
   // Emits code for:
-  // cell JIT_CDECL sysreqC(int index, void *stack_base, void *stack_ptr).
+  // cell JIT_CDECL sysreq_c_helper(int index, void *stack_base, void *stack_ptr)
   void emit_sysreq_c_helper(AsmJit::X86Assembler &as) const;
 
   // Emits code for:
-  // cell sysreqD(void *address, void *stack_base, void *stack_ptr).
+  // cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr)
   void emit_sysreq_d_helper(AsmJit::X86Assembler &as) const;
 
   // Emits code for copying the AMX pointer to reg.

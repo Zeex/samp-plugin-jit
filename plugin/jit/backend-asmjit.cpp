@@ -1198,6 +1198,7 @@ void AsmjitBackend::emit_instr_map(AsmJit::X86Assembler &as,
   }
 }
 
+// int JIT_CDECL exec(cell index, cell *retval);
 void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
   set_runtime_data(as, RuntimeDataExecPtr, as.getCodeSize());
   as.bind(labels_->exec);
@@ -1338,6 +1339,7 @@ void AsmjitBackend::emit_exec(AsmJit::X86Assembler &as) const {
     as.ret();
 }
 
+// cell JIT_CDECL exec_helper(void *address);
 void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
   as.bind(labels_->exec_helper);
 
@@ -1411,6 +1413,7 @@ void AsmjitBackend::emit_exec_helper(AsmJit::X86Assembler &as) const {
   as.ret();
 }
 
+// void JIT_CDECL halt_helper(int error);
 void AsmjitBackend::emit_halt_helper(AsmJit::X86Assembler &as) const {
   as.bind(labels_->halt_helper);
 
@@ -1434,6 +1437,7 @@ void AsmjitBackend::emit_halt_helper(AsmJit::X86Assembler &as) const {
   as.ret();
 }
 
+// void JIT_CDECL jump_helper(void *address, void *stack_base, void *stack_ptr);
 void AsmjitBackend::emit_jump_helper(AsmJit::X86Assembler &as) const {
   as.bind(labels_->jump_helper);
 
@@ -1458,6 +1462,7 @@ void AsmjitBackend::emit_jump_helper(AsmJit::X86Assembler &as) const {
     as.jmp(eax);
 }
 
+// cell JIT_CDECL sysreq_c_helper(int index, void *stack_base, void *stack_ptr);
 void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
   as.bind(labels_->sysreq_c_helper);
 
@@ -1495,6 +1500,7 @@ void AsmjitBackend::emit_sysreq_c_helper(AsmJit::X86Assembler &as) const {
     as.ret();
 }
 
+// cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
 void AsmjitBackend::emit_sysreq_d_helper(AsmJit::X86Assembler &as) const {
   as.bind(labels_->sysreq_d_helper);
 
