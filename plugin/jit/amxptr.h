@@ -79,14 +79,14 @@ class AMXPtr {
     return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr()->natives + amx()->base);
   }
 
-  cell get_public_addr(int index) const;
-  cell get_native_addr(int index) const;
+  cell get_public_addr(cell index) const;
+  cell get_native_addr(cell index) const;
 
-  const char *get_public_name(int index) const;
-  const char *get_native_name(int index) const;
+  const char *get_public_name(cell index) const;
+  const char *get_native_name(cell index) const;
 
-  int find_public(cell address) const;
-  int find_native(cell address) const;
+  cell find_public(cell address) const;
+  cell find_native(cell address) const;
 
   cell *stack() const {
     return reinterpret_cast<cell*>(data() + amx()->stk);

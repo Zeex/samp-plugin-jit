@@ -41,14 +41,14 @@ cell AMXPtr::get_public_addr(cell index) const {
   return publics()[index].address;
 }
 
-cell AMXPtr::get_native_addr(int index) const {
+cell AMXPtr::get_native_addr(cell index) const {
   if (index < 0 || index >= num_natives()) {
     return 0;
   }
   return natives()[index].address;
 }
 
-int AMXPtr::find_public(cell address) const {
+cell AMXPtr::find_public(cell address) const {
   for (int i = 0; i < num_publics(); i++) {
     if (publics()[i].address == address) {
       return i;
@@ -57,7 +57,7 @@ int AMXPtr::find_public(cell address) const {
   return -1;
 }
 
-int AMXPtr::find_native(cell address) const {
+cell AMXPtr::find_native(cell address) const {
   for (int i = 0; i < num_natives(); i++) {
     if (natives()[i].address == address) {
       return i;
@@ -66,14 +66,14 @@ int AMXPtr::find_native(cell address) const {
   return -1;
 }
 
-const char *AMXPtr::get_public_name(int index) const {
+const char *AMXPtr::get_public_name(cell index) const {
   if (index < 0 || index >= num_publics()) {
     return 0;
   }
   return reinterpret_cast<char*>(amx_->base + publics()[index].nameofs);
 }
 
-const char *AMXPtr::get_native_name(int index) const {
+const char *AMXPtr::get_native_name(cell index) const {
   if (index < 0 || index >= num_natives()) {
     return 0;
   }
