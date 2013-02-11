@@ -386,34 +386,44 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       // The index parameter must be: 0=COD, 1=DAT, 2=HEA,
       // 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
       switch (instr.operand()) {
-      case 0:
-        as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx.hdr()->cod)));
-        break;
-      case 1:
-        as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx.hdr()->dat)));
-        break;
-      case 2:
-        as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)));
-        break;
-      case 3:
-        as.mov(eax, dword_ptr_abs(reinterpret_cast<void*>(&amx->stp)));
-        break;
-      case 4:
-        as.mov(eax, esp);
-        as.sub(eax, ebx);
-        break;
-      case 5:
-        as.mov(eax, ebp);
-        as.sub(eax, ebx);
-        break;
-      case 6:
-        as.mov(eax, instr.address() + instr.size());
-        break;
-      case 7:
-        as.mov(eax, 1);
-        break;
-      default:
-        error = true;
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          as.mov(eax, dword_ptr(labels_->amx_ptr));
+          switch (instr.operand()) {
+            case 0:
+              as.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
+              as.mov(eax, dword_ptr(edx, offsetof(AMX_HEADER, cod)));
+              break;
+            case 1:
+              as.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
+              as.mov(eax, dword_ptr(edx, offsetof(AMX_HEADER, dat)));
+              break;
+            case 2:
+              as.mov(eax, dword_ptr(eax, offsetof(AMX, hea)));
+              break;
+            case 3:
+              as.mov(eax, dword_ptr(eax, offsetof(AMX, stp)));
+              break;
+          }
+          break;
+        case 4:
+          as.mov(eax, esp);
+          as.sub(eax, ebx);
+          break;
+        case 5:
+          as.mov(eax, ebp);
+          as.sub(eax, ebx);
+          break;
+        case 6:
+          as.mov(eax, instr.address() + instr.size());
+          break;
+        case 7:
+          as.mov(eax, 1);
+          break;
+        default:
+          error = true;
       }
       break;
     case OP_SCTRL: // index
@@ -422,7 +432,8 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       // 6=CIP
       switch (instr.operand()) {
       case 2:
-        as.mov(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), eax);
+        as.mov(edx, dword_ptr(labels_->amx_ptr));
+        as.mov(dword_ptr(edx, offsetof(AMX, hea)), eax);
         break;
       case 4:
         as.lea(esp, dword_ptr(ebx, eax));
