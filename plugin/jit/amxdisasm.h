@@ -75,7 +75,7 @@ class AMXInstruction {
     opcode_ = opcode;
   }
 
-  cell operand(unsigned int index = 0u) {
+  cell operand(unsigned int index = 0u) const {
     assert(index < operands_.size());
     return operands_[index];
   }
