@@ -919,7 +919,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
         case 1:
         case 2:
         case 3:
-          as.mov(eax, dword_ptr(L_amx));
+          emit_get_amx_ptr(as, L_amx, eax);
           switch (instr.operand()) {
             case 0:
               as.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
@@ -961,7 +961,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       // 6=CIP
       switch (instr.operand()) {
       case 2:
-        as.mov(edx, dword_ptr(L_amx));
+        emit_get_amx_ptr(as, L_amx, edx);
         as.mov(dword_ptr(edx, offsetof(AMX, hea)), eax);
         break;
       case 4:
