@@ -36,8 +36,14 @@ class BackendOutput;
 class CompileErrorHandler;
 
 // Compiler output represents the output blob of the Compiler.
-// The only requirement to it is that the first 4 bytes must point to the
-// exec() function which is invoked by the JIT at any time later on.
+//
+// First 4 bytes of the output must point to the a function with the following
+// prototype:
+//
+//   int exec(cell index, cell *retval);
+//
+// This function should execute a public function at index 'index' and write
+// its return value to 'retval' if 'retval' is not NULL.
 //
 // WARNING: Do not copy the code into another buffer! There are hard-coded
 // data references in it - they simply will be not valid in the new buffer.
@@ -65,7 +71,7 @@ class Compiler {
   void set_backend(Backend *backend) { backend_ = backend; }
 
   // Compiles the specified AMX script. The optional error hander is either
-  // never called or called only once - on first compilation error (if any).
+  // never called or called only once - on first compilation error.
   CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
 
  private:

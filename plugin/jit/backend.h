@@ -43,8 +43,7 @@ class Backend {
  public:
   virtual ~Backend() {};
 
-  virtual BackendOutput *compile(AMXPtr amx,
-                                 CompileErrorHandler *error_handler) = 0;
+  virtual BackendOutput *compile(AMXPtr amx, CompileErrorHandler *eh) = 0;
 };
 
 enum BackendRuntimeDataIndex {
