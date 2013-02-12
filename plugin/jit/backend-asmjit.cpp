@@ -1031,13 +1031,14 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       }
       break;
     case OP_HEAP: // value
-      // ALT = HEA, HEA = HEA + value
-      as.mov(ecx, dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)));
-      if (instr.operand() >= 0) {
-        as.add(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), instr.operand());
-      } else {
-        as.sub(dword_ptr_abs(reinterpret_cast<void*>(&amx->hea)), -instr.operand());
-      }
+        // ALT = HEA, HEA = HEA + value
+        emit_get_amx_ptr(as, L_amx, edx);
+        as.mov(ecx, dword_ptr(edx, offsetof(AMX, hea)));
+        if (instr.operand() >= 0) {
+          as.add(dword_ptr(edx, offsetof(AMX, hea)), instr.operand());
+        } else {
+          as.sub(dword_ptr(edx, offsetof(AMX, hea)), -instr.operand());
+        }
       break;
     case OP_PROC:
       // [STK] = FRM, STK = STK - cell size, FRM = STK
