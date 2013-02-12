@@ -78,6 +78,9 @@ class AMXOpcode {
 
   AMXOpcodeID id() const { return static_cast<AMXOpcodeID>(id_); }
 
+  bool is_call() const;
+  bool is_jump() const;
+
  private:
   AMXOpcodeID id_;
 };

@@ -613,42 +613,25 @@ static void emit_sysreq_d_helper(X86Assembler &as, const Label &l_amx,
   as.ret();
 }
 
+static inline cell rel_code_addr(jit::AMXPtr amx, cell address) {
+  return address - reinterpret_cast<cell>(amx.code());
+}
+
 static void collect_jump_targets(jit::AMXPtr amx, std::set<cell> &refs) {
-  using namespace jit;
+  jit::AMXDisassembler disas(amx);
+  jit::AMXInstruction instr;
 
-  AMXDisassembler disas(amx);
-  AMXInstruction instr;
-  bool error = false;
-
-  while (disas.decode(instr, &error)) {
-    AMXOpcode opcode = instr.opcode();
-    switch (opcode.id()) {
-      case OP_JUMP:
-      case OP_JZER:
-      case OP_JNZ:
-      case OP_JEQ:
-      case OP_JNEQ:
-      case OP_JLESS:
-      case OP_JLEQ:
-      case OP_JGRTR:
-      case OP_JGEQ:
-      case OP_JSLESS:
-      case OP_JSLEQ:
-      case OP_JSGRTR:
-      case OP_JSGEQ:
-      case OP_CALL:
-        refs.insert(instr.operand() - reinterpret_cast<intptr_t>(amx.code()));
-        break;
-      case OP_CASETBL: {
-        int n = instr.num_operands();
-        for (int i = 1; i < n; i += 2) {
-          refs.insert(instr.operand(i) - reinterpret_cast<intptr_t>(amx.code()));
-        }
-        break;
+  while (disas.decode(instr)) {
+    jit::AMXOpcode opcode = instr.opcode();
+    if (opcode.is_call() || opcode.is_jump() && instr.num_operands() == 1) {
+      refs.insert(rel_code_addr(amx, instr.operand()));
+    } else if (opcode.id() == jit::OP_CASETBL) {
+      int n = instr.num_operands();
+      for (int i = 1; i < n; i += 2) {
+        refs.insert(rel_code_addr(amx, instr.operand(i)));
       }
-      case OP_PROC:
-        refs.insert(instr.address());
-        break;
+    } else if (opcode.id() == jit::OP_PROC) {
+      refs.insert(instr.address());
     }
   }
 }
@@ -1094,7 +1077,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       // address of the next sequential instruction on the stack.
       // The address jumped to is relative to the current CIP,
       // but the address on the stack is an absolute address.
-      cell dest = instr.operand() - reinterpret_cast<cell>(amx.code());
+      cell dest = rel_code_addr(amx, instr.operand());
       as.call(amx_labels.get(as, dest));
       break;
     }
@@ -1118,7 +1101,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
     case OP_JSLEQ:
     case OP_JSGRTR:
     case OP_JSGEQ: {
-      cell dest = instr.operand() - reinterpret_cast<cell>(amx.code());
+      cell dest = rel_code_addr(amx, instr.operand());
       const Label &L_dest = amx_labels.get(as, dest);
       switch (instr.opcode().id()) {
         case OP_JUMP: // offset
@@ -1588,7 +1571,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       case_table = reinterpret_cast<CaseRecord*>(instr.operand() + sizeof(cell));
 
       // Get address of the "default" record.
-      cell default_case = case_table[0].address - reinterpret_cast<cell>(amx.code());
+      cell default_case = rel_code_addr(amx, case_table[0].address);
 
       // The number of cases follows the CASETBL opcode (which follows the SWITCH).
       int num_records = *(reinterpret_cast<cell*>(instr.operand()) + 1);
@@ -1618,8 +1601,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
         // This is pretty slow so I probably should optimize
         // this in future...
         for (int i = 0; i < num_records; i++) {
-          cell addr = case_table[i + 1].address;
-          cell dest = addr - reinterpret_cast<cell>(amx.code());
+          cell dest = rel_code_addr(amx, case_table[i + 1].address);
           as.cmp(eax, case_table[i + 1].value);
           as.je(amx_labels.get(as, dest));
         }

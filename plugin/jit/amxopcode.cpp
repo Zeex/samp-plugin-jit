@@ -68,4 +68,35 @@ AMXOpcodeID relocate_opcode(cell opcode) {
 	return static_cast<AMXOpcodeID>(opcode);
 }
 
+bool AMXOpcode::is_call() const {
+  switch (id_) {
+    case OP_CALL:
+    case OP_CALL_PRI:
+      return true;
+  }
+  return false;
+}
+
+bool AMXOpcode::is_jump() const {
+  switch (id_) {
+    case OP_JUMP:
+    case OP_JUMP_PRI:
+    case OP_JREL:
+    case OP_JZER:
+    case OP_JNZ:
+    case OP_JEQ:
+    case OP_JNEQ:
+    case OP_JLESS:
+    case OP_JLEQ:
+    case OP_JGRTR:
+    case OP_JGEQ:
+    case OP_JSLESS:
+    case OP_JSLEQ:
+    case OP_JSGRTR:
+    case OP_JSGEQ:
+      return true;
+  }
+  return false;
+}
+
 } // namespace jit
