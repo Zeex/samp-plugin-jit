@@ -27,7 +27,6 @@
 
 #include <amx/amx.h>
 #include "amxptr.h"
-#include "callconv.h"
 #include "macros.h"
 
 namespace jit {
@@ -38,8 +37,6 @@ class CompileErrorHandler;
 
 class JIT {
  public:
-  typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
-
   JIT(AMXPtr amx);
   ~JIT();
 

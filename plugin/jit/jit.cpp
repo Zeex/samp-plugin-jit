@@ -24,8 +24,11 @@
 
 #include <cassert>
 #include "amxptr.h"
+#include "callconv.h"
 #include "compiler.h"
 #include "jit.h"
+
+typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
 
 namespace jit {
 
