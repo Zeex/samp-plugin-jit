@@ -200,11 +200,6 @@ static void *JIT_CDECL get_instr_ptr(cell address, void *instr_map,
   return 0;
 }
 
-static void *get_next_instr_ptr(X86Assembler &as) {
-  intptr_t ip = reinterpret_cast<intptr_t>(as.getCode()) + as.getCodeSize();
-  return reinterpret_cast<void*>(ip);
-}
-
 static intptr_t *get_runtime_data(X86Assembler &as) {
   return reinterpret_cast<intptr_t*>(as.getCode());
 }
