@@ -28,51 +28,62 @@
 namespace jit {
 
 enum AMXOpcodeID {
-  OP_NONE,         OP_LOAD_PRI,     OP_LOAD_ALT,     OP_LOAD_S_PRI,
-  OP_LOAD_S_ALT,   OP_LREF_PRI,     OP_LREF_ALT,     OP_LREF_S_PRI,
-  OP_LREF_S_ALT,   OP_LOAD_I,       OP_LODB_I,       OP_CONST_PRI,
-  OP_CONST_ALT,    OP_ADDR_PRI,     OP_ADDR_ALT,     OP_STOR_PRI,
-  OP_STOR_ALT,     OP_STOR_S_PRI,   OP_STOR_S_ALT,   OP_SREF_PRI,
-  OP_SREF_ALT,     OP_SREF_S_PRI,   OP_SREF_S_ALT,   OP_STOR_I,
-  OP_STRB_I,       OP_LIDX,         OP_LIDX_B,       OP_IDXADDR,
-  OP_IDXADDR_B,    OP_ALIGN_PRI,    OP_ALIGN_ALT,    OP_LCTRL,
-  OP_SCTRL,        OP_MOVE_PRI,     OP_MOVE_ALT,     OP_XCHG,
-  OP_PUSH_PRI,     OP_PUSH_ALT,     OP_PUSH_R,       OP_PUSH_C,
-  OP_PUSH,         OP_PUSH_S,       OP_POP_PRI,      OP_POP_ALT,
-  OP_STACK,        OP_HEAP,         OP_PROC,         OP_RET,
-  OP_RETN,         OP_CALL,         OP_CALL_PRI,     OP_JUMP,
-  OP_JREL,         OP_JZER,         OP_JNZ,          OP_JEQ,
-  OP_JNEQ,         OP_JLESS,        OP_JLEQ,         OP_JGRTR,
-  OP_JGEQ,         OP_JSLESS,       OP_JSLEQ,        OP_JSGRTR,
-  OP_JSGEQ,        OP_SHL,          OP_SHR,          OP_SSHR,
-  OP_SHL_C_PRI,    OP_SHL_C_ALT,    OP_SHR_C_PRI,    OP_SHR_C_ALT,
-  OP_SMUL,         OP_SDIV,         OP_SDIV_ALT,     OP_UMUL,
-  OP_UDIV,         OP_UDIV_ALT,     OP_ADD,          OP_SUB,
-  OP_SUB_ALT,      OP_AND,          OP_OR,           OP_XOR,
-  OP_NOT,          OP_NEG,          OP_INVERT,       OP_ADD_C,
-  OP_SMUL_C,       OP_ZERO_PRI,     OP_ZERO_ALT,     OP_ZERO,
-  OP_ZERO_S,       OP_SIGN_PRI,     OP_SIGN_ALT,     OP_EQ,
-  OP_NEQ,          OP_LESS,         OP_LEQ,          OP_GRTR,
-  OP_GEQ,          OP_SLESS,        OP_SLEQ,         OP_SGRTR,
-  OP_SGEQ,         OP_EQ_C_PRI,     OP_EQ_C_ALT,     OP_INC_PRI,
-  OP_INC_ALT,      OP_INC,          OP_INC_S,        OP_INC_I,
-  OP_DEC_PRI,      OP_DEC_ALT,      OP_DEC,          OP_DEC_S,
-  OP_DEC_I,        OP_MOVS,         OP_CMPS,         OP_FILL,
-  OP_HALT,         OP_BOUNDS,       OP_SYSREQ_PRI,   OP_SYSREQ_C,
-  OP_FILE,         OP_LINE,         OP_SYMBOL,       OP_SRANGE,
-  OP_JUMP_PRI,     OP_SWITCH,       OP_CASETBL,      OP_SWAP_PRI,
-  OP_SWAP_ALT,     OP_PUSH_ADR,     OP_NOP,          OP_SYSREQ_D,
-  OP_SYMTAG,       OP_BREAK,        NUM_OPCODES
+  AMX_OP_NONE,         AMX_OP_LOAD_PRI,     AMX_OP_LOAD_ALT,
+  AMX_OP_LOAD_S_PRI,   AMX_OP_LOAD_S_ALT,   AMX_OP_LREF_PRI,
+  AMX_OP_LREF_ALT,     AMX_OP_LREF_S_PRI,   AMX_OP_LREF_S_ALT,
+  AMX_OP_LOAD_I,       AMX_OP_LODB_I,       AMX_OP_CONST_PRI,
+  AMX_OP_CONST_ALT,    AMX_OP_ADDR_PRI,     AMX_OP_ADDR_ALT,
+  AMX_OP_STOR_PRI,     AMX_OP_STOR_ALT,     AMX_OP_STOR_S_PRI,
+  AMX_OP_STOR_S_ALT,   AMX_OP_SREF_PRI,     AMX_OP_SREF_ALT,
+  AMX_OP_SREF_S_PRI,   AMX_OP_SREF_S_ALT,   AMX_OP_STOR_I,
+  AMX_OP_STRB_I,       AMX_OP_LIDX,         AMX_OP_LIDX_B,
+  AMX_OP_IDXADDR,      AMX_OP_IDXADDR_B,    AMX_OP_ALIGN_PRI,
+  AMX_OP_ALIGN_ALT,    AMX_OP_LCTRL,        AMX_OP_SCTRL,
+  AMX_OP_MOVE_PRI,     AMX_OP_MOVE_ALT,     AMX_OP_XCHG,
+  AMX_OP_PUSH_PRI,     AMX_OP_PUSH_ALT,     AMX_OP_PUSH_R,
+  AMX_OP_PUSH_C,       AMX_OP_PUSH,         AMX_OP_PUSH_S,
+  AMX_OP_POP_PRI,      AMX_OP_POP_ALT,      AMX_OP_STACK,
+  AMX_OP_HEAP,         AMX_OP_PROC,         AMX_OP_RET,
+  AMX_OP_RETN,         AMX_OP_CALL,         AMX_OP_CALL_PRI,
+  AMX_OP_JUMP,         AMX_OP_JREL,         AMX_OP_JZER,
+  AMX_OP_JNZ,          AMX_OP_JEQ,          AMX_OP_JNEQ,
+  AMX_OP_JLESS,        AMX_OP_JLEQ,         AMX_OP_JGRTR,
+  AMX_OP_JGEQ,         AMX_OP_JSLESS,       AMX_OP_JSLEQ,
+  AMX_OP_JSGRTR,       AMX_OP_JSGEQ,        AMX_OP_SHL,
+  AMX_OP_SHR,          AMX_OP_SSHR,         AMX_OP_SHL_C_PRI,
+  AMX_OP_SHL_C_ALT,    AMX_OP_SHR_C_PRI,    AMX_OP_SHR_C_ALT,
+  AMX_OP_SMUL,         AMX_OP_SDIV,         AMX_OP_SDIV_ALT,
+  AMX_OP_UMUL,         AMX_OP_UDIV,         AMX_OP_UDIV_ALT,
+  AMX_OP_ADD,          AMX_OP_SUB,          AMX_OP_SUB_ALT,
+  AMX_OP_AND,          AMX_OP_OR,           AMX_OP_XOR,
+  AMX_OP_NOT,          AMX_OP_NEG,          AMX_OP_INVERT,
+  AMX_OP_ADD_C,        AMX_OP_SMUL_C,       AMX_OP_ZERO_PRI,
+  AMX_OP_ZERO_ALT,     AMX_OP_ZERO,         AMX_OP_ZERO_S,
+  AMX_OP_SIGN_PRI,     AMX_OP_SIGN_ALT,     AMX_OP_EQ,
+  AMX_OP_NEQ,          AMX_OP_LESS,         AMX_OP_LEQ,
+  AMX_OP_GRTR,         AMX_OP_GEQ,          AMX_OP_SLESS,
+  AMX_OP_SLEQ,         AMX_OP_SGRTR,        AMX_OP_SGEQ,
+  AMX_OP_EQ_C_PRI,     AMX_OP_EQ_C_ALT,     AMX_OP_INC_PRI,
+  AMX_OP_INC_ALT,      AMX_OP_INC,          AMX_OP_INC_S,
+  AMX_OP_INC_I,        AMX_OP_DEC_PRI,      AMX_OP_DEC_ALT,
+  AMX_OP_DEC,          AMX_OP_DEC_S,        AMX_OP_DEC_I,
+  AMX_OP_MOVS,         AMX_OP_CMPS,         AMX_OP_FILL,
+  AMX_OP_HALT,         AMX_OP_BOUNDS,       AMX_OP_SYSREQ_PRI,
+  AMX_OP_SYSREQ_C,     AMX_OP_FILE,         AMX_OP_LINE,
+  AMX_OP_SYMBOL,       AMX_OP_SRANGE,       AMX_OP_JUMP_PRI,
+  AMX_OP_SWITCH,       AMX_OP_CASETBL,      AMX_OP_SWAP_PRI,
+  AMX_OP_SWAP_ALT,     AMX_OP_PUSH_ADR,     AMX_OP_NOP,
+  AMX_OP_SYSREQ_D,     AMX_OP_SYMTAG,       AMX_OP_BREAK,
+  AMX_OP_LAST_
 };
 
-// The total number of opcodes.
-const int NUM_AMX_OPCODES = NUM_OPCODES + 1;
+const int NUM_AMX_OPCODES = AMX_OP_LAST_ + 1;
 
 AMXOpcodeID relocate_opcode(cell opcode);
 
 class AMXOpcode {
  public:
-  AMXOpcode(): id_(OP_NONE) {}
+  AMXOpcode(): id_(AMX_OP_NONE) {}
   AMXOpcode(cell value) : id_(relocate_opcode(value)) {}
   AMXOpcode(AMXOpcodeID id) : id_(id) {}
 

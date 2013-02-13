@@ -192,7 +192,7 @@ const AMXInstruction::StaticInfoTableEntry AMXInstruction::info[NUM_AMX_OPCODES]
 
 AMXInstruction::AMXInstruction() 
   : address_(0),
-    opcode_(OP_NONE)
+    opcode_(AMX_OP_NONE)
 {
 }
 
@@ -264,48 +264,59 @@ bool AMXDisassembler::decode(AMXInstruction &instr, bool *error) {
 
   switch (opcode.id()) {
     // Instructions with one operand.
-    case OP_LOAD_PRI:   case OP_LOAD_ALT:   case OP_LOAD_S_PRI: case OP_LOAD_S_ALT:
-    case OP_LREF_PRI:   case OP_LREF_ALT:   case OP_LREF_S_PRI: case OP_LREF_S_ALT:
-    case OP_LODB_I:     case OP_CONST_PRI:  case OP_CONST_ALT:  case OP_ADDR_PRI:
-    case OP_ADDR_ALT:   case OP_STOR_PRI:   case OP_STOR_ALT:   case OP_STOR_S_PRI:
-    case OP_STOR_S_ALT: case OP_SREF_PRI:   case OP_SREF_ALT:   case OP_SREF_S_PRI:
-    case OP_SREF_S_ALT: case OP_STRB_I:     case OP_LIDX_B:     case OP_IDXADDR_B:
-    case OP_ALIGN_PRI:  case OP_ALIGN_ALT:  case OP_LCTRL:      case OP_SCTRL:
-    case OP_PUSH_R:     case OP_PUSH_C:     case OP_PUSH:       case OP_PUSH_S:
-    case OP_STACK:      case OP_HEAP:       case OP_JREL:       case OP_JUMP:
-    case OP_JZER:       case OP_JNZ:        case OP_JEQ:        case OP_JNEQ:
-    case OP_JLESS:      case OP_JLEQ:       case OP_JGRTR:      case OP_JGEQ:
-    case OP_JSLESS:     case OP_JSLEQ:      case OP_JSGRTR:     case OP_JSGEQ:
-    case OP_SHL_C_PRI:  case OP_SHL_C_ALT:  case OP_SHR_C_PRI:  case OP_SHR_C_ALT:
-    case OP_ADD_C:      case OP_SMUL_C:     case OP_ZERO:       case OP_ZERO_S:
-    case OP_EQ_C_PRI:   case OP_EQ_C_ALT:   case OP_INC:        case OP_INC_S:
-    case OP_DEC:        case OP_DEC_S:      case OP_MOVS:       case OP_CMPS:
-    case OP_FILL:       case OP_HALT:       case OP_BOUNDS:     case OP_CALL:
-    case OP_SYSREQ_C:   case OP_PUSH_ADR:   case OP_SYSREQ_D:   case OP_SWITCH:
+    case AMX_OP_LOAD_PRI:   case AMX_OP_LOAD_ALT:   case AMX_OP_LOAD_S_PRI:
+    case AMX_OP_LOAD_S_ALT: case AMX_OP_LREF_PRI:   case AMX_OP_LREF_ALT:
+    case AMX_OP_LREF_S_PRI: case AMX_OP_LREF_S_ALT: case AMX_OP_LODB_I:
+    case AMX_OP_CONST_PRI:  case AMX_OP_CONST_ALT:  case AMX_OP_ADDR_PRI:
+    case AMX_OP_ADDR_ALT:   case AMX_OP_STOR_PRI:   case AMX_OP_STOR_ALT:
+    case AMX_OP_STOR_S_PRI: case AMX_OP_STOR_S_ALT: case AMX_OP_SREF_PRI:
+    case AMX_OP_SREF_ALT:   case AMX_OP_SREF_S_PRI: case AMX_OP_SREF_S_ALT:
+    case AMX_OP_STRB_I:     case AMX_OP_LIDX_B:     case AMX_OP_IDXADDR_B:
+    case AMX_OP_ALIGN_PRI:  case AMX_OP_ALIGN_ALT:  case AMX_OP_LCTRL:
+    case AMX_OP_SCTRL:      case AMX_OP_PUSH_R:     case AMX_OP_PUSH_C:
+    case AMX_OP_PUSH:       case AMX_OP_PUSH_S:     case AMX_OP_STACK:
+    case AMX_OP_HEAP:       case AMX_OP_JREL:       case AMX_OP_JUMP:
+    case AMX_OP_JZER:       case AMX_OP_JNZ:        case AMX_OP_JEQ:
+    case AMX_OP_JNEQ:       case AMX_OP_JLESS:      case AMX_OP_JLEQ:
+    case AMX_OP_JGRTR:      case AMX_OP_JGEQ:       case AMX_OP_JSLESS:
+    case AMX_OP_JSLEQ:      case AMX_OP_JSGRTR:     case AMX_OP_JSGEQ:
+    case AMX_OP_SHL_C_PRI:  case AMX_OP_SHL_C_ALT:  case AMX_OP_SHR_C_PRI:
+    case AMX_OP_SHR_C_ALT:  case AMX_OP_ADD_C:      case AMX_OP_SMUL_C:
+    case AMX_OP_ZERO:       case AMX_OP_ZERO_S:     case AMX_OP_EQ_C_PRI:
+    case AMX_OP_EQ_C_ALT:   case AMX_OP_INC:        case AMX_OP_INC_S:
+    case AMX_OP_DEC:        case AMX_OP_DEC_S:      case AMX_OP_MOVS:
+    case AMX_OP_CMPS:       case AMX_OP_FILL:       case AMX_OP_HALT:
+    case AMX_OP_BOUNDS:     case AMX_OP_CALL:       case AMX_OP_SYSREQ_C:
+    case AMX_OP_PUSH_ADR:   case AMX_OP_SYSREQ_D:   case AMX_OP_SWITCH:
       instr.add_operand(*reinterpret_cast<cell*>(amx_.code() + ip_));
       ip_ += sizeof(cell);
       break;
 
     // Instructions with no operands.
-    case OP_LOAD_I:     case OP_STOR_I:     case OP_LIDX:       case OP_IDXADDR:
-    case OP_MOVE_PRI:   case OP_MOVE_ALT:   case OP_XCHG:       case OP_PUSH_PRI:
-    case OP_PUSH_ALT:   case OP_POP_PRI:    case OP_POP_ALT:    case OP_PROC:
-    case OP_RET:        case OP_RETN:       case OP_CALL_PRI:   case OP_SHL:
-    case OP_SHR:        case OP_SSHR:       case OP_SMUL:       case OP_SDIV:
-    case OP_SDIV_ALT:   case OP_UMUL:       case OP_UDIV:       case OP_UDIV_ALT:
-    case OP_ADD:        case OP_SUB:        case OP_SUB_ALT:    case OP_AND:
-    case OP_OR:         case OP_XOR:        case OP_NOT:        case OP_NEG:
-    case OP_INVERT:     case OP_ZERO_PRI:   case OP_ZERO_ALT:   case OP_SIGN_PRI:
-    case OP_SIGN_ALT:   case OP_EQ:         case OP_NEQ:        case OP_LESS:
-    case OP_LEQ:        case OP_GRTR:       case OP_GEQ:        case OP_SLESS:
-    case OP_SLEQ:       case OP_SGRTR:      case OP_SGEQ:       case OP_INC_PRI:
-    case OP_INC_ALT:    case OP_INC_I:      case OP_DEC_PRI:    case OP_DEC_ALT:
-    case OP_DEC_I:      case OP_SYSREQ_PRI: case OP_JUMP_PRI:   case OP_SWAP_PRI:
-    case OP_SWAP_ALT:   case OP_NOP:        case OP_BREAK:
+    case AMX_OP_LOAD_I:     case AMX_OP_STOR_I:     case AMX_OP_LIDX:
+    case AMX_OP_IDXADDR:    case AMX_OP_MOVE_PRI:   case AMX_OP_MOVE_ALT:
+    case AMX_OP_XCHG:       case AMX_OP_PUSH_PRI:   case AMX_OP_PUSH_ALT:
+    case AMX_OP_POP_PRI:    case AMX_OP_POP_ALT:    case AMX_OP_PROC:
+    case AMX_OP_RET:        case AMX_OP_RETN:       case AMX_OP_CALL_PRI:
+    case AMX_OP_SHL:        case AMX_OP_SHR:        case AMX_OP_SSHR:
+    case AMX_OP_SMUL:       case AMX_OP_SDIV:       case AMX_OP_SDIV_ALT:
+    case AMX_OP_UMUL:       case AMX_OP_UDIV:       case AMX_OP_UDIV_ALT:
+    case AMX_OP_ADD:        case AMX_OP_SUB:        case AMX_OP_SUB_ALT:
+    case AMX_OP_AND:        case AMX_OP_OR:         case AMX_OP_XOR:
+    case AMX_OP_NOT:        case AMX_OP_NEG:        case AMX_OP_INVERT:
+    case AMX_OP_ZERO_PRI:   case AMX_OP_ZERO_ALT:   case AMX_OP_SIGN_PRI:
+    case AMX_OP_SIGN_ALT:   case AMX_OP_EQ:         case AMX_OP_NEQ:
+    case AMX_OP_LESS:       case AMX_OP_LEQ:        case AMX_OP_GRTR:
+    case AMX_OP_GEQ:        case AMX_OP_SLESS:      case AMX_OP_SLEQ:
+    case AMX_OP_SGRTR:      case AMX_OP_SGEQ:       case AMX_OP_INC_PRI:
+    case AMX_OP_INC_ALT:    case AMX_OP_INC_I:      case AMX_OP_DEC_PRI:
+    case AMX_OP_DEC_ALT:    case AMX_OP_DEC_I:      case AMX_OP_SYSREQ_PRI:
+    case AMX_OP_JUMP_PRI:   case AMX_OP_SWAP_PRI:   case AMX_OP_SWAP_ALT:
+    case AMX_OP_NOP:        case AMX_OP_BREAK:
       break;
 
     // Special instructions.
-    case OP_CASETBL: {
+    case AMX_OP_CASETBL: {
       int num = *reinterpret_cast<cell*>(amx_.code() + ip_) + 1;
       // num case records follow, each is 2 cells big.
       for (int i = 0; i < num * 2; i++) {

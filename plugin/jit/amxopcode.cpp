@@ -70,8 +70,8 @@ AMXOpcodeID relocate_opcode(cell opcode) {
 
 bool AMXOpcode::is_call() const {
   switch (id_) {
-    case OP_CALL:
-    case OP_CALL_PRI:
+    case AMX_OP_CALL:
+    case AMX_OP_CALL_PRI:
       return true;
   }
   return false;
@@ -79,21 +79,21 @@ bool AMXOpcode::is_call() const {
 
 bool AMXOpcode::is_jump() const {
   switch (id_) {
-    case OP_JUMP:
-    case OP_JUMP_PRI:
-    case OP_JREL:
-    case OP_JZER:
-    case OP_JNZ:
-    case OP_JEQ:
-    case OP_JNEQ:
-    case OP_JLESS:
-    case OP_JLEQ:
-    case OP_JGRTR:
-    case OP_JGEQ:
-    case OP_JSLESS:
-    case OP_JSLEQ:
-    case OP_JSGRTR:
-    case OP_JSGEQ:
+    case AMX_OP_JUMP:
+    case AMX_OP_JUMP_PRI:
+    case AMX_OP_JREL:
+    case AMX_OP_JZER:
+    case AMX_OP_JNZ:
+    case AMX_OP_JEQ:
+    case AMX_OP_JNEQ:
+    case AMX_OP_JLESS:
+    case AMX_OP_JLEQ:
+    case AMX_OP_JGRTR:
+    case AMX_OP_JGEQ:
+    case AMX_OP_JSLESS:
+    case AMX_OP_JSLEQ:
+    case AMX_OP_JSGRTR:
+    case AMX_OP_JSGEQ:
       return true;
   }
   return false;

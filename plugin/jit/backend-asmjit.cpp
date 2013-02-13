@@ -318,12 +318,12 @@ void collect_jump_targets(jit::AMXPtr amx, std::set<cell> &refs) {
     jit::AMXOpcode opcode = instr.opcode();
     if (opcode.is_call() || opcode.is_jump() && instr.num_operands() == 1) {
       refs.insert(rel_code_addr(amx, instr.operand()));
-    } else if (opcode.id() == jit::OP_CASETBL) {
+    } else if (opcode.id() == jit::AMX_OP_CASETBL) {
       int n = instr.num_operands();
       for (int i = 1; i < n; i += 2) {
         refs.insert(rel_code_addr(amx, instr.operand(i)));
       }
-    } else if (opcode.id() == jit::OP_PROC) {
+    } else if (opcode.id() == jit::AMX_OP_PROC) {
       refs.insert(instr.address());
     }
   }
@@ -1839,7 +1839,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
     
     instr_map.push_back(std::make_pair(cip, as.getCodeSize()));
 
-    if (instr.opcode().id() == OP_PROC) {
+    if (instr.opcode().id() == AMX_OP_PROC) {
       as.align(16);
     }
 
