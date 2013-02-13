@@ -67,6 +67,9 @@ using AsmJit::ebp;
 using AsmJit::esp;
 using AsmJit::st;
 
+// Indices of runtime data block elements. Runtime data is the first thing
+// that is written to the code buffer and is used throughout generated JIT
+// code to keep track of certain data at runtime.
 enum RuntimeDataIndex {
   RuntimeDataExecPtr = jit::BackendRuntimeDataExec,
   RuntimeDataAmxPtr,
@@ -75,7 +78,33 @@ enum RuntimeDataIndex {
   RuntimeDataResetEbp,
   RuntimeDataResetEsp,
   RuntimeDataInstrMapSize,
-  RuntimeDataInstrMapPtr
+  RuntimeDataInstrMapPtr,
+  RuntimeDataLast_
+};
+
+// Indices of "fixed" labels (see Assembler below).
+// The order here is not as important as in RuntimeDataIndex.
+enum LabelIndex {
+  // Runtime data labels.
+  LabelExecPtr,
+  LabelAmxPtr,
+  LabelEbp,
+  LabelEsp,
+  LabelResetEbp,
+  LabelResetEsp,
+  LabelInstrMapSize,
+  LabelInstrMapPtr,
+
+  // Entry point and other auxilary functions.
+  LabelExec,
+  LabelExecHelper,
+  LabelHaltHelper,
+  LabelJumpHelper,
+  LabelSysreqCHelper,
+  LabelSysreqDHelper,
+
+  // Terminator (not a real label).
+  LabelLast_
 };
 
 class Assembler;
@@ -102,26 +131,6 @@ class CompareInstrMapEntries
    }
 };
 
-class NamedLabel : public Label {
- public:
-  NamedLabel(const char *name, const Label &label)
-    : Label(label), name_(name)
-  {}
-
-  NamedLabel(const char *name)
-   : Label(), name_(name)
-  {}
-
-  std::string name() const { return name_; }
-
-  bool operator<(const NamedLabel &rhs) const {
-    return name_ < rhs.name_;
-  }
-
- private:
-  std::string name_;
-};
-
 class AddressedLabel : public Label {
  public:
   AddressedLabel(cell address)
@@ -142,6 +151,7 @@ class AddressedLabel : public Label {
   cell address_;
 };
 
+// It's a good idea to follow AsmJit naming convention when extending this class.
 class Assembler : public X86Assembler {
  public:
   Assembler(jit::AMXPtr amx) : amx_(amx) {}
@@ -150,37 +160,35 @@ class Assembler : public X86Assembler {
   jit::AMXPtr &getAmx() { return amx_; }
   const jit::AMXPtr &getAmx() const { return amx_; }
 
-  const NamedLabel &getLabel(const char *name) {
-    assert(name != 0);
-    std::set<NamedLabel>::const_iterator it = labels_.find(name);
-    if (it != labels_.end()) {
-      return *it;
-    } else {
-      std::pair<std::set<NamedLabel>::iterator, bool> result =
-        labels_.insert(NamedLabel(name, newLabel()));
-      return *result.first;
-    }
+  void setFixedLabels(const std::vector<Label> &labels) {
+    fixedLabels_ = labels;
+  }
+
+  const Label &getFixedLabel(int index) const {
+    assert(index >= 0 && index < static_cast<int>(fixedLabels_.size())
+           && "Bad label index");
+    return fixedLabels_[index];
   }
 
   const AddressedLabel &getAmxLabel(cell address) {
-    std::set<AddressedLabel>::const_iterator it = amx_labels_.find(address);
-    if (it != amx_labels_.end()) {
+    std::set<AddressedLabel>::const_iterator it = amxLabels_.find(address);
+    if (it != amxLabels_.end()) {
       return *it;
     } else {
       std::pair<std::set<AddressedLabel>::iterator, bool> result =
-        amx_labels_.insert(AddressedLabel(address, newLabel()));
+        amxLabels_.insert(AddressedLabel(address, newLabel()));
       return *result.first;
     }
   }
 
-  void bindByName(const char *name) {
-    bind(getLabel(name));
+  void bindFixed(int index) {
+    bind(getFixedLabel(index));
   }
 
  private:
   jit::AMXPtr amx_;
-  std::set<NamedLabel> labels_;
-  std::set<AddressedLabel> amx_labels_;
+  std::vector<Label> fixedLabels_;
+  std::set<AddressedLabel> amxLabels_;
 };
 
 void emit_float(Assembler &as) {
@@ -338,21 +346,21 @@ void set_runtime_data(Assembler &as, int index, intptr_t data) {
 }
 
 void emit_runtime_data(Assembler &as) {
-  as.bindByName("exec_ptr");
+  as.bindFixed(RuntimeDataExecPtr);
     as.dd(0);
-  as.bindByName("amx");
+  as.bindFixed(RuntimeDataAmxPtr);
     as.dintptr(reinterpret_cast<intptr_t>(as.getAmx().amx()));
-  as.bindByName("ebp");
+  as.bindFixed(RuntimeDataEbp);
     as.dd(0);
-  as.bindByName("esp");
+  as.bindFixed(RuntimeDataEsp);
     as.dd(0);
-  as.bindByName("reset_ebp");
+  as.bindFixed(RuntimeDataResetEbp);
     as.dd(0);
-  as.bindByName("reset_esp");
+  as.bindFixed(RuntimeDataResetEsp);
     as.dd(0);
-  as.bindByName("instr_map_size");
+  as.bindFixed(RuntimeDataInstrMapSize);
     as.dd(0);
-  as.bindByName("instr_map");
+  as.bindFixed(RuntimeDataInstrMapPtr);
     as.dd(0);
 }
 
@@ -374,7 +382,7 @@ void emit_instr_map(Assembler &as) {
 }
 
 void emit_get_amx_ptr(Assembler &as, const GpReg &reg) {
-  as.mov(reg, dword_ptr(as.getLabel("amx")));
+  as.mov(reg, dword_ptr(as.getFixedLabel(LabelAmxPtr)));
 }
 
 void emit_get_amx_data_ptr(Assembler &as, const GpReg &reg) {
@@ -397,11 +405,11 @@ void emit_get_amx_data_ptr(Assembler &as, const GpReg &reg) {
 void emit_exec(Assembler &as) {
   set_runtime_data(as, RuntimeDataExecPtr, as.getCodeSize());
 
-  const NamedLabel &L_instr_map = as.getLabel("instr_map");
-  const NamedLabel &L_instr_map_size = as.getLabel("instr_map_size");
-  const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
-  const NamedLabel &L_reset_esp = as.getLabel("reset_esp");
-  const NamedLabel &L_exec_helper = as.getLabel("exec_helper");
+  const Label &L_instr_map = as.getFixedLabel(LabelInstrMapPtr);
+  const Label &L_instr_map_size = as.getFixedLabel(LabelInstrMapSize);
+  const Label &L_reset_ebp = as.getFixedLabel(LabelResetEbp);
+  const Label &L_reset_esp = as.getFixedLabel(LabelResetEsp);
+  const Label &L_exec_helper = as.getFixedLabel(LabelExecHelper);
   Label L_do_call = as.newLabel();
   Label L_check_heap = as.newLabel();
   Label L_check_stack = as.newLabel();
@@ -417,7 +425,7 @@ void emit_exec(Assembler &as) {
   int var_reset_ebp = -8;
   int var_reset_esp = -12;
 
-  as.bindByName("exec");
+  as.bindFixed(LabelExec);
     as.push(ebp);
     as.mov(ebp, esp);
     as.sub(esp, 12); // for locals
@@ -544,12 +552,12 @@ void emit_exec(Assembler &as) {
 
 // cell JIT_CDECL exec_helper(void *address);
 void emit_exec_helper(Assembler &as) {
-  const NamedLabel &L_ebp = as.getLabel("ebp");
-  const NamedLabel &L_esp = as.getLabel("esp");
-  const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
-  const NamedLabel &L_reset_esp = as.getLabel("reset_esp");
+  const Label &L_ebp = as.getFixedLabel(LabelEbp);
+  const Label &L_esp = as.getFixedLabel(LabelEsp);
+  const Label &L_reset_ebp = as.getFixedLabel(LabelResetEbp);
+  const Label &L_reset_esp = as.getFixedLabel(LabelResetEsp);
 
-  as.bindByName("exec_helper");
+  as.bindFixed(LabelExecHelper);
     // Store function address in eax.
     as.mov(eax, dword_ptr(esp, 4));
 
@@ -622,10 +630,10 @@ void emit_exec_helper(Assembler &as) {
 
 // void JIT_CDECL halt_helper(int error);
 void emit_halt_helper(Assembler &as) {
-  const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
-  const NamedLabel &L_reset_esp = as.getLabel("reset_esp");
+  const Label &L_reset_ebp = as.getFixedLabel(LabelResetEbp);
+  const Label &L_reset_esp = as.getFixedLabel(LabelResetEsp);
 
-  as.bindByName("halt_helper");
+  as.bindFixed(LabelHaltHelper);
     as.mov(eax, dword_ptr(esp, 4));
     emit_get_amx_ptr(as, ecx);
     as.mov(dword_ptr(ecx, offsetof(AMX, error)), eax);
@@ -645,15 +653,15 @@ void emit_halt_helper(Assembler &as) {
 
 // void JIT_CDECL jump_helper(void *address, void *stack_base, void *stack_ptr);
 void emit_jump_helper(Assembler &as) {
-  const NamedLabel &L_instr_map = as.getLabel("instr_map");
-  const NamedLabel &L_instr_map_size = as.getLabel("instr_map_size");
+  const Label &L_instr_map = as.getFixedLabel(LabelInstrMapPtr);
+  const Label &L_instr_map_size = as.getFixedLabel(LabelInstrMapSize);
   Label L_do_jump = as.newLabel();
 
   int arg_address = 4;
   int arg_stack_base = 8;
   int arg_stack_ptr = 12;
 
-  as.bindByName("jump_helper");
+  as.bindFixed(LabelJumpHelper);
     as.mov(eax, dword_ptr(esp, arg_address));
 
     // Get destination address.
@@ -679,7 +687,7 @@ void emit_jump_helper(Assembler &as) {
 
 // cell JIT_CDECL sysreq_c_helper(int index, void *stack_base, void *stack_ptr);
 void emit_sysreq_c_helper(Assembler &as) {
-  const NamedLabel &L_sysreq_d_helper = as.getLabel("sysreq_d_helper");
+  const Label &L_sysreq_d_helper = as.getFixedLabel(LabelSysreqDHelper);
   Label L_call = as.newLabel();
   Label L_return = as.newLabel();
 
@@ -687,7 +695,7 @@ void emit_sysreq_c_helper(Assembler &as) {
   int arg_stack_base = 12;
   int arg_stack_ptr = 16;
 
-  as.bindByName("sysreq_c_helper");
+  as.bindFixed(LabelSysreqCHelper);
     as.push(ebp);
     as.mov(ebp, esp);
 
@@ -717,10 +725,10 @@ void emit_sysreq_c_helper(Assembler &as) {
 
 // cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
 void emit_sysreq_d_helper(Assembler &as) {
-  const NamedLabel &L_ebp = as.getLabel("ebp");
-  const NamedLabel &L_esp = as.getLabel("esp");
+  const Label &L_ebp = as.getFixedLabel(LabelEbp);
+  const Label &L_esp = as.getFixedLabel(LabelEsp);
 
-  as.bindByName("sysreq_d_helper");
+  as.bindFixed(LabelSysreqDHelper);
     as.mov(eax, dword_ptr(esp, 4));   // address
     as.mov(ebp, dword_ptr(esp, 8));   // stack_base
     as.mov(esp, dword_ptr(esp, 12));  // stack_ptr
@@ -1022,7 +1030,7 @@ void emit_sctrl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
       as.lea(ebp, dword_ptr(ebx, eax));
       break;
     case 6: {
-      const NamedLabel &L_jump_helper = as.getLabel("jump_helper");
+      const Label &L_jump_helper = as.getFixedLabel(LabelJumpHelper);
       as.push(esp);
       as.push(ebp);
       as.push(eax);
@@ -1148,7 +1156,7 @@ void emit_call(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 
 void emit_jump_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // CIP = PRI (indirect jump)
-  const NamedLabel &L_jump_helper = as.getLabel("jump_helper");
+  const Label &L_jump_helper = as.getFixedLabel(LabelJumpHelper);
   as.push(esp);
   as.push(ebp);
   as.push(eax);
@@ -1609,14 +1617,14 @@ void emit_fill(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 void emit_halt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
-  const NamedLabel &L_halt_helper = as.getLabel("halt_helper");
+  const Label &L_halt_helper = as.getFixedLabel(LabelHaltHelper);
   as.push(instr.operand());
   as.call(L_halt_helper);
 }
 
 void emit_bounds(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Abort execution if PRI > value or if PRI < 0.
-  const NamedLabel &L_halt_helper = as.getLabel("halt_helper");
+  const Label &L_halt_helper = as.getFixedLabel(LabelHaltHelper);
   Label L_halt = as.newLabel();
   Label L_good = as.newLabel();
     as.cmp(eax, instr.operand());
@@ -1632,7 +1640,7 @@ void emit_bounds(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 
 void emit_sysreq_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service, service number in PRI
-  const NamedLabel &L_sysreq_c_helper = as.getLabel("sysreq_c_helper");
+  const Label &L_sysreq_c_helper = as.getFixedLabel(LabelSysreqCHelper);
   as.push(esp); // stack_ptr
   as.push(ebp); // stack_base
   as.push(eax); // index
@@ -1641,7 +1649,7 @@ void emit_sysreq_pri(Assembler &as, const jit::AMXInstruction &instr, bool *erro
 
 void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service
-  const NamedLabel &L_sysreq_c_helper = as.getLabel("sysreq_c_helper");
+  const Label &L_sysreq_c_helper = as.getFixedLabel(LabelSysreqCHelper);
   const char *name = as.getAmx().get_native_name(instr.operand());
   if (name == 0) {
     *error = true;
@@ -1657,7 +1665,7 @@ void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr, bool *error)
 
 void emit_sysreq_d(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service
-  const NamedLabel &L_sysreq_d_helper = as.getLabel("sysreq_d_helper");
+  const Label &L_sysreq_d_helper = as.getFixedLabel(LabelSysreqDHelper);
   cell index = as.getAmx().find_native(instr.operand());
   const char *name = as.getAmx().get_native_name(index);
   if (name == 0) {
@@ -1756,6 +1764,7 @@ void emit_break(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // conditional breakpoint
 }
 
+// 0 means obsolete opcode (not implemented and thus won't compile).
 EmitInstruction emit_opcode[] = {
   0,                 emit_load_pri,     emit_load_alt,     emit_load_s_pri,
   emit_load_s_alt,   emit_lref_pri,     emit_lref_alt,     emit_lref_s_pri,
@@ -1814,6 +1823,13 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
                                       CompileErrorHandler *error_handler)
 { 
   Assembler as(amx);
+
+  std::vector<Label> labels;
+  for (int i = 0; i < LabelLast_; i++) {
+    labels.push_back(as.newLabel());
+  }
+
+  as.setFixedLabels(labels);
 
   emit_runtime_data(as);
   emit_instr_map(as);
