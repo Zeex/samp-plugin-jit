@@ -181,7 +181,6 @@ namespace AsmJit {
 
 #else
 
-namespace AsmJit {
 // Use typedefs.
 #if defined(_MSC_VER)
 #if (_MSC_VER < 1300)
@@ -204,7 +203,6 @@ typedef unsigned __int32 uint32_t;
 typedef unsigned __int64 uint64_t;
 #endif
 #endif // _MSC_VER
-} // AsmJit namespace
 #endif // STDINT.H
 
 typedef unsigned char uchar;
@@ -212,7 +210,6 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
-namespace AsmJit {
 #if defined(ASMJIT_X86)
 typedef int32_t sysint_t;
 typedef uint32_t sysuint_t;
@@ -220,7 +217,6 @@ typedef uint32_t sysuint_t;
 typedef int64_t sysint_t;
 typedef uint64_t sysuint_t;
 #endif
-} // AsmJit namespace
 
 #if defined(_MSC_VER)
 # define ASMJIT_INT64_C(num) num##i64
