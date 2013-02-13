@@ -41,6 +41,8 @@ namespace AsmJit {
 #include "callconv.h"
 #include "compiler.h"
 
+namespace {
+
 // AsmJit core
 using AsmJit::Label;
 using AsmJit::asmjit_cast;
@@ -181,7 +183,7 @@ class Assembler : public X86Assembler {
   std::set<AddressedLabel> amx_labels_;
 };
 
-static void emit_float(Assembler &as) {
+void emit_float(Assembler &as) {
   as.fild(dword_ptr(esp, 4));
   as.sub(esp, 4);
   as.fstp(dword_ptr(esp));
@@ -189,7 +191,7 @@ static void emit_float(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatabs(Assembler &as) {
+void emit_floatabs(Assembler &as) {
   as.fld(dword_ptr(esp, 4));
   as.fabs();
   as.sub(esp, 4);
@@ -198,7 +200,7 @@ static void emit_floatabs(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatadd(Assembler &as) {
+void emit_floatadd(Assembler &as) {
   as.fld(dword_ptr(esp, 4));
   as.fadd(dword_ptr(esp, 8));
   as.sub(esp, 4);
@@ -207,7 +209,7 @@ static void emit_floatadd(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatsub(Assembler &as) {
+void emit_floatsub(Assembler &as) {
   as.fld(dword_ptr(esp, 4));
   as.fsub(dword_ptr(esp, 8));
   as.sub(esp, 4);
@@ -216,7 +218,7 @@ static void emit_floatsub(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatmul(Assembler &as) {
+void emit_floatmul(Assembler &as) {
   as.fld(dword_ptr(esp, 4));
   as.fmul(dword_ptr(esp, 8));
   as.sub(esp, 4);
@@ -225,7 +227,7 @@ static void emit_floatmul(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatdiv(Assembler &as) {
+void emit_floatdiv(Assembler &as) {
   as.fld(dword_ptr(esp, 4));
   as.fdiv(dword_ptr(esp, 8));
   as.sub(esp, 4);
@@ -234,7 +236,7 @@ static void emit_floatdiv(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatsqroot(Assembler &as) {
+void emit_floatsqroot(Assembler &as) {
   as.fld(dword_ptr(esp, 4));
   as.fsqrt();
   as.sub(esp, 4);
@@ -243,7 +245,7 @@ static void emit_floatsqroot(Assembler &as) {
   as.add(esp, 4);
 }
 
-static void emit_floatlog(Assembler &as) {
+void emit_floatlog(Assembler &as) {
   as.fld1();
   as.fld(dword_ptr(esp, 8));
   as.fyl2x();
@@ -257,8 +259,8 @@ static void emit_floatlog(Assembler &as) {
   as.add(esp, 4);
 }
 
-static bool emit_intrinsic(Assembler &as, const char *name) {
-  static Intrinsic intrinsics[] = {
+bool emit_intrinsic(Assembler &as, const char *name) {
+  Intrinsic intrinsics[] = {
     {"float",       &emit_float},
     {"floatabs",    &emit_floatabs},
     {"floatadd",    &emit_floatadd},
@@ -279,15 +281,15 @@ static bool emit_intrinsic(Assembler &as, const char *name) {
   return false;
 }
 
-static cell JIT_CDECL get_public_addr(AMX *amx, int index) {
+cell JIT_CDECL get_public_addr(AMX *amx, int index) {
   return jit::AMXPtr(amx).get_public_addr(index);
 }
 
-static cell JIT_CDECL get_native_addr(AMX *amx, int index) {
+cell JIT_CDECL get_native_addr(AMX *amx, int index) {
   return jit::AMXPtr(amx).get_native_addr(index);
 }
 
-static void *JIT_CDECL get_instr_ptr(cell address, void *instr_map,
+void *JIT_CDECL get_instr_ptr(cell address, void *instr_map,
                                      std::size_t instr_map_size) {
   assert(instr_map != 0);
   InstrMapEntry *begin = reinterpret_cast<InstrMapEntry*>(instr_map);
@@ -304,11 +306,11 @@ static void *JIT_CDECL get_instr_ptr(cell address, void *instr_map,
   return 0;
 }
 
-static inline cell rel_code_addr(jit::AMXPtr amx, cell address) {
+inline cell rel_code_addr(jit::AMXPtr amx, cell address) {
   return address - reinterpret_cast<cell>(amx.code());
 }
 
-static void collect_jump_targets(jit::AMXPtr amx, std::set<cell> &refs) {
+void collect_jump_targets(jit::AMXPtr amx, std::set<cell> &refs) {
   jit::AMXDisassembler disas(amx);
   jit::AMXInstruction instr;
 
@@ -327,15 +329,15 @@ static void collect_jump_targets(jit::AMXPtr amx, std::set<cell> &refs) {
   }
 }
 
-static intptr_t *get_runtime_data(Assembler &as) {
+intptr_t *get_runtime_data(Assembler &as) {
   return reinterpret_cast<intptr_t*>(as.getCode());
 }
 
-static void set_runtime_data(Assembler &as, int index, intptr_t data) {
+void set_runtime_data(Assembler &as, int index, intptr_t data) {
   get_runtime_data(as)[index] = data;
 }
 
-static void emit_runtime_data(Assembler &as) {
+void emit_runtime_data(Assembler &as) {
   as.bindByName("exec_ptr");
     as.dd(0);
   as.bindByName("amx");
@@ -354,7 +356,7 @@ static void emit_runtime_data(Assembler &as) {
     as.dd(0);
 }
 
-static void emit_instr_map(Assembler &as) {
+void emit_instr_map(Assembler &as) {
   jit::AMXDisassembler disas(as.amx());
   jit::AMXInstruction instr;
   int size = 0;
@@ -371,12 +373,12 @@ static void emit_instr_map(Assembler &as) {
   }
 }
 
-static void emit_get_amx_ptr(Assembler &as, const Label &amx_ptr,
+void emit_get_amx_ptr(Assembler &as, const Label &amx_ptr,
                              const GpReg &reg) {
   as.mov(reg, dword_ptr(amx_ptr));
 }
 
-static void emit_get_amx_data_ptr(Assembler &as, const Label &amx_ptr,
+void emit_get_amx_data_ptr(Assembler &as, const Label &amx_ptr,
                                   const GpReg &reg) {
   Label L_quit = as.newLabel();
 
@@ -394,7 +396,7 @@ static void emit_get_amx_data_ptr(Assembler &as, const Label &amx_ptr,
 }
 
 // int JIT_CDECL exec(cell index, cell *retval);
-static void emit_exec(Assembler &as) {
+void emit_exec(Assembler &as) {
   set_runtime_data(as, RuntimeDataExecPtr, as.getCodeSize());
 
   const NamedLabel &L_amx = as.getLabel("amx");
@@ -544,7 +546,7 @@ static void emit_exec(Assembler &as) {
 }
 
 // cell JIT_CDECL exec_helper(void *address);
-static void emit_exec_helper(Assembler &as) {
+void emit_exec_helper(Assembler &as) {
   const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_ebp = as.getLabel("ebp");
   const NamedLabel &L_esp = as.getLabel("esp");
@@ -623,7 +625,7 @@ static void emit_exec_helper(Assembler &as) {
 }
 
 // void JIT_CDECL halt_helper(int error);
-static void emit_halt_helper(Assembler &as) {
+void emit_halt_helper(Assembler &as) {
   const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
   const NamedLabel &L_reset_esp = as.getLabel("reset_esp");
@@ -647,7 +649,7 @@ static void emit_halt_helper(Assembler &as) {
 }
 
 // void JIT_CDECL jump_helper(void *address, void *stack_base, void *stack_ptr);
-static void emit_jump_helper(Assembler &as) {
+void emit_jump_helper(Assembler &as) {
   const NamedLabel &L_instr_map = as.getLabel("instr_map");
   const NamedLabel &L_instr_map_size = as.getLabel("instr_map_size");
   Label L_do_jump = as.newLabel();
@@ -681,7 +683,7 @@ static void emit_jump_helper(Assembler &as) {
 }
 
 // cell JIT_CDECL sysreq_c_helper(int index, void *stack_base, void *stack_ptr);
-static void emit_sysreq_c_helper(Assembler &as) {
+void emit_sysreq_c_helper(Assembler &as) {
   const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_sysreq_d_helper = as.getLabel("sysreq_d_helper");
   Label L_call = as.newLabel();
@@ -720,7 +722,7 @@ static void emit_sysreq_c_helper(Assembler &as) {
 }
 
 // cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
-static void emit_sysreq_d_helper(Assembler &as) {
+void emit_sysreq_d_helper(Assembler &as) {
   const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_ebp = as.getLabel("ebp");
   const NamedLabel &L_esp = as.getLabel("esp");
@@ -763,66 +765,56 @@ static void emit_sysreq_d_helper(Assembler &as) {
     as.ret();
 }
 
-static void emit_load_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_load_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [address]
   as.mov(eax, dword_ptr(ebx, instr.operand()));
 }
 
-static void emit_load_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_load_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = [address]
   as.mov(ecx, dword_ptr(ebx, instr.operand()));
 }
 
-static void emit_load_s_pri(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_load_s_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [FRM + offset]
   as.mov(eax, dword_ptr(ebp, instr.operand()));
 }
 
-static void emit_load_s_alt(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_load_s_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = [FRM + offset]
   as.mov(ecx, dword_ptr(ebp, instr.operand()));
 }
 
-static void emit_lref_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_lref_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [ [address] ]
   as.mov(edx, dword_ptr(ebx, instr.operand()));
   as.mov(eax, dword_ptr(ebx, edx));
 }
 
-static void emit_lref_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_lref_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = [ [address] ]
   as.mov(edx, dword_ptr(ebx, + instr.operand()));
   as.mov(ecx, dword_ptr(ebx, edx));
 }
 
-static void emit_lref_s_pri(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_lref_s_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [ [FRM + offset] ]
   as.mov(edx, dword_ptr(ebp, instr.operand()));
   as.mov(eax, dword_ptr(ebx, edx));
 }
 
-static void emit_lref_s_alt(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_lref_s_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [ [FRM + offset] ]
   as.mov(edx, dword_ptr(ebp, instr.operand()));
   as.mov(ecx, dword_ptr(ebx, edx));
 }
 
-static void emit_load_i(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_load_i(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [PRI] (full cell)
   as.mov(eax, dword_ptr(ebx, eax));
 }
 
-static void emit_lodb_i(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_lodb_i(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
   switch (instr.operand()) {
     case 1:
@@ -839,8 +831,7 @@ static void emit_lodb_i(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_const_pri(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_const_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = value
   if (instr.operand() == 0) {
     as.xor_(eax, eax);
@@ -849,8 +840,7 @@ static void emit_const_pri(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_const_alt(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_const_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = value
   if (instr.operand() == 0) {
     as.xor_(ecx, ecx);
@@ -859,80 +849,68 @@ static void emit_const_alt(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_addr_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_addr_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = FRM + offset
   as.lea(eax, dword_ptr(ebp, instr.operand()));
   as.sub(eax, ebx);
 }
 
-static void emit_addr_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_addr_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = FRM + offset
   as.lea(ecx, dword_ptr(ebp, instr.operand()));
   as.sub(ecx, ebx);
 }
 
-static void emit_stor_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_stor_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [address] = PRI
   as.mov(dword_ptr(ebx, instr.operand()), eax);
 }
 
-static void emit_stor_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_stor_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [address] = ALT
   as.mov(dword_ptr(ebx, instr.operand()), ecx);
 }
 
-static void emit_stor_s_pri(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_stor_s_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [FRM + offset] = ALT
   as.mov(dword_ptr(ebp, instr.operand()), eax);
 }
 
-static void emit_stor_s_alt(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_stor_s_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [FRM + offset] = ALT
   as.mov(dword_ptr(ebp, instr.operand()), ecx);
 }
 
-static void emit_sref_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sref_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [ [address] ] = PRI
   as.mov(edx, dword_ptr(ebx, instr.operand()));
   as.mov(dword_ptr(ebx, edx), eax);
 }
 
-static void emit_sref_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sref_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [ [address] ] = ALT
   as.mov(edx, dword_ptr(ebx, instr.operand()));
   as.mov(dword_ptr(ebx, edx), ecx);
 }
 
-static void emit_sref_s_pri(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_sref_s_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [ [FRM + offset] ] = PRI
   as.mov(edx, dword_ptr(ebp, instr.operand()));
   as.mov(dword_ptr(ebx, edx), eax);
 }
 
-static void emit_sref_s_alt(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_sref_s_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [ [FRM + offset] ] = ALT
   as.mov(edx, dword_ptr(ebp, instr.operand()));
   as.mov(dword_ptr(ebx, edx), ecx);
 }
 
-static void emit_stor_i(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_stor_i(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [ALT] = PRI (full cell)
   as.mov(dword_ptr(ebx, ecx), eax);
 }
 
-static void emit_strb_i(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_strb_i(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
   switch (instr.operand()) {
     case 1:
@@ -949,34 +927,29 @@ static void emit_strb_i(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_lidx(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_lidx(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [ ALT + (PRI x cell size) ]
   as.lea(edx, dword_ptr(ebx, ecx));
   as.mov(eax, dword_ptr(edx, eax, 2));
 }
 
-static void emit_lidx_b(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_lidx_b(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = [ ALT + (PRI << shift) ]
   as.lea(edx, dword_ptr(ebx, ecx));
   as.mov(eax, dword_ptr(edx, eax, instr.operand()));
 }
 
-static void emit_idxaddr(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_idxaddr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT + (PRI x cell size) (calculate indexed address)
   as.lea(eax, dword_ptr(ecx, eax, 2));
 }
 
-static void emit_idxaddr_b(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_idxaddr_b(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT + (PRI << shift) (calculate indexed address)
   as.lea(eax, dword_ptr(ecx, eax, instr.operand()));
 }
 
-static void emit_align_pri(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_align_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Little Endian:
   #if BYTE_ORDER == LITTLE_ENDIAN
     if (instr.operand() < sizeof(cell)) {
@@ -985,8 +958,7 @@ static void emit_align_pri(Assembler &as, const jit::AMXInstruction &instr,
   #endif
 }
 
-static void emit_align_alt(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_align_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Little Endian:
   #if BYTE_ORDER == LITTLE_ENDIAN
     if (instr.operand() < sizeof(cell)) {
@@ -995,8 +967,7 @@ static void emit_align_alt(Assembler &as, const jit::AMXInstruction &instr,
   #endif
 }
 
-static void emit_lctrl(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_lctrl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI is set to the current value of any of the special registers.
   // The index parameter must be:
   // 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
@@ -1043,8 +1014,7 @@ static void emit_lctrl(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_sctrl(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_sctrl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // set the indexed special registers to the value in PRI.
   // The index parameter must be:
   // 6=CIP
@@ -1073,68 +1043,57 @@ static void emit_sctrl(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_move_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_move_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT
   as.mov(eax, ecx);
 }
 
-static void emit_move_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_move_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = PRI
   as.mov(ecx, eax);
 }
 
-static void emit_xchg(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_xchg(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Exchange PRI and ALT
   as.xchg(eax, ecx);
 }
 
-static void emit_push_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_push_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = PRI, STK = STK - cell size
   as.push(eax);
 }
 
-static void emit_push_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_push_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = ALT, STK = STK - cell size
   as.push(ecx);
 }
 
-static void emit_push_c(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_push_c(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = value, STK = STK - cell size
   as.push(instr.operand());
 }
 
-static void emit_push(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_push(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = [address], STK = STK - cell size
   as.push(dword_ptr(ebx, instr.operand()));
 }
 
-static void emit_push_s(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_push_s(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = [FRM + offset], STK = STK - cell size
   as.push(dword_ptr(ebp, instr.operand()));
 }
 
-static void emit_pop_pri(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_pop_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // STK = STK + cell size, PRI = [STK]
   as.pop(eax);
 }
 
-static void emit_pop_alt(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_pop_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // STK = STK + cell size, ALT = [STK]
   as.pop(ecx);
 }
 
-static void emit_stack(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_stack(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = STK, STK = STK + value
   as.mov(ecx, esp);
   as.sub(ecx, ebx);
@@ -1145,8 +1104,7 @@ static void emit_stack(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_heap(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_heap(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = HEA, HEA = HEA + value
   const NamedLabel &L_amx = as.getLabel("amx");
 
@@ -1160,16 +1118,14 @@ static void emit_heap(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_proc(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_proc(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = FRM, STK = STK - cell size, FRM = STK
   as.push(ebp);
   as.mov(ebp, esp);
   as.sub(dword_ptr(esp), ebx);
 }
 
-static void emit_ret(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_ret(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // STK = STK + cell size, FRM = [STK],
   // CIP = [STK], STK = STK + cell size
   as.pop(ebp);
@@ -1177,8 +1133,7 @@ static void emit_ret(Assembler &as, const jit::AMXInstruction &instr,
   as.ret();
 }
 
-static void emit_retn(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_retn(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // STK = STK + cell size, FRM = [STK],
   // CIP = [STK], STK = STK + cell size
   // The RETN instruction removes a specified number of bytes
@@ -1192,8 +1147,7 @@ static void emit_retn(Assembler &as, const jit::AMXInstruction &instr,
   as.ret(4);
 }
 
-static void emit_call(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_call(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = CIP + 5, STK = STK - cell size
   // CIP = CIP + offset
   // The CALL instruction jumps to an address after storing the
@@ -1204,8 +1158,7 @@ static void emit_call(Assembler &as, const jit::AMXInstruction &instr,
   as.call(as.getAmxLabel(dest));
 }
 
-static void emit_jump_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_jump_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // CIP = PRI (indirect jump)
   const NamedLabel &L_jump_helper = as.getLabel("jump_helper");
   as.push(esp);
@@ -1214,162 +1167,139 @@ static void emit_jump_pri(Assembler &as, const jit::AMXInstruction &instr,
   as.call(L_jump_helper);
 }
 
-static const Label &get_jump_label(Assembler &as,
+const Label &get_jump_label(Assembler &as,
                                    const jit::AMXInstruction &instr) {
   cell dest = rel_code_addr(as.amx(), instr.operand());
   return as.getAmxLabel(dest);
 }
 
-static void emit_jump(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_jump(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // CIP = CIP + offset (jump to the address relative from
   // the current position)
   as.jmp(get_jump_label(as, instr));
 }
 
-static void emit_jzer(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_jzer(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI == 0 then CIP = CIP + offset
   as.cmp(eax, 0);
   as.jz(get_jump_label(as, instr));
 }
 
-static void emit_jnz(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_jnz(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI != 0 then CIP = CIP + offset
   as.cmp(eax, 0);
   as.jnz(get_jump_label(as, instr));
 }
 
-static void emit_jeq(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_jeq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI == ALT then CIP = CIP + offset
   as.cmp(eax, ecx);
   as.je(get_jump_label(as, instr));
 }
 
-static void emit_jneq(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_jneq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI != ALT then CIP = CIP + offset
   as.cmp(eax, ecx);
   as.jne(get_jump_label(as, instr));
 }
 
-static void emit_jless(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_jless(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI < ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
   as.jb(get_jump_label(as, instr));
 }
 
-static void emit_jleq(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_jleq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI <= ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
   as.jbe(get_jump_label(as, instr));
 }
 
-static void emit_jgrtr(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_jgrtr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI > ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
   as.ja(get_jump_label(as, instr));
 }
 
-static void emit_jgeq(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_jgeq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI >= ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
   as.jae(get_jump_label(as, instr));
 }
 
-static void emit_jsless(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_jsless(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI < ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
   as.jl(get_jump_label(as, instr));
 }
 
-static void emit_jsleq(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_jsleq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI <= ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
   as.jle(get_jump_label(as, instr));
 }
 
-static void emit_jsgrtr(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_jsgrtr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI > ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
   as.jg(get_jump_label(as, instr));
 }
 
-static void emit_jsgeq(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_jsgeq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI >= ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
   as.jge(get_jump_label(as, instr));
 }
 
-static void emit_shl(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_shl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI << ALT
   as.shl(eax, cl);
 }
 
-static void emit_shr(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_shr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI >> ALT (without sign extension)
   as.shr(eax, cl);
 }
 
-static void emit_sshr(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_sshr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI >> ALT with sign extension
   as.sar(eax, cl);
 }
 
-static void emit_shl_c_pri(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_shl_c_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI << value
   as.shl(eax, static_cast<unsigned char>(instr.operand()));
 }
 
-static void emit_shl_c_alt(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_shl_c_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = ALT << value
   as.shl(ecx, static_cast<unsigned char>(instr.operand()));
 }
 
-static void emit_shr_c_pri(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_shr_c_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI >> value (without sign extension)
   as.shr(eax, static_cast<unsigned char>(instr.operand()));
 }
 
-static void emit_shr_c_alt(Assembler &as, const jit::AMXInstruction &instr,
-                           bool *error) {
+void emit_shr_c_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI >> value (without sign extension)
   as.shl(ecx, static_cast<unsigned char>(instr.operand()));
 }
 
-static void emit_smul(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_smul(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI * ALT (signed multiply)
   as.xor_(edx, edx);
   as.imul(ecx);
 }
 
-static void emit_sdiv(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_sdiv(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
   as.xor_(edx, edx);
   as.idiv(ecx);
   as.mov(ecx, edx);
 }
 
-static void emit_sdiv_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sdiv_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
   as.xchg(eax, ecx);
   as.xor_(edx, edx);
@@ -1377,23 +1307,20 @@ static void emit_sdiv_alt(Assembler &as, const jit::AMXInstruction &instr,
   as.mov(ecx, edx);
 }
 
-static void emit_umul(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_umul(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI * ALT (unsigned multiply)
   as.xor_(edx, edx);
   as.mul(ecx);
 }
 
-static void emit_udiv(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_udiv(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI / ALT (unsigned divide), ALT = PRI mod ALT
   as.xor_(edx, edx);
   as.div(ecx);
   as.mov(ecx, edx);
 }
 
-static void emit_udiv_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_udiv_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT / PRI (unsigned divide), ALT = ALT mod PRI
   as.xchg(eax, ecx);
   as.xor_(edx, edx);
@@ -1401,20 +1328,17 @@ static void emit_udiv_alt(Assembler &as, const jit::AMXInstruction &instr,
   as.mov(ecx, edx);
 }
 
-static void emit_add(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_add(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI + ALT
   as.add(eax, ecx);
 }
 
-static void emit_sub(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_sub(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI - ALT
   as.sub(eax, ecx);
 }
 
-static void emit_sub_alt(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_sub_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT - PRI
   // or:
   // PRI = -(PRI - ALT)
@@ -1422,46 +1346,39 @@ static void emit_sub_alt(Assembler &as, const jit::AMXInstruction &instr,
   as.neg(eax);
 }
 
-static void emit_and(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_and(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI & ALT
   as.and_(eax, ecx);
 }
 
-static void emit_or(Assembler &as, const jit::AMXInstruction &instr,
-                    bool *error) {
+void emit_or(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI | ALT
   as.or_(eax, ecx);
 }
 
-static void emit_xor(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_xor(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI ^ ALT
   as.xor_(eax, ecx);
 }
 
-static void emit_not(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_not(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = !PRI
   as.test(eax, eax);
   as.setz(al);
   as.movzx(eax, al);
 }
 
-static void emit_neg(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_neg(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = -PRI
   as.neg(eax);
 }
 
-static void emit_invert(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_invert(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ~PRI
   as.not_(eax);
 }
 
-static void emit_add_c(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_add_c(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI + value
   if (instr.operand() >= 0) {
     as.add(eax, instr.operand());
@@ -1470,206 +1387,176 @@ static void emit_add_c(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_smul_c(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_smul_c(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI * value
   as.imul(eax, instr.operand());
 }
 
-static void emit_zero_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_zero_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = 0
   as.xor_(eax, eax);
 }
 
-static void emit_zero_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_zero_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = 0
   as.xor_(ecx, ecx);
 }
 
-static void emit_zero(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_zero(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [address] = 0
   as.mov(dword_ptr(ebx, instr.operand()), 0);
 }
 
-static void emit_zero_s(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_zero_s(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [FRM + offset] = 0
   as.mov(dword_ptr(ebp, instr.operand()), 0);
 }
 
-static void emit_sign_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sign_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // sign extent the byte in PRI to a cell
   as.movsx(eax, al);
 }
 
-static void emit_sign_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sign_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // sign extent the byte in ALT to a cell
   as.movsx(ecx, cl);
 }
 
-static void emit_eq(Assembler &as, const jit::AMXInstruction &instr,
-                    bool *error) {
+void emit_eq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI == ALT ? 1 :
   as.cmp(eax, ecx);
   as.sete(al);
   as.movzx(eax, al);
 }
 
-static void emit_neq(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_neq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI != ALT ? 1 :
   as.cmp(eax, ecx);
   as.setne(al);
   as.movzx(eax, al);
 }
 
-static void emit_less(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_less(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI < ALT ? 1 :
   as.cmp(eax, ecx);
   as.setb(al);
   as.movzx(eax, al);
 }
 
-static void emit_leq(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_leq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI <= ALT ? 1 :
   as.cmp(eax, ecx);
   as.setbe(al);
   as.movzx(eax, al);
 }
 
-static void emit_grtr(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_grtr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI > ALT ? 1 :
   as.cmp(eax, ecx);
   as.seta(al);
   as.movzx(eax, al);
 }
 
-static void emit_geq(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_geq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI >= ALT ? 1 :
   as.cmp(eax, ecx);
   as.setae(al);
   as.movzx(eax, al);
 }
 
-static void emit_sless(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_sless(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI < ALT ? 1 :
   as.cmp(eax, ecx);
   as.setl(al);
   as.movzx(eax, al);
 }
 
-static void emit_sleq(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_sleq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI <= ALT ? 1 :
   as.cmp(eax, ecx);
   as.setle(al);
   as.movzx(eax, al);
 }
 
-static void emit_sgrtr(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_sgrtr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI > ALT ? 1 :
   as.cmp(eax, ecx);
   as.setg(al);
   as.movzx(eax, al);
 }
 
-static void emit_sgeq(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_sgeq(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI >= ALT ? 1 :
   as.cmp(eax, ecx);
   as.setge(al);
   as.movzx(eax, al);
 }
 
-static void emit_eq_c_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_eq_c_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI == value ? 1 :
   as.cmp(eax, instr.operand());
   as.sete(al);
   as.movzx(eax, al);
 }
 
-static void emit_eq_c_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_eq_c_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = ALT == value ? 1 :
   as.cmp(ecx, instr.operand());
   as.sete(al);
   as.movzx(eax, al);
 }
 
-static void emit_inc_pri(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_inc_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI + 1
   as.inc(eax);
 }
 
-static void emit_inc_alt(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_inc_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = ALT + 1
   as.inc(ecx);
 }
 
-static void emit_inc(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_inc(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [address] = [address] + 1
   as.inc(dword_ptr(ebx, instr.operand()));
 }
 
-static void emit_inc_s(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_inc_s(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [FRM + offset] = [FRM + offset] + 1
   as.inc(dword_ptr(ebp, instr.operand()));
 }
 
-static void emit_inc_i(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_inc_i(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [PRI] = [PRI] + 1
   as.inc(dword_ptr(ebx, eax));
 }
 
-static void emit_dec_pri(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_dec_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI = PRI - 1
   as.dec(eax);
 }
 
-static void emit_dec_alt(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_dec_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = ALT - 1
   as.dec(ecx);
 }
 
-static void emit_dec(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_dec(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [address] = [address] - 1
   as.dec(dword_ptr(ebx, instr.operand()));
 }
 
-static void emit_dec_s(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_dec_s(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [FRM + offset] = [FRM + offset] - 1
   as.dec(dword_ptr(ebp, instr.operand()));
 }
 
-static void emit_dec_i(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_dec_i(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [PRI] = [PRI] - 1
   as.dec(dword_ptr(ebx, eax));
 }
 
-static void emit_movs(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_movs(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Copy memory from [PRI] to [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
@@ -1690,8 +1577,7 @@ static void emit_movs(Assembler &as, const jit::AMXInstruction &instr,
   as.pop(ecx);
 }
 
-static void emit_cmps(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_cmps(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Compare memory blocks at [PRI] and [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
@@ -1720,8 +1606,7 @@ static void emit_cmps(Assembler &as, const jit::AMXInstruction &instr,
   as.bind(L_continue);
 }
 
-static void emit_fill(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_fill(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Fill memory at [ALT] with value in [PRI]. The parameter
   // specifies the number of bytes, which must be a multiple
   // of the cell size.
@@ -1733,8 +1618,7 @@ static void emit_fill(Assembler &as, const jit::AMXInstruction &instr,
   as.pop(ecx);
 }
 
-static void emit_halt(Assembler &as, const jit::AMXInstruction &instr,
-                      bool *error) {
+void emit_halt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
   const NamedLabel &L_halt_helper = as.getLabel("halt_helper");
@@ -1742,8 +1626,7 @@ static void emit_halt(Assembler &as, const jit::AMXInstruction &instr,
   as.call(L_halt_helper);
 }
 
-static void emit_bounds(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_bounds(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Abort execution if PRI > value or if PRI < 0.
   const NamedLabel &L_halt_helper = as.getLabel("halt_helper");
   Label L_halt = as.newLabel();
@@ -1759,8 +1642,7 @@ static void emit_bounds(Assembler &as, const jit::AMXInstruction &instr,
   as.bind(L_good);
 }
 
-static void emit_sysreq_pri(Assembler &as, const jit::AMXInstruction &instr,
-                            bool *error) {
+void emit_sysreq_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service, service number in PRI
   const NamedLabel &L_sysreq_c_helper = as.getLabel("sysreq_c_helper");
   as.push(esp); // stack_ptr
@@ -1769,8 +1651,7 @@ static void emit_sysreq_pri(Assembler &as, const jit::AMXInstruction &instr,
   as.call(L_sysreq_c_helper);
 }
 
-static void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service
   const NamedLabel &L_sysreq_c_helper = as.getLabel("sysreq_c_helper");
   const char *name = as.amx().get_native_name(instr.operand());
@@ -1786,8 +1667,7 @@ static void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_sysreq_d(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_sysreq_d(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service
   const NamedLabel &L_sysreq_d_helper = as.getLabel("sysreq_d_helper");
   cell index = as.amx().find_native(instr.operand());
@@ -1804,8 +1684,7 @@ static void emit_sysreq_d(Assembler &as, const jit::AMXInstruction &instr,
   }
 }
 
-static void emit_switch(Assembler &as, const jit::AMXInstruction &instr,
-                        bool *error) {
+void emit_switch(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Compare PRI to the values in the case table (whose address
   // is passed as an offset from CIP) and jump to the associated
   // the address in the matching record.
@@ -1859,43 +1738,37 @@ static void emit_switch(Assembler &as, const jit::AMXInstruction &instr,
   as.jmp(as.getAmxLabel(default_case));
 }
 
-static void emit_casetbl(Assembler &as, const jit::AMXInstruction &instr,
-                         bool *error) {
+void emit_casetbl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // A variable number of case records follows this opcode, where
   // each record takes two cells.
 }
 
-static void emit_swap_pri(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_swap_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = PRI and PRI = [STK]
   as.xchg(dword_ptr(esp), eax);
 }
 
-static void emit_swap_alt(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_swap_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = ALT and ALT = [STK]
   as.xchg(dword_ptr(esp), ecx);
 }
 
-static void emit_push_adr(Assembler &as, const jit::AMXInstruction &instr,
-                          bool *error) {
+void emit_push_adr(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // [STK] = FRM + offset, STK = STK - cell size
   as.lea(edx, dword_ptr(ebp, instr.operand()));
   as.sub(edx, ebx);
   as.push(edx);
 }
 
-static void emit_nop(Assembler &as, const jit::AMXInstruction &instr,
-                     bool *error) {
+void emit_nop(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // no-operation, for code alignment
 }
 
-static void emit_break(Assembler &as, const jit::AMXInstruction &instr,
-                       bool *error) {
+void emit_break(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // conditional breakpoint
 }
 
-static EmitInstruction emit_opcode[] = {
+EmitInstruction emit_opcode[] = {
   0,                 emit_load_pri,     emit_load_alt,     emit_load_s_pri,
   emit_load_s_alt,   emit_lref_pri,     emit_lref_alt,     emit_lref_s_pri,
   emit_lref_s_alt,   emit_load_i,       emit_lodb_i,       emit_const_pri,
@@ -1932,6 +1805,8 @@ static EmitInstruction emit_opcode[] = {
   emit_swap_alt,     emit_push_adr,     emit_nop,          emit_sysreq_d,
   0,                 emit_break
 };
+
+} // anonymouse namespace
 
 namespace jit {
 
