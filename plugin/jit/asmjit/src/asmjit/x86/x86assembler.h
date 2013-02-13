@@ -332,8 +332,8 @@ struct X86Assembler : public Assembler
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API X86Assembler(Context* context = JitContext::getGlobal()) ASMJIT_NOTHROW;
-  ASMJIT_API virtual ~X86Assembler() ASMJIT_NOTHROW;
+  ASMJIT_API X86Assembler(Context* context = JitContext::getGlobal());
+  ASMJIT_API virtual ~X86Assembler();
 
   // --------------------------------------------------------------------------
   // [Buffer - Setters (X86-Extensions)]
@@ -342,7 +342,7 @@ struct X86Assembler : public Assembler
   //! @brief Set custom variable @a i at position @a pos.
   //!
   //! @note This function is used to patch existing code.
-  ASMJIT_API void setVarAt(size_t pos, sysint_t i, uint8_t isUnsigned, uint32_t size) ASMJIT_NOTHROW;
+  ASMJIT_API void setVarAt(size_t pos, sysint_t i, uint8_t isUnsigned, uint32_t size);
 
   // --------------------------------------------------------------------------
   // [Emit]
@@ -354,7 +354,7 @@ struct X86Assembler : public Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Emit single @a opCode without operands.
-  inline void _emitOpCode(uint32_t opCode) ASMJIT_NOTHROW
+  inline void _emitOpCode(uint32_t opCode)
   {
     // Instruction prefix.
     if (opCode & 0xFF000000) _emitByte(static_cast<uint8_t>((opCode >> 24) & 0xFF));
@@ -368,15 +368,15 @@ struct X86Assembler : public Assembler
   }
 
   //! @brief Emit MODR/M byte.
-  inline void _emitMod(uint8_t m, uint8_t o, uint8_t r) ASMJIT_NOTHROW
+  inline void _emitMod(uint8_t m, uint8_t o, uint8_t r)
   { _emitByte(((m & 0x03) << 6) | ((o & 0x07) << 3) | (r & 0x07)); }
 
   //! @brief Emit SIB byte.
-  inline void _emitSib(uint8_t s, uint8_t i, uint8_t b) ASMJIT_NOTHROW
+  inline void _emitSib(uint8_t s, uint8_t i, uint8_t b)
   { _emitByte(((s & 0x03) << 6) | ((i & 0x07) << 3) | (b & 0x07)); }
 
   //! @brief Emit REX prefix (64-bit mode only).
-  inline void _emitRexR(uint8_t w, uint8_t opReg, uint8_t regCode, bool forceRexPrefix) ASMJIT_NOTHROW
+  inline void _emitRexR(uint8_t w, uint8_t opReg, uint8_t regCode, bool forceRexPrefix)
   {
 #if defined(ASMJIT_X64)
     uint32_t rex;
@@ -400,7 +400,7 @@ struct X86Assembler : public Assembler
   }
 
   //! @brief Emit REX prefix (64-bit mode only).
-  inline void _emitRexRM(uint8_t w, uint8_t opReg, const Operand& rm, bool forceRexPrefix) ASMJIT_NOTHROW
+  inline void _emitRexRM(uint8_t w, uint8_t opReg, const Operand& rm, bool forceRexPrefix)
   {
 #if defined(ASMJIT_X64)
     uint32_t rex;
@@ -439,18 +439,18 @@ struct X86Assembler : public Assembler
   }
 
   //! @brief Emit Register / Register - calls _emitMod(3, opReg, r)
-  inline void _emitModR(uint8_t opReg, uint8_t r) ASMJIT_NOTHROW
+  inline void _emitModR(uint8_t opReg, uint8_t r)
   { _emitMod(3, opReg, r); }
 
   //! @brief Emit Register / Register - calls _emitMod(3, opReg, r.code())
-  inline void _emitModR(uint8_t opReg, const Reg& r) ASMJIT_NOTHROW
+  inline void _emitModR(uint8_t opReg, const Reg& r)
   { _emitMod(3, opReg, r.getRegCode()); }
 
   //! @brief Emit register / memory address combination to buffer.
   //!
   //! This method can hangle addresses from simple to complex ones with
   //! index and displacement.
-  ASMJIT_API void _emitModM(uint8_t opReg, const Mem& mem, sysint_t immSize) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitModM(uint8_t opReg, const Mem& mem, sysint_t immSize);
 
   //! @brief Emit Reg<-Reg or Reg<-Reg|Mem ModRM (can be followed by SIB 
   //! and displacement) to buffer.
@@ -460,68 +460,68 @@ struct X86Assembler : public Assembler
   //!
   //! @note @a opReg is usually real register ID (see @c R) but some instructions
   //! have specific format and in that cases @a opReg is part of opcode.
-  ASMJIT_API void _emitModRM(uint8_t opReg, const Operand& op, sysint_t immSize) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitModRM(uint8_t opReg, const Operand& op, sysint_t immSize);
 
   //! @brief Emit CS (code segmend) prefix.
   //!
   //! Behavior of this function is to emit code prefix only if memory operand
   //! address uses code segment. Code segment is used through memory operand
   //! with attached @c AsmJit::Label.
-  ASMJIT_API void _emitSegmentPrefix(const Operand& rm) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitSegmentPrefix(const Operand& rm);
 
   //! @brief Emit instruction where register is inlined to opcode.
-  ASMJIT_API void _emitX86Inl(uint32_t opCode, uint8_t i16bit, uint8_t rexw, uint8_t reg, bool forceRexPrefix) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitX86Inl(uint32_t opCode, uint8_t i16bit, uint8_t rexw, uint8_t reg, bool forceRexPrefix);
 
   //! @brief Emit instruction with reg/memory operand.
   ASMJIT_API void _emitX86RM(uint32_t opCode, uint8_t i16bit, uint8_t rexw, uint8_t o,
-    const Operand& op, sysint_t immSize, bool forceRexPrefix) ASMJIT_NOTHROW;
+    const Operand& op, sysint_t immSize, bool forceRexPrefix);
 
   //! @brief Emit FPU instruction with no operands.
-  ASMJIT_API void _emitFpu(uint32_t opCode) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitFpu(uint32_t opCode);
 
   //! @brief Emit FPU instruction with one operand @a sti (index of FPU register).
-  ASMJIT_API void _emitFpuSTI(uint32_t opCode, uint32_t sti) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitFpuSTI(uint32_t opCode, uint32_t sti);
 
   //! @brief Emit FPU instruction with one operand @a opReg and memory operand @a mem.
-  ASMJIT_API void _emitFpuMEM(uint32_t opCode, uint8_t opReg, const Mem& mem) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitFpuMEM(uint32_t opCode, uint8_t opReg, const Mem& mem);
 
   //! @brief Emit MMX/SSE instruction.
-  ASMJIT_API void _emitMmu(uint32_t opCode, uint8_t rexw, uint8_t opReg, const Operand& src, sysint_t immSize) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitMmu(uint32_t opCode, uint8_t rexw, uint8_t opReg, const Operand& src, sysint_t immSize);
 
   //! @brief Emit displacement.
-  ASMJIT_API LabelLink* _emitDisplacement(LabelData& l_data, sysint_t inlinedDisplacement, int size) ASMJIT_NOTHROW;
+  ASMJIT_API LabelLink* _emitDisplacement(LabelData& l_data, sysint_t inlinedDisplacement, int size);
 
   //! @brief Emit relative relocation to absolute pointer @a target. It's needed
   //! to add what instruction is emitting this, because in x64 mode the relative
   //! displacement can be impossible to calculate and in this case the trampoline
   //! is used.
-  ASMJIT_API void _emitJmpOrCallReloc(uint32_t instruction, void* target) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitJmpOrCallReloc(uint32_t instruction, void* target);
 
   // Helpers to decrease binary code size. These four emit methods are just
   // helpers thats used by assembler. They call emitX86() adding NULLs
   // to first, second and third operand, if needed.
 
   //! @brief Emit X86/FPU or MM/XMM instruction.
-  ASMJIT_API void _emitInstruction(uint32_t code) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitInstruction(uint32_t code);
 
   //! @brief Emit X86/FPU or MM/XMM instruction.
-  ASMJIT_API void _emitInstruction(uint32_t code, const Operand* o0) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitInstruction(uint32_t code, const Operand* o0);
 
   //! @brief Emit X86/FPU or MM/XMM instruction.
-  ASMJIT_API void _emitInstruction(uint32_t code, const Operand* o0, const Operand* o1) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitInstruction(uint32_t code, const Operand* o0, const Operand* o1);
 
   //! @brief Emit X86/FPU or MM/XMM instruction.
   //!
   //! Operands @a o1, @a o2 or @a o3 can be @c NULL if they are not used.
   //!
   //! Hint: Use @c emitX86() helpers to emit instructions.
-  ASMJIT_API void _emitInstruction(uint32_t code, const Operand* o0, const Operand* o1, const Operand* o2) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitInstruction(uint32_t code, const Operand* o0, const Operand* o1, const Operand* o2);
 
   //! @brief Private method for emitting jcc.
-  ASMJIT_API void _emitJcc(uint32_t code, const Label* label, uint32_t hint) ASMJIT_NOTHROW;
+  ASMJIT_API void _emitJcc(uint32_t code, const Label* label, uint32_t hint);
 
   //! @brief Private method for emitting short jcc.
-  inline void _emitShortJcc(uint32_t code, const Label* label, uint32_t hint) ASMJIT_NOTHROW
+  inline void _emitShortJcc(uint32_t code, const Label* label, uint32_t hint)
   {
     _emitOptions |= kX86EmitOptionShortJump;
     _emitJcc(code, label, hint);
@@ -532,7 +532,7 @@ struct X86Assembler : public Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Embed absolute label pointer (4 or 8 bytes).
-  ASMJIT_API void embedLabel(const Label& label) ASMJIT_NOTHROW;
+  ASMJIT_API void embedLabel(const Label& label);
 
   // --------------------------------------------------------------------------
   // [Align]
@@ -543,92 +543,92 @@ struct X86Assembler : public Assembler
   //! Typical usage of this is to align labels at start of the inner loops.
   //!
   //! Inserts @c nop() instructions or CPU optimized NOPs.
-  ASMJIT_API void align(uint32_t m) ASMJIT_NOTHROW;
+  ASMJIT_API void align(uint32_t m);
 
   // --------------------------------------------------------------------------
   // [Label]
   // --------------------------------------------------------------------------
 
   //! @brief Create and return new label.
-  ASMJIT_API Label newLabel() ASMJIT_NOTHROW;
+  ASMJIT_API Label newLabel();
 
   //! @brief Register labels (used by @c Compiler).
-  ASMJIT_API void registerLabels(size_t count) ASMJIT_NOTHROW;
+  ASMJIT_API void registerLabels(size_t count);
 
   //! @brief Bind label to the current offset.
   //!
   //! @note Label can be bound only once!
-  ASMJIT_API void bind(const Label& label) ASMJIT_NOTHROW;
+  ASMJIT_API void bind(const Label& label);
 
   // --------------------------------------------------------------------------
   // [Reloc]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual size_t relocCode(void* dst, sysuint_t addressBase) const ASMJIT_NOTHROW;
+  ASMJIT_API virtual size_t relocCode(void* dst, sysuint_t addressBase) const;
 
   // --------------------------------------------------------------------------
   // [Make]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void* make() ASMJIT_NOTHROW;
+  ASMJIT_API virtual void* make();
 
   // --------------------------------------------------------------------------
   // [Embed]
   // --------------------------------------------------------------------------
 
   //! @brief Add 8-bit integer data to the instuction stream.
-  inline void db(uint8_t  x) ASMJIT_NOTHROW { embed(&x, 1); }
+  inline void db(uint8_t  x) { embed(&x, 1); }
   //! @brief Add 16-bit integer data to the instuction stream.
-  inline void dw(uint16_t x) ASMJIT_NOTHROW { embed(&x, 2); }
+  inline void dw(uint16_t x) { embed(&x, 2); }
   //! @brief Add 32-bit integer data to the instuction stream.
-  inline void dd(uint32_t x) ASMJIT_NOTHROW { embed(&x, 4); }
+  inline void dd(uint32_t x) { embed(&x, 4); }
   //! @brief Add 64-bit integer data to the instuction stream.
-  inline void dq(uint64_t x) ASMJIT_NOTHROW { embed(&x, 8); }
+  inline void dq(uint64_t x) { embed(&x, 8); }
 
   //! @brief Add 8-bit integer data to the instuction stream.
-  inline void dint8(int8_t x) ASMJIT_NOTHROW { embed(&x, sizeof(int8_t)); }
+  inline void dint8(int8_t x) { embed(&x, sizeof(int8_t)); }
   //! @brief Add 8-bit integer data to the instuction stream.
-  inline void duint8(uint8_t x) ASMJIT_NOTHROW { embed(&x, sizeof(uint8_t)); }
+  inline void duint8(uint8_t x) { embed(&x, sizeof(uint8_t)); }
 
   //! @brief Add 16-bit integer data to the instuction stream.
-  inline void dint16(int16_t x) ASMJIT_NOTHROW { embed(&x, sizeof(int16_t)); }
+  inline void dint16(int16_t x) { embed(&x, sizeof(int16_t)); }
   //! @brief Add 16-bit integer data to the instuction stream.
-  inline void duint16(uint16_t x) ASMJIT_NOTHROW { embed(&x, sizeof(uint16_t)); }
+  inline void duint16(uint16_t x) { embed(&x, sizeof(uint16_t)); }
 
   //! @brief Add 32-bit integer data to the instuction stream.
-  inline void dint32(int32_t x) ASMJIT_NOTHROW { embed(&x, sizeof(int32_t)); }
+  inline void dint32(int32_t x) { embed(&x, sizeof(int32_t)); }
   //! @brief Add 32-bit integer data to the instuction stream.
-  inline void duint32(uint32_t x) ASMJIT_NOTHROW { embed(&x, sizeof(uint32_t)); }
+  inline void duint32(uint32_t x) { embed(&x, sizeof(uint32_t)); }
 
   //! @brief Add 64-bit integer data to the instuction stream.
-  inline void dint64(int64_t x) ASMJIT_NOTHROW { embed(&x, sizeof(int64_t)); }
+  inline void dint64(int64_t x) { embed(&x, sizeof(int64_t)); }
   //! @brief Add 64-bit integer data to the instuction stream.
-  inline void duint64(uint64_t x) ASMJIT_NOTHROW { embed(&x, sizeof(uint64_t)); }
+  inline void duint64(uint64_t x) { embed(&x, sizeof(uint64_t)); }
 
   //! @brief Add system-integer data to the instuction stream.
-  inline void dintptr(intptr_t x) ASMJIT_NOTHROW { embed(&x, sizeof(intptr_t)); }
+  inline void dintptr(intptr_t x) { embed(&x, sizeof(intptr_t)); }
   //! @brief Add system-integer data to the instuction stream.
-  inline void duintptr(uintptr_t x) ASMJIT_NOTHROW { embed(&x, sizeof(uintptr_t)); }
+  inline void duintptr(uintptr_t x) { embed(&x, sizeof(uintptr_t)); }
 
   //! @brief Add float data to the instuction stream.
-  inline void dfloat(float x) ASMJIT_NOTHROW { embed(&x, sizeof(float)); }
+  inline void dfloat(float x) { embed(&x, sizeof(float)); }
   //! @brief Add double data to the instuction stream.
-  inline void ddouble(double x) ASMJIT_NOTHROW { embed(&x, sizeof(double)); }
+  inline void ddouble(double x) { embed(&x, sizeof(double)); }
 
   //! @brief Add pointer data to the instuction stream.
-  inline void dptr(void* x) ASMJIT_NOTHROW { embed(&x, sizeof(void*)); }
+  inline void dptr(void* x) { embed(&x, sizeof(void*)); }
 
   //! @brief Add MM data to the instuction stream.
-  inline void dmm(const MmData& x) ASMJIT_NOTHROW { embed(&x, sizeof(MmData)); }
+  inline void dmm(const MmData& x) { embed(&x, sizeof(MmData)); }
   //! @brief Add XMM data to the instuction stream.
-  inline void dxmm(const XmmData& x) ASMJIT_NOTHROW { embed(&x, sizeof(XmmData)); }
+  inline void dxmm(const XmmData& x) { embed(&x, sizeof(XmmData)); }
 
   //! @brief Add data to the instuction stream.
-  inline void data(const void* data, size_t size) ASMJIT_NOTHROW { embed(data, size); }
+  inline void data(const void* data, size_t size) { embed(data, size); }
 
   //! @brief Add data in a given structure instance to the instuction stream.
   template<typename T>
-  inline void dstruct(const T& x) ASMJIT_NOTHROW { embed(&x, sizeof(T)); }
+  inline void dstruct(const T& x) { embed(&x, sizeof(T)); }
 
   // --------------------------------------------------------------------------
   // [X86 Instructions]
@@ -636,81 +636,51 @@ struct X86Assembler : public Assembler
 
   //! @brief Add with Carry.
   inline void adc(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstAdc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdc, &dst, &src); }
   //! @brief Add with Carry.
   inline void adc(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAdc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdc, &dst, &src); }
   //! @brief Add with Carry.
   inline void adc(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstAdc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdc, &dst, &src); }
   //! @brief Add with Carry.
   inline void adc(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstAdc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdc, &dst, &src); }
   //! @brief Add with Carry.
   inline void adc(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstAdc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdc, &dst, &src); }
 
   //! @brief Add.
   inline void add(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdd, &dst, &src); }
   //! @brief Add.
   inline void add(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdd, &dst, &src); }
   //! @brief Add.
   inline void add(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdd, &dst, &src); }
   //! @brief Add.
   inline void add(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdd, &dst, &src); }
   //! @brief Add.
   inline void add(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAdd, &dst, &src); }
 
   //! @brief Logical And.
   inline void and_(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAnd, &dst, &src); }
   //! @brief Logical And.
   inline void and_(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAnd, &dst, &src); }
   //! @brief Logical And.
   inline void and_(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAnd, &dst, &src); }
   //! @brief Logical And.
   inline void and_(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAnd, &dst, &src); }
   //! @brief Logical And.
   inline void and_(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAnd, &dst, &src); }
 
   //! @brief Bit Scan Forward.
   inline void bsf(const GpReg& dst, const GpReg& src)
@@ -747,87 +717,55 @@ struct X86Assembler : public Assembler
 
   //! @brief Bit test.
   inline void bt(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBt, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBt, &dst, &src); }
   //! @brief Bit test.
   inline void bt(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBt, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBt, &dst, &src); }
   //! @brief Bit test.
   inline void bt(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBt, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBt, &dst, &src); }
   //! @brief Bit test.
   inline void bt(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBt, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBt, &dst, &src); }
 
   //! @brief Bit test and complement.
   inline void btc(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBtc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtc, &dst, &src); }
   //! @brief Bit test and complement.
   inline void btc(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBtc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtc, &dst, &src); }
   //! @brief Bit test and complement.
   inline void btc(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBtc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtc, &dst, &src); }
   //! @brief Bit test and complement.
   inline void btc(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBtc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtc, &dst, &src); }
 
   //! @brief Bit test and reset.
   inline void btr(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBtr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtr, &dst, &src); }
   //! @brief Bit test and reset.
   inline void btr(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBtr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtr, &dst, &src); }
   //! @brief Bit test and reset.
   inline void btr(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBtr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtr, &dst, &src); }
   //! @brief Bit test and reset.
   inline void btr(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBtr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBtr, &dst, &src); }
 
   //! @brief Bit test and set.
   inline void bts(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBts, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBts, &dst, &src); }
   //! @brief Bit test and set.
   inline void bts(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBts, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBts, &dst, &src); }
   //! @brief Bit test and set.
   inline void bts(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstBts, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBts, &dst, &src); }
   //! @brief Bit test and set.
   inline void bts(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstBts, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBts, &dst, &src); }
 
   //! @brief Call Procedure.
   inline void call(const GpReg& dst)
@@ -837,14 +775,10 @@ struct X86Assembler : public Assembler
   }
   //! @brief Call Procedure.
   inline void call(const Mem& dst)
-  {
-    _emitInstruction(kX86InstCall, &dst);
-  }
+  { _emitInstruction(kX86InstCall, &dst); }
   //! @brief Call Procedure.
   inline void call(const Imm& dst)
-  {
-    _emitInstruction(kX86InstCall, &dst);
-  }
+  { _emitInstruction(kX86InstCall, &dst); }
   //! @brief Call Procedure.
   //! @overload
   inline void call(void* dst)
@@ -855,72 +789,66 @@ struct X86Assembler : public Assembler
 
   //! @brief Call Procedure.
   inline void call(const Label& label)
-  {
-    _emitInstruction(kX86InstCall, &label);
-  }
+  { _emitInstruction(kX86InstCall, &label); }
 
   //! @brief Convert Byte to Word (Sign Extend).
   //!
   //! AX <- Sign Extend AL
   inline void cbw()
-  {
-    _emitInstruction(kX86InstCbw);
-  }
+  { _emitInstruction(kX86InstCbw); }
+
+  //! @brief Convert Word to DWord (Sign Extend).
+  //!
+  //! DX:AX <- Sign Extend AX
+  inline void cwd()
+  { _emitInstruction(kX86InstCwd); }
 
   //! @brief Convert Word to DWord (Sign Extend).
   //!
   //! EAX <- Sign Extend AX
   inline void cwde()
-  {
-    _emitInstruction(kX86InstCwde);
-  }
+  { _emitInstruction(kX86InstCwde); }
+
+  //! @brief Convert DWord to QWord (Sign Extend).
+  //!
+  //! EDX:EAX <- Sign Extend EAX
+  inline void cdq()
+  { _emitInstruction(kX86InstCdq); }
 
 #if defined(ASMJIT_X64)
   //! @brief Convert DWord to QWord (Sign Extend).
   //!
   //! RAX <- Sign Extend EAX
   inline void cdqe()
-  {
-    _emitInstruction(kX86InstCdqe);
-  }
+  { _emitInstruction(kX86InstCdqe); }
 #endif // ASMJIT_X64
 
   //! @brief Clear Carry flag
   //!
   //! This instruction clears the CF flag in the EFLAGS register.
   inline void clc()
-  {
-    _emitInstruction(kX86InstClc);
-  }
+  { _emitInstruction(kX86InstClc); }
 
   //! @brief Clear Direction flag
   //!
   //! This instruction clears the DF flag in the EFLAGS register.
   inline void cld()
-  {
-    _emitInstruction(kX86InstCld);
-  }
+  { _emitInstruction(kX86InstCld); }
 
   //! @brief Complement Carry Flag.
   //!
   //! This instruction complements the CF flag in the EFLAGS register.
   //! (CF = NOT CF)
   inline void cmc()
-  {
-    _emitInstruction(kX86InstCmc);
-  }
+  { _emitInstruction(kX86InstCmc); }
 
   //! @brief Conditional Move.
   inline void cmov(kX86Cond cc, const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(X86Util::getCMovccInstFromCond(cc), &dst, &src);
-  }
+  { _emitInstruction(X86Util::getCMovccInstFromCond(cc), &dst, &src); }
 
   //! @brief Conditional Move.
   inline void cmov(kX86Cond cc, const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(X86Util::getCMovccInstFromCond(cc), &dst, &src);
-  }
+  { _emitInstruction(X86Util::getCMovccInstFromCond(cc), &dst, &src); }
 
   //! @brief Conditional Move.
   inline void cmova  (const GpReg& dst, const GpReg& src) { _emitInstruction(kX86InstCMovA  , &dst, &src); }
@@ -1045,40 +973,26 @@ struct X86Assembler : public Assembler
 
   //! @brief Compare Two Operands.
   inline void cmp(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstCmp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmp, &dst, &src); }
   //! @brief Compare Two Operands.
   inline void cmp(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCmp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmp, &dst, &src); }
   //! @brief Compare Two Operands.
   inline void cmp(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstCmp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmp, &dst, &src); }
   //! @brief Compare Two Operands.
   inline void cmp(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstCmp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmp, &dst, &src); }
   //! @brief Compare Two Operands.
   inline void cmp(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstCmp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmp, &dst, &src); }
 
   //! @brief Compare and Exchange (i486).
   inline void cmpxchg(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstCmpXCHG, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmpXCHG, &dst, &src); }
   //! @brief Compare and Exchange (i486).
   inline void cmpxchg(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstCmpXCHG, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCmpXCHG, &dst, &src); }
 
   //! @brief Compares the 64-bit value in EDX:EAX with the memory operand (Pentium).
   //!
@@ -1087,9 +1001,7 @@ struct X86Assembler : public Assembler
   //! this instruction copies the 64-bit memory operand into the EDX:EAX
   //! registers and clears the zero flag.
   inline void cmpxchg8b(const Mem& dst)
-  {
-    _emitInstruction(kX86InstCmpXCHG8B, &dst);
-  }
+  { _emitInstruction(kX86InstCmpXCHG8B, &dst); }
 
 #if defined(ASMJIT_X64)
   //! @brief Compares the 128-bit value in RDX:RAX with the memory operand (X64).
@@ -1099,16 +1011,20 @@ struct X86Assembler : public Assembler
   //! this instruction copies the 128-bit memory operand into the RDX:RAX
   //! registers and clears the zero flag.
   inline void cmpxchg16b(const Mem& dst)
-  {
-    _emitInstruction(kX86InstCmpXCHG16B, &dst);
-  }
+  { _emitInstruction(kX86InstCmpXCHG16B, &dst); }
 #endif // ASMJIT_X64
 
   //! @brief CPU Identification (i486).
   inline void cpuid()
-  {
-    _emitInstruction(kX86InstCpuId);
-  }
+  { _emitInstruction(kX86InstCpuId); }
+
+#if defined(ASMJIT_X64)
+  //! @brief Convert QWord to DQWord (Sign Extend).
+  //!
+  //! RDX:RAX <- Sign Extend RAX
+  inline void cqo()
+  { _emitInstruction(kX86InstCqo); }
+#endif // ASMJIT_X64
 
 #if defined(ASMJIT_X86)
   //! @brief Decimal adjust AL after addition
@@ -1118,9 +1034,7 @@ struct X86Assembler : public Assembler
   //!
   //! @note This instruction is only available in 32-bit mode.
   inline void daa()
-  {
-    _emitInstruction(kX86InstDaa);
-  }
+  { _emitInstruction(kX86InstDaa); }
 #endif // ASMJIT_X86
 
 #if defined(ASMJIT_X86)
@@ -1131,23 +1045,17 @@ struct X86Assembler : public Assembler
   //!
   //! @note This instruction is only available in 32-bit mode.
   inline void das()
-  {
-    _emitInstruction(kX86InstDas);
-  }
+  { _emitInstruction(kX86InstDas); }
 #endif // ASMJIT_X86
 
   //! @brief Decrement by 1.
   //! @note This instruction can be slower than sub(dst, 1)
   inline void dec(const GpReg& dst)
-  {
-    _emitInstruction(kX86InstDec, &dst);
-  }
+  { _emitInstruction(kX86InstDec, &dst); }
   //! @brief Decrement by 1.
   //! @note This instruction can be slower than sub(dst, 1)
   inline void dec(const Mem& dst)
-  {
-    _emitInstruction(kX86InstDec, &dst);
-  }
+  { _emitInstruction(kX86InstDec, &dst); }
 
   //! @brief Unsigned divide.
   //!
@@ -1155,21 +1063,15 @@ struct X86Assembler : public Assembler
   //! register by the source operand and stores the result in the AX,
   //! DX:AX, or EDX:EAX registers.
   inline void div(const GpReg& src)
-  {
-    _emitInstruction(kX86InstDiv, &src);
-  }
+  { _emitInstruction(kX86InstDiv, &src); }
   //! @brief Unsigned divide.
   //! @overload
   inline void div(const Mem& src)
-  {
-    _emitInstruction(kX86InstDiv, &src);
-  }
+  { _emitInstruction(kX86InstDiv, &src); }
 
   //! @brief Make Stack Frame for Procedure Parameters.
   inline void enter(const Imm& imm16, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstEnter, &imm16, &imm8);
-  }
+  { _emitInstruction(kX86InstEnter, &imm16, &imm8); }
 
   //! @brief Signed divide.
   //!
@@ -1177,15 +1079,11 @@ struct X86Assembler : public Assembler
   //! register by the source operand and stores the result in the AX,
   //! DX:AX, or EDX:EAX registers.
   inline void idiv(const GpReg& src)
-  {
-    _emitInstruction(kX86InstIDiv, &src);
-  }
+  { _emitInstruction(kX86InstIDiv, &src); }
   //! @brief Signed divide.
   //! @overload
   inline void idiv(const Mem& src)
-  {
-    _emitInstruction(kX86InstIDiv, &src);
-  }
+  { _emitInstruction(kX86InstIDiv, &src); }
 
   //! @brief Signed multiply.
   //!
@@ -1194,14 +1092,10 @@ struct X86Assembler : public Assembler
   //! on the operand size) and the product is stored in the AX, DX:AX, or
   //! EDX:EAX registers, respectively.
   inline void imul(const GpReg& src)
-  {
-    _emitInstruction(kX86InstIMul, &src);
-  }
+  { _emitInstruction(kX86InstIMul, &src); }
   //! @overload
   inline void imul(const Mem& src)
-  {
-    _emitInstruction(kX86InstIMul, &src);
-  }
+  { _emitInstruction(kX86InstIMul, &src); }
 
   //! @brief Signed multiply.
   //!
@@ -1211,21 +1105,15 @@ struct X86Assembler : public Assembler
   //! register, or a memory location. The product is then stored in the
   //! destination operand location.
   inline void imul(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstIMul, &dst, &src);
-  }
+  { _emitInstruction(kX86InstIMul, &dst, &src); }
   //! @brief Signed multiply.
   //! @overload
   inline void imul(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstIMul, &dst, &src);
-  }
+  { _emitInstruction(kX86InstIMul, &dst, &src); }
   //! @brief Signed multiply.
   //! @overload
   inline void imul(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstIMul, &dst, &src);
-  }
+  { _emitInstruction(kX86InstIMul, &dst, &src); }
 
   //! @brief Signed multiply.
   //!
@@ -1234,33 +1122,23 @@ struct X86Assembler : public Assembler
   //! value). The product is then stored in the destination operand
   //! (a general-purpose register).
   inline void imul(const GpReg& dst, const GpReg& src, const Imm& imm)
-  {
-    _emitInstruction(kX86InstIMul, &dst, &src, &imm);
-  }
+  { _emitInstruction(kX86InstIMul, &dst, &src, &imm); }
   //! @overload
   inline void imul(const GpReg& dst, const Mem& src, const Imm& imm)
-  {
-    _emitInstruction(kX86InstIMul, &dst, &src, &imm);
-  }
+  { _emitInstruction(kX86InstIMul, &dst, &src, &imm); }
 
   //! @brief Increment by 1.
   //! @note This instruction can be slower than add(dst, 1)
   inline void inc(const GpReg& dst)
-  {
-    _emitInstruction(kX86InstInc, &dst);
-  }
+  { _emitInstruction(kX86InstInc, &dst); }
   //! @brief Increment by 1.
   //! @note This instruction can be slower than add(dst, 1)
   inline void inc(const Mem& dst)
-  {
-    _emitInstruction(kX86InstInc, &dst);
-  }
+  { _emitInstruction(kX86InstInc, &dst); }
 
   //! @brief Interrupt 3 - trap to debugger.
   inline void int3()
-  {
-    _emitInstruction(kX86InstInt3);
-  }
+  { _emitInstruction(kX86InstInt3); }
 
   //! @brief Jump to label @a label if condition @a cc is met.
   //!
@@ -1409,21 +1287,15 @@ struct X86Assembler : public Assembler
   //! @brief Jump.
   //! @overload
   inline void jmp(const GpReg& dst)
-  {
-    _emitInstruction(kX86InstJmp, &dst);
-  }
+  { _emitInstruction(kX86InstJmp, &dst); }
   //! @brief Jump.
   //! @overload
   inline void jmp(const Mem& dst)
-  {
-    _emitInstruction(kX86InstJmp, &dst);
-  }
+  { _emitInstruction(kX86InstJmp, &dst); }
   //! @brief Jump.
   //! @overload
   inline void jmp(const Imm& dst)
-  {
-    _emitInstruction(kX86InstJmp, &dst);
-  }
+  { _emitInstruction(kX86InstJmp, &dst); }
 
   //! @brief Jump.
   //! @overload
@@ -1440,9 +1312,7 @@ struct X86Assembler : public Assembler
   //! The destination (target) operand specifies the label of the
   //! instruction being jumped to.
   inline void jmp(const Label& label)
-  {
-    _emitInstruction(kX86InstJmp, &label);
-  }
+  { _emitInstruction(kX86InstJmp, &label); }
 
   //! @brief Short jump.
   //! @sa jmp()
@@ -1460,15 +1330,11 @@ struct X86Assembler : public Assembler
   //! (offset part) specified with one of the processors addressing modes.
   //! The destination operand is a general-purpose register.
   inline void lea(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstLea, &dst, &src);
-  }
+  { _emitInstruction(kX86InstLea, &dst, &src); }
 
   //! @brief High Level Procedure Exit.
   inline void leave()
-  {
-    _emitInstruction(kX86InstLeave);
-  }
+  { _emitInstruction(kX86InstLeave); }
 
   //! @brief Move.
   //!
@@ -1483,61 +1349,43 @@ struct X86Assembler : public Assembler
   //! corresponding functions: @c movd(), @c movq(), etc. Passing MMX or SSE
   //! registers to @c mov() is illegal.
   inline void mov(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
   //! @brief Move.
   //! @overload
   inline void mov(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
   //! @brief Move.
   //! @overload
   inline void mov(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
   //! @brief Move.
   //! @overload
   inline void mov(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
   //! @brief Move.
   //! @overload
   inline void mov(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
 
   //! @brief Move from segment register.
   //! @overload.
   inline void mov(const GpReg& dst, const SegmentReg& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
 
   //! @brief Move from segment register.
   //! @overload.
   inline void mov(const Mem& dst, const SegmentReg& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
 
   //! @brief Move to segment register.
   //! @overload.
   inline void mov(const SegmentReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
 
   //! @brief Move to segment register.
   //! @overload.
   inline void mov(const SegmentReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMov, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMov, &dst, &src); }
 
   //! @brief Move byte, word, dword or qword from absolute address @a src to
   //! AL, AX, EAX or RAX register.
@@ -1565,28 +1413,20 @@ struct X86Assembler : public Assembler
   //!
   //! @sa movsxd().
   void movsx(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovSX, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSX, &dst, &src); }
   //! @brief Move with Sign-Extension.
   //! @overload
   void movsx(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovSX, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSX, &dst, &src); }
 
 #if defined(ASMJIT_X64)
   //! @brief Move DWord to QWord with sign-extension.
   inline void movsxd(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovSXD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSXD, &dst, &src); }
   //! @brief Move DWord to QWord with sign-extension.
   //! @overload
   inline void movsxd(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovSXD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSXD, &dst, &src); }
 #endif // ASMJIT_X64
 
   //! @brief Move with Zero-Extend.
@@ -1596,15 +1436,11 @@ struct X86Assembler : public Assembler
   //! extends the value to 16 or 32-bits. The size of the converted value
   //! depends on the operand-size attribute.
   inline void movzx(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovZX, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovZX, &dst, &src); }
   //! @brief Move with Zero-Extend.
   //! @brief Overload
   inline void movzx(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovZX, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovZX, &dst, &src); }
 
   //! @brief Unsigned multiply.
   //!
@@ -1613,26 +1449,18 @@ struct X86Assembler : public Assembler
   //! on the operand size) and the product is stored in the AX, DX:AX, or
   //! EDX:EAX registers, respectively.
   inline void mul(const GpReg& src)
-  {
-    _emitInstruction(kX86InstMul, &src);
-  }
+  { _emitInstruction(kX86InstMul, &src); }
   //! @brief Unsigned multiply.
   //! @overload
   inline void mul(const Mem& src)
-  {
-    _emitInstruction(kX86InstMul, &src);
-  }
+  { _emitInstruction(kX86InstMul, &src); }
 
   //! @brief Two's Complement Negation.
   inline void neg(const GpReg& dst)
-  {
-    _emitInstruction(kX86InstNeg, &dst);
-  }
+  { _emitInstruction(kX86InstNeg, &dst); }
   //! @brief Two's Complement Negation.
   inline void neg(const Mem& dst)
-  {
-    _emitInstruction(kX86InstNeg, &dst);
-  }
+  { _emitInstruction(kX86InstNeg, &dst); }
 
   //! @brief No Operation.
   //!
@@ -1641,46 +1469,30 @@ struct X86Assembler : public Assembler
   //! affect the machine context, except the EIP register. The NOP instruction
   //! is an alias mnemonic for the XCHG (E)AX, (E)AX instruction.
   inline void nop()
-  {
-    _emitInstruction(kX86InstNop);
-  }
+  { _emitInstruction(kX86InstNop); }
 
   //! @brief One's Complement Negation.
   inline void not_(const GpReg& dst)
-  {
-    _emitInstruction(kX86InstNot, &dst);
-  }
+  { _emitInstruction(kX86InstNot, &dst); }
   //! @brief One's Complement Negation.
   inline void not_(const Mem& dst)
-  {
-    _emitInstruction(kX86InstNot, &dst);
-  }
+  { _emitInstruction(kX86InstNot, &dst); }
 
   //! @brief Logical Inclusive OR.
   inline void or_(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOr, &dst, &src); }
   //! @brief Logical Inclusive OR.
   inline void or_(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOr, &dst, &src); }
   //! @brief Logical Inclusive OR.
   inline void or_(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOr, &dst, &src); }
   //! @brief Logical Inclusive OR.
   inline void or_(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOr, &dst, &src); }
   //! @brief Logical Inclusive OR.
   inline void or_(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOr, &dst, &src); }
 
   //! @brief Pop a Value from the Stack.
   //!
@@ -1691,6 +1503,14 @@ struct X86Assembler : public Assembler
   inline void pop(const GpReg& dst)
   {
     ASMJIT_ASSERT(dst.isRegType(kX86RegTypeGpw) || dst.isRegType(kX86RegTypeGpz));
+    _emitInstruction(kX86InstPop, &dst);
+  }
+  //! @brief Pop a Segment Register from the Stack.
+  //!
+  //! @note There is no instruction to pop a cs segment register.
+  inline void pop(const SegmentReg& dst)
+  {
+    ASMJIT_ASSERT(dst.getRegIndex() != kX86SegCs);
     _emitInstruction(kX86InstPop, &dst);
   }
 
@@ -1705,9 +1525,7 @@ struct X86Assembler : public Assembler
   //!
   //! Pop EDI, ESI, EBP, EBX, EDX, ECX, and EAX.
   inline void popad()
-  {
-    _emitInstruction(kX86InstPopAD);
-  }
+  { _emitInstruction(kX86InstPopAD); }
 #endif // ASMJIT_X86
 
   //! @brief Pop Stack into EFLAGS Register (32-bit or 64-bit).
@@ -1738,6 +1556,9 @@ struct X86Assembler : public Assembler
     ASMJIT_ASSERT(src.isRegType(kX86RegTypeGpw) || src.isRegType(kX86RegTypeGpz));
     _emitInstruction(kX86InstPush, &src);
   }
+  //! @brief Push Segment Register Onto the Stack.
+  inline void push(const SegmentReg& src)
+  { _emitInstruction(kX86InstPush, &src); }
   //! @brief Push WORD/DWORD/QWORD Onto the Stack.
   inline void push(const Mem& src)
   {
@@ -1746,18 +1567,14 @@ struct X86Assembler : public Assembler
   }
   //! @brief Push WORD/DWORD/QWORD Onto the Stack.
   inline void push(const Imm& src)
-  {
-    _emitInstruction(kX86InstPush, &src);
-  }
+  { _emitInstruction(kX86InstPush, &src); }
 
 #if defined(ASMJIT_X86)
   //! @brief Push All General-Purpose Registers.
   //!
   //! Push EAX, ECX, EDX, EBX, original ESP, EBP, ESI, and EDI.
   inline void pushad()
-  {
-    _emitInstruction(kX86InstPushAD);
-  }
+  { _emitInstruction(kX86InstPushAD); }
 #endif // ASMJIT_X86
 
   //! @brief Push EFLAGS Register (32-bit or 64-bit) onto the Stack.
@@ -1781,380 +1598,256 @@ struct X86Assembler : public Assembler
   //! @brief Rotate Bits Left.
   //! @note @a src register can be only @c cl.
   inline void rcl(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRcl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcl, &dst, &src); }
   //! @brief Rotate Bits Left.
   inline void rcl(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRcl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcl, &dst, &src); }
   //! @brief Rotate Bits Left.
   //! @note @a src register can be only @c cl.
   inline void rcl(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRcl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcl, &dst, &src); }
   //! @brief Rotate Bits Left.
   inline void rcl(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRcl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcl, &dst, &src); }
 
   //! @brief Rotate Bits Right.
   //! @note @a src register can be only @c cl.
   inline void rcr(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRcr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcr, &dst, &src); }
   //! @brief Rotate Bits Right.
   inline void rcr(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRcr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcr, &dst, &src); }
   //! @brief Rotate Bits Right.
   //! @note @a src register can be only @c cl.
   inline void rcr(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRcr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcr, &dst, &src); }
   //! @brief Rotate Bits Right.
   inline void rcr(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRcr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcr, &dst, &src); }
 
   //! @brief Read Time-Stamp Counter (Pentium).
   inline void rdtsc()
-  {
-    _emitInstruction(kX86InstRdtsc);
-  }
+  { _emitInstruction(kX86InstRdtsc); }
 
   //! @brief Read Time-Stamp Counter and Processor ID (New).
   inline void rdtscp()
-  {
-    _emitInstruction(kX86InstRdtscP);
-  }
+  { _emitInstruction(kX86InstRdtscP); }
 
   //! @brief Load ECX/RCX BYTEs from DS:[ESI/RSI] to AL.
   inline void rep_lodsb()
-  {
-    _emitInstruction(kX86InstRepLodSB);
-  }
+  { _emitInstruction(kX86InstRepLodSB); }
 
   //! @brief Load ECX/RCX DWORDs from DS:[ESI/RSI] to EAX.
   inline void rep_lodsd()
-  {
-    _emitInstruction(kX86InstRepLodSD);
-  }
+  { _emitInstruction(kX86InstRepLodSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Load ECX/RCX QWORDs from DS:[ESI/RSI] to RAX.
   inline void rep_lodsq()
-  {
-    _emitInstruction(kX86InstRepLodSQ);
-  }
+  { _emitInstruction(kX86InstRepLodSQ); }
 #endif // ASMJIT_X64
 
   //! @brief Load ECX/RCX WORDs from DS:[ESI/RSI] to AX.
   inline void rep_lodsw()
-  {
-    _emitInstruction(kX86InstRepLodSW);
-  }
+  { _emitInstruction(kX86InstRepLodSW); }
 
   //! @brief Move ECX/RCX BYTEs from DS:[ESI/RSI] to ES:[EDI/RDI].
   inline void rep_movsb()
-  {
-    _emitInstruction(kX86InstRepMovSB);
-  }
+  { _emitInstruction(kX86InstRepMovSB); }
 
   //! @brief Move ECX/RCX DWORDs from DS:[ESI/RSI] to ES:[EDI/RDI].
   inline void rep_movsd()
-  {
-    _emitInstruction(kX86InstRepMovSD);
-  }
+  { _emitInstruction(kX86InstRepMovSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Move ECX/RCX QWORDs from DS:[ESI/RSI] to ES:[EDI/RDI].
   inline void rep_movsq()
-  {
-    _emitInstruction(kX86InstRepMovSQ);
-  }
+  { _emitInstruction(kX86InstRepMovSQ); }
 #endif // ASMJIT_X64
 
   //! @brief Move ECX/RCX WORDs from DS:[ESI/RSI] to ES:[EDI/RDI].
   inline void rep_movsw()
-  {
-    _emitInstruction(kX86InstRepMovSW);
-  }
+  { _emitInstruction(kX86InstRepMovSW); }
 
   //! @brief Fill ECX/RCX BYTEs at ES:[EDI/RDI] with AL.
   inline void rep_stosb()
-  {
-    _emitInstruction(kX86InstRepStoSB);
-  }
+  { _emitInstruction(kX86InstRepStoSB); }
 
   //! @brief Fill ECX/RCX DWORDs at ES:[EDI/RDI] with EAX.
   inline void rep_stosd()
-  {
-    _emitInstruction(kX86InstRepStoSD);
-  }
+  { _emitInstruction(kX86InstRepStoSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Fill ECX/RCX QWORDs at ES:[EDI/RDI] with RAX.
   inline void rep_stosq()
-  {
-    _emitInstruction(kX86InstRepStoSQ);
-  }
+  { _emitInstruction(kX86InstRepStoSQ); }
 #endif // ASMJIT_X64
 
   //! @brief Fill ECX/RCX WORDs at ES:[EDI/RDI] with AX.
   inline void rep_stosw()
-  {
-    _emitInstruction(kX86InstRepStoSW);
-  }
+  { _emitInstruction(kX86InstRepStoSW); }
 
   //! @brief Repeated find nonmatching BYTEs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repe_cmpsb()
-  {
-    _emitInstruction(kX86InstRepECmpSB);
-  }
+  { _emitInstruction(kX86InstRepECmpSB); }
   
   //! @brief Repeated find nonmatching DWORDs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repe_cmpsd()
-  {
-    _emitInstruction(kX86InstRepECmpSD);
-  }
+  { _emitInstruction(kX86InstRepECmpSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Repeated find nonmatching QWORDs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repe_cmpsq()
-  {
-    _emitInstruction(kX86InstRepECmpSQ);
-  }
+  { _emitInstruction(kX86InstRepECmpSQ); }
 #endif // ASMJIT_X64
   
   //! @brief Repeated find nonmatching WORDs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repe_cmpsw()
-  {
-    _emitInstruction(kX86InstRepECmpSW);
-  }
+  { _emitInstruction(kX86InstRepECmpSW); }
 
   //! @brief Find non-AL BYTE starting at ES:[EDI/RDI].
   inline void repe_scasb()
-  {
-    _emitInstruction(kX86InstRepEScaSB);
-  }
+  { _emitInstruction(kX86InstRepEScaSB); }
   
   //! @brief Find non-EAX DWORD starting at ES:[EDI/RDI].
   inline void repe_scasd()
-  {
-    _emitInstruction(kX86InstRepEScaSD);
-  }
+  { _emitInstruction(kX86InstRepEScaSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Find non-RAX QWORD starting at ES:[EDI/RDI].
   inline void repe_scasq()
-  {
-    _emitInstruction(kX86InstRepEScaSQ);
-  }
+  { _emitInstruction(kX86InstRepEScaSQ); }
 #endif // ASMJIT_X64
 
   //! @brief Find non-AX WORD starting at ES:[EDI/RDI].
   inline void repe_scasw()
-  {
-    _emitInstruction(kX86InstRepEScaSW);
-  }
+  { _emitInstruction(kX86InstRepEScaSW); }
 
   //! @brief Repeated find nonmatching BYTEs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repne_cmpsb()
-  {
-    _emitInstruction(kX86InstRepNECmpSB);
-  }
+  { _emitInstruction(kX86InstRepNECmpSB); }
 
   //! @brief Repeated find nonmatching DWORDs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repne_cmpsd()
-  {
-    _emitInstruction(kX86InstRepNECmpSD);
-  }
+  { _emitInstruction(kX86InstRepNECmpSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Repeated find nonmatching QWORDs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repne_cmpsq()
-  {
-    _emitInstruction(kX86InstRepNECmpSQ);
-  }
+  { _emitInstruction(kX86InstRepNECmpSQ); }
 #endif // ASMJIT_X64
 
   //! @brief Repeated find nonmatching WORDs in ES:[EDI/RDI] and DS:[ESI/RDI].
   inline void repne_cmpsw()
-  {
-    _emitInstruction(kX86InstRepNECmpSW);
-  }
+  { _emitInstruction(kX86InstRepNECmpSW); }
 
   //! @brief Find AL, starting at ES:[EDI/RDI].
   inline void repne_scasb()
-  {
-    _emitInstruction(kX86InstRepNEScaSB);
-  }
+  { _emitInstruction(kX86InstRepNEScaSB); }
 
   //! @brief Find EAX, starting at ES:[EDI/RDI].
   inline void repne_scasd()
-  {
-    _emitInstruction(kX86InstRepNEScaSD);
-  }
+  { _emitInstruction(kX86InstRepNEScaSD); }
 
 #if defined(ASMJIT_X64)
   //! @brief Find RAX, starting at ES:[EDI/RDI].
   inline void repne_scasq()
-  {
-    _emitInstruction(kX86InstRepNEScaSQ);
-  }
+  { _emitInstruction(kX86InstRepNEScaSQ); }
 #endif // ASMJIT_X64
 
   //! @brief Find AX, starting at ES:[EDI/RDI].
   inline void repne_scasw()
-  {
-    _emitInstruction(kX86InstRepNEScaSW);
-  }
+  { _emitInstruction(kX86InstRepNEScaSW); }
 
   //! @brief Return from Procedure.
   inline void ret()
-  {
-    _emitInstruction(kX86InstRet);
-  }
+  { _emitInstruction(kX86InstRet); }
 
   //! @brief Return from Procedure.
   inline void ret(const Imm& imm16)
-  {
-    _emitInstruction(kX86InstRet, &imm16);
-  }
+  { _emitInstruction(kX86InstRet, &imm16); }
 
   //! @brief Rotate Bits Left.
   //! @note @a src register can be only @c cl.
   inline void rol(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRol, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRol, &dst, &src); }
   //! @brief Rotate Bits Left.
   inline void rol(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRol, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRol, &dst, &src); }
   //! @brief Rotate Bits Left.
   //! @note @a src register can be only @c cl.
   inline void rol(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRol, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRol, &dst, &src); }
   //! @brief Rotate Bits Left.
   inline void rol(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRol, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRol, &dst, &src); }
 
   //! @brief Rotate Bits Right.
   //! @note @a src register can be only @c cl.
   inline void ror(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRor, &dst, &src); }
   //! @brief Rotate Bits Right.
   inline void ror(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRor, &dst, &src); }
   //! @brief Rotate Bits Right.
   //! @note @a src register can be only @c cl.
   inline void ror(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstRor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRor, &dst, &src); }
   //! @brief Rotate Bits Right.
   inline void ror(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstRor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRor, &dst, &src); }
 
 #if defined(ASMJIT_X86)
   //! @brief Store AH into Flags.
   inline void sahf()
-  {
-    _emitInstruction(kX86InstSahf);
-  }
+  { _emitInstruction(kX86InstSahf); }
 #endif // ASMJIT_X86
 
   //! @brief Integer subtraction with borrow.
   inline void sbb(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSbb, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSbb, &dst, &src); }
   //! @brief Integer subtraction with borrow.
   inline void sbb(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSbb, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSbb, &dst, &src); }
   //! @brief Integer subtraction with borrow.
   inline void sbb(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSbb, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSbb, &dst, &src); }
   //! @brief Integer subtraction with borrow.
   inline void sbb(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSbb, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSbb, &dst, &src); }
   //! @brief Integer subtraction with borrow.
   inline void sbb(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSbb, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSbb, &dst, &src); }
 
   //! @brief Shift Bits Left.
   //! @note @a src register can be only @c cl.
   inline void sal(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSal, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSal, &dst, &src); }
   //! @brief Shift Bits Left.
   inline void sal(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSal, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSal, &dst, &src); }
   //! @brief Shift Bits Left.
   //! @note @a src register can be only @c cl.
   inline void sal(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSal, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSal, &dst, &src); }
   //! @brief Shift Bits Left.
   inline void sal(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSal, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSal, &dst, &src); }
 
   //! @brief Shift Bits Right.
   //! @note @a src register can be only @c cl.
   inline void sar(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSar, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSar, &dst, &src); }
   //! @brief Shift Bits Right.
   inline void sar(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSar, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSar, &dst, &src); }
   //! @brief Shift Bits Right.
   //! @note @a src register can be only @c cl.
   inline void sar(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSar, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSar, &dst, &src); }
   //! @brief Shift Bits Right.
   inline void sar(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSar, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSar, &dst, &src); }
 
   //! @brief Set Byte on Condition.
   inline void set(kX86Cond cc, const GpReg& dst)
@@ -2294,212 +1987,136 @@ struct X86Assembler : public Assembler
   //! @brief Shift Bits Left.
   //! @note @a src register can be only @c cl.
   inline void shl(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstShl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShl, &dst, &src); }
   //! @brief Shift Bits Left.
   inline void shl(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstShl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShl, &dst, &src); }
   //! @brief Shift Bits Left.
   //! @note @a src register can be only @c cl.
   inline void shl(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstShl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShl, &dst, &src); }
   //! @brief Shift Bits Left.
   inline void shl(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstShl, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShl, &dst, &src); }
 
   //! @brief Shift Bits Right.
   //! @note @a src register can be only @c cl.
   inline void shr(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstShr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShr, &dst, &src); }
   //! @brief Shift Bits Right.
   inline void shr(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstShr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShr, &dst, &src); }
   //! @brief Shift Bits Right.
   //! @note @a src register can be only @c cl.
   inline void shr(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstShr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShr, &dst, &src); }
   //! @brief Shift Bits Right.
   inline void shr(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstShr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstShr, &dst, &src); }
 
   //! @brief Double Precision Shift Left.
   //! @note src2 register can be only @c cl register.
   inline void shld(const GpReg& dst, const GpReg& src1, const GpReg& src2)
-  {
-    _emitInstruction(kX86InstShld, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShld, &dst, &src1, &src2); }
   //! @brief Double Precision Shift Left.
   inline void shld(const GpReg& dst, const GpReg& src1, const Imm& src2)
-  {
-    _emitInstruction(kX86InstShld, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShld, &dst, &src1, &src2); }
   //! @brief Double Precision Shift Left.
   //! @note src2 register can be only @c cl register.
   inline void shld(const Mem& dst, const GpReg& src1, const GpReg& src2)
-  {
-    _emitInstruction(kX86InstShld, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShld, &dst, &src1, &src2); }
   //! @brief Double Precision Shift Left.
   inline void shld(const Mem& dst, const GpReg& src1, const Imm& src2)
-  {
-    _emitInstruction(kX86InstShld, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShld, &dst, &src1, &src2); }
 
   //! @brief Double Precision Shift Right.
   //! @note src2 register can be only @c cl register.
   inline void shrd(const GpReg& dst, const GpReg& src1, const GpReg& src2)
-  {
-    _emitInstruction(kX86InstShrd, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShrd, &dst, &src1, &src2); }
   //! @brief Double Precision Shift Right.
   inline void shrd(const GpReg& dst, const GpReg& src1, const Imm& src2)
-  {
-    _emitInstruction(kX86InstShrd, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShrd, &dst, &src1, &src2); }
   //! @brief Double Precision Shift Right.
   //! @note src2 register can be only @c cl register.
   inline void shrd(const Mem& dst, const GpReg& src1, const GpReg& src2)
-  {
-    _emitInstruction(kX86InstShrd, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShrd, &dst, &src1, &src2); }
   //! @brief Double Precision Shift Right.
   inline void shrd(const Mem& dst, const GpReg& src1, const Imm& src2)
-  {
-    _emitInstruction(kX86InstShrd, &dst, &src1, &src2);
-  }
+  { _emitInstruction(kX86InstShrd, &dst, &src1, &src2); }
 
   //! @brief Set Carry Flag to 1.
   inline void stc()
-  {
-    _emitInstruction(kX86InstStc);
-  }
+  { _emitInstruction(kX86InstStc); }
 
   //! @brief Set Direction Flag to 1.
   inline void std()
-  {
-    _emitInstruction(kX86InstStd);
-  }
+  { _emitInstruction(kX86InstStd); }
 
   //! @brief Subtract.
   inline void sub(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSub, &dst, &src); }
   //! @brief Subtract.
   inline void sub(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSub, &dst, &src); }
   //! @brief Subtract.
   inline void sub(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSub, &dst, &src); }
   //! @brief Subtract.
   inline void sub(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSub, &dst, &src); }
   //! @brief Subtract.
   inline void sub(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSub, &dst, &src); }
 
   //! @brief Logical Compare.
   inline void test(const GpReg& op1, const GpReg& op2)
-  {
-    _emitInstruction(kX86InstTest, &op1, &op2);
-  }
+  { _emitInstruction(kX86InstTest, &op1, &op2); }
   //! @brief Logical Compare.
   inline void test(const GpReg& op1, const Imm& op2)
-  {
-    _emitInstruction(kX86InstTest, &op1, &op2);
-  }
+  { _emitInstruction(kX86InstTest, &op1, &op2); }
   //! @brief Logical Compare.
   inline void test(const Mem& op1, const GpReg& op2)
-  {
-    _emitInstruction(kX86InstTest, &op1, &op2);
-  }
+  { _emitInstruction(kX86InstTest, &op1, &op2); }
   //! @brief Logical Compare.
   inline void test(const Mem& op1, const Imm& op2)
-  {
-    _emitInstruction(kX86InstTest, &op1, &op2);
-  }
+  { _emitInstruction(kX86InstTest, &op1, &op2); }
 
   //! @brief Undefined instruction - Raise invalid opcode exception.
   inline void ud2()
-  {
-    _emitInstruction(kX86InstUd2);
-  }
+  { _emitInstruction(kX86InstUd2); }
 
   //! @brief Exchange and Add.
   inline void xadd(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstXadd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXadd, &dst, &src); }
   //! @brief Exchange and Add.
   inline void xadd(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstXadd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXadd, &dst, &src); }
 
   //! @brief Exchange Register/Memory with Register.
   inline void xchg(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstXchg, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXchg, &dst, &src); }
   //! @brief Exchange Register/Memory with Register.
   inline void xchg(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstXchg, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXchg, &dst, &src); }
   //! @brief Exchange Register/Memory with Register.
   inline void xchg(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstXchg, &src, &dst);
-  }
+  { _emitInstruction(kX86InstXchg, &src, &dst); }
 
   //! @brief Exchange Register/Memory with Register.
   inline void xor_(const GpReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXor, &dst, &src); }
   //! @brief Exchange Register/Memory with Register.
   inline void xor_(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXor, &dst, &src); }
   //! @brief Exchange Register/Memory with Register.
   inline void xor_(const GpReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXor, &dst, &src); }
   //! @brief Exchange Register/Memory with Register.
   inline void xor_(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXor, &dst, &src); }
   //! @brief Exchange Register/Memory with Register.
   inline void xor_(const Mem& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXor, &dst, &src); }
 
   // --------------------------------------------------------------------------
   // [X87 Instructions (FPU)]
@@ -2507,15 +2124,11 @@ struct X86Assembler : public Assembler
 
   //! @brief Compute 2^x - 1 (FPU).
   inline void f2xm1()
-  {
-    _emitInstruction(kX86InstF2XM1);
-  }
+  { _emitInstruction(kX86InstF2XM1); }
 
   //! @brief Absolute Value of st(0) (FPU).
   inline void fabs()
-  {
-    _emitInstruction(kX86InstFAbs);
-  }
+  { _emitInstruction(kX86InstFAbs); }
 
   //! @brief Add @a src to @a dst and store result in @a dst (FPU).
   //!
@@ -2530,33 +2143,23 @@ struct X86Assembler : public Assembler
   //!
   //! @note SP-FP or DP-FP determined by @a adr size.
   inline void fadd(const Mem& src)
-  {
-    _emitInstruction(kX86InstFAdd, &src);
-  }
+  { _emitInstruction(kX86InstFAdd, &src); }
 
   //! @brief Add st(0) to @a dst and POP register stack (FPU).
   inline void faddp(const X87Reg& dst = st(1))
-  {
-    _emitInstruction(kX86InstFAddP, &dst);
-  }
+  { _emitInstruction(kX86InstFAddP, &dst); }
 
   //! @brief Load Binary Coded Decimal (FPU).
   inline void fbld(const Mem& src)
-  {
-    _emitInstruction(kX86InstFBLd, &src);
-  }
+  { _emitInstruction(kX86InstFBLd, &src); }
 
   //! @brief Store BCD Integer and Pop (FPU).
   inline void fbstp(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFBStP, &dst);
-  }
+  { _emitInstruction(kX86InstFBStP, &dst); }
 
   //! @brief Change st(0) Sign (FPU).
   inline void fchs()
-  {
-    _emitInstruction(kX86InstFCHS);
-  }
+  { _emitInstruction(kX86InstFCHS); }
 
   //! @brief Clear Exceptions (FPU).
   //!
@@ -2569,100 +2172,66 @@ struct X86Assembler : public Assembler
   //! for and handles any pending unmasked floating-point exceptions before
   //! clearing the exception flags.
   inline void fclex()
-  {
-    _emitInstruction(kX86InstFClex);
-  }
+  { _emitInstruction(kX86InstFClex); }
 
   //! @brief FP Conditional Move (FPU).
   inline void fcmovb(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovB, &src);
-  }
+  { _emitInstruction(kX86InstFCMovB, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmovbe(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovBE, &src);
-  }
+  { _emitInstruction(kX86InstFCMovBE, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmove(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovE, &src);
-  }
+  { _emitInstruction(kX86InstFCMovE, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmovnb(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovNB, &src);
-  }
+  { _emitInstruction(kX86InstFCMovNB, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmovnbe(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovNBE, &src);
-  }
+  { _emitInstruction(kX86InstFCMovNBE, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmovne(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovNE, &src);
-  }
+  { _emitInstruction(kX86InstFCMovNE, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmovnu(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovNU, &src);
-  }
+  { _emitInstruction(kX86InstFCMovNU, &src); }
   //! @brief FP Conditional Move (FPU).
   inline void fcmovu(const X87Reg& src)
-  {
-    _emitInstruction(kX86InstFCMovU, &src);
-  }
+  { _emitInstruction(kX86InstFCMovU, &src); }
 
   //! @brief Compare st(0) with @a reg (FPU).
   inline void fcom(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFCom, &reg);
-  }
+  { _emitInstruction(kX86InstFCom, &reg); }
   //! @brief Compare st(0) with 4-byte or 8-byte FP at @a src (FPU).
   inline void fcom(const Mem& src)
-  {
-    _emitInstruction(kX86InstFCom, &src);
-  }
+  { _emitInstruction(kX86InstFCom, &src); }
 
   //! @brief Compare st(0) with @a reg and pop the stack (FPU).
   inline void fcomp(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFComP, &reg);
-  }
+  { _emitInstruction(kX86InstFComP, &reg); }
   //! @brief Compare st(0) with 4-byte or 8-byte FP at @a adr and pop the
   //! stack (FPU).
   inline void fcomp(const Mem& mem)
-  {
-    _emitInstruction(kX86InstFComP, &mem);
-  }
+  { _emitInstruction(kX86InstFComP, &mem); }
 
   //! @brief Compare st(0) with st(1) and pop register stack twice (FPU).
   inline void fcompp()
-  {
-    _emitInstruction(kX86InstFComPP);
-  }
+  { _emitInstruction(kX86InstFComPP); }
 
   //! @brief Compare st(0) and @a reg and Set EFLAGS (FPU).
   inline void fcomi(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFComI, &reg);
-  }
+  { _emitInstruction(kX86InstFComI, &reg); }
 
   //! @brief Compare st(0) and @a reg and Set EFLAGS and pop the stack (FPU).
   inline void fcomip(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFComIP, &reg);
-  }
+  { _emitInstruction(kX86InstFComIP, &reg); }
 
   //! @brief Cosine (FPU).
   //!
   //! This instruction calculates the cosine of the source operand in
   //! register st(0) and stores the result in st(0).
   inline void fcos()
-  {
-    _emitInstruction(kX86InstFCos);
-  }
+  { _emitInstruction(kX86InstFCos); }
 
   //! @brief Decrement Stack-Top Pointer (FPU).
   //!
@@ -2672,9 +2241,7 @@ struct X86Assembler : public Assembler
   //! position. The contents of the FPU data registers and tag register
   //! are not affected.
   inline void fdecstp()
-  {
-    _emitInstruction(kX86InstFDecStP);
-  }
+  { _emitInstruction(kX86InstFDecStP); }
 
   //! @brief Divide @a dst by @a src (FPU).
   //!
@@ -2686,15 +2253,11 @@ struct X86Assembler : public Assembler
   }
   //! @brief Divide st(0) by 32-bit or 64-bit FP value (FPU).
   inline void fdiv(const Mem& src)
-  {
-    _emitInstruction(kX86InstFDiv, &src);
-  }
+  { _emitInstruction(kX86InstFDiv, &src); }
 
   //! @brief Divide @a reg by st(0) (FPU).
   inline void fdivp(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFDivP, &reg);
-  }
+  { _emitInstruction(kX86InstFDivP, &reg); }
 
   //! @brief Reverse Divide @a dst by @a src (FPU).
   //!
@@ -2706,15 +2269,11 @@ struct X86Assembler : public Assembler
   }
   //! @brief Reverse Divide st(0) by 32-bit or 64-bit FP value (FPU).
   inline void fdivr(const Mem& src)
-  {
-    _emitInstruction(kX86InstFDivR, &src);
-  }
+  { _emitInstruction(kX86InstFDivR, &src); }
 
   //! @brief Reverse Divide @a reg by st(0) (FPU).
   inline void fdivrp(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFDivRP, &reg);
-  }
+  { _emitInstruction(kX86InstFDivRP, &reg); }
 
   //! @brief Free Floating-Point Register (FPU).
   //!
@@ -2722,9 +2281,7 @@ struct X86Assembler : public Assembler
   //! to empty (11B). The contents of @a reg and the FPU stack-top pointer
   //! (TOP) are not affected.
   inline void ffree(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFFree, &reg);
-  }
+  { _emitInstruction(kX86InstFFree, &reg); }
 
   //! @brief Add 16-bit or 32-bit integer to st(0) (FPU).
   inline void fiadd(const Mem& src)
@@ -2791,18 +2348,14 @@ struct X86Assembler : public Assembler
   //! This operation is not equivalent to popping the stack, because the tag
   //! for the previous top-of-stack register is not marked empty.
   inline void fincstp()
-  {
-    _emitInstruction(kX86InstFIncStP);
-  }
+  { _emitInstruction(kX86InstFIncStP); }
 
   //! @brief Initialize Floating-Point Unit (FPU).
   //!
   //! Initialize FPU after checking for pending unmasked floating-point
   //! exceptions.
   inline void finit()
-  {
-    _emitInstruction(kX86InstFInit);
-  }
+  { _emitInstruction(kX86InstFInit); }
 
   //! @brief Subtract 16-bit or 32-bit integer from st(0) and store result to
   //! st(0) (FPU).
@@ -2825,9 +2378,7 @@ struct X86Assembler : public Assembler
   //! Initialize FPU without checking for pending unmasked floating-point
   //! exceptions.
   inline void fninit()
-  {
-    _emitInstruction(kX86InstFNInit);
-  }
+  { _emitInstruction(kX86InstFNInit); }
 
   //! @brief Store st(0) as 16-bit or 32-bit Integer to @a dst (FPU).
   inline void fist(const Mem& dst)
@@ -2854,63 +2405,43 @@ struct X86Assembler : public Assembler
 
   //! @brief Push @a reg onto the FPU register stack (FPU).
   inline void fld(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFLd, &reg);
-  }
+  { _emitInstruction(kX86InstFLd, &reg); }
 
   //! @brief Push +1.0 onto the FPU register stack (FPU).
   inline void fld1()
-  {
-    _emitInstruction(kX86InstFLd1);
-  }
+  { _emitInstruction(kX86InstFLd1); }
 
   //! @brief Push log2(10) onto the FPU register stack (FPU).
   inline void fldl2t()
-  {
-    _emitInstruction(kX86InstFLdL2T);
-  }
+  { _emitInstruction(kX86InstFLdL2T); }
 
   //! @brief Push log2(e) onto the FPU register stack (FPU).
   inline void fldl2e()
-  {
-    _emitInstruction(kX86InstFLdL2E);
-  }
+  { _emitInstruction(kX86InstFLdL2E); }
 
   //! @brief Push pi onto the FPU register stack (FPU).
   inline void fldpi()
-  {
-    _emitInstruction(kX86InstFLdPi);
-  }
+  { _emitInstruction(kX86InstFLdPi); }
 
   //! @brief Push log10(2) onto the FPU register stack (FPU).
   inline void fldlg2()
-  {
-    _emitInstruction(kX86InstFLdLg2);
-  }
+  { _emitInstruction(kX86InstFLdLg2); }
 
   //! @brief Push ln(2) onto the FPU register stack (FPU).
   inline void fldln2()
-  {
-    _emitInstruction(kX86InstFLdLn2);
-  }
+  { _emitInstruction(kX86InstFLdLn2); }
 
   //! @brief Push +0.0 onto the FPU register stack (FPU).
   inline void fldz()
-  {
-    _emitInstruction(kX86InstFLdZ);
-  }
+  { _emitInstruction(kX86InstFLdZ); }
 
   //! @brief Load x87 FPU Control Word (2 bytes) (FPU).
   inline void fldcw(const Mem& src)
-  {
-    _emitInstruction(kX86InstFLdCw, &src);
-  }
+  { _emitInstruction(kX86InstFLdCw, &src); }
 
   //! @brief Load x87 FPU Environment (14 or 28 bytes) (FPU).
   inline void fldenv(const Mem& src)
-  {
-    _emitInstruction(kX86InstFLdEnv, &src);
-  }
+  { _emitInstruction(kX86InstFLdEnv, &src); }
 
   //! @brief Multiply @a dst by @a src and store result in @a dst (FPU).
   //!
@@ -2924,15 +2455,11 @@ struct X86Assembler : public Assembler
   //!
   //! @note SP-FP or DP-FP determined by @a adr size.
   inline void fmul(const Mem& src)
-  {
-    _emitInstruction(kX86InstFMul, &src);
-  }
+  { _emitInstruction(kX86InstFMul, &src); }
 
   //! @brief Multiply st(0) by @a dst and POP register stack (FPU).
   inline void fmulp(const X87Reg& dst = st(1))
-  {
-    _emitInstruction(kX86InstFMulP, &dst);
-  }
+  { _emitInstruction(kX86InstFMulP, &dst); }
 
   //! @brief Clear Exceptions (FPU).
   //!
@@ -2945,15 +2472,11 @@ struct X86Assembler : public Assembler
   //! not checks for and handles any pending unmasked floating-point exceptions
   //! before clearing the exception flags.
   inline void fnclex()
-  {
-    _emitInstruction(kX86InstFNClex);
-  }
+  { _emitInstruction(kX86InstFNClex); }
 
   //! @brief No Operation (FPU).
   inline void fnop()
-  {
-    _emitInstruction(kX86InstFNop);
-  }
+  { _emitInstruction(kX86InstFNop); }
 
   //! @brief Save FPU State (FPU).
   //!
@@ -2961,9 +2484,7 @@ struct X86Assembler : public Assembler
   //! checking for pending unmasked FP exceptions.
   //! Then re-initialize the FPU.
   inline void fnsave(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFNSave, &dst);
-  }
+  { _emitInstruction(kX86InstFNSave, &dst); }
 
   //! @brief Store x87 FPU Environment (FPU).
   //!
@@ -2971,18 +2492,14 @@ struct X86Assembler : public Assembler
   //! pending unmasked floating-point exceptions. Then mask all floating
   //! point exceptions.
   inline void fnstenv(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFNStEnv, &dst);
-  }
+  { _emitInstruction(kX86InstFNStEnv, &dst); }
 
   //! @brief Store x87 FPU Control Word (FPU).
   //!
   //! Store FPU control word to @a dst (2 Bytes) without checking for pending
   //! unmasked floating-point exceptions.
   inline void fnstcw(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFNStCw, &dst);
-  }
+  { _emitInstruction(kX86InstFNStCw, &dst); }
 
   //! @brief Store x87 FPU Status Word (2 Bytes) (FPU).
   inline void fnstsw(const GpReg& dst)
@@ -2992,58 +2509,44 @@ struct X86Assembler : public Assembler
   }
   //! @brief Store x87 FPU Status Word (2 Bytes) (FPU).
   inline void fnstsw(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFNStSw, &dst);
-  }
+  { _emitInstruction(kX86InstFNStSw, &dst); }
 
   //! @brief Partial Arctangent (FPU).
   //!
   //! Replace st(1) with arctan(st(1)/st(0)) and pop the register stack.
   inline void fpatan()
-  {
-    _emitInstruction(kX86InstFPAtan);
-  }
+  { _emitInstruction(kX86InstFPAtan); }
 
   //! @brief Partial Remainder (FPU).
   //!
   //! Replace st(0) with the remainder obtained from dividing st(0) by st(1).
   inline void fprem()
-  {
-    _emitInstruction(kX86InstFPRem);
-  }
+  { _emitInstruction(kX86InstFPRem); }
 
   //! @brief Partial Remainder (FPU).
   //!
   //! Replace st(0) with the IEEE remainder obtained from dividing st(0) by
   //! st(1).
   inline void fprem1()
-  {
-    _emitInstruction(kX86InstFPRem1);
-  }
+  { _emitInstruction(kX86InstFPRem1); }
 
   //! @brief Partial Tangent (FPU).
   //!
   //! Replace st(0) with its tangent and push 1 onto the FPU stack.
   inline void fptan()
-  {
-    _emitInstruction(kX86InstFPTan);
-  }
+  { _emitInstruction(kX86InstFPTan); }
 
   //! @brief Round to Integer (FPU).
   //!
   //! Rount st(0) to an Integer.
   inline void frndint()
-  {
-    _emitInstruction(kX86InstFRndInt);
-  }
+  { _emitInstruction(kX86InstFRndInt); }
 
   //! @brief Restore FPU State (FPU).
   //!
   //! Load FPU state from src (94 or 108 bytes).
   inline void frstor(const Mem& src)
-  {
-    _emitInstruction(kX86InstFRstor, &src);
-  }
+  { _emitInstruction(kX86InstFRstor, &src); }
 
   //! @brief Save FPU State (FPU).
   //!
@@ -3051,43 +2554,33 @@ struct X86Assembler : public Assembler
   //! pending unmasked FP exceptions. Then reinitialize
   //! the FPU.
   inline void fsave(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFSave, &dst);
-  }
+  { _emitInstruction(kX86InstFSave, &dst); }
 
   //! @brief Scale (FPU).
   //!
   //! Scale st(0) by st(1).
   inline void fscale()
-  {
-    _emitInstruction(kX86InstFScale);
-  }
+  { _emitInstruction(kX86InstFScale); }
 
   //! @brief Sine (FPU).
   //!
   //! This instruction calculates the sine of the source operand in
   //! register st(0) and stores the result in st(0).
   inline void fsin()
-  {
-    _emitInstruction(kX86InstFSin);
-  }
+  { _emitInstruction(kX86InstFSin); }
 
   //! @brief Sine and Cosine (FPU).
   //!
   //! Compute the sine and cosine of st(0); replace st(0) with
   //! the sine, and push the cosine onto the register stack.
   inline void fsincos()
-  {
-    _emitInstruction(kX86InstFSinCos);
-  }
+  { _emitInstruction(kX86InstFSinCos); }
 
   //! @brief Square Root (FPU).
   //!
   //! Calculates square root of st(0) and stores the result in st(0).
   inline void fsqrt()
-  {
-    _emitInstruction(kX86InstFSqrt);
-  }
+  { _emitInstruction(kX86InstFSqrt); }
 
   //! @brief Store Floating Point Value (FPU).
   //!
@@ -3102,9 +2595,7 @@ struct X86Assembler : public Assembler
   //!
   //! Store st(0) to @a reg.
   inline void fst(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFSt, &reg);
-  }
+  { _emitInstruction(kX86InstFSt, &reg); }
 
   //! @brief Store Floating Point Value and Pop Register Stack (FPU).
   //!
@@ -3120,18 +2611,14 @@ struct X86Assembler : public Assembler
   //!
   //! Store st(0) to @a reg and pop register stack.
   inline void fstp(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFStP, &reg);
-  }
+  { _emitInstruction(kX86InstFStP, &reg); }
 
   //! @brief Store x87 FPU Control Word (FPU).
   //!
   //! Store FPU control word to @a dst (2 Bytes) after checking for pending
   //! unmasked floating-point exceptions.
   inline void fstcw(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFStCw, &dst);
-  }
+  { _emitInstruction(kX86InstFStCw, &dst); }
 
   //! @brief Store x87 FPU Environment (FPU).
   //!
@@ -3139,9 +2626,7 @@ struct X86Assembler : public Assembler
   //! pending unmasked floating-point exceptions. Then mask all floating
   //! point exceptions.
   inline void fstenv(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFStEnv, &dst);
-  }
+  { _emitInstruction(kX86InstFStEnv, &dst); }
 
   //! @brief Store x87 FPU Status Word (2 Bytes) (FPU).
   inline void fstsw(const GpReg& dst)
@@ -3151,9 +2636,7 @@ struct X86Assembler : public Assembler
   }
   //! @brief Store x87 FPU Status Word (2 Bytes) (FPU).
   inline void fstsw(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFStSw, &dst);
-  }
+  { _emitInstruction(kX86InstFStSw, &dst); }
 
   //! @brief Subtract @a src from @a dst and store result in @a dst (FPU).
   //!
@@ -3174,9 +2657,7 @@ struct X86Assembler : public Assembler
 
   //! @brief Subtract st(0) from @a dst and POP register stack (FPU).
   inline void fsubp(const X87Reg& dst = st(1))
-  {
-    _emitInstruction(kX86InstFSubP, &dst);
-  }
+  { _emitInstruction(kX86InstFSubP, &dst); }
 
   //! @brief Reverse Subtract @a src from @a dst and store result in @a dst (FPU).
   //!
@@ -3198,53 +2679,37 @@ struct X86Assembler : public Assembler
 
   //! @brief Reverse Subtract st(0) from @a dst and POP register stack (FPU).
   inline void fsubrp(const X87Reg& dst = st(1))
-  {
-    _emitInstruction(kX86InstFSubRP, &dst);
-  }
+  { _emitInstruction(kX86InstFSubRP, &dst); }
 
   //! @brief Floating point test - Compare st(0) with 0.0. (FPU).
   inline void ftst()
-  {
-    _emitInstruction(kX86InstFTst);
-  }
+  { _emitInstruction(kX86InstFTst); }
 
   //! @brief Unordered Compare st(0) with @a reg (FPU).
   inline void fucom(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFUCom, &reg);
-  }
+  { _emitInstruction(kX86InstFUCom, &reg); }
 
   //! @brief Unordered Compare st(0) and @a reg, check for ordered values
   //! and Set EFLAGS (FPU).
   inline void fucomi(const X87Reg& reg)
-  {
-    _emitInstruction(kX86InstFUComI, &reg);
-  }
+  { _emitInstruction(kX86InstFUComI, &reg); }
 
   //! @brief UnorderedCompare st(0) and @a reg, Check for ordered values
   //! and Set EFLAGS and pop the stack (FPU).
   inline void fucomip(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFUComIP, &reg);
-  }
+  { _emitInstruction(kX86InstFUComIP, &reg); }
 
   //! @brief Unordered Compare st(0) with @a reg and pop register stack (FPU).
   inline void fucomp(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFUComP, &reg);
-  }
+  { _emitInstruction(kX86InstFUComP, &reg); }
 
   //! @brief Unordered compare st(0) with st(1) and pop register stack twice
   //! (FPU).
   inline void fucompp()
-  {
-    _emitInstruction(kX86InstFUComPP);
-  }
+  { _emitInstruction(kX86InstFUComPP); }
 
   inline void fwait()
-  {
-    _emitInstruction(kX86InstFWait);
-  }
+  { _emitInstruction(kX86InstFWait); }
 
   //! @brief Examine st(0) (FPU).
   //!
@@ -3252,17 +2717,13 @@ struct X86Assembler : public Assembler
   //! flags C0, C2, and C3 in the FPU status word to indicate the class of
   //! value or number in the register.
   inline void fxam()
-  {
-    _emitInstruction(kX86InstFXam);
-  }
+  { _emitInstruction(kX86InstFXam); }
 
   //! @brief Exchange Register Contents (FPU).
   //!
   //! Exchange content of st(0) with @a reg.
   inline void fxch(const X87Reg& reg = st(1))
-  {
-    _emitInstruction(kX86InstFXch, &reg);
-  }
+  { _emitInstruction(kX86InstFXch, &reg); }
 
   //! @brief Restore FP And MMX(tm) State And Streaming SIMD Extension State
   //! (FPU, MMX, SSE).
@@ -3270,9 +2731,7 @@ struct X86Assembler : public Assembler
   //! Load FP and MMX(tm) technology and Streaming SIMD Extension state from
   //! src (512 bytes).
   inline void fxrstor(const Mem& src)
-  {
-    _emitInstruction(kX86InstFXRstor, &src);
-  }
+  { _emitInstruction(kX86InstFXRstor, &src); }
 
   //! @brief Store FP and MMX(tm) State and Streaming SIMD Extension State
   //! (FPU, MMX, SSE).
@@ -3280,34 +2739,26 @@ struct X86Assembler : public Assembler
   //! Store FP and MMX(tm) technology state and Streaming SIMD Extension state
   //! to dst (512 bytes).
   inline void fxsave(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFXSave, &dst);
-  }
+  { _emitInstruction(kX86InstFXSave, &dst); }
 
   //! @brief Extract Exponent and Significand (FPU).
   //!
   //! Separate value in st(0) into exponent and significand, store exponent
   //! in st(0), and push the significand onto the register stack.
   inline void fxtract()
-  {
-    _emitInstruction(kX86InstFXtract);
-  }
+  { _emitInstruction(kX86InstFXtract); }
 
   //! @brief Compute y * log2(x).
   //!
   //! Replace st(1) with (st(1) * log2st(0)) and pop the register stack.
   inline void fyl2x()
-  {
-    _emitInstruction(kX86InstFYL2X);
-  }
+  { _emitInstruction(kX86InstFYL2X); }
 
   //! @brief Compute y * log_2(x+1).
   //!
   //! Replace st(1) with (st(1) * (log2st(0) + 1.0)) and pop the register stack.
   inline void fyl2xp1()
-  {
-    _emitInstruction(kX86InstFYL2XP1);
-  }
+  { _emitInstruction(kX86InstFYL2XP1); }
 
   // --------------------------------------------------------------------------
   // [MMX]
@@ -3315,584 +2766,372 @@ struct X86Assembler : public Assembler
 
   //! @brief Empty MMX state.
   inline void emms()
-  {
-    _emitInstruction(kX86InstEmms);
-  }
+  { _emitInstruction(kX86InstEmms); }
 
   //! @brief Move DWord (MMX).
   inline void movd(const Mem& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
   //! @brief Move DWord (MMX).
   inline void movd(const GpReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
   //! @brief Move DWord (MMX).
   inline void movd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
   //! @brief Move DWord (MMX).
   inline void movd(const MmReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
 
   //! @brief Move QWord (MMX).
   inline void movq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
   //! @brief Move QWord (MMX).
   inline void movq(const Mem& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #if defined(ASMJIT_X64)
   //! @brief Move QWord (MMX).
   inline void movq(const GpReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #endif
   //! @brief Move QWord (MMX).
   inline void movq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #if defined(ASMJIT_X64)
   //! @brief Move QWord (MMX).
   inline void movq(const MmReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #endif
 
   //! @brief Pack with Signed Saturation (MMX).
   inline void packsswb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPackSSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSWB, &dst, &src); }
   //! @brief Pack with Signed Saturation (MMX).
   inline void packsswb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackSSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSWB, &dst, &src); }
 
   //! @brief Pack with Signed Saturation (MMX).
   inline void packssdw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPackSSDW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSDW, &dst, &src); }
   //! @brief Pack with Signed Saturation (MMX).
   inline void packssdw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackSSDW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSDW, &dst, &src); }
 
   //! @brief Pack with Unsigned Saturation (MMX).
   inline void packuswb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPackUSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackUSWB, &dst, &src); }
   //! @brief Pack with Unsigned Saturation (MMX).
   inline void packuswb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackUSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackUSWB, &dst, &src); }
 
   //! @brief Packed BYTE Add (MMX).
   inline void paddb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddB, &dst, &src); }
   //! @brief Packed BYTE Add (MMX).
   inline void paddb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddB, &dst, &src); }
 
   //! @brief Packed WORD Add (MMX).
   inline void paddw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddW, &dst, &src); }
   //! @brief Packed WORD Add (MMX).
   inline void paddw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddW, &dst, &src); }
 
   //! @brief Packed DWORD Add (MMX).
   inline void paddd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddD, &dst, &src); }
   //! @brief Packed DWORD Add (MMX).
   inline void paddd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddD, &dst, &src); }
 
   //! @brief Packed Add with Saturation (MMX).
   inline void paddsb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSB, &dst, &src); }
   //! @brief Packed Add with Saturation (MMX).
   inline void paddsb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSB, &dst, &src); }
 
   //! @brief Packed Add with Saturation (MMX).
   inline void paddsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSW, &dst, &src); }
   //! @brief Packed Add with Saturation (MMX).
   inline void paddsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSW, &dst, &src); }
 
   //! @brief Packed Add Unsigned with Saturation (MMX).
   inline void paddusb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSB, &dst, &src); }
   //! @brief Packed Add Unsigned with Saturation (MMX).
   inline void paddusb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSB, &dst, &src); }
 
   //! @brief Packed Add Unsigned with Saturation (MMX).
   inline void paddusw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSW, &dst, &src); }
   //! @brief Packed Add Unsigned with Saturation (MMX).
   inline void paddusw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSW, &dst, &src); }
 
   //! @brief Logical AND (MMX).
   inline void pand(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAnd, &dst, &src); }
   //! @brief Logical AND (MMX).
   inline void pand(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAnd, &dst, &src); }
 
   //! @brief Logical AND Not (MMX).
   inline void pandn(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAndN, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAndN, &dst, &src); }
   //! @brief Logical AND Not (MMX).
   inline void pandn(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAndN, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAndN, &dst, &src); }
 
   //! @brief Packed Compare for Equal (BYTES) (MMX).
   inline void pcmpeqb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqB, &dst, &src); }
   //! @brief Packed Compare for Equal (BYTES) (MMX).
   inline void pcmpeqb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqB, &dst, &src); }
 
   //! @brief Packed Compare for Equal (WORDS) (MMX).
   inline void pcmpeqw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqW, &dst, &src); }
   //! @brief Packed Compare for Equal (WORDS) (MMX).
   inline void pcmpeqw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqW, &dst, &src); }
 
   //! @brief Packed Compare for Equal (DWORDS) (MMX).
   inline void pcmpeqd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqD, &dst, &src); }
   //! @brief Packed Compare for Equal (DWORDS) (MMX).
   inline void pcmpeqd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqD, &dst, &src); }
 
   //! @brief Packed Compare for Greater Than (BYTES) (MMX).
   inline void pcmpgtb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtB, &dst, &src); }
   //! @brief Packed Compare for Greater Than (BYTES) (MMX).
   inline void pcmpgtb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtB, &dst, &src); }
 
   //! @brief Packed Compare for Greater Than (WORDS) (MMX).
   inline void pcmpgtw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtW, &dst, &src); }
   //! @brief Packed Compare for Greater Than (WORDS) (MMX).
   inline void pcmpgtw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtW, &dst, &src); }
 
   //! @brief Packed Compare for Greater Than (DWORDS) (MMX).
   inline void pcmpgtd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtD, &dst, &src); }
   //! @brief Packed Compare for Greater Than (DWORDS) (MMX).
   inline void pcmpgtd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtD, &dst, &src); }
 
   //! @brief Packed Multiply High (MMX).
   inline void pmulhw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMulHW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHW, &dst, &src); }
   //! @brief Packed Multiply High (MMX).
   inline void pmulhw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulHW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHW, &dst, &src); }
 
   //! @brief Packed Multiply Low (MMX).
   inline void pmullw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMulLW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulLW, &dst, &src); }
   //! @brief Packed Multiply Low (MMX).
   inline void pmullw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulLW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulLW, &dst, &src); }
 
   //! @brief Bitwise Logical OR (MMX).
   inline void por(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPOr, &dst, &src); }
   //! @brief Bitwise Logical OR (MMX).
   inline void por(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPOr, &dst, &src); }
 
   //! @brief Packed Multiply and Add (MMX).
   inline void pmaddwd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMAddWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddWD, &dst, &src); }
   //! @brief Packed Multiply and Add (MMX).
   inline void pmaddwd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMAddWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddWD, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (MMX).
   inline void pslld(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSllD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllD, &dst, &src); }
   //! @brief Packed Shift Left Logical (MMX).
   inline void pslld(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSllD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllD, &dst, &src); }
   //! @brief Packed Shift Left Logical (MMX).
   inline void pslld(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllD, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (MMX).
   inline void psllq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSllQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllQ, &dst, &src); }
   //! @brief Packed Shift Left Logical (MMX).
   inline void psllq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSllQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllQ, &dst, &src); }
   //! @brief Packed Shift Left Logical (MMX).
   inline void psllq(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllQ, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (MMX).
   inline void psllw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSllW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllW, &dst, &src); }
   //! @brief Packed Shift Left Logical (MMX).
   inline void psllw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSllW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllW, &dst, &src); }
   //! @brief Packed Shift Left Logical (MMX).
   inline void psllw(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllW, &dst, &src); }
 
   //! @brief Packed Shift Right Arithmetic (MMX).
   inline void psrad(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSraD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraD, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (MMX).
   inline void psrad(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSraD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraD, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (MMX).
   inline void psrad(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSraD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraD, &dst, &src); }
 
   //! @brief Packed Shift Right Arithmetic (MMX).
   inline void psraw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSraW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraW, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (MMX).
   inline void psraw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSraW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraW, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (MMX).
   inline void psraw(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSraW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraW, &dst, &src); }
 
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrld(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSrlD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlD, &dst, &src); }
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrld(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSrlD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlD, &dst, &src); }
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrld(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlD, &dst, &src); }
 
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrlq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSrlQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlQ, &dst, &src); }
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrlq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSrlQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlQ, &dst, &src); }
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrlq(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlQ, &dst, &src); }
 
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrlw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSrlW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlW, &dst, &src); }
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrlw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSrlW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlW, &dst, &src); }
   //! @brief Packed Shift Right Logical (MMX).
   inline void psrlw(const MmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlW, &dst, &src); }
 
   //! @brief Packed Subtract (MMX).
   inline void psubb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubB, &dst, &src); }
   //! @brief Packed Subtract (MMX).
   inline void psubb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubB, &dst, &src); }
 
   //! @brief Packed Subtract (MMX).
   inline void psubw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubW, &dst, &src); }
   //! @brief Packed Subtract (MMX).
   inline void psubw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubW, &dst, &src); }
 
   //! @brief Packed Subtract (MMX).
   inline void psubd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubD, &dst, &src); }
   //! @brief Packed Subtract (MMX).
   inline void psubd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubD, &dst, &src); }
 
   //! @brief Packed Subtract with Saturation (MMX).
   inline void psubsb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSB, &dst, &src); }
   //! @brief Packed Subtract with Saturation (MMX).
   inline void psubsb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSB, &dst, &src); }
 
   //! @brief Packed Subtract with Saturation (MMX).
   inline void psubsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSW, &dst, &src); }
   //! @brief Packed Subtract with Saturation (MMX).
   inline void psubsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSW, &dst, &src); }
 
   //! @brief Packed Subtract with Unsigned Saturation (MMX).
   inline void psubusb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSB, &dst, &src); }
   //! @brief Packed Subtract with Unsigned Saturation (MMX).
   inline void psubusb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSB, &dst, &src); }
 
   //! @brief Packed Subtract with Unsigned Saturation (MMX).
   inline void psubusw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSW, &dst, &src); }
   //! @brief Packed Subtract with Unsigned Saturation (MMX).
   inline void psubusw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSW, &dst, &src); }
 
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckhbw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHBW, &dst, &src); }
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckhbw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHBW, &dst, &src); }
 
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckhwd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHWD, &dst, &src); }
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckhwd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHWD, &dst, &src); }
 
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckhdq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHDQ, &dst, &src); }
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckhdq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHDQ, &dst, &src); }
 
   //! @brief Unpack High Packed Data (MMX).
   inline void punpcklbw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLBW, &dst, &src); }
   //! @brief Unpack High Packed Data (MMX).
   inline void punpcklbw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLBW, &dst, &src); }
 
   //! @brief Unpack High Packed Data (MMX).
   inline void punpcklwd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLWD, &dst, &src); }
   //! @brief Unpack High Packed Data (MMX).
   inline void punpcklwd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLWD, &dst, &src); }
 
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckldq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLDQ, &dst, &src); }
   //! @brief Unpack High Packed Data (MMX).
   inline void punpckldq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLDQ, &dst, &src); }
 
   //! @brief Bitwise Exclusive OR (MMX).
   inline void pxor(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPXor, &dst, &src); }
   //! @brief Bitwise Exclusive OR (MMX).
   inline void pxor(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPXor, &dst, &src); }
 
   // -------------------------------------------------------------------------
   // [3dNow]
@@ -3904,251 +3143,161 @@ struct X86Assembler : public Assembler
   //! CPU contains SSE2, it's better to use @c emms() ( @c femms() is mapped
   //! to @c emms() ).
   inline void femms()
-  {
-    _emitInstruction(kX86InstFEmms);
-  }
+  { _emitInstruction(kX86InstFEmms); }
 
   //! @brief Packed SP-FP to Integer Convert (3dNow!).
   inline void pf2id(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPF2ID, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPF2ID, &dst, &src); }
   //! @brief Packed SP-FP to Integer Convert (3dNow!).
   inline void pf2id(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPF2ID, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPF2ID, &dst, &src); }
 
   //! @brief  Packed SP-FP to Integer Word Convert (3dNow!).
   inline void pf2iw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPF2IW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPF2IW, &dst, &src); }
   //! @brief  Packed SP-FP to Integer Word Convert (3dNow!).
   inline void pf2iw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPF2IW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPF2IW, &dst, &src); }
 
   //! @brief Packed SP-FP Accumulate (3dNow!).
   inline void pfacc(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFAcc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFAcc, &dst, &src); }
   //! @brief Packed SP-FP Accumulate (3dNow!).
   inline void pfacc(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFAcc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFAcc, &dst, &src); }
 
   //! @brief Packed SP-FP Addition (3dNow!).
   inline void pfadd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFAdd, &dst, &src); }
   //! @brief Packed SP-FP Addition (3dNow!).
   inline void pfadd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFAdd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFAdd, &dst, &src); }
 
   //! @brief Packed SP-FP Compare - dst == src (3dNow!).
   inline void pfcmpeq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFCmpEQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFCmpEQ, &dst, &src); }
   //! @brief Packed SP-FP Compare - dst == src (3dNow!).
   inline void pfcmpeq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFCmpEQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFCmpEQ, &dst, &src); }
 
   //! @brief Packed SP-FP Compare - dst >= src (3dNow!).
   inline void pfcmpge(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFCmpGE, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFCmpGE, &dst, &src); }
   //! @brief Packed SP-FP Compare - dst >= src (3dNow!).
   inline void pfcmpge(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFCmpGE, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFCmpGE, &dst, &src); }
 
   //! @brief Packed SP-FP Compare - dst > src (3dNow!).
   inline void pfcmpgt(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFCmpGT, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFCmpGT, &dst, &src); }
   //! @brief Packed SP-FP Compare - dst > src (3dNow!).
   inline void pfcmpgt(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFCmpGT, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFCmpGT, &dst, &src); }
 
   //! @brief Packed SP-FP Maximum (3dNow!).
   inline void pfmax(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFMax, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFMax, &dst, &src); }
   //! @brief Packed SP-FP Maximum (3dNow!).
   inline void pfmax(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFMax, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFMax, &dst, &src); }
 
   //! @brief Packed SP-FP Minimum (3dNow!).
   inline void pfmin(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFMin, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFMin, &dst, &src); }
   //! @brief Packed SP-FP Minimum (3dNow!).
   inline void pfmin(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFMin, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFMin, &dst, &src); }
 
   //! @brief Packed SP-FP Multiply (3dNow!).
   inline void pfmul(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFMul, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFMul, &dst, &src); }
   //! @brief Packed SP-FP Multiply (3dNow!).
   inline void pfmul(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFMul, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFMul, &dst, &src); }
 
   //! @brief Packed SP-FP Negative Accumulate (3dNow!).
   inline void pfnacc(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFNAcc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFNAcc, &dst, &src); }
   //! @brief Packed SP-FP Negative Accumulate (3dNow!).
   inline void pfnacc(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFNAcc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFNAcc, &dst, &src); }
 
   //! @brief Packed SP-FP Mixed Accumulate (3dNow!).
   inline void pfpnacc(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFPNAcc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFPNAcc, &dst, &src); }
   //! @brief Packed SP-FP Mixed Accumulate (3dNow!).
   inline void pfpnacc(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFPNAcc, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFPNAcc, &dst, &src); }
 
   //! @brief Packed SP-FP Reciprocal Approximation (3dNow!).
   inline void pfrcp(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFRcp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRcp, &dst, &src); }
   //! @brief Packed SP-FP Reciprocal Approximation (3dNow!).
   inline void pfrcp(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFRcp, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRcp, &dst, &src); }
 
   //! @brief Packed SP-FP Reciprocal, First Iteration Step (3dNow!).
   inline void pfrcpit1(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFRcpIt1, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRcpIt1, &dst, &src); }
   //! @brief Packed SP-FP Reciprocal, First Iteration Step (3dNow!).
   inline void pfrcpit1(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFRcpIt1, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRcpIt1, &dst, &src); }
 
   //! @brief Packed SP-FP Reciprocal, Second Iteration Step (3dNow!).
   inline void pfrcpit2(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFRcpIt2, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRcpIt2, &dst, &src); }
   //! @brief Packed SP-FP Reciprocal, Second Iteration Step (3dNow!).
   inline void pfrcpit2(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFRcpIt2, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRcpIt2, &dst, &src); }
 
   //! @brief Packed SP-FP Reciprocal Square Root, First Iteration Step (3dNow!).
   inline void pfrsqit1(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFRSqIt1, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRSqIt1, &dst, &src); }
   //! @brief Packed SP-FP Reciprocal Square Root, First Iteration Step (3dNow!).
   inline void pfrsqit1(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFRSqIt1, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRSqIt1, &dst, &src); }
 
   //! @brief Packed SP-FP Reciprocal Square Root Approximation (3dNow!).
   inline void pfrsqrt(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFRSqrt, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRSqrt, &dst, &src); }
   //! @brief Packed SP-FP Reciprocal Square Root Approximation (3dNow!).
   inline void pfrsqrt(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFRSqrt, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFRSqrt, &dst, &src); }
 
   //! @brief Packed SP-FP Subtract (3dNow!).
   inline void pfsub(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFSub, &dst, &src); }
   //! @brief Packed SP-FP Subtract (3dNow!).
   inline void pfsub(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFSub, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFSub, &dst, &src); }
 
   //! @brief Packed SP-FP Reverse Subtract (3dNow!).
   inline void pfsubr(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPFSubR, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFSubR, &dst, &src); }
   //! @brief Packed SP-FP Reverse Subtract (3dNow!).
   inline void pfsubr(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPFSubR, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPFSubR, &dst, &src); }
 
   //! @brief Packed DWords to SP-FP (3dNow!).
   inline void pi2fd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPI2FD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPI2FD, &dst, &src); }
   //! @brief Packed DWords to SP-FP (3dNow!).
   inline void pi2fd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPI2FD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPI2FD, &dst, &src); }
 
   //! @brief Packed Words to SP-FP (3dNow!).
   inline void pi2fw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPI2FW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPI2FW, &dst, &src); }
   //! @brief Packed Words to SP-FP (3dNow!).
   inline void pi2fw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPI2FW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPI2FW, &dst, &src); }
 
   //! @brief Packed swap DWord (3dNow!)
   inline void pswapd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSwapD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSwapD, &dst, &src); }
   //! @brief Packed swap DWord (3dNow!)
   inline void pswapd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSwapD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSwapD, &dst, &src); }
 
   // --------------------------------------------------------------------------
   // [SSE]
@@ -4156,704 +3305,454 @@ struct X86Assembler : public Assembler
 
   //! @brief Packed SP-FP Add (SSE).
   inline void addps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAddPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddPS, &dst, &src); }
   //! @brief Packed SP-FP Add (SSE).
   inline void addps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAddPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Add (SSE).
   inline void addss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAddSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSS, &dst, &src); }
   //! @brief Scalar SP-FP Add (SSE).
   inline void addss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAddSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSS, &dst, &src); }
 
   //! @brief Bit-wise Logical And Not For SP-FP (SSE).
   inline void andnps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAndnPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndnPS, &dst, &src); }
   //! @brief Bit-wise Logical And Not For SP-FP (SSE).
   inline void andnps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAndnPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndnPS, &dst, &src); }
 
   //! @brief Bit-wise Logical And For SP-FP (SSE).
   inline void andps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAndPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndPS, &dst, &src); }
   //! @brief Bit-wise Logical And For SP-FP (SSE).
   inline void andps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAndPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndPS, &dst, &src); }
 
   //! @brief Packed SP-FP Compare (SSE).
   inline void cmpps(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpPS, &dst, &src, &imm8); }
   //! @brief Packed SP-FP Compare (SSE).
   inline void cmpps(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpPS, &dst, &src, &imm8); }
 
   //! @brief Compare Scalar SP-FP Values (SSE).
   inline void cmpss(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpSS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpSS, &dst, &src, &imm8); }
   //! @brief Compare Scalar SP-FP Values (SSE).
   inline void cmpss(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpSS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpSS, &dst, &src, &imm8); }
 
   //! @brief Scalar Ordered SP-FP Compare and Set EFLAGS (SSE).
   inline void comiss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstComISS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstComISS, &dst, &src); }
   //! @brief Scalar Ordered SP-FP Compare and Set EFLAGS (SSE).
   inline void comiss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstComISS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstComISS, &dst, &src); }
 
   //! @brief Packed Signed INT32 to Packed SP-FP Conversion (SSE).
   inline void cvtpi2ps(const XmmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPI2PS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPI2PS, &dst, &src); }
   //! @brief Packed Signed INT32 to Packed SP-FP Conversion (SSE).
   inline void cvtpi2ps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPI2PS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPI2PS, &dst, &src); }
 
   //! @brief Packed SP-FP to Packed INT32 Conversion (SSE).
   inline void cvtps2pi(const MmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPS2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPS2PI, &dst, &src); }
   //! @brief Packed SP-FP to Packed INT32 Conversion (SSE).
   inline void cvtps2pi(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPS2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPS2PI, &dst, &src); }
 
   //! @brief Scalar Signed INT32 to SP-FP Conversion (SSE).
   inline void cvtsi2ss(const XmmReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstCvtSI2SS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSI2SS, &dst, &src); }
   //! @brief Scalar Signed INT32 to SP-FP Conversion (SSE).
   inline void cvtsi2ss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtSI2SS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSI2SS, &dst, &src); }
 
   //! @brief Scalar SP-FP to Signed INT32 Conversion (SSE).
   inline void cvtss2si(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtSS2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSS2SI, &dst, &src); }
   //! @brief Scalar SP-FP to Signed INT32 Conversion (SSE).
   inline void cvtss2si(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtSS2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSS2SI, &dst, &src); }
 
   //! @brief Packed SP-FP to Packed INT32 Conversion (truncate) (SSE).
   inline void cvttps2pi(const MmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvttPS2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPS2PI, &dst, &src); }
   //! @brief Packed SP-FP to Packed INT32 Conversion (truncate) (SSE).
   inline void cvttps2pi(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvttPS2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPS2PI, &dst, &src); }
 
   //! @brief Scalar SP-FP to Signed INT32 Conversion (truncate) (SSE).
   inline void cvttss2si(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvttSS2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttSS2SI, &dst, &src); }
   //! @brief Scalar SP-FP to Signed INT32 Conversion (truncate) (SSE).
   inline void cvttss2si(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvttSS2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttSS2SI, &dst, &src); }
 
   //! @brief Packed SP-FP Divide (SSE).
   inline void divps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstDivPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivPS, &dst, &src); }
   //! @brief Packed SP-FP Divide (SSE).
   inline void divps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstDivPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Divide (SSE).
   inline void divss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstDivSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivSS, &dst, &src); }
   //! @brief Scalar SP-FP Divide (SSE).
   inline void divss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstDivSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivSS, &dst, &src); }
 
   //! @brief Load Streaming SIMD Extension Control/Status (SSE).
   inline void ldmxcsr(const Mem& src)
-  {
-    _emitInstruction(kX86InstLdMXCSR, &src);
-  }
+  { _emitInstruction(kX86InstLdMXCSR, &src); }
 
   //! @brief Byte Mask Write (SSE).
   //!
   //! @note The default memory location is specified by DS:EDI.
   inline void maskmovq(const MmReg& data, const MmReg& mask)
-  {
-    _emitInstruction(kX86InstMaskMovQ, &data, &mask);
-  }
+  { _emitInstruction(kX86InstMaskMovQ, &data, &mask); }
 
   //! @brief Packed SP-FP Maximum (SSE).
   inline void maxps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMaxPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxPS, &dst, &src); }
   //! @brief Packed SP-FP Maximum (SSE).
   inline void maxps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMaxPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Maximum (SSE).
   inline void maxss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMaxSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxSS, &dst, &src); }
   //! @brief Scalar SP-FP Maximum (SSE).
   inline void maxss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMaxSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxSS, &dst, &src); }
 
   //! @brief Packed SP-FP Minimum (SSE).
   inline void minps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMinPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinPS, &dst, &src); }
   //! @brief Packed SP-FP Minimum (SSE).
   inline void minps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMinPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Minimum (SSE).
   inline void minss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMinSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinSS, &dst, &src); }
   //! @brief Scalar SP-FP Minimum (SSE).
   inline void minss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMinSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinSS, &dst, &src); }
 
   //! @brief Move Aligned Packed SP-FP Values (SSE).
   inline void movaps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovAPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovAPS, &dst, &src); }
   //! @brief Move Aligned Packed SP-FP Values (SSE).
   inline void movaps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovAPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovAPS, &dst, &src); }
 
   //! @brief Move Aligned Packed SP-FP Values (SSE).
   inline void movaps(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovAPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovAPS, &dst, &src); }
 
   //! @brief Move DWord.
   inline void movd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
   //! @brief Move DWord.
   inline void movd(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
   //! @brief Move DWord.
   inline void movd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
   //! @brief Move DWord.
   inline void movd(const XmmReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovD, &dst, &src); }
 
   //! @brief Move QWord (SSE).
   inline void movq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
   //! @brief Move QWord (SSE).
   inline void movq(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #if defined(ASMJIT_X64)
   //! @brief Move QWord (SSE).
   inline void movq(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #endif // ASMJIT_X64
   //! @brief Move QWord (SSE).
   inline void movq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #if defined(ASMJIT_X64)
   //! @brief Move QWord (SSE).
   inline void movq(const XmmReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ, &dst, &src); }
 #endif // ASMJIT_X64
 
   //! @brief Move 64 Bits Non Temporal (SSE).
   inline void movntq(const Mem& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovNTQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovNTQ, &dst, &src); }
 
   //! @brief High to Low Packed SP-FP (SSE).
   inline void movhlps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovHLPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovHLPS, &dst, &src); }
 
   //! @brief Move High Packed SP-FP (SSE).
   inline void movhps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovHPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovHPS, &dst, &src); }
 
   //! @brief Move High Packed SP-FP (SSE).
   inline void movhps(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovHPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovHPS, &dst, &src); }
 
   //! @brief Move Low to High Packed SP-FP (SSE).
   inline void movlhps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovLHPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovLHPS, &dst, &src); }
 
   //! @brief Move Low Packed SP-FP (SSE).
   inline void movlps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovLPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovLPS, &dst, &src); }
 
   //! @brief Move Low Packed SP-FP (SSE).
   inline void movlps(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovLPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovLPS, &dst, &src); }
 
   //! @brief Move Aligned Four Packed SP-FP Non Temporal (SSE).
   inline void movntps(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovNTPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovNTPS, &dst, &src); }
 
   //! @brief Move Scalar SP-FP (SSE).
   inline void movss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSS, &dst, &src); }
 
   //! @brief Move Scalar SP-FP (SSE).
   inline void movss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSS, &dst, &src); }
 
   //! @brief Move Scalar SP-FP (SSE).
   inline void movss(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSS, &dst, &src); }
 
   //! @brief Move Unaligned Packed SP-FP Values (SSE).
   inline void movups(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovUPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovUPS, &dst, &src); }
   //! @brief Move Unaligned Packed SP-FP Values (SSE).
   inline void movups(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovUPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovUPS, &dst, &src); }
 
   //! @brief Move Unaligned Packed SP-FP Values (SSE).
   inline void movups(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovUPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovUPS, &dst, &src); }
 
   //! @brief Packed SP-FP Multiply (SSE).
   inline void mulps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMulPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulPS, &dst, &src); }
   //! @brief Packed SP-FP Multiply (SSE).
   inline void mulps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMulPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Multiply (SSE).
   inline void mulss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMulSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulSS, &dst, &src); }
   //! @brief Scalar SP-FP Multiply (SSE).
   inline void mulss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMulSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulSS, &dst, &src); }
 
   //! @brief Bit-wise Logical OR for SP-FP Data (SSE).
   inline void orps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstOrPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOrPS, &dst, &src); }
   //! @brief Bit-wise Logical OR for SP-FP Data (SSE).
   inline void orps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstOrPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOrPS, &dst, &src); }
 
   //! @brief Packed Average (SSE).
   inline void pavgb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAvgB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgB, &dst, &src); }
   //! @brief Packed Average (SSE).
   inline void pavgb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAvgB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgB, &dst, &src); }
 
   //! @brief Packed Average (SSE).
   inline void pavgw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAvgW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgW, &dst, &src); }
   //! @brief Packed Average (SSE).
   inline void pavgw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAvgW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgW, &dst, &src); }
 
   //! @brief Extract Word (SSE).
   inline void pextrw(const GpReg& dst, const MmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrW, &dst, &src, &imm8); }
 
   //! @brief Insert Word (SSE).
   inline void pinsrw(const MmReg& dst, const GpReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8); }
   //! @brief Insert Word (SSE).
   inline void pinsrw(const MmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8); }
 
   //! @brief Packed Signed Integer Word Maximum (SSE).
   inline void pmaxsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSW, &dst, &src); }
   //! @brief Packed Signed Integer Word Maximum (SSE).
   inline void pmaxsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSW, &dst, &src); }
 
   //! @brief Packed Unsigned Integer Byte Maximum (SSE).
   inline void pmaxub(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUB, &dst, &src); }
   //! @brief Packed Unsigned Integer Byte Maximum (SSE).
   inline void pmaxub(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUB, &dst, &src); }
 
   //! @brief Packed Signed Integer Word Minimum (SSE).
   inline void pminsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMinSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSW, &dst, &src); }
   //! @brief Packed Signed Integer Word Minimum (SSE).
   inline void pminsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSW, &dst, &src); }
 
   //! @brief Packed Unsigned Integer Byte Minimum (SSE).
   inline void pminub(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMinUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUB, &dst, &src); }
   //! @brief Packed Unsigned Integer Byte Minimum (SSE).
   inline void pminub(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUB, &dst, &src); }
 
   //! @brief Move Byte Mask To Integer (SSE).
   inline void pmovmskb(const GpReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMovMskB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovMskB, &dst, &src); }
 
   //! @brief Packed Multiply High Unsigned (SSE).
   inline void pmulhuw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMulHUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHUW, &dst, &src); }
   //! @brief Packed Multiply High Unsigned (SSE).
   inline void pmulhuw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulHUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHUW, &dst, &src); }
 
   //! @brief Packed Sum of Absolute Differences (SSE).
   inline void psadbw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSADBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSADBW, &dst, &src); }
   //! @brief Packed Sum of Absolute Differences (SSE).
   inline void psadbw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSADBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSADBW, &dst, &src); }
 
   //! @brief Packed Shuffle word (SSE).
   inline void pshufw(const MmReg& dst, const MmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufW, &dst, &src, &imm8); }
   //! @brief Packed Shuffle word (SSE).
   inline void pshufw(const MmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufW, &dst, &src, &imm8); }
 
   //! @brief Packed SP-FP Reciprocal (SSE).
   inline void rcpps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstRcpPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcpPS, &dst, &src); }
   //! @brief Packed SP-FP Reciprocal (SSE).
   inline void rcpps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstRcpPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcpPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Reciprocal (SSE).
   inline void rcpss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstRcpSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcpSS, &dst, &src); }
   //! @brief Scalar SP-FP Reciprocal (SSE).
   inline void rcpss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstRcpSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstRcpSS, &dst, &src); }
 
   //! @brief Prefetch (SSE).
   inline void prefetch(const Mem& mem, const Imm& hint)
-  {
-    _emitInstruction(kX86InstPrefetch, &mem, &hint);
-  }
+  { _emitInstruction(kX86InstPrefetch, &mem, &hint); }
 
   //! @brief Compute Sum of Absolute Differences (SSE).
   inline void psadbw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSADBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSADBW, &dst, &src); }
   //! @brief Compute Sum of Absolute Differences (SSE).
   inline void psadbw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSADBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSADBW, &dst, &src); }
 
   //! @brief Packed SP-FP Square Root Reciprocal (SSE).
   inline void rsqrtps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSqrtPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtPS, &dst, &src); }
   //! @brief Packed SP-FP Square Root Reciprocal (SSE).
   inline void rsqrtps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSqrtPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Square Root Reciprocal (SSE).
   inline void rsqrtss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSqrtSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtSS, &dst, &src); }
   //! @brief Scalar SP-FP Square Root Reciprocal (SSE).
   inline void rsqrtss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSqrtSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtSS, &dst, &src); }
 
   //! @brief Store fence (SSE).
   inline void sfence()
-  {
-    _emitInstruction(kX86InstSFence);
-  }
+  { _emitInstruction(kX86InstSFence); }
 
   //! @brief Shuffle SP-FP (SSE).
   inline void shufps(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstShufPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstShufPS, &dst, &src, &imm8); }
   //! @brief Shuffle SP-FP (SSE).
   inline void shufps(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstShufPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstShufPS, &dst, &src, &imm8); }
 
   //! @brief Packed SP-FP Square Root (SSE).
   inline void sqrtps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSqrtPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtPS, &dst, &src); }
   //! @brief Packed SP-FP Square Root (SSE).
   inline void sqrtps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSqrtPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Square Root (SSE).
   inline void sqrtss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSqrtSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtSS, &dst, &src); }
   //! @brief Scalar SP-FP Square Root (SSE).
   inline void sqrtss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSqrtSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtSS, &dst, &src); }
 
   //! @brief Store Streaming SIMD Extension Control/Status (SSE).
   inline void stmxcsr(const Mem& dst)
-  {
-    _emitInstruction(kX86InstStMXCSR, &dst);
-  }
+  { _emitInstruction(kX86InstStMXCSR, &dst); }
 
   //! @brief Packed SP-FP Subtract (SSE).
   inline void subps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSubPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubPS, &dst, &src); }
   //! @brief Packed SP-FP Subtract (SSE).
   inline void subps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSubPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubPS, &dst, &src); }
 
   //! @brief Scalar SP-FP Subtract (SSE).
   inline void subss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSubSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubSS, &dst, &src); }
   //! @brief Scalar SP-FP Subtract (SSE).
   inline void subss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSubSS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubSS, &dst, &src); }
 
   //! @brief Unordered Scalar SP-FP compare and set EFLAGS (SSE).
   inline void ucomiss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstUComISS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUComISS, &dst, &src); }
   //! @brief Unordered Scalar SP-FP compare and set EFLAGS (SSE).
   inline void ucomiss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstUComISS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUComISS, &dst, &src); }
 
   //! @brief Unpack High Packed SP-FP Data (SSE).
   inline void unpckhps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstUnpckHPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckHPS, &dst, &src); }
   //! @brief Unpack High Packed SP-FP Data (SSE).
   inline void unpckhps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstUnpckHPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckHPS, &dst, &src); }
 
   //! @brief Unpack Low Packed SP-FP Data (SSE).
   inline void unpcklps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstUnpckLPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckLPS, &dst, &src); }
   //! @brief Unpack Low Packed SP-FP Data (SSE).
   inline void unpcklps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstUnpckLPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckLPS, &dst, &src); }
 
   //! @brief Bit-wise Logical Xor for SP-FP Data (SSE).
   inline void xorps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstXorPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXorPS, &dst, &src); }
   //! @brief Bit-wise Logical Xor for SP-FP Data (SSE).
   inline void xorps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstXorPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXorPS, &dst, &src); }
 
   // --------------------------------------------------------------------------
   // [SSE2]
@@ -4861,1379 +3760,883 @@ struct X86Assembler : public Assembler
 
   //! @brief Packed DP-FP Add (SSE2).
   inline void addpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAddPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddPD, &dst, &src); }
   //! @brief Packed DP-FP Add (SSE2).
   inline void addpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAddPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddPD, &dst, &src); }
 
   //! @brief Scalar DP-FP Add (SSE2).
   inline void addsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAddSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSD, &dst, &src); }
   //! @brief Scalar DP-FP Add (SSE2).
   inline void addsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAddSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSD, &dst, &src); }
 
   //! @brief Bit-wise Logical And Not For DP-FP (SSE2).
   inline void andnpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAndnPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndnPD, &dst, &src); }
   //! @brief Bit-wise Logical And Not For DP-FP (SSE2).
   inline void andnpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAndnPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndnPD, &dst, &src); }
 
   //! @brief Bit-wise Logical And For DP-FP (SSE2).
   inline void andpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAndPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndPD, &dst, &src); }
   //! @brief Bit-wise Logical And For DP-FP (SSE2).
   inline void andpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAndPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAndPD, &dst, &src); }
 
   //! @brief Flush Cache Line (SSE2).
   inline void clflush(const Mem& mem)
-  {
-    _emitInstruction(kX86InstClFlush, &mem);
-  }
+  { _emitInstruction(kX86InstClFlush, &mem); }
 
   //! @brief Packed DP-FP Compare (SSE2).
   inline void cmppd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpPD, &dst, &src, &imm8); }
   //! @brief Packed DP-FP Compare (SSE2).
   inline void cmppd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpPD, &dst, &src, &imm8); }
 
   //! @brief Compare Scalar SP-FP Values (SSE2).
   inline void cmpsd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpSD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpSD, &dst, &src, &imm8); }
   //! @brief Compare Scalar SP-FP Values (SSE2).
   inline void cmpsd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstCmpSD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstCmpSD, &dst, &src, &imm8); }
 
   //! @brief Scalar Ordered DP-FP Compare and Set EFLAGS (SSE2).
   inline void comisd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstComISD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstComISD, &dst, &src); }
   //! @brief Scalar Ordered DP-FP Compare and Set EFLAGS (SSE2).
   inline void comisd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstComISD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstComISD, &dst, &src); }
 
   //! @brief Convert Packed Dword Integers to Packed DP-FP Values (SSE2).
   inline void cvtdq2pd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtDQ2PD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtDQ2PD, &dst, &src); }
   //! @brief Convert Packed Dword Integers to Packed DP-FP Values (SSE2).
   inline void cvtdq2pd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtDQ2PD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtDQ2PD, &dst, &src); }
 
   //! @brief Convert Packed Dword Integers to Packed SP-FP Values (SSE2).
   inline void cvtdq2ps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtDQ2PS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtDQ2PS, &dst, &src); }
   //! @brief Convert Packed Dword Integers to Packed SP-FP Values (SSE2).
   inline void cvtdq2ps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtDQ2PS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtDQ2PS, &dst, &src); }
 
   //! @brief Convert Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvtpd2dq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPD2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPD2DQ, &dst, &src); }
   //! @brief Convert Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvtpd2dq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPD2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPD2DQ, &dst, &src); }
 
   //! @brief Convert Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvtpd2pi(const MmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPD2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPD2PI, &dst, &src); }
   //! @brief Convert Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvtpd2pi(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPD2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPD2PI, &dst, &src); }
 
   //! @brief Convert Packed DP-FP Values to Packed SP-FP Values (SSE2).
   inline void cvtpd2ps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPD2PS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPD2PS, &dst, &src); }
   //! @brief Convert Packed DP-FP Values to Packed SP-FP Values (SSE2).
   inline void cvtpd2ps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPD2PS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPD2PS, &dst, &src); }
 
   //! @brief Convert Packed Dword Integers to Packed DP-FP Values (SSE2).
   inline void cvtpi2pd(const XmmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPI2PD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPI2PD, &dst, &src); }
   //! @brief Convert Packed Dword Integers to Packed DP-FP Values (SSE2).
   inline void cvtpi2pd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPI2PD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPI2PD, &dst, &src); }
 
   //! @brief Convert Packed SP-FP Values to Packed Dword Integers (SSE2).
   inline void cvtps2dq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPS2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPS2DQ, &dst, &src); }
   //! @brief Convert Packed SP-FP Values to Packed Dword Integers (SSE2).
   inline void cvtps2dq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPS2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPS2DQ, &dst, &src); }
 
   //! @brief Convert Packed SP-FP Values to Packed DP-FP Values (SSE2).
   inline void cvtps2pd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtPS2PD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPS2PD, &dst, &src); }
   //! @brief Convert Packed SP-FP Values to Packed DP-FP Values (SSE2).
   inline void cvtps2pd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtPS2PD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtPS2PD, &dst, &src); }
 
   //! @brief Convert Scalar DP-FP Value to Dword Integer (SSE2).
   inline void cvtsd2si(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtSD2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSD2SI, &dst, &src); }
   //! @brief Convert Scalar DP-FP Value to Dword Integer (SSE2).
   inline void cvtsd2si(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtSD2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSD2SI, &dst, &src); }
 
   //! @brief Convert Scalar DP-FP Value to Scalar SP-FP Value (SSE2).
   inline void cvtsd2ss(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtSD2SS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSD2SS, &dst, &src); }
   //! @brief Convert Scalar DP-FP Value to Scalar SP-FP Value (SSE2).
   inline void cvtsd2ss(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtSD2SS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSD2SS, &dst, &src); }
 
   //! @brief Convert Dword Integer to Scalar DP-FP Value (SSE2).
   inline void cvtsi2sd(const XmmReg& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstCvtSI2SD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSI2SD, &dst, &src); }
   //! @brief Convert Dword Integer to Scalar DP-FP Value (SSE2).
   inline void cvtsi2sd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtSI2SD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSI2SD, &dst, &src); }
 
   //! @brief Convert Scalar SP-FP Value to Scalar DP-FP Value (SSE2).
   inline void cvtss2sd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvtSS2SD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSS2SD, &dst, &src); }
   //! @brief Convert Scalar SP-FP Value to Scalar DP-FP Value (SSE2).
   inline void cvtss2sd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvtSS2SD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvtSS2SD, &dst, &src); }
 
   //! @brief Convert with Truncation Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvttpd2pi(const MmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvttPD2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPD2PI, &dst, &src); }
   //! @brief Convert with Truncation Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvttpd2pi(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvttPD2PI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPD2PI, &dst, &src); }
 
   //! @brief Convert with Truncation Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvttpd2dq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvttPD2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPD2DQ, &dst, &src); }
   //! @brief Convert with Truncation Packed DP-FP Values to Packed Dword Integers (SSE2).
   inline void cvttpd2dq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvttPD2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPD2DQ, &dst, &src); }
 
   //! @brief Convert with Truncation Packed SP-FP Values to Packed Dword Integers (SSE2).
   inline void cvttps2dq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvttPS2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPS2DQ, &dst, &src); }
   //! @brief Convert with Truncation Packed SP-FP Values to Packed Dword Integers (SSE2).
   inline void cvttps2dq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvttPS2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttPS2DQ, &dst, &src); }
 
   //! @brief Convert with Truncation Scalar DP-FP Value to Signed Dword Integer (SSE2).
   inline void cvttsd2si(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstCvttSD2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttSD2SI, &dst, &src); }
   //! @brief Convert with Truncation Scalar DP-FP Value to Signed Dword Integer (SSE2).
   inline void cvttsd2si(const GpReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstCvttSD2SI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstCvttSD2SI, &dst, &src); }
 
   //! @brief Packed DP-FP Divide (SSE2).
   inline void divpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstDivPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivPD, &dst, &src); }
   //! @brief Packed DP-FP Divide (SSE2).
   inline void divpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstDivPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivPD, &dst, &src); }
 
   //! @brief Scalar DP-FP Divide (SSE2).
   inline void divsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstDivSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivSD, &dst, &src); }
   //! @brief Scalar DP-FP Divide (SSE2).
   inline void divsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstDivSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstDivSD, &dst, &src); }
 
   //! @brief Load Fence (SSE2).
   inline void lfence()
-  {
-    _emitInstruction(kX86InstLFence);
-  }
+  { _emitInstruction(kX86InstLFence); }
 
   //! @brief Store Selected Bytes of Double Quadword (SSE2).
   //!
   //! @note Target is DS:EDI.
   inline void maskmovdqu(const XmmReg& src, const XmmReg& mask)
-  {
-    _emitInstruction(kX86InstMaskMovDQU, &src, &mask);
-  }
+  { _emitInstruction(kX86InstMaskMovDQU, &src, &mask); }
 
   //! @brief Return Maximum Packed Double-Precision FP Values (SSE2).
   inline void maxpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMaxPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxPD, &dst, &src); }
   //! @brief Return Maximum Packed Double-Precision FP Values (SSE2).
   inline void maxpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMaxPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxPD, &dst, &src); }
 
   //! @brief Return Maximum Scalar Double-Precision FP Value (SSE2).
   inline void maxsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMaxSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxSD, &dst, &src); }
   //! @brief Return Maximum Scalar Double-Precision FP Value (SSE2).
   inline void maxsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMaxSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMaxSD, &dst, &src); }
 
   //! @brief Memory Fence (SSE2).
   inline void mfence()
-  {
-    _emitInstruction(kX86InstMFence);
-  }
+  { _emitInstruction(kX86InstMFence); }
 
   //! @brief Return Minimum Packed DP-FP Values (SSE2).
   inline void minpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMinPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinPD, &dst, &src); }
   //! @brief Return Minimum Packed DP-FP Values (SSE2).
   inline void minpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMinPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinPD, &dst, &src); }
 
   //! @brief Return Minimum Scalar DP-FP Value (SSE2).
   inline void minsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMinSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinSD, &dst, &src); }
   //! @brief Return Minimum Scalar DP-FP Value (SSE2).
   inline void minsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMinSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMinSD, &dst, &src); }
 
   //! @brief Move Aligned DQWord (SSE2).
   inline void movdqa(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovDQA, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQA, &dst, &src); }
   //! @brief Move Aligned DQWord (SSE2).
   inline void movdqa(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovDQA, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQA, &dst, &src); }
 
   //! @brief Move Aligned DQWord (SSE2).
   inline void movdqa(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovDQA, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQA, &dst, &src); }
 
   //! @brief Move Unaligned Double Quadword (SSE2).
   inline void movdqu(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovDQU, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQU, &dst, &src); }
   //! @brief Move Unaligned Double Quadword (SSE2).
   inline void movdqu(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovDQU, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQU, &dst, &src); }
 
   //! @brief Move Unaligned Double Quadword (SSE2).
   inline void movdqu(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovDQU, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQU, &dst, &src); }
 
   //! @brief Extract Packed SP-FP Sign Mask (SSE2).
   inline void movmskps(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovMskPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovMskPS, &dst, &src); }
 
   //! @brief Extract Packed DP-FP Sign Mask (SSE2).
   inline void movmskpd(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovMskPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovMskPD, &dst, &src); }
 
   //! @brief Move Scalar Double-Precision FP Value (SSE2).
   inline void movsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSD, &dst, &src); }
   //! @brief Move Scalar Double-Precision FP Value (SSE2).
   inline void movsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSD, &dst, &src); }
 
   //! @brief Move Scalar Double-Precision FP Value (SSE2).
   inline void movsd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSD, &dst, &src); }
 
   //! @brief Move Aligned Packed Double-Precision FP Values (SSE2).
   inline void movapd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovAPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovAPD, &dst, &src); }
 
   //! @brief Move Aligned Packed Double-Precision FP Values (SSE2).
   inline void movapd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovAPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovAPD, &dst, &src); }
 
   //! @brief Move Aligned Packed Double-Precision FP Values (SSE2).
   inline void movapd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovAPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovAPD, &dst, &src); }
 
   //! @brief Move Quadword from XMM to MMX Technology Register (SSE2).
   inline void movdq2q(const MmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovDQ2Q, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDQ2Q, &dst, &src); }
 
   //! @brief Move Quadword from MMX Technology to XMM Register (SSE2).
   inline void movq2dq(const XmmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstMovQ2DQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovQ2DQ, &dst, &src); }
 
   //! @brief Move High Packed Double-Precision FP Value (SSE2).
   inline void movhpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovHPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovHPD, &dst, &src); }
 
   //! @brief Move High Packed Double-Precision FP Value (SSE2).
   inline void movhpd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovHPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovHPD, &dst, &src); }
 
   //! @brief Move Low Packed Double-Precision FP Value (SSE2).
   inline void movlpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovLPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovLPD, &dst, &src); }
 
   //! @brief Move Low Packed Double-Precision FP Value (SSE2).
   inline void movlpd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovLPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovLPD, &dst, &src); }
 
   //! @brief Store Double Quadword Using Non-Temporal Hint (SSE2).
   inline void movntdq(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovNTDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovNTDQ, &dst, &src); }
 
   //! @brief Store Store DWORD Using Non-Temporal Hint (SSE2).
   inline void movnti(const Mem& dst, const GpReg& src)
-  {
-    _emitInstruction(kX86InstMovNTI, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovNTI, &dst, &src); }
 
   //! @brief Store Packed Double-Precision FP Values Using Non-Temporal Hint (SSE2).
   inline void movntpd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovNTPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovNTPD, &dst, &src); }
 
   //! @brief Move Unaligned Packed Double-Precision FP Values (SSE2).
   inline void movupd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovUPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovUPD, &dst, &src); }
 
   //! @brief Move Unaligned Packed Double-Precision FP Values (SSE2).
   inline void movupd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovUPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovUPD, &dst, &src); }
 
   //! @brief Move Unaligned Packed Double-Precision FP Values (SSE2).
   inline void movupd(const Mem& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovUPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovUPD, &dst, &src); }
 
   //! @brief Packed DP-FP Multiply (SSE2).
   inline void mulpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMulPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulPD, &dst, &src); }
   //! @brief Packed DP-FP Multiply (SSE2).
   inline void mulpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMulPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulPD, &dst, &src); }
 
   //! @brief Scalar DP-FP Multiply (SSE2).
   inline void mulsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMulSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulSD, &dst, &src); }
   //! @brief Scalar DP-FP Multiply (SSE2).
   inline void mulsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMulSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMulSD, &dst, &src); }
 
   //! @brief Bit-wise Logical OR for DP-FP Data (SSE2).
   inline void orpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstOrPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOrPD, &dst, &src); }
   //! @brief Bit-wise Logical OR for DP-FP Data (SSE2).
   inline void orpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstOrPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstOrPD, &dst, &src); }
 
   //! @brief Pack with Signed Saturation (SSE2).
   inline void packsswb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPackSSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSWB, &dst, &src); }
   //! @brief Pack with Signed Saturation (SSE2).
   inline void packsswb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackSSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSWB, &dst, &src); }
 
   //! @brief Pack with Signed Saturation (SSE2).
   inline void packssdw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPackSSDW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSDW, &dst, &src); }
   //! @brief Pack with Signed Saturation (SSE2).
   inline void packssdw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackSSDW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackSSDW, &dst, &src); }
 
   //! @brief Pack with Unsigned Saturation (SSE2).
   inline void packuswb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPackUSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackUSWB, &dst, &src); }
   //! @brief Pack with Unsigned Saturation (SSE2).
   inline void packuswb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackUSWB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackUSWB, &dst, &src); }
 
   //! @brief Packed BYTE Add (SSE2).
   inline void paddb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddB, &dst, &src); }
   //! @brief Packed BYTE Add (SSE2).
   inline void paddb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddB, &dst, &src); }
 
   //! @brief Packed WORD Add (SSE2).
   inline void paddw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddW, &dst, &src); }
   //! @brief Packed WORD Add (SSE2).
   inline void paddw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddW, &dst, &src); }
 
   //! @brief Packed DWORD Add (SSE2).
   inline void paddd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddD, &dst, &src); }
   //! @brief Packed DWORD Add (SSE2).
   inline void paddd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddD, &dst, &src); }
 
   //! @brief Packed QWORD Add (SSE2).
   inline void paddq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAddQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddQ, &dst, &src); }
   //! @brief Packed QWORD Add (SSE2).
   inline void paddq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddQ, &dst, &src); }
 
   //! @brief Packed QWORD Add (SSE2).
   inline void paddq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddQ, &dst, &src); }
   //! @brief Packed QWORD Add (SSE2).
   inline void paddq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddQ, &dst, &src); }
 
   //! @brief Packed Add with Saturation (SSE2).
   inline void paddsb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSB, &dst, &src); }
   //! @brief Packed Add with Saturation (SSE2).
   inline void paddsb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSB, &dst, &src); }
 
   //! @brief Packed Add with Saturation (SSE2).
   inline void paddsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSW, &dst, &src); }
   //! @brief Packed Add with Saturation (SSE2).
   inline void paddsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddSW, &dst, &src); }
 
   //! @brief Packed Add Unsigned with Saturation (SSE2).
   inline void paddusb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSB, &dst, &src); }
   //! @brief Packed Add Unsigned with Saturation (SSE2).
   inline void paddusb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSB, &dst, &src); }
 
   //! @brief Packed Add Unsigned with Saturation (SSE2).
   inline void paddusw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAddUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSW, &dst, &src); }
   //! @brief Packed Add Unsigned with Saturation (SSE2).
   inline void paddusw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAddUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAddUSW, &dst, &src); }
 
   //! @brief Logical AND (SSE2).
   inline void pand(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAnd, &dst, &src); }
   //! @brief Logical AND (SSE2).
   inline void pand(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAnd, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAnd, &dst, &src); }
 
   //! @brief Logical AND Not (SSE2).
   inline void pandn(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAndN, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAndN, &dst, &src); }
   //! @brief Logical AND Not (SSE2).
   inline void pandn(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAndN, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAndN, &dst, &src); }
 
   //! @brief Spin Loop Hint (SSE2).
   inline void pause()
-  {
-    _emitInstruction(kX86InstPause);
-  }
+  { _emitInstruction(kX86InstPause); }
 
   //! @brief Packed Average (SSE2).
   inline void pavgb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAvgB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgB, &dst, &src); }
   //! @brief Packed Average (SSE2).
   inline void pavgb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAvgB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgB, &dst, &src); }
 
   //! @brief Packed Average (SSE2).
   inline void pavgw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAvgW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgW, &dst, &src); }
   //! @brief Packed Average (SSE2).
   inline void pavgw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAvgW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAvgW, &dst, &src); }
 
   //! @brief Packed Compare for Equal (BYTES) (SSE2).
   inline void pcmpeqb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqB, &dst, &src); }
   //! @brief Packed Compare for Equal (BYTES) (SSE2).
   inline void pcmpeqb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqB, &dst, &src); }
 
   //! @brief Packed Compare for Equal (WORDS) (SSE2).
   inline void pcmpeqw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqW, &dst, &src); }
   //! @brief Packed Compare for Equal (WORDS) (SSE2).
   inline void pcmpeqw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqW, &dst, &src); }
 
   //! @brief Packed Compare for Equal (DWORDS) (SSE2).
   inline void pcmpeqd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqD, &dst, &src); }
   //! @brief Packed Compare for Equal (DWORDS) (SSE2).
   inline void pcmpeqd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqD, &dst, &src); }
 
   //! @brief Packed Compare for Greater Than (BYTES) (SSE2).
   inline void pcmpgtb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtB, &dst, &src); }
   //! @brief Packed Compare for Greater Than (BYTES) (SSE2).
   inline void pcmpgtb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtB, &dst, &src); }
 
   //! @brief Packed Compare for Greater Than (WORDS) (SSE2).
   inline void pcmpgtw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtW, &dst, &src); }
   //! @brief Packed Compare for Greater Than (WORDS) (SSE2).
   inline void pcmpgtw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtW, &dst, &src); }
 
   //! @brief Packed Compare for Greater Than (DWORDS) (SSE2).
   inline void pcmpgtd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtD, &dst, &src); }
   //! @brief Packed Compare for Greater Than (DWORDS) (SSE2).
   inline void pcmpgtd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtD, &dst, &src); }
 
   //! @brief Packed Signed Integer Word Maximum (SSE2).
   inline void pmaxsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSW, &dst, &src); }
   //! @brief Packed Signed Integer Word Maximum (SSE2).
   inline void pmaxsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSW, &dst, &src); }
 
   //! @brief Packed Unsigned Integer Byte Maximum (SSE2).
   inline void pmaxub(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUB, &dst, &src); }
   //! @brief Packed Unsigned Integer Byte Maximum (SSE2).
   inline void pmaxub(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUB, &dst, &src); }
 
   //! @brief Packed Signed Integer Word Minimum (SSE2).
   inline void pminsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMinSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSW, &dst, &src); }
   //! @brief Packed Signed Integer Word Minimum (SSE2).
   inline void pminsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSW, &dst, &src); }
 
   //! @brief Packed Unsigned Integer Byte Minimum (SSE2).
   inline void pminub(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMinUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUB, &dst, &src); }
   //! @brief Packed Unsigned Integer Byte Minimum (SSE2).
   inline void pminub(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinUB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUB, &dst, &src); }
 
   //! @brief Move Byte Mask (SSE2).
   inline void pmovmskb(const GpReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovMskB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovMskB, &dst, &src); }
 
   //! @brief Packed Multiply High (SSE2).
   inline void pmulhw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulHW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHW, &dst, &src); }
   //! @brief Packed Multiply High (SSE2).
   inline void pmulhw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulHW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHW, &dst, &src); }
 
   //! @brief Packed Multiply High Unsigned (SSE2).
   inline void pmulhuw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulHUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHUW, &dst, &src); }
   //! @brief Packed Multiply High Unsigned (SSE2).
   inline void pmulhuw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulHUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHUW, &dst, &src); }
 
   //! @brief Packed Multiply Low (SSE2).
   inline void pmullw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulLW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulLW, &dst, &src); }
   //! @brief Packed Multiply Low (SSE2).
   inline void pmullw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulLW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulLW, &dst, &src); }
 
   //! @brief Packed Multiply to QWORD (SSE2).
   inline void pmuludq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMulUDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulUDQ, &dst, &src); }
   //! @brief Packed Multiply to QWORD (SSE2).
   inline void pmuludq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulUDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulUDQ, &dst, &src); }
 
   //! @brief Packed Multiply to QWORD (SSE2).
   inline void pmuludq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulUDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulUDQ, &dst, &src); }
   //! @brief Packed Multiply to QWORD (SSE2).
   inline void pmuludq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulUDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulUDQ, &dst, &src); }
 
   //! @brief Bitwise Logical OR (SSE2).
   inline void por(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPOr, &dst, &src); }
   //! @brief Bitwise Logical OR (SSE2).
   inline void por(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPOr, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPOr, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (SSE2).
   inline void pslld(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSllD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllD, &dst, &src); }
   //! @brief Packed Shift Left Logical (SSE2).
   inline void pslld(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSllD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllD, &dst, &src); }
   //! @brief Packed Shift Left Logical (SSE2).
   inline void pslld(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllD, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (SSE2).
   inline void psllq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSllQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllQ, &dst, &src); }
   //! @brief Packed Shift Left Logical (SSE2).
   inline void psllq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSllQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllQ, &dst, &src); }
   //! @brief Packed Shift Left Logical (SSE2).
   inline void psllq(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllQ, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (SSE2).
   inline void psllw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSllW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllW, &dst, &src); }
   //! @brief Packed Shift Left Logical (SSE2).
   inline void psllw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSllW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllW, &dst, &src); }
   //! @brief Packed Shift Left Logical (SSE2).
   inline void psllw(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllW, &dst, &src); }
 
   //! @brief Packed Shift Left Logical (SSE2).
   inline void pslldq(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSllDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSllDQ, &dst, &src); }
 
   //! @brief Packed Shift Right Arithmetic (SSE2).
   inline void psrad(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSraD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraD, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (SSE2).
   inline void psrad(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSraD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraD, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (SSE2).
   inline void psrad(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSraD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraD, &dst, &src); }
 
   //! @brief Packed Shift Right Arithmetic (SSE2).
   inline void psraw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSraW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraW, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (SSE2).
   inline void psraw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSraW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraW, &dst, &src); }
   //! @brief Packed Shift Right Arithmetic (SSE2).
   inline void psraw(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSraW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSraW, &dst, &src); }
 
   //! @brief Packed Subtract (SSE2).
   inline void psubb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubB, &dst, &src); }
   //! @brief Packed Subtract (SSE2).
   inline void psubb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubB, &dst, &src); }
 
   //! @brief Packed Subtract (SSE2).
   inline void psubw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubW, &dst, &src); }
   //! @brief Packed Subtract (SSE2).
   inline void psubw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubW, &dst, &src); }
 
   //! @brief Packed Subtract (SSE2).
   inline void psubd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubD, &dst, &src); }
   //! @brief Packed Subtract (SSE2).
   inline void psubd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubD, &dst, &src); }
 
   //! @brief Packed Subtract (SSE2).
   inline void psubq(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSubQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubQ, &dst, &src); }
   //! @brief Packed Subtract (SSE2).
   inline void psubq(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubQ, &dst, &src); }
 
   //! @brief Packed Subtract (SSE2).
   inline void psubq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubQ, &dst, &src); }
   //! @brief Packed Subtract (SSE2).
   inline void psubq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubQ, &dst, &src); }
 
   //! @brief Packed Multiply and Add (SSE2).
   inline void pmaddwd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMAddWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddWD, &dst, &src); }
   //! @brief Packed Multiply and Add (SSE2).
   inline void pmaddwd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMAddWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddWD, &dst, &src); }
 
   //! @brief Shuffle Packed DWORDs (SSE2).
   inline void pshufd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufD, &dst, &src, &imm8); }
   //! @brief Shuffle Packed DWORDs (SSE2).
   inline void pshufd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufD, &dst, &src, &imm8); }
 
   //! @brief Shuffle Packed High Words (SSE2).
   inline void pshufhw(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufHW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufHW, &dst, &src, &imm8); }
   //! @brief Shuffle Packed High Words (SSE2).
   inline void pshufhw(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufHW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufHW, &dst, &src, &imm8); }
 
   //! @brief Shuffle Packed Low Words (SSE2).
   inline void pshuflw(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufLW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufLW, &dst, &src, &imm8); }
   //! @brief Shuffle Packed Low Words (SSE2).
   inline void pshuflw(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPShufLW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPShufLW, &dst, &src, &imm8); }
 
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrld(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSrlD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlD, &dst, &src); }
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrld(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSrlD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlD, &dst, &src); }
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrld(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlD, &dst, &src); }
 
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrlq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSrlQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlQ, &dst, &src); }
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrlq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSrlQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlQ, &dst, &src); }
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrlq(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlQ, &dst, &src); }
 
   //! @brief DQWord Shift Right Logical (MMX).
   inline void psrldq(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlDQ, &dst, &src); }
 
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrlw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSrlW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlW, &dst, &src); }
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrlw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSrlW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlW, &dst, &src); }
   //! @brief Packed Shift Right Logical (SSE2).
   inline void psrlw(const XmmReg& dst, const Imm& src)
-  {
-    _emitInstruction(kX86InstPSrlW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSrlW, &dst, &src); }
 
   //! @brief Packed Subtract with Saturation (SSE2).
   inline void psubsb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSB, &dst, &src); }
   //! @brief Packed Subtract with Saturation (SSE2).
   inline void psubsb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSB, &dst, &src); }
 
   //! @brief Packed Subtract with Saturation (SSE2).
   inline void psubsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSW, &dst, &src); }
   //! @brief Packed Subtract with Saturation (SSE2).
   inline void psubsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubSW, &dst, &src); }
 
   //! @brief Packed Subtract with Unsigned Saturation (SSE2).
   inline void psubusb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSB, &dst, &src); }
   //! @brief Packed Subtract with Unsigned Saturation (SSE2).
   inline void psubusb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubUSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSB, &dst, &src); }
 
   //! @brief Packed Subtract with Unsigned Saturation (SSE2).
   inline void psubusw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSubUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSW, &dst, &src); }
   //! @brief Packed Subtract with Unsigned Saturation (SSE2).
   inline void psubusw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSubUSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSubUSW, &dst, &src); }
 
   //! @brief Unpack High Data (SSE2).
   inline void punpckhbw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHBW, &dst, &src); }
   //! @brief Unpack High Data (SSE2).
   inline void punpckhbw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHBW, &dst, &src); }
 
   //! @brief Unpack High Data (SSE2).
   inline void punpckhwd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHWD, &dst, &src); }
   //! @brief Unpack High Data (SSE2).
   inline void punpckhwd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHWD, &dst, &src); }
 
   //! @brief Unpack High Data (SSE2).
   inline void punpckhdq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHDQ, &dst, &src); }
   //! @brief Unpack High Data (SSE2).
   inline void punpckhdq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHDQ, &dst, &src); }
 
   //! @brief Unpack High Data (SSE2).
   inline void punpckhqdq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckHQDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHQDQ, &dst, &src); }
   //! @brief Unpack High Data (SSE2).
   inline void punpckhqdq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckHQDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckHQDQ, &dst, &src); }
 
   //! @brief Unpack Low Data (SSE2).
   inline void punpcklbw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLBW, &dst, &src); }
   //! @brief Unpack Low Data (SSE2).
   inline void punpcklbw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLBW, &dst, &src); }
 
   //! @brief Unpack Low Data (SSE2).
   inline void punpcklwd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLWD, &dst, &src); }
   //! @brief Unpack Low Data (SSE2).
   inline void punpcklwd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLWD, &dst, &src); }
 
   //! @brief Unpack Low Data (SSE2).
   inline void punpckldq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLDQ, &dst, &src); }
   //! @brief Unpack Low Data (SSE2).
   inline void punpckldq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLDQ, &dst, &src); }
 
   //! @brief Unpack Low Data (SSE2).
   inline void punpcklqdq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPunpckLQDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLQDQ, &dst, &src); }
   //! @brief Unpack Low Data (SSE2).
   inline void punpcklqdq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPunpckLQDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPunpckLQDQ, &dst, &src); }
 
   //! @brief Bitwise Exclusive OR (SSE2).
   inline void pxor(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPXor, &dst, &src); }
   //! @brief Bitwise Exclusive OR (SSE2).
   inline void pxor(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPXor, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPXor, &dst, &src); }
 
   //! @brief Shuffle DP-FP (SSE2).
   inline void shufpd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstShufPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstShufPD, &dst, &src, &imm8); }
   //! @brief Shuffle DP-FP (SSE2).
   inline void shufpd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstShufPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstShufPD, &dst, &src, &imm8); }
 
   //! @brief Compute Square Roots of Packed DP-FP Values (SSE2).
   inline void sqrtpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSqrtPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtPD, &dst, &src); }
   //! @brief Compute Square Roots of Packed DP-FP Values (SSE2).
   inline void sqrtpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSqrtPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtPD, &dst, &src); }
 
   //! @brief Compute Square Root of Scalar DP-FP Value (SSE2).
   inline void sqrtsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSqrtSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtSD, &dst, &src); }
   //! @brief Compute Square Root of Scalar DP-FP Value (SSE2).
   inline void sqrtsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSqrtSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSqrtSD, &dst, &src); }
 
   //! @brief Packed DP-FP Subtract (SSE2).
   inline void subpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSubPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubPD, &dst, &src); }
   //! @brief Packed DP-FP Subtract (SSE2).
   inline void subpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSubPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubPD, &dst, &src); }
 
   //! @brief Scalar DP-FP Subtract (SSE2).
   inline void subsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstSubSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubSD, &dst, &src); }
   //! @brief Scalar DP-FP Subtract (SSE2).
   inline void subsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstSubSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstSubSD, &dst, &src); }
 
   //! @brief Scalar Unordered DP-FP Compare and Set EFLAGS (SSE2).
   inline void ucomisd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstUComISD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUComISD, &dst, &src); }
   //! @brief Scalar Unordered DP-FP Compare and Set EFLAGS (SSE2).
   inline void ucomisd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstUComISD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUComISD, &dst, &src); }
 
   //! @brief Unpack and Interleave High Packed Double-Precision FP Values (SSE2).
   inline void unpckhpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstUnpckHPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckHPD, &dst, &src); }
   //! @brief Unpack and Interleave High Packed Double-Precision FP Values (SSE2).
   inline void unpckhpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstUnpckHPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckHPD, &dst, &src); }
 
   //! @brief Unpack and Interleave Low Packed Double-Precision FP Values (SSE2).
   inline void unpcklpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstUnpckLPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckLPD, &dst, &src); }
   //! @brief Unpack and Interleave Low Packed Double-Precision FP Values (SSE2).
   inline void unpcklpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstUnpckLPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstUnpckLPD, &dst, &src); }
 
   //! @brief Bit-wise Logical OR for DP-FP Data (SSE2).
   inline void xorpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstXorPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXorPD, &dst, &src); }
   //! @brief Bit-wise Logical OR for DP-FP Data (SSE2).
   inline void xorpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstXorPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstXorPD, &dst, &src); }
 
   // --------------------------------------------------------------------------
   // [SSE3]
@@ -6241,126 +4644,82 @@ struct X86Assembler : public Assembler
 
   //! @brief Packed DP-FP Add/Subtract (SSE3).
   inline void addsubpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAddSubPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSubPD, &dst, &src); }
   //! @brief Packed DP-FP Add/Subtract (SSE3).
   inline void addsubpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAddSubPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSubPD, &dst, &src); }
 
   //! @brief Packed SP-FP Add/Subtract (SSE3).
   inline void addsubps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstAddSubPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSubPS, &dst, &src); }
   //! @brief Packed SP-FP Add/Subtract (SSE3).
   inline void addsubps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstAddSubPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstAddSubPS, &dst, &src); }
 
   //! @brief Store Integer with Truncation (SSE3).
   inline void fisttp(const Mem& dst)
-  {
-    _emitInstruction(kX86InstFISttP, &dst);
-  }
+  { _emitInstruction(kX86InstFISttP, &dst); }
 
   //! @brief Packed DP-FP Horizontal Add (SSE3).
   inline void haddpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstHAddPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHAddPD, &dst, &src); }
   //! @brief Packed DP-FP Horizontal Add (SSE3).
   inline void haddpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstHAddPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHAddPD, &dst, &src); }
 
   //! @brief Packed SP-FP Horizontal Add (SSE3).
   inline void haddps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstHAddPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHAddPS, &dst, &src); }
   //! @brief Packed SP-FP Horizontal Add (SSE3).
   inline void haddps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstHAddPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHAddPS, &dst, &src); }
 
   //! @brief Packed DP-FP Horizontal Subtract (SSE3).
   inline void hsubpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstHSubPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHSubPD, &dst, &src); }
   //! @brief Packed DP-FP Horizontal Subtract (SSE3).
   inline void hsubpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstHSubPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHSubPD, &dst, &src); }
 
   //! @brief Packed SP-FP Horizontal Subtract (SSE3).
   inline void hsubps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstHSubPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHSubPS, &dst, &src); }
   //! @brief Packed SP-FP Horizontal Subtract (SSE3).
   inline void hsubps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstHSubPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstHSubPS, &dst, &src); }
 
   //! @brief Load Unaligned Integer 128 Bits (SSE3).
   inline void lddqu(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstLdDQU, &dst, &src);
-  }
+  { _emitInstruction(kX86InstLdDQU, &dst, &src); }
 
   //! @brief Set Up Monitor Address (SSE3).
   inline void monitor()
-  {
-    _emitInstruction(kX86InstMonitor);
-  }
+  { _emitInstruction(kX86InstMonitor); }
 
   //! @brief Move One DP-FP and Duplicate (SSE3).
   inline void movddup(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovDDup, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDDup, &dst, &src); }
   //! @brief Move One DP-FP and Duplicate (SSE3).
   inline void movddup(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovDDup, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovDDup, &dst, &src); }
 
   //! @brief Move Packed SP-FP High and Duplicate (SSE3).
   inline void movshdup(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovSHDup, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSHDup, &dst, &src); }
   //! @brief Move Packed SP-FP High and Duplicate (SSE3).
   inline void movshdup(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovSHDup, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSHDup, &dst, &src); }
 
   //! @brief Move Packed SP-FP Low and Duplicate (SSE3).
   inline void movsldup(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstMovSLDup, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSLDup, &dst, &src); }
   //! @brief Move Packed SP-FP Low and Duplicate (SSE3).
   inline void movsldup(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovSLDup, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovSLDup, &dst, &src); }
 
   //! @brief Monitor Wait (SSE3).
   inline void mwait()
-  {
-    _emitInstruction(kX86InstMWait);
-  }
+  { _emitInstruction(kX86InstMWait); }
 
   // --------------------------------------------------------------------------
   // [SSSE3]
@@ -6368,355 +4727,227 @@ struct X86Assembler : public Assembler
 
   //! @brief Packed SIGN (SSSE3).
   inline void psignb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSignB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignB, &dst, &src); }
   //! @brief Packed SIGN (SSSE3).
   inline void psignb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSignB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignB, &dst, &src); }
 
   //! @brief Packed SIGN (SSSE3).
   inline void psignb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSignB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignB, &dst, &src); }
   //! @brief Packed SIGN (SSSE3).
   inline void psignb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSignB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignB, &dst, &src); }
 
   //! @brief Packed SIGN (SSSE3).
   inline void psignw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSignW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignW, &dst, &src); }
   //! @brief Packed SIGN (SSSE3).
   inline void psignw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSignW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignW, &dst, &src); }
 
   //! @brief Packed SIGN (SSSE3).
   inline void psignw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSignW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignW, &dst, &src); }
   //! @brief Packed SIGN (SSSE3).
   inline void psignw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSignW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignW, &dst, &src); }
 
   //! @brief Packed SIGN (SSSE3).
   inline void psignd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPSignD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignD, &dst, &src); }
   //! @brief Packed SIGN (SSSE3).
   inline void psignd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSignD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignD, &dst, &src); }
 
   //! @brief Packed SIGN (SSSE3).
   inline void psignd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPSignD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignD, &dst, &src); }
   //! @brief Packed SIGN (SSSE3).
   inline void psignd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPSignD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPSignD, &dst, &src); }
 
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPHAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddW, &dst, &src); }
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddW, &dst, &src); }
 
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddW, &dst, &src); }
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHAddW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddW, &dst, &src); }
 
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPHAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddD, &dst, &src); }
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddD, &dst, &src); }
 
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddD, &dst, &src); }
   //! @brief Packed Horizontal Add (SSSE3).
   inline void phaddd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHAddD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddD, &dst, &src); }
 
   //! @brief Packed Horizontal Add and Saturate (SSSE3).
   inline void phaddsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPHAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddSW, &dst, &src); }
   //! @brief Packed Horizontal Add and Saturate (SSSE3).
   inline void phaddsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddSW, &dst, &src); }
 
   //! @brief Packed Horizontal Add and Saturate (SSSE3).
   inline void phaddsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddSW, &dst, &src); }
   //! @brief Packed Horizontal Add and Saturate (SSSE3).
   inline void phaddsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHAddSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHAddSW, &dst, &src); }
 
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPHSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubW, &dst, &src); }
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubW, &dst, &src); }
 
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubW, &dst, &src); }
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHSubW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubW, &dst, &src); }
 
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPHSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubD, &dst, &src); }
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubD, &dst, &src); }
 
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubD, &dst, &src); }
   //! @brief Packed Horizontal Subtract (SSSE3).
   inline void phsubd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHSubD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubD, &dst, &src); }
 
   //! @brief Packed Horizontal Subtract and Saturate (SSSE3).
   inline void phsubsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPHSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubSW, &dst, &src); }
   //! @brief Packed Horizontal Subtract and Saturate (SSSE3).
   inline void phsubsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubSW, &dst, &src); }
 
   //! @brief Packed Horizontal Subtract and Saturate (SSSE3).
   inline void phsubsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubSW, &dst, &src); }
   //! @brief Packed Horizontal Subtract and Saturate (SSSE3).
   inline void phsubsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHSubSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHSubSW, &dst, &src); }
 
   //! @brief Multiply and Add Packed Signed and Unsigned Bytes (SSSE3).
   inline void pmaddubsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMAddUBSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddUBSW, &dst, &src); }
   //! @brief Multiply and Add Packed Signed and Unsigned Bytes (SSSE3).
   inline void pmaddubsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMAddUBSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddUBSW, &dst, &src); }
 
   //! @brief Multiply and Add Packed Signed and Unsigned Bytes (SSSE3).
   inline void pmaddubsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMAddUBSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddUBSW, &dst, &src); }
   //! @brief Multiply and Add Packed Signed and Unsigned Bytes (SSSE3).
   inline void pmaddubsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMAddUBSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMAddUBSW, &dst, &src); }
 
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAbsB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsB, &dst, &src); }
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAbsB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsB, &dst, &src); }
 
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAbsB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsB, &dst, &src); }
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAbsB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsB, &dst, &src); }
 
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAbsW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsW, &dst, &src); }
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAbsW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsW, &dst, &src); }
 
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAbsW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsW, &dst, &src); }
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAbsW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsW, &dst, &src); }
 
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsd(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPAbsD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsD, &dst, &src); }
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsd(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAbsD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsD, &dst, &src); }
 
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPAbsD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsD, &dst, &src); }
   //! @brief Packed Absolute Value (SSSE3).
   inline void pabsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPAbsD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPAbsD, &dst, &src); }
 
   //! @brief Packed Multiply High with Round and Scale (SSSE3).
   inline void pmulhrsw(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPMulHRSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHRSW, &dst, &src); }
   //! @brief Packed Multiply High with Round and Scale (SSSE3).
   inline void pmulhrsw(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulHRSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHRSW, &dst, &src); }
 
   //! @brief Packed Multiply High with Round and Scale (SSSE3).
   inline void pmulhrsw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulHRSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHRSW, &dst, &src); }
   //! @brief Packed Multiply High with Round and Scale (SSSE3).
   inline void pmulhrsw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulHRSW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulHRSW, &dst, &src); }
 
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void pshufb(const MmReg& dst, const MmReg& src)
-  {
-    _emitInstruction(kX86InstPShufB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPShufB, &dst, &src); }
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void pshufb(const MmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPShufB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPShufB, &dst, &src); }
 
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void pshufb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPShufB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPShufB, &dst, &src); }
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void pshufb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPShufB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPShufB, &dst, &src); }
 
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void palignr(const MmReg& dst, const MmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8); }
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void palignr(const MmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8); }
 
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void palignr(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8); }
   //! @brief Packed Shuffle Bytes (SSSE3).
   inline void palignr(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPAlignR, &dst, &src, &imm8); }
 
   // --------------------------------------------------------------------------
   // [SSE4.1]
@@ -6724,537 +4955,343 @@ struct X86Assembler : public Assembler
 
   //! @brief Blend Packed DP-FP Values (SSE4.1).
   inline void blendpd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstBlendPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstBlendPD, &dst, &src, &imm8); }
   //! @brief Blend Packed DP-FP Values (SSE4.1).
   inline void blendpd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstBlendPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstBlendPD, &dst, &src, &imm8); }
 
   //! @brief Blend Packed SP-FP Values (SSE4.1).
   inline void blendps(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstBlendPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstBlendPS, &dst, &src, &imm8); }
   //! @brief Blend Packed SP-FP Values (SSE4.1).
   inline void blendps(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstBlendPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstBlendPS, &dst, &src, &imm8); }
 
   //! @brief Variable Blend Packed DP-FP Values (SSE4.1).
   inline void blendvpd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstBlendVPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBlendVPD, &dst, &src); }
   //! @brief Variable Blend Packed DP-FP Values (SSE4.1).
   inline void blendvpd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstBlendVPD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBlendVPD, &dst, &src); }
 
   //! @brief Variable Blend Packed SP-FP Values (SSE4.1).
   inline void blendvps(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstBlendVPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBlendVPS, &dst, &src); }
   //! @brief Variable Blend Packed SP-FP Values (SSE4.1).
   inline void blendvps(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstBlendVPS, &dst, &src);
-  }
+  { _emitInstruction(kX86InstBlendVPS, &dst, &src); }
 
   //! @brief Dot Product of Packed DP-FP Values (SSE4.1).
   inline void dppd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstDpPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstDpPD, &dst, &src, &imm8); }
   //! @brief Dot Product of Packed DP-FP Values (SSE4.1).
   inline void dppd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstDpPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstDpPD, &dst, &src, &imm8); }
 
   //! @brief Dot Product of Packed SP-FP Values (SSE4.1).
   inline void dpps(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstDpPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstDpPS, &dst, &src, &imm8); }
   //! @brief Dot Product of Packed SP-FP Values (SSE4.1).
   inline void dpps(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstDpPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstDpPS, &dst, &src, &imm8); }
 
   //! @brief Extract Packed SP-FP Value (SSE4.1).
   inline void extractps(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstExtractPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstExtractPS, &dst, &src, &imm8); }
   //! @brief Extract Packed SP-FP Value (SSE4.1).
   inline void extractps(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstExtractPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstExtractPS, &dst, &src, &imm8); }
 
   //! @brief Load Double Quadword Non-Temporal Aligned Hint (SSE4.1).
   inline void movntdqa(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstMovNTDQA, &dst, &src);
-  }
+  { _emitInstruction(kX86InstMovNTDQA, &dst, &src); }
 
   //! @brief Compute Multiple Packed Sums of Absolute Difference (SSE4.1).
   inline void mpsadbw(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstMPSADBW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstMPSADBW, &dst, &src, &imm8); }
   //! @brief Compute Multiple Packed Sums of Absolute Difference (SSE4.1).
   inline void mpsadbw(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstMPSADBW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstMPSADBW, &dst, &src, &imm8); }
 
   //! @brief Pack with Unsigned Saturation (SSE4.1).
   inline void packusdw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPackUSDW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackUSDW, &dst, &src); }
   //! @brief Pack with Unsigned Saturation (SSE4.1).
   inline void packusdw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPackUSDW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPackUSDW, &dst, &src); }
 
   //! @brief Variable Blend Packed Bytes (SSE4.1).
   inline void pblendvb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPBlendVB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPBlendVB, &dst, &src); }
   //! @brief Variable Blend Packed Bytes (SSE4.1).
   inline void pblendvb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPBlendVB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPBlendVB, &dst, &src); }
 
   //! @brief Blend Packed Words (SSE4.1).
   inline void pblendw(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPBlendW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPBlendW, &dst, &src, &imm8); }
   //! @brief Blend Packed Words (SSE4.1).
   inline void pblendw(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPBlendW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPBlendW, &dst, &src, &imm8); }
 
   //! @brief Compare Packed Qword Data for Equal (SSE4.1).
   inline void pcmpeqq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpEqQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqQ, &dst, &src); }
   //! @brief Compare Packed Qword Data for Equal (SSE4.1).
   inline void pcmpeqq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpEqQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpEqQ, &dst, &src); }
 
   //! @brief Extract Byte (SSE4.1).
   inline void pextrb(const GpReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrB, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrB, &dst, &src, &imm8); }
   //! @brief Extract Byte (SSE4.1).
   inline void pextrb(const Mem& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrB, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrB, &dst, &src, &imm8); }
 
   //! @brief Extract Dword (SSE4.1).
   inline void pextrd(const GpReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrD, &dst, &src, &imm8); }
   //! @brief Extract Dword (SSE4.1).
   inline void pextrd(const Mem& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrD, &dst, &src, &imm8); }
 
   //! @brief Extract Dword (SSE4.1).
   inline void pextrq(const GpReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrQ, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrQ, &dst, &src, &imm8); }
   //! @brief Extract Dword (SSE4.1).
   inline void pextrq(const Mem& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrQ, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrQ, &dst, &src, &imm8); }
 
   //! @brief Extract Word (SSE4.1).
   inline void pextrw(const GpReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrW, &dst, &src, &imm8); }
   //! @brief Extract Word (SSE4.1).
   inline void pextrw(const Mem& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPExtrW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPExtrW, &dst, &src, &imm8); }
 
   //! @brief Packed Horizontal Word Minimum (SSE4.1).
   inline void phminposuw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPHMinPOSUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHMinPOSUW, &dst, &src); }
   //! @brief Packed Horizontal Word Minimum (SSE4.1).
   inline void phminposuw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPHMinPOSUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPHMinPOSUW, &dst, &src); }
 
   //! @brief Insert Byte (SSE4.1).
   inline void pinsrb(const XmmReg& dst, const GpReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRB, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRB, &dst, &src, &imm8); }
   //! @brief Insert Byte (SSE4.1).
   inline void pinsrb(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRB, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRB, &dst, &src, &imm8); }
 
   //! @brief Insert Dword (SSE4.1).
   inline void pinsrd(const XmmReg& dst, const GpReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRD, &dst, &src, &imm8); }
   //! @brief Insert Dword (SSE4.1).
   inline void pinsrd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRD, &dst, &src, &imm8); }
 
   //! @brief Insert Dword (SSE4.1).
   inline void pinsrq(const XmmReg& dst, const GpReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRQ, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRQ, &dst, &src, &imm8); }
   //! @brief Insert Dword (SSE4.1).
   inline void pinsrq(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRQ, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRQ, &dst, &src, &imm8); }
 
   //! @brief Insert Word (SSE2).
   inline void pinsrw(const XmmReg& dst, const GpReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8); }
   //! @brief Insert Word (SSE2).
   inline void pinsrw(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPInsRW, &dst, &src, &imm8); }
 
   //! @brief Maximum of Packed Word Integers (SSE4.1).
   inline void pmaxuw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUW, &dst, &src); }
   //! @brief Maximum of Packed Word Integers (SSE4.1).
   inline void pmaxuw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUW, &dst, &src); }
 
   //! @brief Maximum of Packed Signed Byte Integers (SSE4.1).
   inline void pmaxsb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSB, &dst, &src); }
   //! @brief Maximum of Packed Signed Byte Integers (SSE4.1).
   inline void pmaxsb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSB, &dst, &src); }
 
   //! @brief Maximum of Packed Signed Dword Integers (SSE4.1).
   inline void pmaxsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSD, &dst, &src); }
   //! @brief Maximum of Packed Signed Dword Integers (SSE4.1).
   inline void pmaxsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxSD, &dst, &src); }
 
   //! @brief Maximum of Packed Unsigned Dword Integers (SSE4.1).
   inline void pmaxud(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMaxUD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUD, &dst, &src); }
   //! @brief Maximum of Packed Unsigned Dword Integers (SSE4.1).
   inline void pmaxud(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMaxUD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMaxUD, &dst, &src); }
 
   //! @brief Minimum of Packed Signed Byte Integers (SSE4.1).
   inline void pminsb(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMinSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSB, &dst, &src); }
   //! @brief Minimum of Packed Signed Byte Integers (SSE4.1).
   inline void pminsb(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinSB, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSB, &dst, &src); }
 
   //! @brief Minimum of Packed Word Integers (SSE4.1).
   inline void pminuw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMinUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUW, &dst, &src); }
   //! @brief Minimum of Packed Word Integers (SSE4.1).
   inline void pminuw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinUW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUW, &dst, &src); }
 
   //! @brief Minimum of Packed Dword Integers (SSE4.1).
   inline void pminud(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMinUD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUD, &dst, &src); }
   //! @brief Minimum of Packed Dword Integers (SSE4.1).
   inline void pminud(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinUD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinUD, &dst, &src); }
 
   //! @brief Minimum of Packed Dword Integers (SSE4.1).
   inline void pminsd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMinSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSD, &dst, &src); }
   //! @brief Minimum of Packed Dword Integers (SSE4.1).
   inline void pminsd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMinSD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMinSD, &dst, &src); }
 
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxbw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovSXBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXBW, &dst, &src); }
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxbw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovSXBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXBW, &dst, &src); }
 
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxbd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovSXBD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXBD, &dst, &src); }
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxbd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovSXBD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXBD, &dst, &src); }
 
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxbq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovSXBQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXBQ, &dst, &src); }
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxbq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovSXBQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXBQ, &dst, &src); }
 
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxwd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovSXWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXWD, &dst, &src); }
   //! @brief Packed Move with Sign Extend (SSE4.1).
   inline void pmovsxwd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovSXWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXWD, &dst, &src); }
 
   //! @brief (SSE4.1).
   inline void pmovsxwq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovSXWQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXWQ, &dst, &src); }
   //! @brief (SSE4.1).
   inline void pmovsxwq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovSXWQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXWQ, &dst, &src); }
 
   //! @brief (SSE4.1).
   inline void pmovsxdq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovSXDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXDQ, &dst, &src); }
   //! @brief (SSE4.1).
   inline void pmovsxdq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovSXDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovSXDQ, &dst, &src); }
 
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxbw(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovZXBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXBW, &dst, &src); }
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxbw(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovZXBW, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXBW, &dst, &src); }
 
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxbd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovZXBD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXBD, &dst, &src); }
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxbd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovZXBD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXBD, &dst, &src); }
 
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxbq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovZXBQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXBQ, &dst, &src); }
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxbq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovZXBQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXBQ, &dst, &src); }
 
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxwd(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovZXWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXWD, &dst, &src); }
   //! @brief Packed Move with Zero Extend (SSE4.1).
   inline void pmovzxwd(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovZXWD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXWD, &dst, &src); }
 
   //! @brief (SSE4.1).
   inline void pmovzxwq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovZXWQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXWQ, &dst, &src); }
   //! @brief (SSE4.1).
   inline void pmovzxwq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovZXWQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXWQ, &dst, &src); }
 
   //! @brief (SSE4.1).
   inline void pmovzxdq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMovZXDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXDQ, &dst, &src); }
   //! @brief (SSE4.1).
   inline void pmovzxdq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMovZXDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMovZXDQ, &dst, &src); }
 
   //! @brief Multiply Packed Signed Dword Integers (SSE4.1).
   inline void pmuldq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulDQ, &dst, &src); }
   //! @brief Multiply Packed Signed Dword Integers (SSE4.1).
   inline void pmuldq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulDQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulDQ, &dst, &src); }
 
   //! @brief Multiply Packed Signed Integers and Store Low Result (SSE4.1).
   inline void pmulld(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPMulLD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulLD, &dst, &src); }
   //! @brief Multiply Packed Signed Integers and Store Low Result (SSE4.1).
   inline void pmulld(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPMulLD, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPMulLD, &dst, &src); }
 
   //! @brief Logical Compare (SSE4.1).
   inline void ptest(const XmmReg& op1, const XmmReg& op2)
-  {
-    _emitInstruction(kX86InstPTest, &op1, &op2);
-  }
+  { _emitInstruction(kX86InstPTest, &op1, &op2); }
   //! @brief Logical Compare (SSE4.1).
   inline void ptest(const XmmReg& op1, const Mem& op2)
-  {
-    _emitInstruction(kX86InstPTest, &op1, &op2);
-  }
+  { _emitInstruction(kX86InstPTest, &op1, &op2); }
 
   //! Round Packed SP-FP Values @brief (SSE4.1).
   inline void roundps(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundPS, &dst, &src, &imm8); }
   //! Round Packed SP-FP Values @brief (SSE4.1).
   inline void roundps(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundPS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundPS, &dst, &src, &imm8); }
 
   //! @brief Round Scalar SP-FP Values (SSE4.1).
   inline void roundss(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundSS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundSS, &dst, &src, &imm8); }
   //! @brief Round Scalar SP-FP Values (SSE4.1).
   inline void roundss(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundSS, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundSS, &dst, &src, &imm8); }
 
   //! @brief Round Packed DP-FP Values (SSE4.1).
   inline void roundpd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundPD, &dst, &src, &imm8); }
   //! @brief Round Packed DP-FP Values (SSE4.1).
   inline void roundpd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundPD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundPD, &dst, &src, &imm8); }
 
   //! @brief Round Scalar DP-FP Values (SSE4.1).
   inline void roundsd(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundSD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundSD, &dst, &src, &imm8); }
   //! @brief Round Scalar DP-FP Values (SSE4.1).
   inline void roundsd(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstRoundSD, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstRoundSD, &dst, &src, &imm8); }
 
   // --------------------------------------------------------------------------
   // [SSE4.2]
@@ -7275,58 +5312,38 @@ struct X86Assembler : public Assembler
 
   //! @brief Packed Compare Explicit Length Strings, Return Index (SSE4.2).
   inline void pcmpestri(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpEStrI, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpEStrI, &dst, &src, &imm8); }
   //! @brief Packed Compare Explicit Length Strings, Return Index (SSE4.2).
   inline void pcmpestri(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpEStrI, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpEStrI, &dst, &src, &imm8); }
 
   //! @brief Packed Compare Explicit Length Strings, Return Mask (SSE4.2).
   inline void pcmpestrm(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpEStrM, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpEStrM, &dst, &src, &imm8); }
   //! @brief Packed Compare Explicit Length Strings, Return Mask (SSE4.2).
   inline void pcmpestrm(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpEStrM, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpEStrM, &dst, &src, &imm8); }
 
   //! @brief Packed Compare Implicit Length Strings, Return Index (SSE4.2).
   inline void pcmpistri(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpIStrI, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpIStrI, &dst, &src, &imm8); }
   //! @brief Packed Compare Implicit Length Strings, Return Index (SSE4.2).
   inline void pcmpistri(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpIStrI, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpIStrI, &dst, &src, &imm8); }
 
   //! @brief Packed Compare Implicit Length Strings, Return Mask (SSE4.2).
   inline void pcmpistrm(const XmmReg& dst, const XmmReg& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpIStrM, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpIStrM, &dst, &src, &imm8); }
   //! @brief Packed Compare Implicit Length Strings, Return Mask (SSE4.2).
   inline void pcmpistrm(const XmmReg& dst, const Mem& src, const Imm& imm8)
-  {
-    _emitInstruction(kX86InstPCmpIStrM, &dst, &src, &imm8);
-  }
+  { _emitInstruction(kX86InstPCmpIStrM, &dst, &src, &imm8); }
 
   //! @brief Compare Packed Data for Greater Than (SSE4.2).
   inline void pcmpgtq(const XmmReg& dst, const XmmReg& src)
-  {
-    _emitInstruction(kX86InstPCmpGtQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtQ, &dst, &src); }
   //! @brief Compare Packed Data for Greater Than (SSE4.2).
   inline void pcmpgtq(const XmmReg& dst, const Mem& src)
-  {
-    _emitInstruction(kX86InstPCmpGtQ, &dst, &src);
-  }
+  { _emitInstruction(kX86InstPCmpGtQ, &dst, &src); }
 
   //! @brief Return the Count of Number of Bits Set to 1 (SSE4.2).
   inline void popcnt(const GpReg& dst, const GpReg& src)
@@ -7354,9 +5371,7 @@ struct X86Assembler : public Assembler
   //! irrelevant. If a cache hit occurs, or if a memory fault is detected,
   //! no bus cycle is initiated and the instruction is treated as a NOP.
   inline void amd_prefetch(const Mem& mem)
-  {
-    _emitInstruction(kX86InstAmdPrefetch, &mem);
-  }
+  { _emitInstruction(kX86InstAmdPrefetch, &mem); }
 
   //! @brief Prefetch and set cache to modified (3dNow - Amd).
   //!
@@ -7366,9 +5381,7 @@ struct X86Assembler : public Assembler
   //! sets the cache-line state to Exclusive (depending on the hardware
   //! implementation).
   inline void amd_prefetchw(const Mem& mem)
-  {
-    _emitInstruction(kX86InstAmdPrefetchW, &mem);
-  }
+  { _emitInstruction(kX86InstAmdPrefetchW, &mem); }
 
   // -------------------------------------------------------------------------
   // [Intel only]

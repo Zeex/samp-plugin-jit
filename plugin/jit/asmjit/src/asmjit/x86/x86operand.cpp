@@ -188,14 +188,14 @@ const SegmentReg gs(_Initialize(), kX86RegGs);
 // [AsmJit::Var]
 // ============================================================================
 
-Mem _BaseVarMem(const Var& var, uint32_t ptrSize) ASMJIT_NOTHROW
+Mem _BaseVarMem(const Var& var, uint32_t size)
 {
   Mem m; //(_DontInitialize());
 
   m._mem.op = kOperandMem;
-  m._mem.size = (ptrSize == kInvalidValue) ? var.getSize() : (uint8_t)ptrSize;
+  m._mem.size = static_cast<uint8_t>(size == kInvalidValue ? var.getSize() : size);
   m._mem.type = kOperandMemNative;
-  m._mem.segmentPrefix = kX86SegNone;
+  m._mem.segment = kX86SegNone;
   m._mem.sizePrefix = 0;
   m._mem.shift = 0;
 
@@ -210,14 +210,14 @@ Mem _BaseVarMem(const Var& var, uint32_t ptrSize) ASMJIT_NOTHROW
 }
 
 
-Mem _BaseVarMem(const Var& var, uint32_t ptrSize, sysint_t disp) ASMJIT_NOTHROW
+Mem _BaseVarMem(const Var& var, uint32_t size, sysint_t disp)
 {
   Mem m; //(_DontInitialize());
 
   m._mem.op = kOperandMem;
-  m._mem.size = (ptrSize == kInvalidValue) ? var.getSize() : (uint8_t)ptrSize;
+  m._mem.size = static_cast<uint8_t>(size == kInvalidValue ? var.getSize() : size);
   m._mem.type = kOperandMemNative;
-  m._mem.segmentPrefix = kX86SegNone;
+  m._mem.segment = kX86SegNone;
   m._mem.sizePrefix = 0;
   m._mem.shift = 0;
 
@@ -232,14 +232,14 @@ Mem _BaseVarMem(const Var& var, uint32_t ptrSize, sysint_t disp) ASMJIT_NOTHROW
   return m;
 }
 
-Mem _BaseVarMem(const Var& var, uint32_t ptrSize, const GpVar& index, uint32_t shift, sysint_t disp) ASMJIT_NOTHROW
+Mem _BaseVarMem(const Var& var, uint32_t size, const GpVar& index, uint32_t shift, sysint_t disp)
 {
   Mem m; //(_DontInitialize());
 
   m._mem.op = kOperandMem;
-  m._mem.size = (ptrSize == kInvalidValue) ? var.getSize() : (uint8_t)ptrSize;
+  m._mem.size = static_cast<uint8_t>(size == kInvalidValue ? var.getSize() : size);
   m._mem.type = kOperandMemNative;
-  m._mem.segmentPrefix = kX86SegNone;
+  m._mem.segment = kX86SegNone;
   m._mem.sizePrefix = 0;
   m._mem.shift = shift;
 
@@ -258,19 +258,14 @@ Mem _BaseVarMem(const Var& var, uint32_t ptrSize, const GpVar& index, uint32_t s
 // [AsmJit::Mem - ptr[]]
 // ============================================================================
 
-Mem _MemPtrBuild(
-  const Label& label, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const Label& label, sysint_t disp, uint32_t size)
 {
-  return Mem(label, disp, ptrSize);
+  return Mem(label, disp, size);
 }
 
-Mem _MemPtrBuild(
-  const Label& label,
-  const GpReg& index, uint32_t shift, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const Label& label, const GpReg& index, uint32_t shift, sysint_t disp, uint32_t size)
 {
-  Mem m(label, disp, ptrSize);
+  Mem m(label, disp, size);
 
   m._mem.index = index.getRegIndex();
   m._mem.shift = shift;
@@ -278,12 +273,9 @@ Mem _MemPtrBuild(
   return m;
 }
 
-Mem _MemPtrBuild(
-  const Label& label,
-  const GpVar& index, uint32_t shift, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const Label& label, const GpVar& index, uint32_t shift, sysint_t disp, uint32_t size)
 {
-  Mem m(label, disp, ptrSize);
+  Mem m(label, disp, size);
 
   m._mem.index = index.getId();
   m._mem.shift = shift;
@@ -295,16 +287,13 @@ Mem _MemPtrBuild(
 // [AsmJit::Mem - ptr[] - Absolute Addressing]
 // ============================================================================
 
-ASMJIT_API Mem _MemPtrAbs(
-  void* target, sysint_t disp,
-  uint32_t segmentPrefix, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+ASMJIT_API Mem ptr_abs(void* target, sysint_t disp, uint32_t size)
 {
   Mem m;
 
-  m._mem.size = ptrSize;
+  m._mem.size = size;
   m._mem.type = kOperandMemAbsolute;
-  m._mem.segmentPrefix = segmentPrefix;
+  m._mem.segment = kX86SegNone;
 
   m._mem.target = target;
   m._mem.displacement = disp;
@@ -312,18 +301,14 @@ ASMJIT_API Mem _MemPtrAbs(
   return m;
 }
 
-ASMJIT_API Mem _MemPtrAbs(
-  void* target,
-  const GpReg& index, uint32_t shift, sysint_t disp,
-  uint32_t segmentPrefix, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+ASMJIT_API Mem ptr_abs(void* target, const GpReg& index, uint32_t shift, sysint_t disp, uint32_t size)
 {
   Mem m;// (_DontInitialize());
 
   m._mem.op = kOperandMem;
-  m._mem.size = ptrSize;
+  m._mem.size = size;
   m._mem.type = kOperandMemAbsolute;
-  m._mem.segmentPrefix = (uint8_t)segmentPrefix;
+  m._mem.segment = kX86SegNone;
 
 #if defined(ASMJIT_X86)
   m._mem.sizePrefix = index.getSize() != 4;
@@ -343,18 +328,14 @@ ASMJIT_API Mem _MemPtrAbs(
   return m;
 }
 
-ASMJIT_API Mem _MemPtrAbs(
-  void* target,
-  const GpVar& index, uint32_t shift, sysint_t disp,
-  uint32_t segmentPrefix, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+ASMJIT_API Mem ptr_abs(void* target, const GpVar& index, uint32_t shift, sysint_t disp, uint32_t size)
 {
   Mem m;// (_DontInitialize());
 
   m._mem.op = kOperandMem;
-  m._mem.size = ptrSize;
+  m._mem.size = size;
   m._mem.type = kOperandMemAbsolute;
-  m._mem.segmentPrefix = (uint8_t)segmentPrefix;
+  m._mem.segment = kX86SegNone;
 
 #if defined(ASMJIT_X86)
   m._mem.sizePrefix = index.getSize() != 4;
@@ -378,34 +359,24 @@ ASMJIT_API Mem _MemPtrAbs(
 // [AsmJit::Mem - ptr[base + displacement]]
 // ============================================================================
 
-Mem _MemPtrBuild(
-  const GpReg& base, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const GpReg& base, sysint_t disp, uint32_t size)
 {
-  return Mem(base, disp, ptrSize);
+  return Mem(base, disp, size);
 }
 
-Mem _MemPtrBuild(
-  const GpReg& base,
-  const GpReg& index, uint32_t shift, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const GpReg& base, const GpReg& index, uint32_t shift, sysint_t disp, uint32_t size)
 {
-  return Mem(base, index, shift, disp, ptrSize);
+  return Mem(base, index, shift, disp, size);
 }
 
-Mem _MemPtrBuild(
-  const GpVar& base, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const GpVar& base, sysint_t disp, uint32_t size)
 {
-  return Mem(base, disp, ptrSize);
+  return Mem(base, disp, size);
 }
 
-Mem _MemPtrBuild(
-  const GpVar& base,
-  const GpVar& index, uint32_t shift, sysint_t disp, uint32_t ptrSize)
-  ASMJIT_NOTHROW
+Mem ptr(const GpVar& base, const GpVar& index, uint32_t shift, sysint_t disp, uint32_t size)
 {
-  return Mem(base, index, shift, disp, ptrSize);
+  return Mem(base, index, shift, disp, size);
 }
 
 } // AsmJit namespace

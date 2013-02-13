@@ -114,7 +114,7 @@ struct _OpMem
   //! @brief Memory operand type, see @c kOperandMemType.
   uint8_t type;
   //! @brief Segment override prefix, see @c kX86Seg.
-  uint8_t segmentPrefix : 4;
+  uint8_t segment : 4;
   //! @brief Emit MOV/LEA instruction using 16-bit/32-bit form of base/index
   //! registers.
   uint8_t sizePrefix : 1;
@@ -178,20 +178,20 @@ struct Operand
   // --------------------------------------------------------------------------
 
   //! @brief Create an uninitialized operand.
-  inline Operand() ASMJIT_NOTHROW
+  inline Operand()
   {
     memset(this, 0, sizeof(Operand));
     _base.id = kInvalidValue;
   }
 
   //! @brief Create a reference to @a other operand.
-  inline Operand(const Operand& other) ASMJIT_NOTHROW
+  inline Operand(const Operand& other)
   {
     _init(other);
   }
 
 #if !defined(ASMJIT_NODOC)
-  inline Operand(const _DontInitialize&) ASMJIT_NOTHROW {}
+  inline Operand(const _DontInitialize&) {}
 #endif // ASMJIT_NODOC
 
   // --------------------------------------------------------------------------
@@ -201,13 +201,13 @@ struct Operand
   //! @internal
   //!
   //! @brief Initialize operand to @a other (used by constructors).
-  inline void _init(const Operand& other) ASMJIT_NOTHROW
+  inline void _init(const Operand& other)
   { memcpy(this, &other, sizeof(Operand)); }
 
   //! @internal
   //!
   //! @brief Initialize operand to @a other (used by assign operators).
-  inline void _copy(const Operand& other) ASMJIT_NOTHROW
+  inline void _copy(const Operand& other)
   { memcpy(this, &other, sizeof(Operand)); }
 
   // --------------------------------------------------------------------------
@@ -225,55 +225,55 @@ struct Operand
   // --------------------------------------------------------------------------
 
   //! @brief Get type of the operand, see @c kOperandType.
-  inline uint32_t getType() const ASMJIT_NOTHROW
+  inline uint32_t getType() const
   { return _base.op; }
 
   //! @brief Get whether the operand is none (@c kOperandNone).
-  inline bool isNone() const ASMJIT_NOTHROW
+  inline bool isNone() const
   { return (_base.op == kOperandNone); }
 
   //! @brief Get whether the operand is any (general purpose, mmx or sse) register (@c kOperandReg).
-  inline bool isReg() const ASMJIT_NOTHROW
+  inline bool isReg() const
   { return (_base.op == kOperandReg); }
 
   //! @brief Get whether the operand is memory address (@c kOperandMem).
-  inline bool isMem() const ASMJIT_NOTHROW
+  inline bool isMem() const
   { return (_base.op == kOperandMem); }
 
   //! @brief Get whether the operand is immediate (@c kOperandImm).
-  inline bool isImm() const ASMJIT_NOTHROW
+  inline bool isImm() const
   { return (_base.op == kOperandImm); }
 
   //! @brief Get whether the operand is label (@c kOperandLabel).
-  inline bool isLabel() const ASMJIT_NOTHROW
+  inline bool isLabel() const
   { return (_base.op == kOperandLabel); }
 
   //! @brief Get whether the operand is variable (@c kOperandVar).
-  inline bool isVar() const ASMJIT_NOTHROW
+  inline bool isVar() const
   { return (_base.op == kOperandVar); }
 
   //! @brief Get whether the operand is variable or memory.
-  inline bool isVarMem() const ASMJIT_NOTHROW
+  inline bool isVarMem() const
   { return ((_base.op & (kOperandVar | kOperandMem)) != 0); }
 
   //! @brief Get whether the operand is register and type of register is @a regType.
-  inline bool isRegType(uint32_t regType) const ASMJIT_NOTHROW
+  inline bool isRegType(uint32_t regType) const
   { return (_base.op == kOperandReg) & ((_reg.code & kRegTypeMask) == regType); }
 
   //! @brief Get whether the operand is register and code of register is @a regCode.
-  inline bool isRegCode(uint32_t regCode) const ASMJIT_NOTHROW
+  inline bool isRegCode(uint32_t regCode) const
   { return (_base.op == kOperandReg) & (_reg.code == regCode); }
 
   //! @brief Get whether the operand is register and index of register is @a regIndex.
-  inline bool isRegIndex(uint32_t regIndex) const ASMJIT_NOTHROW
+  inline bool isRegIndex(uint32_t regIndex) const
   { return (_base.op == kOperandReg) & ((_reg.code & kRegIndexMask) == (regIndex & kRegIndexMask)); }
 
   //! @brief Get whether the operand is any register or memory.
-  inline bool isRegMem() const ASMJIT_NOTHROW
+  inline bool isRegMem() const
   { return ((_base.op & (kOperandReg | kOperandMem)) != 0); }
 
   //! @brief Get whether the operand is register of @a regType type or memory.
-  inline bool isRegTypeMem(uint32_t regType) const ASMJIT_NOTHROW
+  inline bool isRegTypeMem(uint32_t regType) const
   { return ((_base.op == kOperandReg) & ((_reg.code & kRegTypeMask) == regType)) | (_base.op == kOperandMem); }
 
   // --------------------------------------------------------------------------
@@ -281,7 +281,7 @@ struct Operand
   // --------------------------------------------------------------------------
 
   //! @brief Get size of the operand in bytes.
-  inline uint32_t getSize() const ASMJIT_NOTHROW
+  inline uint32_t getSize() const
   { return _base.size; }
 
   // --------------------------------------------------------------------------
@@ -293,7 +293,7 @@ struct Operand
   //!
   //! @note There is no way how to change or remove operand id. If you don't
   //! need the operand just assign different operand to this one.
-  inline uint32_t getId() const ASMJIT_NOTHROW
+  inline uint32_t getId() const
   { return _base.id; }
 
   // --------------------------------------------------------------------------
@@ -333,8 +333,7 @@ struct Reg : public Operand
   // --------------------------------------------------------------------------
 
   //! @brief Create a new base register.
-  inline Reg(uint32_t code, uint32_t size) ASMJIT_NOTHROW :
-    Operand(_DontInitialize())
+  inline Reg(uint32_t code, uint32_t size) : Operand(_DontInitialize())
   {
     _reg.op = kOperandReg;
     _reg.size = (uint8_t)size;
@@ -343,14 +342,10 @@ struct Reg : public Operand
   }
 
   //! @brief Create a new reference to @a other.
-  inline Reg(const Reg& other) ASMJIT_NOTHROW :
-    Operand(other)
-  {}
+  inline Reg(const Reg& other) : Operand(other) {}
 
 #if !defined(ASMJIT_NODOC)
-  inline Reg(const _DontInitialize& dontInitialize) ASMJIT_NOTHROW :
-    Operand(dontInitialize)
-  {}
+  inline Reg(const _DontInitialize& dontInitialize) : Operand(dontInitialize) {}
 #endif // ASMJIT_NODOC
 
   // --------------------------------------------------------------------------
@@ -358,48 +353,54 @@ struct Reg : public Operand
   // --------------------------------------------------------------------------
 
   //! @brief Get register code, see @c REG.
-  inline uint32_t getRegCode() const ASMJIT_NOTHROW
+  inline uint32_t getRegCode() const
   { return (uint32_t)(_reg.code); }
 
   //! @brief Get register type, see @c REG.
-  inline uint32_t getRegType() const ASMJIT_NOTHROW
+  inline uint32_t getRegType() const
   { return (uint32_t)(_reg.code & kRegTypeMask); }
 
   //! @brief Get register index (value from 0 to 7/15).
-  inline uint32_t getRegIndex() const ASMJIT_NOTHROW
+  inline uint32_t getRegIndex() const
   { return (uint32_t)(_reg.code & kRegIndexMask); }
 
   //! @brief Get whether register code is equal to @a code.
-  inline bool isRegCode(uint32_t code) const ASMJIT_NOTHROW
+  inline bool isRegCode(uint32_t code) const
   { return _reg.code == code; }
 
   //! @brief Get whether register code is equal to @a type.
-  inline bool isRegType(uint32_t type) const ASMJIT_NOTHROW
+  inline bool isRegType(uint32_t type) const
   { return (uint32_t)(_reg.code & kRegTypeMask) == type; }
 
   //! @brief Get whether register index is equal to @a index.
-  inline bool isRegIndex(uint32_t index) const ASMJIT_NOTHROW
+  inline bool isRegIndex(uint32_t index) const
   { return (uint32_t)(_reg.code & kRegIndexMask) == index; }
 
   //! @brief Set register code to @a code.
-  inline void setCode(uint32_t code) ASMJIT_NOTHROW
-  { _reg.code = code; }
+  inline Reg& setCode(uint32_t code)
+  {
+    _reg.code = code;
+    return *this;
+  }
 
   //! @brief Set register size to @a size.
-  inline void setSize(uint32_t size) ASMJIT_NOTHROW
-  { _reg.size = (uint8_t)size; }
+  inline Reg& setSize(uint32_t size)
+  {
+    _reg.size = static_cast<uint8_t>(size);
+    return *this;
+  }
 
   // --------------------------------------------------------------------------
   // [Operator Overload]
   // --------------------------------------------------------------------------
 
-  inline Reg& operator=(const Reg& other) ASMJIT_NOTHROW
+  inline Reg& operator=(const Reg& other)
   { _copy(other); return *this; }
 
-  inline bool operator==(const Reg& other) const ASMJIT_NOTHROW
+  inline bool operator==(const Reg& other) const
   { return getRegCode() == other.getRegCode(); }
 
-  inline bool operator!=(const Reg& other) const ASMJIT_NOTHROW
+  inline bool operator!=(const Reg& other) const
   { return getRegCode() != other.getRegCode(); }
 };
 
@@ -420,8 +421,7 @@ struct Imm : public Operand
   // --------------------------------------------------------------------------
 
   //! @brief Create a new immediate value (initial value is 0).
-  Imm() ASMJIT_NOTHROW :
-    Operand(_DontInitialize())
+  Imm() : Operand(_DontInitialize())
   {
     _imm.op = kOperandImm;
     _imm.size = 0;
@@ -433,8 +433,7 @@ struct Imm : public Operand
   }
 
   //! @brief Create a new signed immediate value, assigning the value to @a i.
-  Imm(sysint_t i) ASMJIT_NOTHROW :
-    Operand(_DontInitialize())
+  Imm(sysint_t i) : Operand(_DontInitialize())
   {
     _imm.op = kOperandImm;
     _imm.size = 0;
@@ -446,8 +445,7 @@ struct Imm : public Operand
   }
 
   //! @brief Create a new signed or unsigned immediate value, assigning the value to @a i.
-  Imm(sysint_t i, bool isUnsigned) ASMJIT_NOTHROW :
-    Operand(_DontInitialize())
+  Imm(sysint_t i, bool isUnsigned) : Operand(_DontInitialize())
   {
     _imm.op = kOperandImm;
     _imm.size = 0;
@@ -459,37 +457,40 @@ struct Imm : public Operand
   }
 
   //! @brief Create a new immediate value from @a other.
-  inline Imm(const Imm& other) ASMJIT_NOTHROW :
-    Operand(other) {}
+  inline Imm(const Imm& other) : Operand(other)
+  {
+  }
 
   // --------------------------------------------------------------------------
   // [Immediate Specific]
   // --------------------------------------------------------------------------
 
   //! @brief Get whether an immediate is unsigned value.
-  inline bool isUnsigned() const ASMJIT_NOTHROW
+  inline bool isUnsigned() const
   { return _imm.isUnsigned != 0; }
 
   //! @brief Get signed immediate value.
-  inline sysint_t getValue() const ASMJIT_NOTHROW
+  inline sysint_t getValue() const
   { return _imm.value; }
 
   //! @brief Get unsigned immediate value.
-  inline sysuint_t getUValue() const ASMJIT_NOTHROW
-  { return (sysuint_t)_imm.value; }
+  inline sysuint_t getUValue() const
+  { return static_cast<sysuint_t>(_imm.value); }
 
   //! @brief Set immediate value as signed type to @a val.
-  inline void setValue(sysint_t val, bool isUnsigned = false) ASMJIT_NOTHROW
+  inline Imm& setValue(sysint_t val, bool isUnsigned = false)
   {
     _imm.value = val;
     _imm.isUnsigned = isUnsigned;
+    return *this;
   }
 
   //! @brief Set immediate value as unsigned type to @a val.
-  inline void setUValue(sysuint_t val) ASMJIT_NOTHROW
+  inline Imm& setUValue(sysuint_t val)
   {
     _imm.value = (sysint_t)val;
     _imm.isUnsigned = true;
+    return *this;
   }
 
   // --------------------------------------------------------------------------
@@ -497,19 +498,19 @@ struct Imm : public Operand
   // --------------------------------------------------------------------------
 
   //! @brief Assign a signed value @a val to the immediate operand.
-  inline Imm& operator=(sysint_t val) ASMJIT_NOTHROW
+  inline Imm& operator=(sysint_t val)
   { setValue(val); return *this; }
 
   //! @brief Assign @a other to the immediate operand.
-  inline Imm& operator=(const Imm& other) ASMJIT_NOTHROW
+  inline Imm& operator=(const Imm& other)
   { _copy(other); return *this; }
 };
 
 //! @brief Create signed immediate value operand.
-ASMJIT_API Imm imm(sysint_t i) ASMJIT_NOTHROW;
+ASMJIT_API Imm imm(sysint_t i);
 
 //! @brief Create unsigned immediate value operand.
-ASMJIT_API Imm uimm(sysuint_t i) ASMJIT_NOTHROW;
+ASMJIT_API Imm uimm(sysuint_t i);
 
 // ============================================================================
 // [AsmJit::Label]
@@ -550,8 +551,7 @@ struct Label : public Operand
   // --------------------------------------------------------------------------
 
   //! @brief Create new, unassociated label.
-  inline Label() ASMJIT_NOTHROW : 
-    Operand(_DontInitialize())
+  inline Label() : Operand(_DontInitialize())
   {
     _lbl.op = kOperandLabel;
     _lbl.size = 0;
@@ -559,15 +559,10 @@ struct Label : public Operand
   }
 
   //! @brief Create reference to another label.
-  inline Label(const Label& other) ASMJIT_NOTHROW :
-    Operand(other)
-  {
-  }
+  inline Label(const Label& other) : Operand(other) {}
 
   //! @brief Destroy the label.
-  inline ~Label() ASMJIT_NOTHROW
-  {
-  }
+  inline ~Label() {}
 
   // --------------------------------------------------------------------------
   // [Operator Overload]
@@ -577,8 +572,8 @@ struct Label : public Operand
   inline Label& operator=(const Label& other)
   { _copy(other); return *this; }
 
-  inline bool operator==(const Label& other) const ASMJIT_NOTHROW { return _base.id == other._base.id; }
-  inline bool operator!=(const Label& other) const ASMJIT_NOTHROW { return _base.id != other._base.id; }
+  inline bool operator==(const Label& other) const { return _base.id == other._base.id; }
+  inline bool operator!=(const Label& other) const { return _base.id != other._base.id; }
 #endif // ASMJIT_NODOC
 };
 

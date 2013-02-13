@@ -1150,6 +1150,30 @@ struct X86Test_Var4 : public X86Test
 };
 
 // ============================================================================
+// [X86Test_Dummy]
+// ============================================================================
+
+struct X86Test_Dummy : public X86Test
+{
+  virtual const char* getName() const { return "Dummy - Used to write new tests"; }
+
+  virtual void compile(X86Compiler& c)
+  {
+    c.newFunc(kX86FuncConvDefault, FuncBuilder0<Void>());
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expected)
+  {
+    typedef void (*Func)(void);
+    Func func = asmjit_cast<Func>(_func);
+
+    func();
+    return true;
+  }
+};
+
+// ============================================================================
 // [X86TestSuite]
 // ============================================================================
 
@@ -1249,6 +1273,12 @@ X86TestSuite::X86TestSuite() :
   testList.append(new X86Test_Var2());
   testList.append(new X86Test_Var3());
   testList.append(new X86Test_Var4());
+
+  // --------------------------------------------------------------------------
+  // [Dummy]
+  // --------------------------------------------------------------------------
+
+  testList.append(new X86Test_Dummy());
 }
 
 X86TestSuite::~X86TestSuite()
@@ -1281,7 +1311,7 @@ void X86TestSuite::run()
 
     void *func = compiler.make();
 
-    // In case that compilation will fail then uncomment to log immediately
+    // In case that compilation fails uncomment this section to log immediately
     // after "compiler.make()".
     //
     // fprintf(stdout, "%s\n", logger.getString());

@@ -45,28 +45,28 @@ struct VirtualMemory
   //! Pages are readable/writeable, but they are not guaranteed to be
   //! executable unless 'canExecute' is true. Returns the address of
   //! allocated memory, or NULL if failed.
-  ASMJIT_API static void* alloc(size_t length, size_t* allocated, bool canExecute) ASMJIT_NOTHROW;
+  ASMJIT_API static void* alloc(size_t length, size_t* allocated, bool canExecute);
 
   //! @brief Free memory allocated by @c alloc()
-  ASMJIT_API static void free(void* addr, size_t length) ASMJIT_NOTHROW;
+  ASMJIT_API static void free(void* addr, size_t length);
 
 #if defined(ASMJIT_WINDOWS)
   //! @brief Allocate virtual memory of @a hProcess.
   //!
   //! @note This function is Windows specific.
-  ASMJIT_API static void* allocProcessMemory(HANDLE hProcess, size_t length, size_t* allocated, bool canExecute) ASMJIT_NOTHROW;
+  ASMJIT_API static void* allocProcessMemory(HANDLE hProcess, size_t length, size_t* allocated, bool canExecute);
 
   //! @brief Free virtual memory of @a hProcess.
   //!
   //! @note This function is Windows specific.
-  ASMJIT_API static void freeProcessMemory(HANDLE hProcess, void* addr, size_t length) ASMJIT_NOTHROW;
+  ASMJIT_API static void freeProcessMemory(HANDLE hProcess, void* addr, size_t length);
 #endif // ASMJIT_WINDOWS
 
   //! @brief Get the alignment guaranteed by alloc().
-  ASMJIT_API static size_t getAlignment() ASMJIT_NOTHROW;
+  ASMJIT_API static size_t getAlignment();
 
   //! @brief Get size of single page.
-  ASMJIT_API static size_t getPageSize() ASMJIT_NOTHROW;
+  ASMJIT_API static size_t getPageSize();
 };
 
 //! @}

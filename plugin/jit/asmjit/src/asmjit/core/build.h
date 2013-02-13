@@ -62,10 +62,6 @@
 // [AsmJit - API]
 // ============================================================================
 
-#if defined(ASMJIT_STATIC)
-# define ASMJIT_API
-#endif
-
 // Make AsmJit as shared library by default.
 #if !defined(ASMJIT_API)
 # if defined(ASMJIT_WINDOWS)
@@ -99,10 +95,6 @@
 #  define ASMJIT_VAR
 # endif // ASMJIT_API
 #endif // !ASMJIT_VAR
-
-#if !defined(ASMJIT_NOTHROW)
-#define ASMJIT_NOTHROW throw()
-#endif // ASMJIT_NOTHROW
 
 // [AsmJit - Memory Management]
 #if !defined(ASMJIT_MALLOC)
@@ -173,37 +165,34 @@ namespace AsmJit {
 // [AsmJit - Types]
 // ============================================================================
 
-#if defined(__GNUC__) || (defined(_MSC_VER) && _MSC_VER >= 1600)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+# include <sys/types.h>
+#endif // __MINGW32__ || __MINGW64__
 
-// Use <stdint.h>
-#include <stdint.h>
-#include <limits.h>
-
-#else
-
-// Use typedefs.
-#if defined(_MSC_VER)
-#if (_MSC_VER < 1300)
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+# if (_MSC_VER < 1300)
+typedef signed char int8_t;
+typedef signed short int16_t;
+typedef signed int int32_t;
+typedef signed __int64 int64_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
-typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
-#else
-typedef __int8 int8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef __int64 int64_t;
+# else
+typedef signed __int8 int8_t;
+typedef signed __int16 int16_t;
+typedef signed __int32 int32_t;
+typedef signed __int64 int64_t;
 typedef unsigned __int8 uint8_t;
 typedef unsigned __int16 uint16_t;
 typedef unsigned __int32 uint32_t;
 typedef unsigned __int64 uint64_t;
-#endif
-#endif // _MSC_VER
-#endif // STDINT.H
+# endif // _MSC_VER
+#else
+# include <stdint.h>
+# include <limits.h>
+#endif 
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -235,7 +224,8 @@ typedef uint64_t sysuint_t;
 #define ASMJIT_NO_COPY(__type__) \
 private: \
   inline __type__(const __type__& other); \
-  inline __type__& operator=(const __type__& other);
+  inline __type__& operator=(const __type__& other); \
+public:
 
 // ============================================================================
 // [AsmJit - Debug]
@@ -256,6 +246,8 @@ private: \
 // [AsmJit - Initialize/DontInitialize]
 // ============================================================================
 
+// TODO: This should be moved to AsmJit namespace!
+
 // Skip documenting this.
 #if !defined(ASMJIT_NODOC)
 struct _Initialize {};
@@ -265,6 +257,8 @@ struct _DontInitialize {};
 // ============================================================================
 // [AsmJit - Void]
 // ============================================================================
+
+// TODO: This should be moved to AsmJit namespace!
 
 //! @brief Void type which can be used in @ref FunctionDeclaration templates.
 struct Void {};
@@ -281,7 +275,7 @@ struct Void {};
 //! cross-platform software with various compiler support, consider using
 //! @c asmjit_cast<> instead of @c reinterpret_cast<>.
 template<typename T, typename Z>
-static inline T asmjit_cast(Z* p) ASMJIT_NOTHROW { return (T)p; }
+static inline T asmjit_cast(Z* p) { return (T)p; }
 
 // ============================================================================
 // [AsmJit - OS Support]

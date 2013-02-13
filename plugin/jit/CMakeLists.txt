@@ -2,7 +2,7 @@ include(AmxConfig)
 
 include_directories(asmjit/src)
 
-add_definitions(-DASMJIT_STATIC)
+add_definitions(-DASMJIT_API=)
 
 add_library(jit STATIC
   amxdisasm.cpp

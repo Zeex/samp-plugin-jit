@@ -18,7 +18,7 @@ namespace AsmJit {
 // [AsmJit::CompilerContext - Construction / Destruction]
 // ============================================================================
 
-CompilerContext::CompilerContext(Compiler* compiler) ASMJIT_NOTHROW :
+CompilerContext::CompilerContext(Compiler* compiler) :
   _zoneMemory(8192 - sizeof(ZoneChunk) - 32),
   _compiler(compiler),
   _func(NULL),
@@ -32,7 +32,7 @@ CompilerContext::CompilerContext(Compiler* compiler) ASMJIT_NOTHROW :
 {
 }
 
-CompilerContext::~CompilerContext() ASMJIT_NOTHROW
+CompilerContext::~CompilerContext()
 {
 }
 

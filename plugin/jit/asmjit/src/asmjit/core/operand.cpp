@@ -25,13 +25,13 @@ const Operand noOperand;
 // ============================================================================
 
 //! @brief Create signed immediate value operand.
-Imm imm(sysint_t i) ASMJIT_NOTHROW
+Imm imm(sysint_t i)
 { 
   return Imm(i, false);
 }
 
 //! @brief Create unsigned immediate value operand.
-Imm uimm(sysuint_t i) ASMJIT_NOTHROW
+Imm uimm(sysuint_t i)
 {
   return Imm((sysint_t)i, true);
 }

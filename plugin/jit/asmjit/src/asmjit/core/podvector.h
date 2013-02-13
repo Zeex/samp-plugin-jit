@@ -31,13 +31,15 @@ namespace AsmJit {
 template <typename T>
 struct PodVector
 {
+  ASMJIT_NO_COPY(PodVector<T>)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create new instance of PodVector template. Data will not
   //! be allocated (will be NULL).
-  inline PodVector() ASMJIT_NOTHROW :
+  inline PodVector() :
     _data(NULL),
     _length(0),
     _capacity(0)
@@ -45,7 +47,7 @@ struct PodVector
   }
   
   //! @brief Destroy PodVector and free all data.
-  inline ~PodVector() ASMJIT_NOTHROW
+  inline ~PodVector()
   {
     if (_data != NULL)
       ASMJIT_FREE(_data);
@@ -56,27 +58,27 @@ struct PodVector
   // --------------------------------------------------------------------------
 
   //! @brief Get data.
-  inline T* getData() ASMJIT_NOTHROW { return _data; }
+  inline T* getData() { return _data; }
   //! @overload
-  inline const T* getData() const ASMJIT_NOTHROW { return _data; }
+  inline const T* getData() const { return _data; }
 
   //! @brief Get length.
-  inline size_t getLength() const ASMJIT_NOTHROW { return _length; }
+  inline size_t getLength() const { return _length; }
   //! @brief Get capacity.
-  inline size_t getCapacity() const ASMJIT_NOTHROW { return _capacity; }
+  inline size_t getCapacity() const { return _capacity; }
 
   // --------------------------------------------------------------------------
   // [Manipulation]
   // --------------------------------------------------------------------------
 
   //! @brief Clear vector data, but not free internal buffer.
-  void clear() ASMJIT_NOTHROW
+  void clear()
   {
     _length = 0;
   }
 
   //! @brief Clear vector data and free internal buffer.
-  void reset() ASMJIT_NOTHROW
+  void reset()
   {
     if (_data != NULL) 
     {
@@ -88,7 +90,7 @@ struct PodVector
   }
 
   //! @brief Prepend @a item to vector.
-  bool prepend(const T& item) ASMJIT_NOTHROW
+  bool prepend(const T& item)
   {
     if (_length == _capacity && !_grow()) return false;
 
@@ -100,7 +102,7 @@ struct PodVector
   }
 
   //! @brief Insert an @a item at the @a index.
-  bool insert(size_t index, const T& item) ASMJIT_NOTHROW
+  bool insert(size_t index, const T& item)
   {
     ASMJIT_ASSERT(index <= _length);
     if (_length == _capacity && !_grow()) return false;
@@ -114,7 +116,7 @@ struct PodVector
   }
 
   //! @brief Append @a item to vector.
-  bool append(const T& item) ASMJIT_NOTHROW
+  bool append(const T& item)
   {
     if (_length == _capacity && !_grow()) return false;
 
@@ -125,7 +127,7 @@ struct PodVector
   }
 
   //! @brief Get index of @a val or kInvalidSize if not found.
-  size_t indexOf(const T& val) const ASMJIT_NOTHROW
+  size_t indexOf(const T& val) const
   {
     size_t i = 0, len = _length;
     for (i = 0; i < len; i++) { if (_data[i] == val) return i; }
@@ -133,7 +135,7 @@ struct PodVector
   }
 
   //! @brief Remove element at index @a i.
-  void removeAt(size_t i) ASMJIT_NOTHROW
+  void removeAt(size_t i)
   {
     ASMJIT_ASSERT(i < _length);
 
@@ -143,7 +145,7 @@ struct PodVector
   }
 
   //! @brief Swap this pod-vector with @a other.
-  void swap(PodVector<T>& other) ASMJIT_NOTHROW
+  void swap(PodVector<T>& other)
   {
     T* _tmp_data = _data;
     size_t _tmp_length = _length;
@@ -159,20 +161,20 @@ struct PodVector
   }
 
   //! @brief Get item at position @a i.
-  inline T& operator[](size_t i) ASMJIT_NOTHROW
+  inline T& operator[](size_t i)
   {
     ASMJIT_ASSERT(i < _length);
     return _data[i];
   }
   //! @brief Get item at position @a i.
-  inline const T& operator[](size_t i) const ASMJIT_NOTHROW
+  inline const T& operator[](size_t i) const
   {
     ASMJIT_ASSERT(i < _length);
     return _data[i];
   }
 
   //! @brief Append the item and return address so it can be initialized.
-  T* newItem() ASMJIT_NOTHROW
+  T* newItem()
   {
     if (_length == _capacity && !_grow()) return NULL;
     return _data + (_length++);
@@ -183,13 +185,13 @@ struct PodVector
   // --------------------------------------------------------------------------
 
   //! @brief Called to grow internal array.
-  bool _grow() ASMJIT_NOTHROW
+  bool _grow()
   {
     return _realloc(_capacity < 16 ? 16 : _capacity * 2);
   }
 
   //! @brief Realloc internal array to fit @a to items.
-  bool _realloc(size_t to) ASMJIT_NOTHROW
+  bool _realloc(size_t to)
   {
     ASMJIT_ASSERT(to >= _length);
 
@@ -213,8 +215,6 @@ struct PodVector
   size_t _length;
   //! @brief Capacity of buffer (maximum items that can fit to current array).
   size_t _capacity;
-
-  ASMJIT_NO_COPY(PodVector<T>)
 };
 
 //! @}

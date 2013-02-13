@@ -70,7 +70,7 @@ struct Buffer
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  inline Buffer() ASMJIT_NOTHROW :
+  inline Buffer() :
     _data(NULL),
     _cur(NULL),
     _max(NULL),
@@ -78,34 +78,34 @@ struct Buffer
   {
   }
 
-  inline ~Buffer() ASMJIT_NOTHROW
+  inline ~Buffer()
   {
     if (_data) ASMJIT_FREE(_data);
   }
 
   //! @brief Get start of buffer.
-  inline uint8_t* getData() const ASMJIT_NOTHROW { return _data; }
+  inline uint8_t* getData() const { return _data; }
 
   //! @brief Get current pointer in code buffer.
-  inline uint8_t* getCur() const ASMJIT_NOTHROW { return _cur; }
+  inline uint8_t* getCur() const { return _cur; }
 
   //! @brief Get maximum pointer in code buffer for growing.
-  inline uint8_t* getMax() const ASMJIT_NOTHROW { return _max; }
+  inline uint8_t* getMax() const { return _max; }
 
   //! @brief Get current offset in buffer.
-  inline size_t getOffset() const ASMJIT_NOTHROW { return (size_t)(_cur - _data); }
+  inline size_t getOffset() const { return (size_t)(_cur - _data); }
 
   //! @brief Get capacity of buffer.
-  inline size_t getCapacity() const ASMJIT_NOTHROW { return _capacity; }
+  inline size_t getCapacity() const { return _capacity; }
 
   //! @brief Ensure space for next instruction
-  inline bool ensureSpace() ASMJIT_NOTHROW { return (_cur >= _max) ? grow() : true; }
+  inline bool ensureSpace() { return (_cur >= _max) ? grow() : true; }
 
   //! @brief Sets offset to @a o and returns previous offset.
   //!
   //! This method can be used to truncate buffer or it's used to
   //! overwrite specific position in buffer by Assembler.
-  inline size_t toOffset(size_t offset) ASMJIT_NOTHROW
+  inline size_t toOffset(size_t offset)
   {
     ASMJIT_ASSERT(offset < _capacity);
 
@@ -118,29 +118,29 @@ struct Buffer
   //!
   //! It's only used for growing, buffer is never reallocated to smaller 
   //! number than current capacity() is.
-  ASMJIT_API bool realloc(size_t to) ASMJIT_NOTHROW;
+  ASMJIT_API bool realloc(size_t to);
 
   //! @brief Used to grow the buffer.
   //!
   //! It will typically realloc to twice size of capacity(), but if capacity()
   //! is large, it will use smaller steps.
-  ASMJIT_API bool grow() ASMJIT_NOTHROW;
+  ASMJIT_API bool grow();
 
   //! @brief Clear everything, but not deallocate buffer.
-  inline void clear() ASMJIT_NOTHROW { _cur = _data; }
+  inline void clear() { _cur = _data; }
 
   //! @brief Free buffer and NULL all pointers.
-  ASMJIT_API void reset() ASMJIT_NOTHROW;
+  ASMJIT_API void reset();
 
   //! @brief Take ownership of the buffer data and purge @c Buffer instance.
-  ASMJIT_API uint8_t* take() ASMJIT_NOTHROW;
+  ASMJIT_API uint8_t* take();
 
   // --------------------------------------------------------------------------
   // [Emit]
   // --------------------------------------------------------------------------
 
   //! @brief Emit Byte.
-  inline void emitByte(uint8_t x) ASMJIT_NOTHROW
+  inline void emitByte(uint8_t x)
   {
     ASMJIT_ASSERT(getOffset() + 1 <= _capacity);
 
@@ -148,7 +148,7 @@ struct Buffer
   }
 
   //! @brief Emit Word (2 bytes).
-  inline void emitWord(uint16_t x) ASMJIT_NOTHROW
+  inline void emitWord(uint16_t x)
   {
     ASMJIT_ASSERT(getOffset() + 2 <= _capacity);
 
@@ -157,7 +157,7 @@ struct Buffer
   }
 
   //! @brief Emit DWord (4 bytes).
-  inline void emitDWord(uint32_t x) ASMJIT_NOTHROW
+  inline void emitDWord(uint32_t x)
   {
     ASMJIT_ASSERT(getOffset() + 4 <= _capacity);
 
@@ -166,7 +166,7 @@ struct Buffer
   }
 
   //! @brief Emit QWord (8 bytes).
-  inline void emitQWord(uint64_t x) ASMJIT_NOTHROW
+  inline void emitQWord(uint64_t x)
   {
     ASMJIT_ASSERT(getOffset() + 8 <= _capacity);
 
@@ -175,7 +175,7 @@ struct Buffer
   }
 
   //! @brief Emit intptr_t (4 or 8 bytes).
-  inline void emitIntPtrT(intptr_t x) ASMJIT_NOTHROW
+  inline void emitIntPtrT(intptr_t x)
   {
     ASMJIT_ASSERT(getOffset() + sizeof(intptr_t) <= _capacity);
 
@@ -184,7 +184,7 @@ struct Buffer
   }
 
   //! @brief Emit uintptr_t (4 or 8 bytes).
-  inline void emitUIntPtrT(uintptr_t x) ASMJIT_NOTHROW
+  inline void emitUIntPtrT(uintptr_t x)
   {
     ASMJIT_ASSERT(getOffset() + sizeof(uintptr_t) <= _capacity);
 
@@ -193,7 +193,7 @@ struct Buffer
   }
 
   //! @brief Emit size_t (4 or 8 bytes).
-  inline void emitSizeT(size_t x) ASMJIT_NOTHROW
+  inline void emitSizeT(size_t x)
   {
     ASMJIT_ASSERT(getOffset() + sizeof(size_t) <= _capacity);
 
@@ -202,14 +202,14 @@ struct Buffer
   }
 
   //! @brief Emit custom data. 
-  ASMJIT_API void emitData(const void* ptr, size_t len) ASMJIT_NOTHROW;
+  ASMJIT_API void emitData(const void* ptr, size_t len);
 
   // --------------------------------------------------------------------------
   // [Get / Set]
   // --------------------------------------------------------------------------
 
   //! @brief Set byte at position @a pos.
-  inline uint8_t getByteAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint8_t getByteAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + 1 <= _capacity);
 
@@ -217,7 +217,7 @@ struct Buffer
   }
 
   //! @brief Set word at position @a pos.
-  inline uint16_t getWordAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint16_t getWordAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + 2 <= _capacity);
 
@@ -225,7 +225,7 @@ struct Buffer
   }
 
   //! @brief Set dword at position @a pos.
-  inline uint32_t getDWordAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint32_t getDWordAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + 4 <= _capacity);
 
@@ -233,7 +233,7 @@ struct Buffer
   }
 
   //! @brief Set qword at position @a pos.
-  inline uint64_t getQWordAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint64_t getQWordAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + 8 <= _capacity);
 
@@ -241,7 +241,7 @@ struct Buffer
   }
 
   //! @brief Set intptr_t at position @a pos.
-  inline intptr_t getIntPtrTAt(size_t pos) const ASMJIT_NOTHROW
+  inline intptr_t getIntPtrTAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + sizeof(intptr_t) <= _capacity);
 
@@ -249,7 +249,7 @@ struct Buffer
   }
 
   //! @brief Set uintptr_t at position @a pos.
-  inline uintptr_t getUIntPtrTAt(size_t pos) const ASMJIT_NOTHROW
+  inline uintptr_t getUIntPtrTAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + sizeof(uintptr_t) <= _capacity);
 
@@ -257,7 +257,7 @@ struct Buffer
   }
 
   //! @brief Set size_t at position @a pos.
-  inline uintptr_t getSizeTAt(size_t pos) const ASMJIT_NOTHROW
+  inline uintptr_t getSizeTAt(size_t pos) const
   {
     ASMJIT_ASSERT(pos + sizeof(size_t) <= _capacity);
 
@@ -265,7 +265,7 @@ struct Buffer
   }
 
   //! @brief Set byte at position @a pos.
-  inline void setByteAt(size_t pos, uint8_t x) ASMJIT_NOTHROW
+  inline void setByteAt(size_t pos, uint8_t x)
   {
     ASMJIT_ASSERT(pos + 1 <= _capacity);
 
@@ -273,7 +273,7 @@ struct Buffer
   }
 
   //! @brief Set word at position @a pos.
-  inline void setWordAt(size_t pos, uint16_t x) ASMJIT_NOTHROW
+  inline void setWordAt(size_t pos, uint16_t x)
   {
     ASMJIT_ASSERT(pos + 2 <= _capacity);
 
@@ -281,7 +281,7 @@ struct Buffer
   }
 
   //! @brief Set dword at position @a pos.
-  inline void setDWordAt(size_t pos, uint32_t x) ASMJIT_NOTHROW
+  inline void setDWordAt(size_t pos, uint32_t x)
   {
     ASMJIT_ASSERT(pos + 4 <= _capacity);
 
@@ -289,7 +289,7 @@ struct Buffer
   }
 
   //! @brief Set qword at position @a pos.
-  inline void setQWordAt(size_t pos, uint64_t x) ASMJIT_NOTHROW
+  inline void setQWordAt(size_t pos, uint64_t x)
   {
     ASMJIT_ASSERT(pos + 8 <= _capacity);
 
@@ -297,7 +297,7 @@ struct Buffer
   }
 
   //! @brief Set intptr_t at position @a pos.
-  inline void setIntPtrTAt(size_t pos, intptr_t x) ASMJIT_NOTHROW
+  inline void setIntPtrTAt(size_t pos, intptr_t x)
   {
     ASMJIT_ASSERT(pos + sizeof(intptr_t) <= _capacity);
 
@@ -305,7 +305,7 @@ struct Buffer
   }
 
   //! @brief Set uintptr_t at position @a pos.
-  inline void setUIntPtrTAt(size_t pos, uintptr_t x) ASMJIT_NOTHROW
+  inline void setUIntPtrTAt(size_t pos, uintptr_t x)
   {
     ASMJIT_ASSERT(pos + sizeof(uintptr_t) <= _capacity);
 
@@ -313,7 +313,7 @@ struct Buffer
   }
 
   //! @brief Set size_t at position @a pos.
-  inline void setSizeTAt(size_t pos, size_t x) ASMJIT_NOTHROW
+  inline void setSizeTAt(size_t pos, size_t x)
   {
     ASMJIT_ASSERT(pos + sizeof(size_t) <= _capacity);
 

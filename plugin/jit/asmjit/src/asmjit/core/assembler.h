@@ -41,9 +41,9 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Creates Assembler instance.
-  ASMJIT_API Assembler(Context* context) ASMJIT_NOTHROW;
+  ASMJIT_API Assembler(Context* context);
   //! @brief Destroys Assembler instance
-  ASMJIT_API virtual ~Assembler() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~Assembler();
 
   // --------------------------------------------------------------------------
   // [LabelLink]
@@ -111,7 +111,7 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Get code generator.
-  inline Context* getContext() const ASMJIT_NOTHROW
+  inline Context* getContext() const
   { return _context; }
 
   // --------------------------------------------------------------------------
@@ -119,7 +119,7 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Get zone memory manager.
-  inline ZoneMemory* getZoneMemory() const ASMJIT_NOTHROW
+  inline ZoneMemory* getZoneMemory() const
   { return const_cast<ZoneMemory*>(&_zoneMemory); }
 
   // --------------------------------------------------------------------------
@@ -127,42 +127,42 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Get logger.
-  inline Logger* getLogger() const ASMJIT_NOTHROW
+  inline Logger* getLogger() const
   { return _logger; }
 
   //! @brief Set logger to @a logger.
-  ASMJIT_API virtual void setLogger(Logger* logger) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void setLogger(Logger* logger);
 
   // --------------------------------------------------------------------------
   // [Error Handling]
   // --------------------------------------------------------------------------
 
   //! @brief Get error code.
-  inline uint32_t getError() const ASMJIT_NOTHROW
+  inline uint32_t getError() const
   { return _error; }
 
   //! @brief Set error code.
   //!
   //! This method is virtual, because higher classes can use it to catch all
   //! errors.
-  ASMJIT_API virtual void setError(uint32_t error) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void setError(uint32_t error);
 
   // --------------------------------------------------------------------------
   // [Properties]
   // --------------------------------------------------------------------------
 
   //! @brief Get assembler property.
-  ASMJIT_API virtual uint32_t getProperty(uint32_t propertyId) const ASMJIT_NOTHROW;
+  ASMJIT_API virtual uint32_t getProperty(uint32_t propertyId) const;
 
   //! @brief Set assembler property.
-  ASMJIT_API virtual void setProperty(uint32_t propertyId, uint32_t value) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void setProperty(uint32_t propertyId, uint32_t value);
 
   // --------------------------------------------------------------------------
   // [Capacity]
   // --------------------------------------------------------------------------
 
   //! @brief Get capacity of internal code buffer.
-  inline size_t getCapacity() const ASMJIT_NOTHROW
+  inline size_t getCapacity() const
   { return _buffer.getCapacity(); }
 
   // --------------------------------------------------------------------------
@@ -170,7 +170,7 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Return current offset in buffer.
-  inline size_t getOffset() const ASMJIT_NOTHROW
+  inline size_t getOffset() const
   { return _buffer.getOffset(); }
 
   //! @brief Set offset to @a o and returns previous offset.
@@ -179,7 +179,7 @@ struct Assembler
   //! recorded) or to overwrite instruction stream at position @a o.
   //!
   //! @return Previous offset value that can be uset to set offset back later.
-  inline size_t toOffset(size_t o) ASMJIT_NOTHROW
+  inline size_t toOffset(size_t o)
   { return _buffer.toOffset(o); }
 
   // --------------------------------------------------------------------------
@@ -191,11 +191,11 @@ struct Assembler
   //! Note that buffer address can change if you emit instruction or something
   //! else. Use this pointer only when you finished or make sure you do not
   //! use returned pointer after emitting.
-  inline uint8_t* getCode() const ASMJIT_NOTHROW
+  inline uint8_t* getCode() const
   { return _buffer.getData(); }
 
   //! @brief Return current offset in buffer (same as <code>getOffset() + getTramplineSize()</code>).
-  inline size_t getCodeSize() const ASMJIT_NOTHROW
+  inline size_t getCodeSize() const
   { return _buffer.getOffset() + getTrampolineSize(); }
 
   // --------------------------------------------------------------------------
@@ -203,21 +203,21 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Take internal code buffer and NULL all pointers (you take the ownership).
-  ASMJIT_API uint8_t* takeCode() ASMJIT_NOTHROW;
+  ASMJIT_API uint8_t* takeCode();
 
   // --------------------------------------------------------------------------
   // [Clear / Reset]
   // --------------------------------------------------------------------------
 
   //! @brief Clear everything, but not deallocate buffers.
-  ASMJIT_API void clear() ASMJIT_NOTHROW;
+  ASMJIT_API void clear();
 
   //! @brief Reset everything (means also to free all buffers).
-  ASMJIT_API void reset() ASMJIT_NOTHROW;
+  ASMJIT_API void reset();
 
   //! @brief Called by clear() and reset() to clear all data related to derived
   //! class implementation.
-  ASMJIT_API virtual void _purge() ASMJIT_NOTHROW;
+  ASMJIT_API virtual void _purge();
 
   // --------------------------------------------------------------------------
   // [EnsureSpace]
@@ -227,7 +227,7 @@ struct Assembler
   //!
   //! Note that this method can return false. It's rare and probably you never
   //! get this, but in some situations it's still possible.
-  inline bool ensureSpace() ASMJIT_NOTHROW
+  inline bool ensureSpace()
   { return _buffer.ensureSpace(); }
 
   // --------------------------------------------------------------------------
@@ -241,7 +241,7 @@ struct Assembler
   //!
   //! Currently only _emitJmpOrCallReloc() method can increase trampoline size
   //! value.
-  inline size_t getTrampolineSize() const ASMJIT_NOTHROW
+  inline size_t getTrampolineSize() const
   { return _trampolineSize; }
 
   // --------------------------------------------------------------------------
@@ -249,39 +249,39 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Get byte at position @a pos.
-  inline uint8_t getByteAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint8_t getByteAt(size_t pos) const
   { return _buffer.getByteAt(pos); }
   
   //! @brief Get word at position @a pos.
-  inline uint16_t getWordAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint16_t getWordAt(size_t pos) const
   { return _buffer.getWordAt(pos); }
   
   //! @brief Get dword at position @a pos.
-  inline uint32_t getDWordAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint32_t getDWordAt(size_t pos) const
   { return _buffer.getDWordAt(pos); }
   
   //! @brief Get qword at position @a pos.
-  inline uint64_t getQWordAt(size_t pos) const ASMJIT_NOTHROW
+  inline uint64_t getQWordAt(size_t pos) const
   { return _buffer.getQWordAt(pos); }
 
   //! @brief Get int32_t at position @a pos.
-  inline int32_t getInt32At(size_t pos) const ASMJIT_NOTHROW
+  inline int32_t getInt32At(size_t pos) const
   { return (int32_t)_buffer.getDWordAt(pos); }
 
   //! @brief Get int64_t at position @a pos.
-  inline int64_t getInt64At(size_t pos) const ASMJIT_NOTHROW
+  inline int64_t getInt64At(size_t pos) const
   { return (int64_t)_buffer.getQWordAt(pos); }
 
   //! @brief Get intptr_t at position @a pos.
-  inline intptr_t getIntPtrTAt(size_t pos) const ASMJIT_NOTHROW
+  inline intptr_t getIntPtrTAt(size_t pos) const
   { return _buffer.getIntPtrTAt(pos); }
 
   //! @brief Get uintptr_t at position @a pos.
-  inline uintptr_t getUIntPtrTAt(size_t pos) const ASMJIT_NOTHROW
+  inline uintptr_t getUIntPtrTAt(size_t pos) const
   { return _buffer.getUIntPtrTAt(pos); }
 
   //! @brief Get uintptr_t at position @a pos.
-  inline size_t getSizeTAt(size_t pos) const ASMJIT_NOTHROW
+  inline size_t getSizeTAt(size_t pos) const
   { return _buffer.getSizeTAt(pos); }
 
   // --------------------------------------------------------------------------
@@ -289,39 +289,39 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Set byte at position @a pos.
-  inline void setByteAt(size_t pos, uint8_t x) ASMJIT_NOTHROW
+  inline void setByteAt(size_t pos, uint8_t x)
   { _buffer.setByteAt(pos, x); }
   
   //! @brief Set word at position @a pos.
-  inline void setWordAt(size_t pos, uint16_t x) ASMJIT_NOTHROW
+  inline void setWordAt(size_t pos, uint16_t x)
   { _buffer.setWordAt(pos, x); }
   
   //! @brief Set dword at position @a pos.
-  inline void setDWordAt(size_t pos, uint32_t x) ASMJIT_NOTHROW
+  inline void setDWordAt(size_t pos, uint32_t x)
   { _buffer.setDWordAt(pos, x); }
   
   //! @brief Set qword at position @a pos.
-  inline void setQWordAt(size_t pos, uint64_t x) ASMJIT_NOTHROW
+  inline void setQWordAt(size_t pos, uint64_t x)
   { _buffer.setQWordAt(pos, x); }
   
   //! @brief Set int32_t at position @a pos.
-  inline void setInt32At(size_t pos, int32_t x) ASMJIT_NOTHROW
+  inline void setInt32At(size_t pos, int32_t x)
   { _buffer.setDWordAt(pos, (uint32_t)x); }
 
   //! @brief Set int64_t at position @a pos.
-  inline void setInt64At(size_t pos, int64_t x) ASMJIT_NOTHROW
+  inline void setInt64At(size_t pos, int64_t x)
   { _buffer.setQWordAt(pos, (uint64_t)x); }
 
   //! @brief Set intptr_t at position @a pos.
-  inline void setIntPtrTAt(size_t pos, intptr_t x) ASMJIT_NOTHROW
+  inline void setIntPtrTAt(size_t pos, intptr_t x)
   { _buffer.setIntPtrTAt(pos, x); }
 
   //! @brief Set uintptr_t at position @a pos.
-  inline void setUInt64At(size_t pos, uintptr_t x) ASMJIT_NOTHROW
+  inline void setUInt64At(size_t pos, uintptr_t x)
   { _buffer.setUIntPtrTAt(pos, x); }
 
   //! @brief Set size_t at position @a pos.
-  inline void setSizeTAt(size_t pos, size_t x) ASMJIT_NOTHROW
+  inline void setSizeTAt(size_t pos, size_t x)
   { _buffer.setSizeTAt(pos, x); }
 
   // --------------------------------------------------------------------------
@@ -337,7 +337,7 @@ struct Assembler
   //!
   //! It's implemented like:
   //!   <code>return ensureSpace() && !getError();</code>
-  inline bool canEmit() ASMJIT_NOTHROW
+  inline bool canEmit()
   {
     // If there is an error, we can't emit another instruction until last error
     // is cleared by calling @c setError(kErrorOk). If something caused the
@@ -368,43 +368,43 @@ struct Assembler
   // --------------------------------------------------------------------------
 
   //! @brief Emit Byte to internal buffer.
-  inline void _emitByte(uint8_t x) ASMJIT_NOTHROW
+  inline void _emitByte(uint8_t x)
   { _buffer.emitByte(x); }
 
   //! @brief Emit word (2 bytes) to internal buffer.
-  inline void _emitWord(uint16_t x) ASMJIT_NOTHROW
+  inline void _emitWord(uint16_t x)
   { _buffer.emitWord(x); }
 
   //! @brief Emit dword (4 bytes) to internal buffer.
-  inline void _emitDWord(uint32_t x) ASMJIT_NOTHROW
+  inline void _emitDWord(uint32_t x)
   { _buffer.emitDWord(x); }
 
   //! @brief Emit qword (8 bytes) to internal buffer.
-  inline void _emitQWord(uint64_t x) ASMJIT_NOTHROW
+  inline void _emitQWord(uint64_t x)
   { _buffer.emitQWord(x); }
 
   //! @brief Emit Int32 (4 bytes) to internal buffer.
-  inline void _emitInt32(int32_t x) ASMJIT_NOTHROW
+  inline void _emitInt32(int32_t x)
   { _buffer.emitDWord((uint32_t)x); }
 
   //! @brief Emit Int64 (8 bytes) to internal buffer.
-  inline void _emitInt64(int64_t x) ASMJIT_NOTHROW
+  inline void _emitInt64(int64_t x)
   { _buffer.emitQWord((uint64_t)x); }
 
   //! @brief Emit intptr_t (4 or 8 bytes) to internal buffer.
-  inline void _emitIntPtrT(intptr_t x) ASMJIT_NOTHROW
+  inline void _emitIntPtrT(intptr_t x)
   { _buffer.emitIntPtrT(x); }
 
   //! @brief Emit uintptr_t (4 or 8 bytes) to internal buffer.
-  inline void _emitUIntPtrT(uintptr_t x) ASMJIT_NOTHROW
+  inline void _emitUIntPtrT(uintptr_t x)
   { _buffer.emitUIntPtrT(x); }
 
   //! @brief Emit size_t (4 or 8 bytes) to internal buffer.
-  inline void _emitSizeT(size_t x) ASMJIT_NOTHROW
+  inline void _emitSizeT(size_t x)
   { _buffer.emitSizeT(x); }
 
   //! @brief Embed data into instruction stream.
-  ASMJIT_API void embed(const void* data, size_t len) ASMJIT_NOTHROW;
+  ASMJIT_API void embed(const void* data, size_t len);
 
   // --------------------------------------------------------------------------
   // [Reloc]
@@ -427,12 +427,12 @@ struct Assembler
   //!
   //! A given buffer will be overwritten, to get number of bytes required use
   //! @c getCodeSize().
-  virtual size_t relocCode(void* dst, sysuint_t addressBase) const ASMJIT_NOTHROW = 0;
+  virtual size_t relocCode(void* dst, sysuint_t addressBase) const = 0;
 
   //! @brief Simplifed version of @c relocCode() method designed for JIT.
   //!
   //! @overload
-  inline size_t relocCode(void* dst) const ASMJIT_NOTHROW
+  inline size_t relocCode(void* dst) const
   { return relocCode(dst, (uintptr_t)dst); }
 
   // --------------------------------------------------------------------------
@@ -446,13 +446,13 @@ struct Assembler
   //! it. Note that if there was an error and calling @c getError() method not
   //! returns @c kErrorOk (zero) then this function always return @c NULL and
   //! error value remains the same.
-  virtual void* make() ASMJIT_NOTHROW = 0;
+  virtual void* make() = 0;
 
   // --------------------------------------------------------------------------
   // [Helpers]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API LabelLink* _newLabelLink() ASMJIT_NOTHROW;
+  ASMJIT_API LabelLink* _newLabelLink();
 
   // --------------------------------------------------------------------------
   // [Members]

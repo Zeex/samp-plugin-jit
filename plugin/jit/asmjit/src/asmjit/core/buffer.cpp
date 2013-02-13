@@ -19,7 +19,7 @@ namespace AsmJit {
 // [AsmJit::Buffer]
 // ============================================================================
 
-void Buffer::emitData(const void* ptr, size_t len) ASMJIT_NOTHROW
+void Buffer::emitData(const void* ptr, size_t len)
 {
   size_t max = getCapacity() - getOffset();
 
@@ -32,7 +32,7 @@ void Buffer::emitData(const void* ptr, size_t len) ASMJIT_NOTHROW
   _cur += len;
 }
 
-bool Buffer::realloc(size_t to) ASMJIT_NOTHROW
+bool Buffer::realloc(size_t to)
 {
   if (getCapacity() < to)
   {
@@ -58,7 +58,7 @@ bool Buffer::realloc(size_t to) ASMJIT_NOTHROW
   return true;
 }
 
-bool Buffer::grow() ASMJIT_NOTHROW
+bool Buffer::grow()
 {
   size_t to = _capacity;
 
@@ -72,7 +72,7 @@ bool Buffer::grow() ASMJIT_NOTHROW
   return realloc(to);
 }
 
-void Buffer::reset() ASMJIT_NOTHROW
+void Buffer::reset()
 {
   if (_data == NULL)
     return;
@@ -84,7 +84,7 @@ void Buffer::reset() ASMJIT_NOTHROW
   _capacity = 0;
 }
 
-uint8_t* Buffer::take() ASMJIT_NOTHROW
+uint8_t* Buffer::take()
 {
   uint8_t* data = _data;
 

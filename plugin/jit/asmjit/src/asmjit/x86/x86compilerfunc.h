@@ -28,66 +28,68 @@ namespace AsmJit {
 //! @brief @ref X86Compiler specific function declaration item.
 struct X86CompilerFuncDecl : public CompilerFuncDecl
 {
+  ASMJIT_NO_COPY(X86CompilerFuncDecl)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create a new @ref X86CompilerFuncDecl instance.
-  ASMJIT_API X86CompilerFuncDecl(X86Compiler* x86Compiler) ASMJIT_NOTHROW;
+  ASMJIT_API X86CompilerFuncDecl(X86Compiler* x86Compiler);
   //! @brief Destroy the @ref X86CompilerFuncDecl instance.
-  ASMJIT_API virtual ~X86CompilerFuncDecl() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~X86CompilerFuncDecl();
 
   // --------------------------------------------------------------------------
   // [Accessors]
   // --------------------------------------------------------------------------
 
   //! @brief Get compiler as @ref X86Compiler.
-  inline X86Compiler* getCompiler() const ASMJIT_NOTHROW
+  inline X86Compiler* getCompiler() const
   { return reinterpret_cast<X86Compiler*>(_compiler); }
 
   //! @brief Get function end item as @ref X86CompilerFuncEnd.
-  inline X86CompilerFuncEnd* getEnd() const ASMJIT_NOTHROW
+  inline X86CompilerFuncEnd* getEnd() const
   { return reinterpret_cast<X86CompilerFuncEnd*>(_end); }
 
   //! @brief Get function declaration as @ref X86FuncDecl.
-  inline X86FuncDecl* getDecl() const ASMJIT_NOTHROW
+  inline X86FuncDecl* getDecl() const
   { return reinterpret_cast<X86FuncDecl*>(_decl); }
 
   //! @brief Get function arguments as variables as @ref X86CompilerVar.
-  inline X86CompilerVar** getVars() const ASMJIT_NOTHROW
+  inline X86CompilerVar** getVars() const
   { return reinterpret_cast<X86CompilerVar**>(_vars); }
 
   //! @brief Get function argument at @a index.
-  inline X86CompilerVar* getVar(uint32_t index) const ASMJIT_NOTHROW
+  inline X86CompilerVar* getVar(uint32_t index) const
   {
     ASMJIT_ASSERT(index < _x86Decl.getArgumentsCount());
     return reinterpret_cast<X86CompilerVar**>(_vars)[index];
   }
 
   //! @brief Get whether it's assumed that stack is aligned to 16 bytes.
-  inline bool isAssumed16ByteAlignment() const ASMJIT_NOTHROW
+  inline bool isAssumed16ByteAlignment() const
   { return hasFuncFlag(kX86FuncFlagAssume16ByteAlignment); }
 
   //! @brief Get whether it's required to align stack to 16 bytes by function.
-  inline bool isPerformed16ByteAlignment() const ASMJIT_NOTHROW
+  inline bool isPerformed16ByteAlignment() const
   { return hasFuncFlag(kX86FuncFlagPerform16ByteAlignment); }
 
   //! @brief Get whether the ESP is adjusted.
-  inline bool isEspAdjusted() const ASMJIT_NOTHROW
+  inline bool isEspAdjusted() const
   { return hasFuncFlag(kX86FuncFlagIsEspAdjusted); }
 
   // --------------------------------------------------------------------------
   // [Interface]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void prepare(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void prepare(CompilerContext& cc);
+  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc);
 
   // --------------------------------------------------------------------------
   // [Misc]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual int getMaxSize() const ASMJIT_NOTHROW;
+  ASMJIT_API virtual int getMaxSize() const;
 
   // --------------------------------------------------------------------------
   // [Prototype]
@@ -97,7 +99,7 @@ struct X86CompilerFuncDecl : public CompilerFuncDecl
     uint32_t convention, 
     uint32_t returnType,
     const uint32_t* arguments, 
-    uint32_t argumentsCount) ASMJIT_NOTHROW;
+    uint32_t argumentsCount);
 
   // --------------------------------------------------------------------------
   // [Helpers]
@@ -107,24 +109,24 @@ struct X86CompilerFuncDecl : public CompilerFuncDecl
   //!
   //! @brief Get required stack offset needed to subtract/add Esp/Rsp in 
   //! prolog/epilog.
-  inline int32_t _getRequiredStackOffset() const ASMJIT_NOTHROW
+  inline int32_t _getRequiredStackOffset() const
   { return _funcCallStackSize + _memStackSize16 + _peMovStackSize + _peAdjustStackSize; }
 
   //! @brief Create variables from FunctionPrototype declaration. This is just
   //! parsing what FunctionPrototype generated for current function calling
   //! convention and arguments.
-  ASMJIT_API void _createVariables() ASMJIT_NOTHROW;
+  ASMJIT_API void _createVariables();
 
   //! @brief Prepare variables (ids, names, scope, registers).
-  ASMJIT_API void _prepareVariables(CompilerItem* first) ASMJIT_NOTHROW;
+  ASMJIT_API void _prepareVariables(CompilerItem* first);
 
   //! @brief Allocate variables (setting correct state, changing masks, etc).
-  ASMJIT_API void _allocVariables(CompilerContext& cc) ASMJIT_NOTHROW;
+  ASMJIT_API void _allocVariables(CompilerContext& cc);
 
-  ASMJIT_API void _preparePrologEpilog(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API void _dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API void _emitProlog(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API void _emitEpilog(CompilerContext& cc) ASMJIT_NOTHROW;
+  ASMJIT_API void _preparePrologEpilog(CompilerContext& cc);
+  ASMJIT_API void _dumpFunction(CompilerContext& cc);
+  ASMJIT_API void _emitProlog(CompilerContext& cc);
+  ASMJIT_API void _emitEpilog(CompilerContext& cc);
 
   // --------------------------------------------------------------------------
   // [Function-Call]
@@ -166,8 +168,6 @@ struct X86CompilerFuncDecl : public CompilerFuncDecl
   int32_t _memStackSize;
   //! @brief Like @c _memStackSize, but aligned to 16-bytes.
   int32_t _memStackSize16;
-
-  ASMJIT_NO_COPY(X86CompilerFuncDecl)
 };
 
 // ============================================================================
@@ -177,39 +177,35 @@ struct X86CompilerFuncDecl : public CompilerFuncDecl
 //! @brief @ref X86Compiler function end item.
 struct X86CompilerFuncEnd : public CompilerFuncEnd
 {
+  ASMJIT_NO_COPY(X86CompilerFuncEnd)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create a new @ref X86CompilerFuncEnd instance.
-  ASMJIT_API X86CompilerFuncEnd(X86Compiler* x86Compiler, X86CompilerFuncDecl* func) ASMJIT_NOTHROW;
+  ASMJIT_API X86CompilerFuncEnd(X86Compiler* x86Compiler, X86CompilerFuncDecl* func);
   //! @brief Destroy the @ref X86CompilerFuncEnd instance.
-  ASMJIT_API virtual ~X86CompilerFuncEnd() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~X86CompilerFuncEnd();
 
   // --------------------------------------------------------------------------
   // [Accessors]
   // --------------------------------------------------------------------------
 
   //! @brief Get compiler as @ref X86Compiler.
-  inline X86Compiler* getCompiler() const ASMJIT_NOTHROW
+  inline X86Compiler* getCompiler() const
   { return reinterpret_cast<X86Compiler*>(_compiler); }
 
   //! @brief Get related function as @ref X86CompilerFuncDecl.
-  inline X86CompilerFuncDecl* getFunc() const ASMJIT_NOTHROW
+  inline X86CompilerFuncDecl* getFunc() const
   { return reinterpret_cast<X86CompilerFuncDecl*>(_func); }
 
   // --------------------------------------------------------------------------
   // [Interface]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void prepare(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc) ASMJIT_NOTHROW;
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_NO_COPY(X86CompilerFuncEnd)
+  ASMJIT_API virtual void prepare(CompilerContext& cc);
+  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc);
 };
 
 // ============================================================================
@@ -219,47 +215,43 @@ struct X86CompilerFuncEnd : public CompilerFuncEnd
 //! @brief Function return.
 struct X86CompilerFuncRet : public CompilerFuncRet
 {
+  ASMJIT_NO_COPY(X86CompilerFuncRet)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create a new @ref X86CompilerFuncRet instance.
   ASMJIT_API X86CompilerFuncRet(X86Compiler* c, X86CompilerFuncDecl* func,
-    const Operand* first, const Operand* second) ASMJIT_NOTHROW;
+    const Operand* first, const Operand* second);
   //! @brief Destroy the @ref X86CompilerFuncRet instance.
-  ASMJIT_API virtual ~X86CompilerFuncRet() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~X86CompilerFuncRet();
 
   // --------------------------------------------------------------------------
   // [Accessors]
   // --------------------------------------------------------------------------
 
   //! @brief Get compiler as @ref X86Compiler.
-  inline X86Compiler* getCompiler() const ASMJIT_NOTHROW
+  inline X86Compiler* getCompiler() const
   { return reinterpret_cast<X86Compiler*>(_compiler); }
 
   //! @Brief Get related function as @ref X86CompilerFuncDecl.
-  inline X86CompilerFuncDecl* getFunc() const ASMJIT_NOTHROW
+  inline X86CompilerFuncDecl* getFunc() const
   { return reinterpret_cast<X86CompilerFuncDecl*>(_func); }
 
   // --------------------------------------------------------------------------
   // [Interface]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void prepare(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API virtual void emit(Assembler& a) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void prepare(CompilerContext& cc);
+  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc);
+  ASMJIT_API virtual void emit(Assembler& a);
 
   // --------------------------------------------------------------------------
   // [Misc]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual int getMaxSize() const ASMJIT_NOTHROW;
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_NO_COPY(X86CompilerFuncRet)
+  ASMJIT_API virtual int getMaxSize() const;
 };
 
 // ============================================================================
@@ -269,77 +261,79 @@ struct X86CompilerFuncRet : public CompilerFuncRet
 //! @brief Compiler function call item.
 struct X86CompilerFuncCall : public CompilerFuncCall
 {
+  ASMJIT_NO_COPY(X86CompilerFuncCall)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create a new @ref X86CompilerFuncCall instance.
-  ASMJIT_API X86CompilerFuncCall(X86Compiler* x86Compiler, X86CompilerFuncDecl* caller, const Operand* target) ASMJIT_NOTHROW;
+  ASMJIT_API X86CompilerFuncCall(X86Compiler* x86Compiler, X86CompilerFuncDecl* caller, const Operand* target);
   //! @brief Destroy the @ref X86CompilerFuncCall instance.
-  ASMJIT_API virtual ~X86CompilerFuncCall() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~X86CompilerFuncCall();
 
   // --------------------------------------------------------------------------
   // [Accessors]
   // --------------------------------------------------------------------------
 
   //! @brief Get compiler as @ref X86Compiler.
-  inline X86Compiler* getCompiler() const ASMJIT_NOTHROW
+  inline X86Compiler* getCompiler() const
   { return reinterpret_cast<X86Compiler*>(_compiler); }
 
   //! @brief Get caller as @ref X86CompilerFuncDecl.
-  inline X86CompilerFuncDecl* getCaller() const ASMJIT_NOTHROW
+  inline X86CompilerFuncDecl* getCaller() const
   { return reinterpret_cast<X86CompilerFuncDecl*>(_caller); }
 
   //! @brief Get function prototype.
-  inline const X86FuncDecl* getDecl() const ASMJIT_NOTHROW
+  inline const X86FuncDecl* getDecl() const
   { return reinterpret_cast<X86FuncDecl*>(_decl); }
 
   // --------------------------------------------------------------------------
   // [Interface]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void prepare(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void prepare(CompilerContext& cc);
+  ASMJIT_API virtual CompilerItem* translate(CompilerContext& cc);
 
   // --------------------------------------------------------------------------
   // [Misc]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual int getMaxSize() const ASMJIT_NOTHROW;
-  ASMJIT_API virtual bool _tryUnuseVar(CompilerVar* v) ASMJIT_NOTHROW;
+  ASMJIT_API virtual int getMaxSize() const;
+  ASMJIT_API virtual bool _tryUnuseVar(CompilerVar* v);
 
   // --------------------------------------------------------------------------
   // [Prototype]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void setPrototype(uint32_t convention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void setPrototype(uint32_t convention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount);
 
   //! @brief Set function prototype.
-  inline void setPrototype(uint32_t convention, const FuncPrototype& func) ASMJIT_NOTHROW
+  inline void setPrototype(uint32_t convention, const FuncPrototype& func)
   { setPrototype(convention, func.getReturnType(), func.getArguments(), func.getArgumentsCount()); }
 
   //! @brief Set return value.
-  ASMJIT_API bool setReturn(const Operand& first, const Operand& second = Operand()) ASMJIT_NOTHROW;
+  ASMJIT_API bool setReturn(const Operand& first, const Operand& second = Operand());
 
   //! @brief Set function argument @a i to @a var.
-  ASMJIT_API bool setArgument(uint32_t i, const Var& var) ASMJIT_NOTHROW;
+  ASMJIT_API bool setArgument(uint32_t i, const Var& var);
   //! @brief Set function argument @a i to @a imm.
-  ASMJIT_API bool setArgument(uint32_t i, const Imm& imm) ASMJIT_NOTHROW;
+  ASMJIT_API bool setArgument(uint32_t i, const Imm& imm);
 
   // --------------------------------------------------------------------------
   // [Internal]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API uint32_t _findTemporaryGpRegister(CompilerContext& cc) ASMJIT_NOTHROW;
-  ASMJIT_API uint32_t _findTemporaryXmmRegister(CompilerContext& cc) ASMJIT_NOTHROW;
+  ASMJIT_API uint32_t _findTemporaryGpRegister(CompilerContext& cc);
+  ASMJIT_API uint32_t _findTemporaryXmmRegister(CompilerContext& cc);
 
-  ASMJIT_API X86CompilerVar* _getOverlappingVariable(CompilerContext& cc, const FuncArg& argType) const ASMJIT_NOTHROW;
+  ASMJIT_API X86CompilerVar* _getOverlappingVariable(CompilerContext& cc, const FuncArg& argType) const;
 
-  ASMJIT_API void _moveAllocatedVariableToStack(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType) ASMJIT_NOTHROW;
+  ASMJIT_API void _moveAllocatedVariableToStack(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType);
   ASMJIT_API void _moveSpilledVariableToStack(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType,
     uint32_t temporaryGpReg,
-    uint32_t temporaryXmmReg) ASMJIT_NOTHROW;
-  ASMJIT_API void _moveSrcVariableToRegister(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType) ASMJIT_NOTHROW;
+    uint32_t temporaryXmmReg);
+  ASMJIT_API void _moveSrcVariableToRegister(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType);
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -362,8 +356,6 @@ struct X86CompilerFuncCall : public CompilerFuncCall
   VarCallRecord* _variables;
   //! @brief Argument index to @c VarCallRecord.
   VarCallRecord* _argumentToVarRecord[kFuncArgsMax];
-
-  ASMJIT_NO_COPY(X86CompilerFuncCall)
 };
 
 //! @}

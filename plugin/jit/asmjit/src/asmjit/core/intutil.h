@@ -56,28 +56,40 @@ union I64FPUnion
 namespace IntUtil
 {
   // --------------------------------------------------------------------------
+  // [Min/Max]
+  // --------------------------------------------------------------------------
+
+  // NOTE: Because some environments declare min() and max() as macros, we
+  // decided to use different name so we never collide.
+
+  template<typename T>
+  static inline T _min(const T& a, const T& b) { return a < b ? a : b; }
+  template<typename T>
+  static inline T _max(const T& a, const T& b) { return a > b ? a : b; }
+
+  // --------------------------------------------------------------------------
   // [Limits]
   // --------------------------------------------------------------------------
 
   template<typename T>
-  static inline T typeMax() ASMJIT_NOTHROW { return ~T(0); }
+  static inline T maxValue() { return ~T(0); }
 
   // --------------------------------------------------------------------------
   // [IsInt / IsUInt]
   // --------------------------------------------------------------------------
 
   //! @brief Returns @c true if a given integer @a x is signed 8-bit integer
-  static inline bool isInt8(intptr_t x) ASMJIT_NOTHROW { return x >= -128 && x <= 127; }
+  static inline bool isInt8(intptr_t x) { return x >= -128 && x <= 127; }
   //! @brief Returns @c true if a given integer @a x is unsigned 8-bit integer
-  static inline bool isUInt8(intptr_t x) ASMJIT_NOTHROW { return x >= 0 && x <= 255; }
+  static inline bool isUInt8(intptr_t x) { return x >= 0 && x <= 255; }
 
   //! @brief Returns @c true if a given integer @a x is signed 16-bit integer
-  static inline bool isInt16(intptr_t x) ASMJIT_NOTHROW { return x >= -32768 && x <= 32767; }
+  static inline bool isInt16(intptr_t x) { return x >= -32768 && x <= 32767; }
   //! @brief Returns @c true if a given integer @a x is unsigned 16-bit integer
-  static inline bool isUInt16(intptr_t x) ASMJIT_NOTHROW { return x >= 0 && x <= 65535; }
+  static inline bool isUInt16(intptr_t x) { return x >= 0 && x <= 65535; }
 
   //! @brief Returns @c true if a given integer @a x is signed 16-bit integer
-  static inline bool isInt32(intptr_t x) ASMJIT_NOTHROW
+  static inline bool isInt32(intptr_t x)
   {
 #if defined(ASMJIT_X86)
     return true;
@@ -86,7 +98,7 @@ namespace IntUtil
 #endif
   }
   //! @brief Returns @c true if a given integer @a x is unsigned 16-bit integer
-  static inline bool isUInt32(intptr_t x) ASMJIT_NOTHROW
+  static inline bool isUInt32(intptr_t x)
   {
 #if defined(ASMJIT_X86)
     return x >= 0;
@@ -125,7 +137,7 @@ namespace IntUtil
     return (((x + (x >> 4)) & 0x0F0F0F0FU) * 0x01010101U) >> 24;
   }
 
-  static inline uint32_t findFirstBit(uint32_t mask) ASMJIT_NOTHROW
+  static inline uint32_t findFirstBit(uint32_t mask)
   {
     for (uint32_t i = 0; i < sizeof(uint32_t) * 8; i++, mask >>= 1)
     {
@@ -207,7 +219,7 @@ namespace IntUtil
   // --------------------------------------------------------------------------
 
   //! @brief Binary cast from 32-bit integer to SP-FP value (@c float).
-  static inline float int32AsFloat(int32_t i) ASMJIT_NOTHROW
+  static inline float int32AsFloat(int32_t i)
   {
     I32FPUnion u;
     u.i = i;
@@ -215,7 +227,7 @@ namespace IntUtil
   }
 
   //! @brief Binary cast SP-FP value (@c float) to 32-bit integer.
-  static inline int32_t floatAsInt32(float f) ASMJIT_NOTHROW
+  static inline int32_t floatAsInt32(float f)
   {
     I32FPUnion u;
     u.f = f;
@@ -223,7 +235,7 @@ namespace IntUtil
   }
 
   //! @brief Binary cast from 64-bit integer to DP-FP value (@c double).
-  static inline double int64AsDouble(int64_t i) ASMJIT_NOTHROW
+  static inline double int64AsDouble(int64_t i)
   {
     I64FPUnion u;
     u.i = i;
@@ -231,7 +243,7 @@ namespace IntUtil
   }
 
   //! @brief Binary cast from DP-FP value (@c double) to 64-bit integer.
-  static inline int64_t doubleAsInt64(double f) ASMJIT_NOTHROW
+  static inline int64_t doubleAsInt64(double f)
   {
     I64FPUnion u;
     u.f = f;

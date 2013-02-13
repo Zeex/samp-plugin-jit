@@ -30,7 +30,7 @@ struct ZoneChunk
   // --------------------------------------------------------------------------
 
   //! @brief Get count of remaining (unused) bytes in chunk.
-  inline size_t getRemainingBytes() const ASMJIT_NOTHROW { return size - pos; }
+  inline size_t getRemainingBytes() const { return size - pos; }
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -65,10 +65,10 @@ struct ZoneMemory
 
   //! @brief Create new instance of @c ZoneMemory.
   //! @param chunkSize Default size for one zone chunk.
-  ASMJIT_API ZoneMemory(size_t chunkSize) ASMJIT_NOTHROW;
+  ASMJIT_API ZoneMemory(size_t chunkSize);
 
   //! @brief Destroy @ref ZoneMemory instance.
-  ASMJIT_API ~ZoneMemory() ASMJIT_NOTHROW;
+  ASMJIT_API ~ZoneMemory();
 
   // --------------------------------------------------------------------------
   // [Methods]
@@ -110,27 +110,27 @@ struct ZoneMemory
   //!   // alternative is to call @c zone.reset().
   //! }
   //! @endcode
-  ASMJIT_API void* alloc(size_t size) ASMJIT_NOTHROW;
+  ASMJIT_API void* alloc(size_t size);
 
   //! @brief Helper to duplicate string.
-  ASMJIT_API char* sdup(const char* str) ASMJIT_NOTHROW;
+  ASMJIT_API char* sdup(const char* str);
 
   //! @brief Free all allocated memory except first block that remains for reuse.
   //!
   //! Note that this method will invalidate all instances using this memory
   //! allocated by this zone instance.
-  ASMJIT_API void clear() ASMJIT_NOTHROW;
+  ASMJIT_API void clear();
 
   //! @brief Free all allocated memory at once.
   //!
   //! Note that this method will invalidate all instances using this memory
   //! allocated by this zone instance.
-  ASMJIT_API void reset() ASMJIT_NOTHROW;
+  ASMJIT_API void reset();
 
   //! @brief Get total size of allocated objects - by @c alloc().
-  inline size_t getTotal() const ASMJIT_NOTHROW { return _total; }
+  inline size_t getTotal() const { return _total; }
   //! @brief Get (default) chunk size.
-  inline size_t getChunkSize() const ASMJIT_NOTHROW { return _chunkSize; }
+  inline size_t getChunkSize() const { return _chunkSize; }
 
   // --------------------------------------------------------------------------
   // [Members]

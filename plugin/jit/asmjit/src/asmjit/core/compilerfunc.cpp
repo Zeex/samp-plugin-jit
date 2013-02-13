@@ -23,7 +23,7 @@ namespace AsmJit {
 // [AsmJit::CompilerFuncDecl - Construction / Destruction]
 // ============================================================================
 
-CompilerFuncDecl::CompilerFuncDecl(Compiler* compiler) ASMJIT_NOTHROW :
+CompilerFuncDecl::CompilerFuncDecl(Compiler* compiler) :
   CompilerItem(compiler, kCompilerItemFuncDecl),
   _entryTarget(NULL),
   _exitTarget(NULL),
@@ -36,7 +36,7 @@ CompilerFuncDecl::CompilerFuncDecl(Compiler* compiler) ASMJIT_NOTHROW :
 {
 }
 
-CompilerFuncDecl::~CompilerFuncDecl() ASMJIT_NOTHROW
+CompilerFuncDecl::~CompilerFuncDecl()
 {
 }
 
@@ -44,7 +44,7 @@ CompilerFuncDecl::~CompilerFuncDecl() ASMJIT_NOTHROW
 // [AsmJit::CompilerFuncDecl - Hints]
 // ============================================================================
 
-void CompilerFuncDecl::setHint(uint32_t hint, uint32_t value) ASMJIT_NOTHROW
+void CompilerFuncDecl::setHint(uint32_t hint, uint32_t value)
 {
   if (hint > 31)
     return;
@@ -55,7 +55,7 @@ void CompilerFuncDecl::setHint(uint32_t hint, uint32_t value) ASMJIT_NOTHROW
     _funcHints &= ~IntUtil::maskFromIndex(hint);
 }
 
-uint32_t CompilerFuncDecl::getHint(uint32_t hint) const ASMJIT_NOTHROW
+uint32_t CompilerFuncDecl::getHint(uint32_t hint) const
 {
   if (hint > 31)
     return 0;
@@ -67,13 +67,13 @@ uint32_t CompilerFuncDecl::getHint(uint32_t hint) const ASMJIT_NOTHROW
 // [AsmJit::CompilerFuncEnd - Construction / Destruction]
 // ============================================================================
 
-CompilerFuncEnd::CompilerFuncEnd(Compiler* compiler, CompilerFuncDecl* func) ASMJIT_NOTHROW :
+CompilerFuncEnd::CompilerFuncEnd(Compiler* compiler, CompilerFuncDecl* func) :
   CompilerItem(compiler, kCompilerItemFuncEnd),
   _func(func)
 {
 }
 
-CompilerFuncEnd::~CompilerFuncEnd() ASMJIT_NOTHROW
+CompilerFuncEnd::~CompilerFuncEnd()
 {
 }
 
@@ -81,7 +81,7 @@ CompilerFuncEnd::~CompilerFuncEnd() ASMJIT_NOTHROW
 // [AsmJit::CompilerFuncEnd - Interface]
 // ============================================================================
 
-CompilerItem* CompilerFuncEnd::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* CompilerFuncEnd::translate(CompilerContext& cc)
 {
   _isTranslated = true;
   return NULL;
@@ -91,7 +91,7 @@ CompilerItem* CompilerFuncEnd::translate(CompilerContext& cc) ASMJIT_NOTHROW
 // [AsmJit::CompilerFuncRet - Construction / Destruction]
 // ============================================================================
 
-CompilerFuncRet::CompilerFuncRet(Compiler* compiler, CompilerFuncDecl* func, const Operand* first, const Operand* second) ASMJIT_NOTHROW :
+CompilerFuncRet::CompilerFuncRet(Compiler* compiler, CompilerFuncDecl* func, const Operand* first, const Operand* second) :
   CompilerItem(compiler, kCompilerItemFuncRet),
   _func(func)
 {
@@ -102,7 +102,7 @@ CompilerFuncRet::CompilerFuncRet(Compiler* compiler, CompilerFuncDecl* func, con
     _ret[1] = *second;
 }
 
-CompilerFuncRet::~CompilerFuncRet() ASMJIT_NOTHROW
+CompilerFuncRet::~CompilerFuncRet()
 {
 }
 
@@ -110,7 +110,7 @@ CompilerFuncRet::~CompilerFuncRet() ASMJIT_NOTHROW
 // [AsmJit::CompilerFuncRet - Misc]
 // ============================================================================
 
-bool CompilerFuncRet::mustEmitJump() const ASMJIT_NOTHROW
+bool CompilerFuncRet::mustEmitJump() const
 {
   // Iterate over next items until we found an item which emits a real instruction.
   CompilerItem* item = this->getNext();
@@ -158,7 +158,7 @@ bool CompilerFuncRet::mustEmitJump() const ASMJIT_NOTHROW
 // [AsmJit::CompilerFuncCall - Construction / Destruction]
 // ============================================================================
 
-CompilerFuncCall::CompilerFuncCall(Compiler* compiler, CompilerFuncDecl* caller, const Operand* target) ASMJIT_NOTHROW :
+CompilerFuncCall::CompilerFuncCall(Compiler* compiler, CompilerFuncDecl* caller, const Operand* target) :
   CompilerItem(compiler, kCompilerItemFuncCall),
   _caller(caller),
   _decl(NULL),
@@ -168,7 +168,7 @@ CompilerFuncCall::CompilerFuncCall(Compiler* compiler, CompilerFuncDecl* caller,
     _target = *target;
 }
 
-CompilerFuncCall::~CompilerFuncCall() ASMJIT_NOTHROW
+CompilerFuncCall::~CompilerFuncCall()
 {
 }
 

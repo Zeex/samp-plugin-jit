@@ -19,8 +19,8 @@ namespace AsmJit {
 // [AsmJit::MemoryMarker]
 // ============================================================================
 
-MemoryMarker::MemoryMarker() ASMJIT_NOTHROW {}
-MemoryMarker::~MemoryMarker() ASMJIT_NOTHROW {}
+MemoryMarker::MemoryMarker() {}
+MemoryMarker::~MemoryMarker() {}
 
 } // AsmJit namespace
 

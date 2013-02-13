@@ -20,11 +20,10 @@ CMake_Minimum_Required(VERSION 2.8.7)
 
 # Create AsmJit project. In case that you called Project() before the AsmJit
 # CMakeLists.txt the project won't be created (just included).
-Set(ASMJIT_PROJECT_STR "")
+Set(ASMJIT_PROJECT_STR "Project")
 
 If(NOT CMAKE_PROJECT_NAME)
   Project(asmjit C CXX)
-  Set(ASMJIT_PROJECT_STR "Project")
 Else()
   # Do not create a project if this CMakeLists.txt is included by a different
   # project. This allows easy static library build including debugger support.
@@ -49,15 +48,15 @@ Message("")
 
 If(NOT ASMJIT_DIR)
   Set(ASMJIT_DIR ${CMAKE_CURRENT_LIST_DIR})
-  Set(ASMJIT_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
   Message("-- Initializing ASMJIT_DIR=${ASMJIT_DIR}")
 Else()
-  Set(ASMJIT_SRC_DIR "{$ASMJIT_DIR}/src")
   Message("-- Using Custom ASMJIT_DIR=${ASMJIT_DIR}")
 EndIf()
 
+Set(ASMJIT_SRC_DIR "${ASMJIT_DIR}/src")
+
 # =============================================================================
-# [AsmJit - Libraries]
+# [AsmJit - Dependencies]
 # =============================================================================
 
 Set(ASMJIT_DEPS "")
@@ -68,19 +67,10 @@ If(NOT WIN32)
 EndIf()
 
 # =============================================================================
-# [AsmJit - Definitions]
-# =============================================================================
-
-If(ASMJIT_STATIC)
-  add_definitions(-DASMJIT_STATIC)
-EndIf()
-
-# =============================================================================
 # [AsmJit - Include]
 # =============================================================================
 
-Set_Property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-             INCLUDE_DIRECTORIES "${ASMJIT_SRC_DIR}")
+Include_Directories(${ASMJIT_SRC_DIR})
 
 # =============================================================================
 # [AsmJit - Macros]
@@ -118,7 +108,7 @@ Macro(AsmJitAddSrc dst_var base_path)
 
   List(APPEND "${dst_var}" ${dst_src} ${dst_hdr})
   List(APPEND "${dst_var}_TEST" ${dst_test})
-  Source_Group(${dst_path} FILES ${dst_src} ${dst_hdr} ${dst_test})
+  Source_Group(${base_path} FILES ${dst_src} ${dst_hdr} ${dst_test})
 EndMacro()
 
 # =============================================================================
@@ -130,8 +120,8 @@ Set(ASMJIT_SRC_TEST "")
 
 AsmJitAddSrc(ASMJIT_SRC asmjit
   asmjit.h
-  core.h
   config.h
+  core.h
   x86.h
 )
 
@@ -223,9 +213,10 @@ If(NOT ASMJIT_STATIC)
   ForEach(i ${ASMJIT_SRC})
     Get_Filename_Component(path ${i} PATH)
     Get_Filename_Component(name ${i} NAME)
+    String(REGEX REPLACE "^${ASMJIT_SRC_DIR}/" "" targetpath "${path}")
     If(${name} MATCHES ".h$")
       If(NOT "${name}" MATCHES "_p.h$")
-        Install(FILES ${i} DESTINATION "include/${path}")
+        Install(FILES ${i} DESTINATION "include/${targetpath}")
       EndIf()
     EndIf()
   EndForEach()

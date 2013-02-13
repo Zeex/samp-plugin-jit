@@ -27,20 +27,20 @@ namespace AsmJit {
 //! @brief Virtual memory marker interface.
 struct MemoryMarker
 {
+  ASMJIT_NO_COPY(MemoryMarker)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API MemoryMarker() ASMJIT_NOTHROW;
-  ASMJIT_API virtual ~MemoryMarker() ASMJIT_NOTHROW;
+  ASMJIT_API MemoryMarker();
+  ASMJIT_API virtual ~MemoryMarker();
 
   // --------------------------------------------------------------------------
   // [Interface]
   // --------------------------------------------------------------------------
 
-  virtual void mark(const void* ptr, size_t size) ASMJIT_NOTHROW = 0;
-
-  ASMJIT_NO_COPY(MemoryMarker)
+  virtual void mark(const void* ptr, size_t size) = 0;
 };
 
 //! @}

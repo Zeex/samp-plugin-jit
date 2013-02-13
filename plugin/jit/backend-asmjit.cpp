@@ -143,7 +143,7 @@ class AddressableLabel : public Label {
 class Assembler : public X86Assembler {
  public:
   Assembler(jit::AMXPtr amx) : amx_(amx) {}
-  virtual ~Assembler() ASMJIT_NOTHROW {}
+  virtual ~Assembler() {}
 
   jit::AMXPtr &amx() { return amx_; }
   const jit::AMXPtr &amx() const { return amx_; }

@@ -21,14 +21,13 @@ namespace AsmJit {
 // [AsmJit::Logger - Construction / Destruction]
 // ============================================================================
 
-Logger::Logger() ASMJIT_NOTHROW :
-  _enabled(true),
-  _used(true),
-  _logBinary(false)
+Logger::Logger() :
+  _flags(kLoggerIsEnabled | kLoggerIsUsed)
 {
+  memset(_instructionPrefix, 0, ASMJIT_ARRAY_SIZE(_instructionPrefix));
 }
 
-Logger::~Logger() ASMJIT_NOTHROW
+Logger::~Logger()
 {
 }
 
@@ -36,7 +35,7 @@ Logger::~Logger() ASMJIT_NOTHROW
 // [AsmJit::Logger - Logging]
 // ============================================================================
 
-void Logger::logFormat(const char* fmt, ...) ASMJIT_NOTHROW
+void Logger::logFormat(const char* fmt, ...)
 {
   char buf[1024];
   size_t len;
@@ -53,23 +52,76 @@ void Logger::logFormat(const char* fmt, ...) ASMJIT_NOTHROW
 // [AsmJit::Logger - Enabled]
 // ============================================================================
 
-void Logger::setEnabled(bool enabled) ASMJIT_NOTHROW
+void Logger::setEnabled(bool enabled)
 {
-  _enabled = enabled;
-  _used = enabled;
+  if (enabled)
+    _flags |= kLoggerIsEnabled | kLoggerIsUsed;
+  else
+    _flags &= ~(kLoggerIsEnabled | kLoggerIsUsed);
+}
+
+// ============================================================================
+// [AsmJit::Logger - LogBinary]
+// ============================================================================
+
+void Logger::setLogBinary(bool value)
+{
+  if (value)
+    _flags |= kLoggerOutputBinary;
+  else
+    _flags &= ~kLoggerOutputBinary;
+}
+
+// ============================================================================
+// [AsmJit::Logger - HexImmediate]
+// ============================================================================
+
+void Logger::setHexImmediate(bool value)
+{
+  if (value)
+    _flags |= kLoggerOutputHexImmediate;
+  else
+    _flags &= ~kLoggerOutputHexImmediate;
+}
+
+// ============================================================================
+// [AsmJit::Logger - HexDisplacement]
+// ============================================================================
+
+void Logger::setHexDisplacement(bool value)
+{
+  if (value)
+    _flags |= kLoggerOutputHexDisplacement;
+  else
+    _flags &= ~kLoggerOutputHexDisplacement;
+}
+
+// ============================================================================
+// [AsmJit::Logger - InstructionPrefix]
+// ============================================================================
+
+void Logger::setInstructionPrefix(const char* prefix)
+{
+  memset(_instructionPrefix, 0, ASMJIT_ARRAY_SIZE(_instructionPrefix));
+
+  if (!prefix)
+    return;
+
+  size_t length = strnlen(prefix, ASMJIT_ARRAY_SIZE(_instructionPrefix) - 1);
+  memcpy(_instructionPrefix, prefix, length);
 }
 
 // ============================================================================
 // [AsmJit::FileLogger - Construction / Destruction]
 // ============================================================================
 
-FileLogger::FileLogger(FILE* stream) ASMJIT_NOTHROW
+FileLogger::FileLogger(FILE* stream)
   : _stream(NULL)
 {
   setStream(stream);
 }
 
-FileLogger::~FileLogger() ASMJIT_NOTHROW
+FileLogger::~FileLogger()
 {
 }
 
@@ -78,19 +130,23 @@ FileLogger::~FileLogger() ASMJIT_NOTHROW
 // ============================================================================
 
 //! @brief Set file stream.
-void FileLogger::setStream(FILE* stream) ASMJIT_NOTHROW
+void FileLogger::setStream(FILE* stream)
 {
   _stream = stream;
-  _used = (_enabled == true) & (_stream != NULL);
+
+  if (isEnabled() && _stream != NULL)
+    _flags |= kLoggerIsUsed;
+  else
+    _flags &= ~kLoggerIsUsed;
 }
 
 // ============================================================================
 // [AsmJit::FileLogger - Logging]
 // ============================================================================
 
-void FileLogger::logString(const char* buf, size_t len) ASMJIT_NOTHROW
+void FileLogger::logString(const char* buf, size_t len)
 {
-  if (!_used)
+  if (!isUsed())
     return;
 
   if (len == kInvalidSize)
@@ -103,21 +159,23 @@ void FileLogger::logString(const char* buf, size_t len) ASMJIT_NOTHROW
 // [AsmJit::FileLogger - Enabled]
 // ============================================================================
 
-void FileLogger::setEnabled(bool enabled) ASMJIT_NOTHROW
+void FileLogger::setEnabled(bool enabled)
 {
-  _enabled = enabled;
-  _used = (_enabled == true) & (_stream != NULL);
+  if (enabled)
+    _flags |= kLoggerIsEnabled | (_stream != NULL ? kLoggerIsUsed : 0);
+  else
+    _flags &= ~(kLoggerIsEnabled | kLoggerIsUsed);
 }
 
 // ============================================================================
 // [AsmJit::StringLogger - Construction / Destruction]
 // ============================================================================
 
-StringLogger::StringLogger() ASMJIT_NOTHROW
+StringLogger::StringLogger()
 {
 }
 
-StringLogger::~StringLogger() ASMJIT_NOTHROW
+StringLogger::~StringLogger()
 {
 }
 
@@ -125,21 +183,11 @@ StringLogger::~StringLogger() ASMJIT_NOTHROW
 // [AsmJit::StringLogger - Logging]
 // ============================================================================
 
-void StringLogger::logString(const char* buf, size_t len) ASMJIT_NOTHROW
+void StringLogger::logString(const char* buf, size_t len)
 {
-  if (!_used)
+  if (!isUsed())
     return;
   _stringBuilder.appendString(buf, len);
-}
-
-// ============================================================================
-// [AsmJit::StringLogger - Enabled]
-// ============================================================================
-
-void StringLogger::setEnabled(bool enabled) ASMJIT_NOTHROW
-{
-  _enabled = enabled;
-  _used = enabled;
 }
 
 } // AsmJit namespace

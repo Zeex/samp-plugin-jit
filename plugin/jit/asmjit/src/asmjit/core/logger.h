@@ -38,14 +38,16 @@ namespace AsmJit {
 //! or disable logging.
 struct Logger
 {
+  ASMJIT_NO_COPY(Logger)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create logger.
-  ASMJIT_API Logger() ASMJIT_NOTHROW;
+  ASMJIT_API Logger();
   //! @brief Destroy logger.
-  ASMJIT_API virtual ~Logger() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~Logger();
 
   // --------------------------------------------------------------------------
   // [Logging]
@@ -55,65 +57,78 @@ struct Logger
   //!
   //! Default implementation that is in @c AsmJit::Logger is to do nothing.
   //! It's virtual to fit to your logging system.
-  virtual void logString(const char* buf, size_t len = kInvalidSize) ASMJIT_NOTHROW = 0;
+  virtual void logString(const char* buf, size_t len = kInvalidSize) = 0;
 
   //! @brief Log formatter message (like sprintf) sending output to @c logString() method.
-  ASMJIT_API virtual void logFormat(const char* fmt, ...) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void logFormat(const char* fmt, ...);
+
+  // --------------------------------------------------------------------------
+  // [Flags]
+  // --------------------------------------------------------------------------
+
+  //! @brief Get logger flags (used internally by Assembler/Compiler).
+  inline uint32_t getFlags() const { return _flags; }
 
   // --------------------------------------------------------------------------
   // [Enabled]
   // --------------------------------------------------------------------------
 
   //! @brief Return @c true if logging is enabled.
-  inline bool isEnabled() const ASMJIT_NOTHROW { return _enabled; }
+  inline bool isEnabled() const { return (_flags & kLoggerIsEnabled) != 0; }
 
   //! @brief Set logging to enabled or disabled.
-  ASMJIT_API virtual void setEnabled(bool enabled) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void setEnabled(bool enabled);
 
   // --------------------------------------------------------------------------
   // [Used]
   // --------------------------------------------------------------------------
 
   //! @brief Get whether the logger should be used.
-  inline bool isUsed() const ASMJIT_NOTHROW { return _used; }
+  inline bool isUsed() const { return (_flags & kLoggerIsUsed) != 0; }
 
   // --------------------------------------------------------------------------
   // [LogBinary]
   // --------------------------------------------------------------------------
 
-  //! @brief Get whether logging binary output.
-  inline bool getLogBinary() const { return _logBinary; }
-  //! @brief Get whether to log binary output.
-  inline void setLogBinary(bool val) { _logBinary = val; }
+  //! @brief Get whether logging of binary output is enabled.
+  inline bool getLogBinary() const { return (_flags & kLoggerOutputBinary) != 0; }
+  //! @brief Enable or disable binary output logging.
+  ASMJIT_API void setLogBinary(bool value);
+
+  // --------------------------------------------------------------------------
+  // [HexImmediate]
+  // --------------------------------------------------------------------------
+
+  inline bool getHexImmediate() const { return (_flags & kLoggerOutputHexImmediate) != 0; }
+  ASMJIT_API void setHexImmediate(bool value);
+
+  // --------------------------------------------------------------------------
+  // [HexDisplacement]
+  // --------------------------------------------------------------------------
+
+  inline bool getHexDisplacement() const { return (_flags & kLoggerOutputHexDisplacement) != 0; }
+  ASMJIT_API void setHexDisplacement(bool value);
+
+  // --------------------------------------------------------------------------
+  // [InstructionPrefix]
+  // --------------------------------------------------------------------------
+
+  //! @brief Get instruction prefix.
+  inline const char* getInstructionPrefix() const { return _instructionPrefix; }
+  //! @brief Set instruction prefix.
+  ASMJIT_API void setInstructionPrefix(const char* prefix);
+  //! @brief Reset instruction prefix.
+  inline void resetInstructionPrefix() { setInstructionPrefix(NULL); }
 
   // --------------------------------------------------------------------------
   // [Members]
   // --------------------------------------------------------------------------
 
-  //! @brief Whether logger is enabled or disabled.
-  //!
-  //! Default @c true.
-  bool _enabled;
+  //! @brief Flags, see @ref kLoggerFlag.
+  uint32_t _flags;
 
-  //! @brief Whether logger is enabled and can be used.
-  //!
-  //! This value can be set by inherited classes to inform @c Logger that
-  //! assigned stream (or something that can log output) is invalid. If
-  //! @c _used is false it means that there is no logging output and AsmJit
-  //! shouldn't use this logger (because all messages will be lost).
-  //!
-  //! This is designed only to optimize cases that logger exists, but its
-  //! configured not to output messages. The API inside Logging and AsmJit
-  //! should only check this value when needed. The API outside AsmJit should
-  //! check only whether logging is @c _enabled.
-  //!
-  //! Default @c true.
-  bool _used;
-
-  //! @brief Whether to log instruction in binary form.
-  bool _logBinary;
-
-  ASMJIT_NO_COPY(Logger)
+  //! @brief Instrictions and macro-instructions prefix.
+  char _instructionPrefix[12];
 };
 
 // ============================================================================
@@ -123,6 +138,8 @@ struct Logger
 //! @brief Logger that can log to standard C @c FILE* stream.
 struct FileLogger : public Logger
 {
+  ASMJIT_NO_COPY(FileLogger)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -130,10 +147,10 @@ struct FileLogger : public Logger
   //! @brief Create a new @c FileLogger.
   //! @param stream FILE stream where logging will be sent (can be @c NULL
   //! to disable logging).
-  ASMJIT_API FileLogger(FILE* stream = NULL) ASMJIT_NOTHROW;
+  ASMJIT_API FileLogger(FILE* stream = NULL);
 
   //! @brief Destroy the @ref FileLogger.
-  ASMJIT_API virtual ~FileLogger() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~FileLogger();
 
   // --------------------------------------------------------------------------
   // [Accessors]
@@ -142,25 +159,25 @@ struct FileLogger : public Logger
   //! @brief Get @c FILE* stream.
   //!
   //! @note Return value can be @c NULL.
-  inline FILE* getStream() const ASMJIT_NOTHROW { return _stream; }
+  inline FILE* getStream() const { return _stream; }
 
   //! @brief Set @c FILE* stream.
   //!
   //! @param stream @c FILE stream where to log output (can be @c NULL to
   //! disable logging).
-  ASMJIT_API void setStream(FILE* stream) ASMJIT_NOTHROW;
+  ASMJIT_API void setStream(FILE* stream);
 
   // --------------------------------------------------------------------------
   // [Logging]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void logString(const char* buf, size_t len = kInvalidSize) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void logString(const char* buf, size_t len = kInvalidSize);
 
   // --------------------------------------------------------------------------
   // [Enabled]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void setEnabled(bool enabled) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void setEnabled(bool enabled);
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -168,8 +185,6 @@ struct FileLogger : public Logger
 
   //! @brief C file stream.
   FILE* _stream;
-
-  ASMJIT_NO_COPY(FileLogger)
 };
 
 // ============================================================================
@@ -179,15 +194,17 @@ struct FileLogger : public Logger
 //! @brief String logger.
 struct StringLogger : public Logger
 {
+  ASMJIT_NO_COPY(StringLogger)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Create new @ref StringLogger.
-  ASMJIT_API StringLogger() ASMJIT_NOTHROW;
+  ASMJIT_API StringLogger();
 
   //! @brief Destroy the @ref StringLogger.
-  ASMJIT_API virtual ~StringLogger() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~StringLogger();
 
   // --------------------------------------------------------------------------
   // [Accessors]
@@ -197,22 +214,16 @@ struct StringLogger : public Logger
   //! string.
   //!
   //! The pointer is owned by @ref StringLogger, it can't be modified or freed.
-  inline const char* getString() const ASMJIT_NOTHROW { return _stringBuilder.getData(); }
+  inline const char* getString() const { return _stringBuilder.getData(); }
 
   //! @brief Clear the serialized string.
-  inline void clearString() ASMJIT_NOTHROW { _stringBuilder.clear(); }
+  inline void clearString() { _stringBuilder.clear(); }
 
   // --------------------------------------------------------------------------
   // [Logging]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void logString(const char* buf, size_t len = kInvalidSize) ASMJIT_NOTHROW;
-
-  // --------------------------------------------------------------------------
-  // [Enabled]
-  // --------------------------------------------------------------------------
-
-  ASMJIT_API virtual void setEnabled(bool enabled) ASMJIT_NOTHROW;
+  ASMJIT_API virtual void logString(const char* buf, size_t len = kInvalidSize);
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -220,8 +231,6 @@ struct StringLogger : public Logger
 
   //! @brief Output.
   StringBuilder _stringBuilder;
-
-  ASMJIT_NO_COPY(StringLogger)
 };
 
 //! @}

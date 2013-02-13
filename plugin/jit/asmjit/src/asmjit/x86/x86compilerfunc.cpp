@@ -27,14 +27,14 @@ namespace AsmJit {
 // ============================================================================
 
 // Defined in AsmJit/X86/X86Assembler.cpp.
-char* X86Assembler_dumpRegister(char* buf, uint32_t type, uint32_t index) ASMJIT_NOTHROW;
-char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType) ASMJIT_NOTHROW;
+char* X86Assembler_dumpRegister(char* buf, uint32_t type, uint32_t index);
+char* X86Assembler_dumpOperand(char* buf, const Operand* op, uint32_t memRegType, uint32_t loggerFlags);
 
 // ============================================================================
 // [AsmJit::X86CompilerFuncDecl - Construction / Destructioin]
 // ============================================================================
 
-X86CompilerFuncDecl::X86CompilerFuncDecl(X86Compiler* x86Compiler) ASMJIT_NOTHROW :
+X86CompilerFuncDecl::X86CompilerFuncDecl(X86Compiler* x86Compiler) :
   CompilerFuncDecl(x86Compiler),
   _gpModifiedAndPreserved(0),
   _mmModifiedAndPreserved(0),
@@ -64,7 +64,7 @@ X86CompilerFuncDecl::X86CompilerFuncDecl(X86Compiler* x86Compiler) ASMJIT_NOTHRO
   _end = Compiler_newItem<X86CompilerFuncEnd>(x86Compiler, this);
 }
 
-X86CompilerFuncDecl::~X86CompilerFuncDecl() ASMJIT_NOTHROW
+X86CompilerFuncDecl::~X86CompilerFuncDecl()
 {
 }
 
@@ -72,7 +72,7 @@ X86CompilerFuncDecl::~X86CompilerFuncDecl() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncDecl - Interface]
 // ============================================================================
 
-void X86CompilerFuncDecl::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   _offset = x86Context._currentOffset++;
@@ -80,7 +80,7 @@ void X86CompilerFuncDecl::prepare(CompilerContext& cc) ASMJIT_NOTHROW
   _prepareVariables(this);
 }
 
-CompilerItem* X86CompilerFuncDecl::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerFuncDecl::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
 
@@ -92,7 +92,7 @@ CompilerItem* X86CompilerFuncDecl::translate(CompilerContext& cc) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncDecl - Misc]
 // ============================================================================
 
-int X86CompilerFuncDecl::getMaxSize() const ASMJIT_NOTHROW
+int X86CompilerFuncDecl::getMaxSize() const
 {
   // NOP.
   return 0;
@@ -102,7 +102,7 @@ int X86CompilerFuncDecl::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncDecl - Prototype]
 // ============================================================================
 
-void X86CompilerFuncDecl::setPrototype(uint32_t convention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::setPrototype(uint32_t convention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount)
 {
   _x86Decl.setPrototype(convention, returnType, arguments, argumentsCount);
 }
@@ -111,7 +111,7 @@ void X86CompilerFuncDecl::setPrototype(uint32_t convention, uint32_t returnType,
 // [AsmJit::X86CompilerFuncDecl - Helpers]
 // ============================================================================
 
-void X86CompilerFuncDecl::_createVariables() ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_createVariables()
 {
   X86Compiler* x86Compiler = getCompiler();
 
@@ -143,13 +143,13 @@ void X86CompilerFuncDecl::_createVariables() ASMJIT_NOTHROW
 
     if (arg.getRegIndex() != kRegIndexInvalid)
     {
-      cv->isRegArgument = true;
+      cv->_isRegArgument = true;
       cv->regIndex = arg.getRegIndex();
     }
 
     if (arg.getStackOffset() != kFuncStackInvalid)
     {
-      cv->isMemArgument = true;
+      cv->_isMemArgument = true;
       cv->homeMemoryOffset = arg.getStackOffset();
     }
 
@@ -157,7 +157,7 @@ void X86CompilerFuncDecl::_createVariables() ASMJIT_NOTHROW
   }
 }
 
-void X86CompilerFuncDecl::_prepareVariables(CompilerItem* first) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_prepareVariables(CompilerItem* first)
 {
   uint32_t count = _x86Decl.getArgumentsCount();
   if (count == 0) return;
@@ -173,7 +173,7 @@ void X86CompilerFuncDecl::_prepareVariables(CompilerItem* first) ASMJIT_NOTHROW
   }
 }
 
-void X86CompilerFuncDecl::_allocVariables(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_allocVariables(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   uint32_t count = getDecl()->getArgumentsCount();
@@ -185,7 +185,7 @@ void X86CompilerFuncDecl::_allocVariables(CompilerContext& cc) ASMJIT_NOTHROW
   {
     X86CompilerVar* cv = getVar(i);
 
-    if (cv->firstItem != NULL || cv->isRegArgument || cv->isMemArgument)
+    if (cv->firstItem != NULL || cv->isArgument())
     {
       // Variable is used.
       if (cv->regIndex != kRegIndexInvalid)
@@ -196,7 +196,7 @@ void X86CompilerFuncDecl::_allocVariables(CompilerContext& cc) ASMJIT_NOTHROW
         cv->changed = true;
         x86Context._allocatedVariable(cv);
       }
-      else if (cv->isMemArgument)
+      else if (cv->isMemArgument())
       {
         cv->state = kVarStateMem;
       }
@@ -209,7 +209,7 @@ void X86CompilerFuncDecl::_allocVariables(CompilerContext& cc) ASMJIT_NOTHROW
   }
 }
 
-void X86CompilerFuncDecl::_preparePrologEpilog(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_preparePrologEpilog(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   const X86CpuInfo* cpuInfo = X86CpuInfo::getGlobal();
@@ -328,7 +328,7 @@ void X86CompilerFuncDecl::_preparePrologEpilog(CompilerContext& cc) ASMJIT_NOTHR
     x86Context._variablesBaseOffset = -_memStackSize16 - _peMovStackSize - _peAdjustStackSize;
 }
 
-void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -364,23 +364,23 @@ void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW
       if (a.hasRegIndex())
       {
         Reg regOp(a.getRegIndex() | kX86RegTypeGpz, 0);
-        X86Assembler_dumpOperand(memHome, &regOp, kX86RegTypeGpz)[0] = '\0';
+        X86Assembler_dumpOperand(memHome, &regOp, kX86RegTypeGpz, 0)[0] = '\0';
       }
       else
       {
         Mem memOp;
         memOp._mem.base = kX86RegIndexEsp;
         memOp._mem.displacement = a.getStackOffset();
-        X86Assembler_dumpOperand(memHome, &memOp, kX86RegTypeGpz)[0] = '\0';
+        X86Assembler_dumpOperand(memHome, &memOp, kX86RegTypeGpz, 0)[0] = '\0';
       }
 
       logger->logFormat("; %-3u| %-9s| %-3u| %-15s|\n",
         // Argument index.
         i,
         // Argument type.
-        cv->type < kX86VarTypeCount ? x86VarInfo[cv->type].getName() : "invalid",
+        cv->getType() < kX86VarTypeCount ? x86VarInfo[cv->getType()].getName() : "invalid",
         // Argument size.
-        cv->size,
+        cv->getSize(),
         // Argument memory home.
         memHome
       );
@@ -407,7 +407,7 @@ void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW
         continue;
 
       // Get some information about variable type.
-      const X86VarInfo& vinfo = x86VarInfo[cv->type];
+      const X86VarInfo& vinfo = x86VarInfo[cv->getType()];
 
       if (first)
       {
@@ -422,7 +422,7 @@ void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW
         memHome = _buf;
 
         Mem memOp;
-        if (cv->isMemArgument)
+        if (cv->isMemArgument())
         {
           const FuncArg& a = _x86Decl.getArgument(i);
 
@@ -436,16 +436,16 @@ void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW
           memOp._mem.displacement += x86Context._variablesBaseOffset;
           memOp._mem.displacement += memBlock->offset;
         }
-        X86Assembler_dumpOperand(memHome, &memOp, kX86RegTypeGpz)[0] = '\0';
+        X86Assembler_dumpOperand(memHome, &memOp, kX86RegTypeGpz, 0)[0] = '\0';
       }
 
       logger->logFormat("; %-3u| %-9s| %-3u| %-15s| r=%-4uw=%-4ux=%-4u| r=%-4uw=%-4ux=%-4u|\n",
         // Variable id.
         (uint)(i & kOperandIdValueMask),
         // Variable type.
-        cv->type < kX86VarTypeCount ? vinfo.getName() : "invalid",
+        cv->getType() < kX86VarTypeCount ? vinfo.getName() : "invalid",
         // Variable size.
-        cv->size,
+        cv->getSize(),
         // Variable memory home.
         memHome,
         // Register access count.
@@ -517,7 +517,7 @@ void X86CompilerFuncDecl::_dumpFunction(CompilerContext& cc) ASMJIT_NOTHROW
   logger->logString("\n");
 }
 
-void X86CompilerFuncDecl::_emitProlog(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_emitProlog(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -646,7 +646,7 @@ void X86CompilerFuncDecl::_emitProlog(CompilerContext& cc) ASMJIT_NOTHROW
     x86Compiler->comment("Body");
 }
 
-void X86CompilerFuncDecl::_emitEpilog(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncDecl::_emitEpilog(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -805,12 +805,12 @@ void X86CompilerFuncDecl::reserveStackForFunctionCall(int32_t size)
 // [AsmJit::X86CompilerFuncEnd - Construction / Destruction]
 // ============================================================================
 
-X86CompilerFuncEnd::X86CompilerFuncEnd(X86Compiler* x86Compiler, X86CompilerFuncDecl* func) ASMJIT_NOTHROW :
+X86CompilerFuncEnd::X86CompilerFuncEnd(X86Compiler* x86Compiler, X86CompilerFuncDecl* func) :
   CompilerFuncEnd(x86Compiler, func)
 {
 }
 
-X86CompilerFuncEnd::~X86CompilerFuncEnd() ASMJIT_NOTHROW
+X86CompilerFuncEnd::~X86CompilerFuncEnd()
 {
 }
 
@@ -818,13 +818,13 @@ X86CompilerFuncEnd::~X86CompilerFuncEnd() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncEnd - Interface]
 // ============================================================================
 
-void X86CompilerFuncEnd::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncEnd::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   _offset = x86Context._currentOffset++;
 }
 
-CompilerItem* X86CompilerFuncEnd::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerFuncEnd::translate(CompilerContext& cc)
 {
   _isTranslated = true;
   return NULL;
@@ -834,7 +834,7 @@ CompilerItem* X86CompilerFuncEnd::translate(CompilerContext& cc) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncRet - Construction / Destruction]
 // ============================================================================
 
-X86CompilerFuncRet::X86CompilerFuncRet(X86Compiler* x86Compiler, X86CompilerFuncDecl* func, const Operand* first, const Operand* second) ASMJIT_NOTHROW :
+X86CompilerFuncRet::X86CompilerFuncRet(X86Compiler* x86Compiler, X86CompilerFuncDecl* func, const Operand* first, const Operand* second) :
   CompilerFuncRet(x86Compiler, func, first, second)
 {
 /*
@@ -888,7 +888,7 @@ X86CompilerFuncRet::X86CompilerFuncRet(X86Compiler* x86Compiler, X86CompilerFunc
 */
 }
 
-X86CompilerFuncRet::~X86CompilerFuncRet() ASMJIT_NOTHROW
+X86CompilerFuncRet::~X86CompilerFuncRet()
 {
 }
 
@@ -896,7 +896,7 @@ X86CompilerFuncRet::~X86CompilerFuncRet() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncRet - Interface]
 // ============================================================================
 
-void X86CompilerFuncRet::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncRet::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = x86Context.getCompiler();
@@ -929,7 +929,7 @@ void X86CompilerFuncRet::prepare(CompilerContext& cc) ASMJIT_NOTHROW
         cv->workOffset = _offset;
         cv->regReadCount++;
 
-        if (X86Util::isVarTypeInt(cv->type) && X86Util::isVarTypeInt(retValType))
+        if (X86Util::isVarTypeInt(cv->getType()) && X86Util::isVarTypeInt(retValType))
         {
           x86Context._newRegisterHomeIndex(cv, (i == 0) ? kX86RegIndexEax : kX86RegIndexEdx);
         }
@@ -940,7 +940,7 @@ void X86CompilerFuncRet::prepare(CompilerContext& cc) ASMJIT_NOTHROW
   x86Context._currentOffset++;
 }
 
-CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = x86Context.getCompiler();
@@ -949,7 +949,7 @@ CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc) ASMJIT_NOTHROW
   uint32_t retValType = getFunc()->getDecl()->getReturnType();
   uint32_t i;
 
-  switch ((int)retValType)
+  switch (retValType)
   {
     case kX86VarTypeGpd:
     case kX86VarTypeGpq:
@@ -1006,7 +1006,7 @@ CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc) ASMJIT_NOTHROW
             if (srci != kRegIndexInvalid)
               x86Context.saveXmmVar(cv);
 
-            switch (cv->type)
+            switch (cv->getType())
             {
               case kX86VarTypeXmmSS:
               case kX86VarTypeXmmPS:
@@ -1153,7 +1153,7 @@ CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc) ASMJIT_NOTHROW
             ASMJIT_ASSERT(cv != NULL);
 
             srci = cv->regIndex;
-            switch (cv->type)
+            switch (cv->getType())
             {
               case kX86VarTypeXmm:
                 if (srci == kRegIndexInvalid)
@@ -1199,7 +1199,7 @@ CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc) ASMJIT_NOTHROW
             ASMJIT_ASSERT(cv != NULL);
 
             srci = cv->regIndex;
-            switch (cv->type)
+            switch (cv->getType())
             {
               case kX86VarTypeXmm:
                 if (srci == kRegIndexInvalid)
@@ -1249,7 +1249,7 @@ CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc) ASMJIT_NOTHROW
   return translated();
 }
 
-void X86CompilerFuncRet::emit(Assembler& a) ASMJIT_NOTHROW
+void X86CompilerFuncRet::emit(Assembler& a)
 {
   X86Assembler& x86Asm = static_cast<X86Assembler&>(a);
 
@@ -1261,7 +1261,7 @@ void X86CompilerFuncRet::emit(Assembler& a) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncRet - Misc]
 // ============================================================================
 
-int X86CompilerFuncRet::getMaxSize() const ASMJIT_NOTHROW
+int X86CompilerFuncRet::getMaxSize() const
 {
   return mustEmitJump() ? 15 : 0;
 }
@@ -1270,7 +1270,7 @@ int X86CompilerFuncRet::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncCall - Construction / Destruction]
 // ============================================================================
 
-X86CompilerFuncCall::X86CompilerFuncCall(X86Compiler* x86Compiler, X86CompilerFuncDecl* caller, const Operand* target) ASMJIT_NOTHROW : 
+X86CompilerFuncCall::X86CompilerFuncCall(X86Compiler* x86Compiler, X86CompilerFuncDecl* caller, const Operand* target) : 
   CompilerFuncCall(x86Compiler, caller, target),
   _gpParams(0),
   _mmParams(0),
@@ -1280,7 +1280,7 @@ X86CompilerFuncCall::X86CompilerFuncCall(X86Compiler* x86Compiler, X86CompilerFu
 {
 }
 
-X86CompilerFuncCall::~X86CompilerFuncCall() ASMJIT_NOTHROW
+X86CompilerFuncCall::~X86CompilerFuncCall()
 {
   memset(_argumentToVarRecord, 0, sizeof(VarCallRecord*) * kFuncArgsMax);
 }
@@ -1289,7 +1289,7 @@ X86CompilerFuncCall::~X86CompilerFuncCall() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncCall - Interface]
 // ============================================================================
 
-void X86CompilerFuncCall::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerFuncCall::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -1536,7 +1536,7 @@ void X86CompilerFuncCall::prepare(CompilerContext& cc) ASMJIT_NOTHROW
       }
       else
       {
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
           case kX86VarTypeGpq:
@@ -1653,7 +1653,7 @@ void X86CompilerFuncCall::prepare(CompilerContext& cc) ASMJIT_NOTHROW
 #undef __GET_VARIABLE
 }
 
-CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = x86Context.getCompiler();
@@ -1778,7 +1778,7 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
       }
       else
       {
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
           case kX86VarTypeGpq:
@@ -1912,10 +1912,10 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
         }
         else
         {
-          uint32_t x = _x86Decl.findArgumentByRegCode(X86Util::getRegCodeFromVarType(vsrc->type, vsrc->regIndex));
+          uint32_t x = _x86Decl.findArgumentByRegCode(X86Util::getRegCodeFromVarType(vsrc->getType(), vsrc->regIndex));
           bool doSpill = true;
 
-          if ((X86Util::getVarClassFromVarType(vdst->type) & kX86VarClassGp) != 0)
+          if ((vdst->getClass() & kX86VarClassGp) != 0)
           {
             // Try to emit mov to register which is possible for call() operand.
             if (x == kInvalidValue && (rdst->flags & VarCallRecord::kFlagCallReg) != 0)
@@ -1996,7 +1996,7 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
                 if (srcIndex == dstArgType.getRegIndex())
                 {
 #if defined(ASMJIT_X64)
-                  if (vdst->type != kX86VarTypeGpd || vsrc->type != kX86VarTypeGpd)
+                  if (vdst->getType() != kX86VarTypeGpd || vsrc->getType() != kX86VarTypeGpd)
                     x86Compiler->emit(kX86InstXchg, gpq(dstIndex), gpq(srcIndex));
                   else
 #endif
@@ -2168,7 +2168,7 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
 
     if (rec->flags & (VarCallRecord::kFlagOutEax | VarCallRecord::kFlagOutEdx))
     {
-      if (X86Util::getVarClassFromVarType(vdata->type) & kX86VarClassGp)
+      if (vdata->getClass() & kX86VarClassGp)
       {
         x86Context.allocGpVar(vdata, 
           IntUtil::maskFromIndex((rec->flags & VarCallRecord::kFlagOutEax) != 0
@@ -2181,7 +2181,7 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
 
     if (rec->flags & (VarCallRecord::kFlagOutMm0))
     {
-      if (X86Util::getVarClassFromVarType(vdata->type) & kX86VarClassMm)
+      if (vdata->getClass() & kX86VarClassMm)
       {
         x86Context.allocMmVar(vdata, IntUtil::maskFromIndex(kX86RegIndexMm0),
           kVarAllocRegister | kVarAllocWrite);
@@ -2191,7 +2191,7 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
 
     if (rec->flags & (VarCallRecord::kFlagOutXmm0 | VarCallRecord::kFlagOutXmm1))
     {
-      if (X86Util::getVarClassFromVarType(vdata->type) & kX86VarClassXmm)
+      if (vdata->getClass() & kX86VarClassXmm)
       {
         x86Context.allocXmmVar(vdata, 
           IntUtil::maskFromIndex((rec->flags & VarCallRecord::kFlagOutXmm0) != 0
@@ -2204,12 +2204,12 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
 
     if (rec->flags & (VarCallRecord::kFlagOutSt0 | VarCallRecord::kFlagOutSt1))
     {
-      if (X86Util::getVarClassFromVarType(vdata->type) & kX86VarClassXmm)
+      if (vdata->getClass() & kX86VarClassXmm)
       {
         Mem mem(x86Context._getVarMem(vdata));
         x86Context.unuseVar(vdata, kVarStateMem);
 
-        switch (vdata->type)
+        switch (vdata->getType())
         {
           case kX86VarTypeXmmSS:
           case kX86VarTypeXmmPS:
@@ -2250,13 +2250,13 @@ CompilerItem* X86CompilerFuncCall::translate(CompilerContext& cc) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncCall - Misc]
 // ============================================================================
 
-int X86CompilerFuncCall::getMaxSize() const ASMJIT_NOTHROW
+int X86CompilerFuncCall::getMaxSize() const
 {
   // TODO: Instruction max size.
   return 15;
 }
 
-bool X86CompilerFuncCall::_tryUnuseVar(CompilerVar* _v) ASMJIT_NOTHROW
+bool X86CompilerFuncCall::_tryUnuseVar(CompilerVar* _v)
 {
   X86CompilerVar* cv = static_cast<X86CompilerVar*>(_v);
 
@@ -2276,7 +2276,7 @@ bool X86CompilerFuncCall::_tryUnuseVar(CompilerVar* _v) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerFuncCall - Helpers]
 // ============================================================================
 
-uint32_t X86CompilerFuncCall::_findTemporaryGpRegister(CompilerContext& cc) ASMJIT_NOTHROW
+uint32_t X86CompilerFuncCall::_findTemporaryGpRegister(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
 
@@ -2304,7 +2304,7 @@ uint32_t X86CompilerFuncCall::_findTemporaryGpRegister(CompilerContext& cc) ASMJ
   return candidate;
 }
 
-uint32_t X86CompilerFuncCall::_findTemporaryXmmRegister(CompilerContext& cc) ASMJIT_NOTHROW
+uint32_t X86CompilerFuncCall::_findTemporaryXmmRegister(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
 
@@ -2332,7 +2332,7 @@ uint32_t X86CompilerFuncCall::_findTemporaryXmmRegister(CompilerContext& cc) ASM
   return candidate;
 }
 
-X86CompilerVar* X86CompilerFuncCall::_getOverlappingVariable(CompilerContext& cc, const FuncArg& argType) const ASMJIT_NOTHROW
+X86CompilerVar* X86CompilerFuncCall::_getOverlappingVariable(CompilerContext& cc, const FuncArg& argType) const
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   ASMJIT_ASSERT(argType.getVarType() != kVarTypeInvalid);
@@ -2355,7 +2355,7 @@ X86CompilerVar* X86CompilerFuncCall::_getOverlappingVariable(CompilerContext& cc
   return NULL;
 }
 
-void X86CompilerFuncCall::_moveAllocatedVariableToStack(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType) ASMJIT_NOTHROW
+void X86CompilerFuncCall::_moveAllocatedVariableToStack(CompilerContext& cc, X86CompilerVar* vdata, const FuncArg& argType)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = x86Context.getCompiler();
@@ -2366,7 +2366,7 @@ void X86CompilerFuncCall::_moveAllocatedVariableToStack(CompilerContext& cc, X86
   uint32_t src = vdata->regIndex;
   Mem dst = ptr(zsp, -(int)sizeof(uintptr_t) + argType.getStackOffset());
 
-  switch (vdata->type)
+  switch (vdata->getType())
   {
     case kX86VarTypeGpd:
       switch (argType.getVarType())
@@ -2474,7 +2474,7 @@ void X86CompilerFuncCall::_moveAllocatedVariableToStack(CompilerContext& cc, X86
 void X86CompilerFuncCall::_moveSpilledVariableToStack(CompilerContext& cc,
   X86CompilerVar* cv, const FuncArg& argType,
   uint32_t temporaryGpReg,
-  uint32_t temporaryXmmReg) ASMJIT_NOTHROW
+  uint32_t temporaryXmmReg)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = x86Context.getCompiler();
@@ -2485,7 +2485,7 @@ void X86CompilerFuncCall::_moveSpilledVariableToStack(CompilerContext& cc,
   Mem src = x86Context._getVarMem(cv);
   Mem dst = ptr(zsp, -(int)sizeof(sysint_t) + argType.getStackOffset());
 
-  switch (cv->type)
+  switch (cv->getType())
   {
     case kX86VarTypeGpd:
       switch (argType.getVarType())
@@ -2599,7 +2599,7 @@ void X86CompilerFuncCall::_moveSpilledVariableToStack(CompilerContext& cc,
 }
 
 void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
-  X86CompilerVar* cv, const FuncArg& argType) ASMJIT_NOTHROW
+  X86CompilerVar* cv, const FuncArg& argType)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = x86Context.getCompiler();
@@ -2612,7 +2612,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
     switch (argType.getVarType())
     {
       case kX86VarTypeGpd:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
 #if defined(ASMJIT_X64)
@@ -2628,7 +2628,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
 
 #if defined(ASMJIT_X64)
       case kX86VarTypeGpq:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
             x86Compiler->emit(kX86InstMov, gpd(dst), gpd(src));
@@ -2644,7 +2644,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
 #endif // ASMJIT_X64
 
       case kX86VarTypeMm:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
             x86Compiler->emit(kX86InstMovD, gpd(dst), gpd(src));
@@ -2663,7 +2663,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
       case kX86VarTypeXmm:
       case kX86VarTypeXmmPS:
       case kX86VarTypeXmmPD:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
             x86Compiler->emit(kX86InstMovD, xmm(dst), gpd(src));
@@ -2687,7 +2687,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
         break;
 
       case kX86VarTypeXmmSS:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeMm:
             x86Compiler->emit(kX86InstMovQ, xmm(dst), mm(src));
@@ -2708,7 +2708,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
         break;
 
       case kX86VarTypeXmmSD:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeMm:
             x86Compiler->emit(kX86InstMovQ, xmm(dst), mm(src));
@@ -2736,7 +2736,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
     switch (argType.getVarType())
     {
       case kX86VarTypeGpd:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
 #if defined(ASMJIT_X64)
@@ -2752,7 +2752,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
 
 #if defined(ASMJIT_X64)
       case kX86VarTypeGpq:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
             x86Compiler->emit(kX86InstMov, gpd(dst), mem);
@@ -2768,7 +2768,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
 #endif // ASMJIT_X64
 
       case kX86VarTypeMm:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
             x86Compiler->emit(kX86InstMovD, gpd(dst), mem);
@@ -2787,7 +2787,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
       case kX86VarTypeXmm:
       case kX86VarTypeXmmPS:
       case kX86VarTypeXmmPD:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeGpd:
             x86Compiler->emit(kX86InstMovD, xmm(dst), mem);
@@ -2811,7 +2811,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
         break;
 
       case kX86VarTypeXmmSS:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeMm:
             x86Compiler->emit(kX86InstMovQ, xmm(dst), mem);
@@ -2832,7 +2832,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
         break;
 
       case kX86VarTypeXmmSD:
-        switch (cv->type)
+        switch (cv->getType())
         {
           case kX86VarTypeMm:
             x86Compiler->emit(kX86InstMovQ, xmm(dst), mem);
@@ -2858,7 +2858,7 @@ void X86CompilerFuncCall::_moveSrcVariableToRegister(CompilerContext& cc,
 }
 
 // Prototype & Arguments Management.
-void X86CompilerFuncCall::setPrototype(uint32_t callingConvention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount) ASMJIT_NOTHROW
+void X86CompilerFuncCall::setPrototype(uint32_t callingConvention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount)
 {
   _x86Decl.setPrototype(callingConvention, returnType, arguments, argumentsCount);
   _args = reinterpret_cast<Operand*>(
@@ -2866,7 +2866,7 @@ void X86CompilerFuncCall::setPrototype(uint32_t callingConvention, uint32_t retu
   memset(_args, 0, sizeof(Operand) * argumentsCount);
 }
 
-bool X86CompilerFuncCall::setArgument(uint32_t i, const Var& var) ASMJIT_NOTHROW
+bool X86CompilerFuncCall::setArgument(uint32_t i, const Var& var)
 {
   ASMJIT_ASSERT(i < _x86Decl.getArgumentsCount());
 
@@ -2877,7 +2877,7 @@ bool X86CompilerFuncCall::setArgument(uint32_t i, const Var& var) ASMJIT_NOTHROW
   return true;
 }
 
-bool X86CompilerFuncCall::setArgument(uint32_t i, const Imm& imm) ASMJIT_NOTHROW
+bool X86CompilerFuncCall::setArgument(uint32_t i, const Imm& imm)
 {
   ASMJIT_ASSERT(i < _x86Decl.getArgumentsCount());
 
@@ -2888,7 +2888,7 @@ bool X86CompilerFuncCall::setArgument(uint32_t i, const Imm& imm) ASMJIT_NOTHROW
   return true;
 }
 
-bool X86CompilerFuncCall::setReturn(const Operand& first, const Operand& second) ASMJIT_NOTHROW
+bool X86CompilerFuncCall::setReturn(const Operand& first, const Operand& second)
 {
   _ret[0] = first;
   _ret[1] = second;

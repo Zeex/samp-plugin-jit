@@ -21,7 +21,7 @@ namespace AsmJit {
 
 static const char letters[] = "0123456789ABCDEF";
 
-char* StringUtil::copy(char* dst, const char* src, size_t len) ASMJIT_NOTHROW
+char* StringUtil::copy(char* dst, const char* src, size_t len)
 {
   if (src == NULL)
     return dst;
@@ -39,13 +39,13 @@ char* StringUtil::copy(char* dst, const char* src, size_t len) ASMJIT_NOTHROW
   return dst;
 }
 
-char* StringUtil::fill(char* dst, const int c, size_t len) ASMJIT_NOTHROW
+char* StringUtil::fill(char* dst, const int c, size_t len)
 {
   memset(dst, c, len);
   return dst + len;
 }
 
-char* StringUtil::hex(char* dst, const uint8_t* src, size_t len) ASMJIT_NOTHROW
+char* StringUtil::hex(char* dst, const uint8_t* src, size_t len)
 {
   for (size_t i = len; i; i--, dst += 2, src += 1)
   {
@@ -57,7 +57,7 @@ char* StringUtil::hex(char* dst, const uint8_t* src, size_t len) ASMJIT_NOTHROW
 }
 
 // Not too efficient, but this is mainly for debugging:)
-char* StringUtil::utoa(char* dst, uintptr_t i, size_t base) ASMJIT_NOTHROW
+char* StringUtil::utoa(char* dst, uintptr_t i, size_t base)
 {
   ASMJIT_ASSERT(base <= 16);
 
@@ -73,7 +73,7 @@ char* StringUtil::utoa(char* dst, uintptr_t i, size_t base) ASMJIT_NOTHROW
   return StringUtil::copy(dst, p, (size_t)(buf + 128 - p));
 }
 
-char* StringUtil::itoa(char* dst, intptr_t i, size_t base) ASMJIT_NOTHROW
+char* StringUtil::itoa(char* dst, intptr_t i, size_t base)
 {
   if (i < 0)
   {

@@ -29,6 +29,8 @@ struct MemoryMarker;
 //! @ref Compiler.
 struct Context
 {
+  ASMJIT_NO_COPY(Context)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -56,8 +58,6 @@ struct Context
   //!
   //! @retrurn Error value, see @c kError.
   virtual uint32_t generate(void** dest, Assembler* assembler) = 0;
-
-  ASMJIT_NO_COPY(Context)
 };
 
 // ============================================================================
@@ -66,6 +66,8 @@ struct Context
 
 struct JitContext : public Context
 {
+  ASMJIT_NO_COPY(JitContext)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -135,8 +137,6 @@ struct JitContext : public Context
 
   //! @brief Type of allocation.
   uint32_t _allocType;
-
-  ASMJIT_NO_COPY(JitContext)
 };
 
 } // AsmJit namespace

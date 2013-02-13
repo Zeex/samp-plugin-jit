@@ -40,13 +40,13 @@ struct X86Util
   // --------------------------------------------------------------------------
 
   //! @brief Get the equivalent of negated condition code.
-  static inline uint32_t getNegatedCond(uint32_t cond) ASMJIT_NOTHROW
+  static inline uint32_t getNegatedCond(uint32_t cond)
   {
     return static_cast<kX86Cond>(cond ^ static_cast<uint32_t>(cond < kX86CondNone));
   }
 
   //! @brief Corresponds to transposing the operands of a comparison.
-  static inline uint32_t getReversedCond(uint32_t cond) ASMJIT_NOTHROW
+  static inline uint32_t getReversedCond(uint32_t cond)
   {
     ASMJIT_ASSERT(static_cast<uint32_t>(cond) < ASMJIT_ARRAY_SIZE(_x86UtilReversedCond));
     return _x86UtilReversedCond[cond];
@@ -54,7 +54,7 @@ struct X86Util
 
   //! @brief Translate condition code @a cc to jcc instruction code.
   //! @sa @c kX86InstCode, @c kX86InstJ.
-  static inline uint32_t getJccInstFromCond(uint32_t cond) ASMJIT_NOTHROW
+  static inline uint32_t getJccInstFromCond(uint32_t cond)
   {
     ASMJIT_ASSERT(static_cast<uint32_t>(cond) < ASMJIT_ARRAY_SIZE(_x86UtilJccFromCond));
     return _x86UtilJccFromCond[cond];
@@ -62,7 +62,7 @@ struct X86Util
 
   //! @brief Translate condition code @a cc to cmovcc instruction code.
   //! @sa @c kX86InstCode, @c kX86InstCMov.
-  static inline uint32_t getCMovccInstFromCond(uint32_t cond) ASMJIT_NOTHROW
+  static inline uint32_t getCMovccInstFromCond(uint32_t cond)
   {
     ASMJIT_ASSERT(static_cast<uint32_t>(cond) < ASMJIT_ARRAY_SIZE(_x86UtilMovccFromCond));
     return _x86UtilMovccFromCond[cond];
@@ -70,7 +70,7 @@ struct X86Util
 
   //! @brief Translate condition code @a cc to setcc instruction code.
   //! @sa @c kX86InstCode, @c kX86InstSet.
-  static inline uint32_t getSetccInstFromCond(uint32_t cond) ASMJIT_NOTHROW
+  static inline uint32_t getSetccInstFromCond(uint32_t cond)
   {
     ASMJIT_ASSERT(static_cast<uint32_t>(cond) < ASMJIT_ARRAY_SIZE(_x86UtilSetccFromCond));
     return _x86UtilSetccFromCond[cond];

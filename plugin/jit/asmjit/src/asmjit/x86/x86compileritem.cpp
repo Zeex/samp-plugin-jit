@@ -25,12 +25,12 @@ namespace AsmJit {
 // [AsmJit::X86CompilerAlign - Construction / Destruction]
 // ============================================================================
 
-X86CompilerAlign::X86CompilerAlign(X86Compiler* x86Compiler, uint32_t size) ASMJIT_NOTHROW :
+X86CompilerAlign::X86CompilerAlign(X86Compiler* x86Compiler, uint32_t size) :
   CompilerAlign(x86Compiler, size)
 {
 }
 
-X86CompilerAlign::~X86CompilerAlign() ASMJIT_NOTHROW
+X86CompilerAlign::~X86CompilerAlign()
 {
 }
 
@@ -38,7 +38,7 @@ X86CompilerAlign::~X86CompilerAlign() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerAlign - Interface]
 // ============================================================================
 
-void X86CompilerAlign::emit(Assembler& a) ASMJIT_NOTHROW
+void X86CompilerAlign::emit(Assembler& a)
 {
   X86Assembler& x86Asm = static_cast<X86Assembler&>(a);
 
@@ -49,12 +49,12 @@ void X86CompilerAlign::emit(Assembler& a) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerTarget - Construction / Destruction]
 // ============================================================================
 
-X86CompilerTarget::X86CompilerTarget(X86Compiler* c, const Label& label) ASMJIT_NOTHROW :
+X86CompilerTarget::X86CompilerTarget(X86Compiler* c, const Label& label) :
   CompilerTarget(c, label)
 {
 }
 
-X86CompilerTarget::~X86CompilerTarget() ASMJIT_NOTHROW
+X86CompilerTarget::~X86CompilerTarget()
 {
 }
 
@@ -95,13 +95,13 @@ static X86CompilerTarget* X86CompilerTarget_removeUnreachableItems(X86CompilerTa
   return static_cast<X86CompilerTarget*>(item);
 }
 
-void X86CompilerTarget::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerTarget::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   _offset = x86Context._currentOffset++;
 }
 
-CompilerItem* X86CompilerTarget::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerTarget::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
 
@@ -136,7 +136,7 @@ CompilerItem* X86CompilerTarget::translate(CompilerContext& cc) ASMJIT_NOTHROW
   return translated();
 }
 
-void X86CompilerTarget::emit(Assembler& a) ASMJIT_NOTHROW
+void X86CompilerTarget::emit(Assembler& a)
 {
   X86Assembler& x86Asm = static_cast<X86Assembler&>(a);
   x86Asm.bind(_label);
@@ -146,12 +146,12 @@ void X86CompilerTarget::emit(Assembler& a) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerHint - Construction / Destruction]
 // ============================================================================
 
-X86CompilerHint::X86CompilerHint(X86Compiler* compiler, X86CompilerVar* var, uint32_t hintId, uint32_t hintValue) ASMJIT_NOTHROW :
+X86CompilerHint::X86CompilerHint(X86Compiler* compiler, X86CompilerVar* var, uint32_t hintId, uint32_t hintValue) :
   CompilerHint(compiler, var, hintId, hintValue)
 {
 }
 
-X86CompilerHint::~X86CompilerHint() ASMJIT_NOTHROW
+X86CompilerHint::~X86CompilerHint()
 {
 }
 
@@ -159,7 +159,7 @@ X86CompilerHint::~X86CompilerHint() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerHint - Interface]
 // ============================================================================
 
-void X86CompilerHint::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerHint::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86CompilerVar* var = getVar();
@@ -195,7 +195,7 @@ void X86CompilerHint::prepare(CompilerContext& cc) ASMJIT_NOTHROW
   }
 }
 
-CompilerItem* X86CompilerHint::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerHint::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86CompilerVar* var = getVar();
@@ -238,7 +238,7 @@ _End:
 // [AsmJit::X86CompilerHint - Misc]
 // ============================================================================
 
-int X86CompilerHint::getMaxSize() const ASMJIT_NOTHROW
+int X86CompilerHint::getMaxSize() const
 {
   // Compiler hint is NOP, but it can generate other items which can do 
   // something - in such more items are added into the stream so we don't need
@@ -250,7 +250,7 @@ int X86CompilerHint::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::X86CompilerInst - Construction / Destruction]
 // ============================================================================
 
-X86CompilerInst::X86CompilerInst(X86Compiler* x86Compiler, uint32_t code, Operand* opData, uint32_t opCount) ASMJIT_NOTHROW :
+X86CompilerInst::X86CompilerInst(X86Compiler* x86Compiler, uint32_t code, Operand* opData, uint32_t opCount) :
   CompilerInst(x86Compiler, code, opData, opCount)
 {
   uint32_t i;
@@ -285,8 +285,11 @@ X86CompilerInst::X86CompilerInst(X86Compiler* x86Compiler, uint32_t code, Operan
         break;
 
       case kX86InstCbw:
+      case kX86InstCdq:
       case kX86InstCdqe:
+      case kX86InstCwd:
       case kX86InstCwde:
+      case kX86InstCqo:
         // Special...
         break;
 
@@ -430,7 +433,7 @@ X86CompilerInst::X86CompilerInst(X86Compiler* x86Compiler, uint32_t code, Operan
   }
 }
 
-X86CompilerInst::~X86CompilerInst() ASMJIT_NOTHROW
+X86CompilerInst::~X86CompilerInst()
 {
 }
 
@@ -438,7 +441,7 @@ X86CompilerInst::~X86CompilerInst() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerInst - Interface]
 // ============================================================================
 
-void X86CompilerInst::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerInst::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -667,6 +670,29 @@ void X86CompilerInst::prepare(CompilerContext& cc) ASMJIT_NOTHROW
               case 0:
                 vdata->regRwCount++;
                 var->vflags |= kVarAllocReadWrite | kVarAllocSpecial;
+                var->regMask = IntUtil::maskFromIndex(kX86RegIndexEax);
+                gpRestrictMask &= ~var->regMask;
+                break;
+
+              default:
+                ASMJIT_ASSERT(0);
+            }
+            break;
+
+          case kX86InstCdq:
+          case kX86InstCwd:
+          case kX86InstCqo:
+            switch (i)
+            {
+              case 0:
+                vdata->regWriteCount++;
+                var->vflags |= kVarAllocWrite | kVarAllocSpecial;
+                var->regMask = IntUtil::maskFromIndex(kX86RegIndexEdx);
+                gpRestrictMask &= ~var->regMask;
+                break;
+              case 1:
+                vdata->regReadCount++;
+                var->vflags |= kVarAllocRead | kVarAllocSpecial;
                 var->regMask = IntUtil::maskFromIndex(kX86RegIndexEax);
                 gpRestrictMask &= ~var->regMask;
                 break;
@@ -1217,7 +1243,7 @@ void X86CompilerInst::prepare(CompilerContext& cc) ASMJIT_NOTHROW
     X86CompilerVar* v = _vars[i].vdata;
 
     // Update GP register allocator restrictions.
-    if (X86Util::isVarTypeInt(v->type))
+    if (X86Util::isVarTypeInt(v->getType()))
     {
       if (_vars[i].regMask == 0xFFFFFFFF) _vars[i].regMask &= gpRestrictMask;
     }
@@ -1316,7 +1342,7 @@ void X86CompilerInst::prepare(CompilerContext& cc) ASMJIT_NOTHROW
 #undef __GET_VARIABLE
 }
 
-CompilerItem* X86CompilerInst::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerInst::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -1379,7 +1405,7 @@ CompilerItem* X86CompilerInst::translate(CompilerContext& cc) ASMJIT_NOTHROW
   return translated();
 }
 
-void X86CompilerInst::emit(Assembler& a) ASMJIT_NOTHROW
+void X86CompilerInst::emit(Assembler& a)
 {
   X86Assembler& x86Asm = static_cast<X86Assembler&>(a);
 
@@ -1396,8 +1422,11 @@ void X86CompilerInst::emit(Assembler& a) ASMJIT_NOTHROW
         return;
 
       case kX86InstCbw:
+      case kX86InstCdq:
       case kX86InstCdqe:
+      case kX86InstCwd:
       case kX86InstCwde:
+      case kX86InstCqo:
         x86Asm._emitInstruction(_code);
         return;
 
@@ -1551,13 +1580,13 @@ void X86CompilerInst::emit(Assembler& a) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerInst - Misc]
 // ============================================================================
 
-int X86CompilerInst::getMaxSize() const ASMJIT_NOTHROW
+int X86CompilerInst::getMaxSize() const
 {
   // TODO: Instruction max size.
   return 15;
 }
 
-bool X86CompilerInst::_tryUnuseVar(CompilerVar* _v) ASMJIT_NOTHROW
+bool X86CompilerInst::_tryUnuseVar(CompilerVar* _v)
 {
   X86CompilerVar* cv = static_cast<X86CompilerVar*>(_v);
 
@@ -1577,7 +1606,7 @@ bool X86CompilerInst::_tryUnuseVar(CompilerVar* _v) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerJmpInst - Construction / Destruction]
 // ============================================================================
 
-X86CompilerJmpInst::X86CompilerJmpInst(X86Compiler* x86Compiler, uint32_t code, Operand* opData, uint32_t opCount) ASMJIT_NOTHROW :
+X86CompilerJmpInst::X86CompilerJmpInst(X86Compiler* x86Compiler, uint32_t code, Operand* opData, uint32_t opCount) :
   X86CompilerInst(x86Compiler, code, opData, opCount)
 {
   _jumpTarget = x86Compiler->_getTarget(_operands[0].getId());
@@ -1593,7 +1622,7 @@ X86CompilerJmpInst::X86CompilerJmpInst(X86Compiler* x86Compiler, uint32_t code, 
     setInstFlag(kX86CompilerInstFlagIsTaken);
 }
 
-X86CompilerJmpInst::~X86CompilerJmpInst() ASMJIT_NOTHROW
+X86CompilerJmpInst::~X86CompilerJmpInst()
 {
 }
 
@@ -1601,7 +1630,7 @@ X86CompilerJmpInst::~X86CompilerJmpInst() ASMJIT_NOTHROW
 // [AsmJit::X86CompilerJmpInst - Interface]
 // ============================================================================
 
-void X86CompilerJmpInst::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerJmpInst::prepare(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   _offset = x86Context._currentOffset;
@@ -1637,7 +1666,7 @@ void X86CompilerJmpInst::prepare(CompilerContext& cc) ASMJIT_NOTHROW
   x86Context._currentOffset++;
 }
 
-CompilerItem* X86CompilerJmpInst::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* X86CompilerJmpInst::translate(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -1688,7 +1717,7 @@ CompilerItem* X86CompilerJmpInst::translate(CompilerContext& cc) ASMJIT_NOTHROW
   return ret;
 }
 
-void X86CompilerJmpInst::emit(Assembler& a) ASMJIT_NOTHROW
+void X86CompilerJmpInst::emit(Assembler& a)
 {
   static const uint MAXIMUM_SHORT_JMP_SIZE = 127;
 
@@ -1729,7 +1758,7 @@ _End:
 // [AsmJit::X86CompilerJmpInst - DoJump]
 // ============================================================================
 
-void X86CompilerJmpInst::doJump(CompilerContext& cc) ASMJIT_NOTHROW
+void X86CompilerJmpInst::doJump(CompilerContext& cc)
 {
   X86CompilerContext& x86Context = static_cast<X86CompilerContext&>(cc);
   X86Compiler* x86Compiler = getCompiler();
@@ -1789,7 +1818,7 @@ void X86CompilerJmpInst::doJump(CompilerContext& cc) ASMJIT_NOTHROW
 // [AsmJit::X86CompilerJmpInst - GetJumpTarget]
 // ============================================================================
 
-CompilerTarget* X86CompilerJmpInst::getJumpTarget() const ASMJIT_NOTHROW
+CompilerTarget* X86CompilerJmpInst::getJumpTarget() const
 {
   return _jumpTarget;
 }

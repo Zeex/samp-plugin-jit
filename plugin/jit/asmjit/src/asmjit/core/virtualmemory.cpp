@@ -35,7 +35,7 @@ namespace AsmJit {
 struct VirtualMemoryLocal
 {
   VirtualMemoryLocal()
-    ASMJIT_NOTHROW
+   
   {
     SYSTEM_INFO info;
     GetSystemInfo(&info);
@@ -49,26 +49,26 @@ struct VirtualMemoryLocal
 };
 
 static VirtualMemoryLocal& vm()
-  ASMJIT_NOTHROW
+ 
 {
   static VirtualMemoryLocal vm;
   return vm;
 };
 
 void* VirtualMemory::alloc(size_t length, size_t* allocated, bool canExecute)
-  ASMJIT_NOTHROW
+ 
 {
   return allocProcessMemory(GetCurrentProcess(), length, allocated, canExecute);
 }
 
 void VirtualMemory::free(void* addr, size_t length)
-  ASMJIT_NOTHROW
+ 
 {
   return freeProcessMemory(GetCurrentProcess(), addr, length);
 }
 
 void* VirtualMemory::allocProcessMemory(HANDLE hProcess, size_t length, size_t* allocated, bool canExecute)
-  ASMJIT_NOTHROW
+ 
 {
   // VirtualAlloc rounds allocated size to page size automatically.
   size_t msize = IntUtil::roundUp(length, vm().pageSize);
@@ -86,19 +86,19 @@ void* VirtualMemory::allocProcessMemory(HANDLE hProcess, size_t length, size_t* 
 }
 
 void VirtualMemory::freeProcessMemory(HANDLE hProcess, void* addr, size_t /* length */)
-  ASMJIT_NOTHROW
+ 
 {
   VirtualFreeEx(hProcess, addr, 0, MEM_RELEASE);
 }
 
 size_t VirtualMemory::getAlignment()
-  ASMJIT_NOTHROW
+ 
 {
   return vm().alignment;
 }
 
 size_t VirtualMemory::getPageSize()
-  ASMJIT_NOTHROW
+ 
 {
   return vm().pageSize;
 }
@@ -117,7 +117,7 @@ size_t VirtualMemory::getPageSize()
 
 struct VirtualMemoryLocal
 {
-  VirtualMemoryLocal() ASMJIT_NOTHROW
+  VirtualMemoryLocal()
   {
     alignment = pageSize = ::getpagesize();
   }
@@ -127,14 +127,14 @@ struct VirtualMemoryLocal
 };
 
 static VirtualMemoryLocal& vm()
-  ASMJIT_NOTHROW
+ 
 {
   static VirtualMemoryLocal vm;
   return vm;
 }
 
 void* VirtualMemory::alloc(size_t length, size_t* allocated, bool canExecute)
-  ASMJIT_NOTHROW
+ 
 {
   size_t msize = IntUtil::roundUp<size_t>(length, vm().pageSize);
   int protection = PROT_READ | PROT_WRITE | (canExecute ? PROT_EXEC : 0);
@@ -149,19 +149,19 @@ void* VirtualMemory::alloc(size_t length, size_t* allocated, bool canExecute)
 }
 
 void VirtualMemory::free(void* addr, size_t length)
-  ASMJIT_NOTHROW
+ 
 {
   munmap(addr, length);
 }
 
 size_t VirtualMemory::getAlignment()
-  ASMJIT_NOTHROW
+ 
 {
   return vm().alignment;
 }
 
 size_t VirtualMemory::getPageSize()
-  ASMJIT_NOTHROW
+ 
 {
   return vm().pageSize;
 }

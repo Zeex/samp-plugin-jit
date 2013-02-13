@@ -107,7 +107,7 @@ _Skip:
 
 // x86CpuId() and detectCpuInfo() for x86 and x64 platforms begins here.
 #if defined(ASMJIT_X86) || defined(ASMJIT_X64)
-void x86CpuId(uint32_t in, X86CpuId* out) ASMJIT_NOTHROW
+void x86CpuId(uint32_t in, X86CpuId* out)
 {
 #if defined(_MSC_VER)
 
@@ -157,7 +157,7 @@ void x86CpuId(uint32_t in, X86CpuId* out) ASMJIT_NOTHROW
 // [AsmJit::x86CpuDetect]
 // ============================================================================
 
-void x86CpuDetect(X86CpuInfo* out) ASMJIT_NOTHROW
+void x86CpuDetect(X86CpuInfo* out)
 {
   uint32_t i;
   X86CpuId regs;

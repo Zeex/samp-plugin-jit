@@ -36,6 +36,8 @@ namespace AsmJit {
 //! @brief Lock - used in thread-safe code for locking.
 struct Lock
 {
+  ASMJIT_NO_COPY(Lock)
+
   // --------------------------------------------------------------------------
   // [Windows]
   // --------------------------------------------------------------------------
@@ -44,14 +46,14 @@ struct Lock
   typedef CRITICAL_SECTION Handle;
 
   //! @brief Create a new @ref Lock instance.
-  inline Lock() ASMJIT_NOTHROW { InitializeCriticalSection(&_handle); }
+  inline Lock() { InitializeCriticalSection(&_handle); }
   //! @brief Destroy the @ref Lock instance.
-  inline ~Lock() ASMJIT_NOTHROW { DeleteCriticalSection(&_handle); }
+  inline ~Lock() { DeleteCriticalSection(&_handle); }
 
   //! @brief Lock.
-  inline void lock() ASMJIT_NOTHROW { EnterCriticalSection(&_handle); }
+  inline void lock() { EnterCriticalSection(&_handle); }
   //! @brief Unlock.
-  inline void unlock() ASMJIT_NOTHROW { LeaveCriticalSection(&_handle); }
+  inline void unlock() { LeaveCriticalSection(&_handle); }
 
 #endif // ASMJIT_WINDOWS
 
@@ -63,14 +65,14 @@ struct Lock
   typedef pthread_mutex_t Handle;
 
   //! @brief Create a new @ref Lock instance.
-  inline Lock() ASMJIT_NOTHROW { pthread_mutex_init(&_handle, NULL); }
+  inline Lock() { pthread_mutex_init(&_handle, NULL); }
   //! @brief Destroy the @ref Lock instance.
-  inline ~Lock() ASMJIT_NOTHROW { pthread_mutex_destroy(&_handle); }
+  inline ~Lock() { pthread_mutex_destroy(&_handle); }
 
   //! @brief Lock.
-  inline void lock() ASMJIT_NOTHROW { pthread_mutex_lock(&_handle); }
+  inline void lock() { pthread_mutex_lock(&_handle); }
   //! @brief Unlock.
-  inline void unlock() ASMJIT_NOTHROW { pthread_mutex_unlock(&_handle); }
+  inline void unlock() { pthread_mutex_unlock(&_handle); }
 #endif // ASMJIT_POSIX
 
   // --------------------------------------------------------------------------
@@ -78,9 +80,9 @@ struct Lock
   // --------------------------------------------------------------------------
 
   //! @brief Get handle.
-  inline Handle& getHandle() ASMJIT_NOTHROW { return _handle; }
+  inline Handle& getHandle() { return _handle; }
   //! @overload
-  inline const Handle& getHandle() const ASMJIT_NOTHROW { return _handle; }
+  inline const Handle& getHandle() const { return _handle; }
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -88,9 +90,6 @@ struct Lock
 
   //! @brief Handle.
   Handle _handle;
-
-  // Disable copy.
-  ASMJIT_NO_COPY(Lock)
 };
 
 // ============================================================================
@@ -100,18 +99,20 @@ struct Lock
 //! @brief Scope auto locker.
 struct AutoLock
 {
+  ASMJIT_NO_COPY(AutoLock)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
   //! @brief Locks @a target.
-  inline AutoLock(Lock& target) ASMJIT_NOTHROW : _target(target)
+  inline AutoLock(Lock& target) : _target(target)
   {
     _target.lock();
   }
 
   //! @brief Unlocks target.
-  inline ~AutoLock() ASMJIT_NOTHROW
+  inline ~AutoLock()
   {
     _target.unlock();
   }
@@ -122,8 +123,6 @@ struct AutoLock
 
   //! @brief Pointer to target (lock).
   Lock& _target;
-
-  ASMJIT_NO_COPY(AutoLock)
 };
 
 //! @}

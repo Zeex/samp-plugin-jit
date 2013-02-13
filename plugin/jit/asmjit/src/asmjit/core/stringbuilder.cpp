@@ -26,7 +26,7 @@ static const char StringBuilder_empty[4] = { 0 };
 // [AsmJit::StringBuilder - Construction / Destruction]
 // ============================================================================
 
-StringBuilder::StringBuilder() ASMJIT_NOTHROW :
+StringBuilder::StringBuilder() :
   _data(const_cast<char*>(StringBuilder_empty)),
   _length(0),
   _capacity(0),
@@ -34,7 +34,7 @@ StringBuilder::StringBuilder() ASMJIT_NOTHROW :
 {
 }
 
-StringBuilder::~StringBuilder() ASMJIT_NOTHROW
+StringBuilder::~StringBuilder()
 {
   if (_canFree)
     ASMJIT_FREE(_data);
@@ -44,7 +44,7 @@ StringBuilder::~StringBuilder() ASMJIT_NOTHROW
 // [AsmJit::StringBuilder - Prepare / Reserve]
 // ============================================================================
 
-char* StringBuilder::prepare(uint32_t op, size_t len) ASMJIT_NOTHROW
+char* StringBuilder::prepare(uint32_t op, size_t len)
 {
   // --------------------------------------------------------------------------
   // [Set]
@@ -65,7 +65,7 @@ char* StringBuilder::prepare(uint32_t op, size_t len) ASMJIT_NOTHROW
 
     if (_capacity < len)
     {
-      if (len >= IntUtil::typeMax<size_t>() - sizeof(uintptr_t) * 2)
+      if (len >= IntUtil::maxValue<size_t>() - sizeof(uintptr_t) * 2)
         return NULL;
 
       size_t to = IntUtil::align<size_t>(len, sizeof(uintptr_t));
@@ -106,7 +106,7 @@ char* StringBuilder::prepare(uint32_t op, size_t len) ASMJIT_NOTHROW
       return _data + _length;
 
     // Overflow.
-    if (IntUtil::typeMax<size_t>() - sizeof(uintptr_t) * 2 - _length < len)
+    if (IntUtil::maxValue<size_t>() - sizeof(uintptr_t) * 2 - _length < len)
       return NULL;
 
     size_t after = _length + len;
@@ -125,7 +125,7 @@ char* StringBuilder::prepare(uint32_t op, size_t len) ASMJIT_NOTHROW
       if (to < after)
       {
         to = after;
-        if (to < (IntUtil::typeMax<size_t>() - 1024 * 32))
+        if (to < (IntUtil::maxValue<size_t>() - 1024 * 32))
           to = IntUtil::align<size_t>(to, 1024 * 32);
       }
 
@@ -154,12 +154,12 @@ char* StringBuilder::prepare(uint32_t op, size_t len) ASMJIT_NOTHROW
   }
 }
 
-bool StringBuilder::reserve(size_t to) ASMJIT_NOTHROW
+bool StringBuilder::reserve(size_t to)
 {
   if (_capacity >= to)
     return true;
 
-  if (to >= IntUtil::typeMax<size_t>() - sizeof(uintptr_t) * 2)
+  if (to >= IntUtil::maxValue<size_t>() - sizeof(uintptr_t) * 2)
     return false;
 
   to = IntUtil::align<size_t>(to, sizeof(uintptr_t));
@@ -182,7 +182,7 @@ bool StringBuilder::reserve(size_t to) ASMJIT_NOTHROW
 // [AsmJit::StringBuilder - Clear]
 // ============================================================================
 
-void StringBuilder::clear() ASMJIT_NOTHROW
+void StringBuilder::clear()
 {
   if (_data != StringBuilder_empty)
     _data[0] = 0;
@@ -193,7 +193,7 @@ void StringBuilder::clear() ASMJIT_NOTHROW
 // [AsmJit::StringBuilder - Methods]
 // ============================================================================
 
-bool StringBuilder::_opString(uint32_t op, const char* str, size_t len) ASMJIT_NOTHROW
+bool StringBuilder::_opString(uint32_t op, const char* str, size_t len)
 {
   if (len == kInvalidSize)
     len = ::strlen(str);
@@ -206,7 +206,7 @@ bool StringBuilder::_opString(uint32_t op, const char* str, size_t len) ASMJIT_N
   return true;
 }
 
-bool StringBuilder::_opChars(uint32_t op, char c, size_t len) ASMJIT_NOTHROW
+bool StringBuilder::_opChars(uint32_t op, char c, size_t len)
 {
   char* p = prepare(op, len);
   if (p == NULL)
@@ -218,7 +218,7 @@ bool StringBuilder::_opChars(uint32_t op, char c, size_t len) ASMJIT_NOTHROW
 
 static const char StringBuilder_numbers[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-bool StringBuilder::_opNumber(uint32_t op, uint64_t i, uint32_t base, size_t width, uint32_t flags) ASMJIT_NOTHROW
+bool StringBuilder::_opNumber(uint32_t op, uint64_t i, uint32_t base, size_t width, uint32_t flags)
 {
   if (base < 2 || base > 36)
     base = 10;
@@ -314,9 +314,9 @@ bool StringBuilder::_opNumber(uint32_t op, uint64_t i, uint32_t base, size_t wid
   return true;
 }
 
-bool StringBuilder::_opHex(uint32_t op, const void* data, size_t len) ASMJIT_NOTHROW
+bool StringBuilder::_opHex(uint32_t op, const void* data, size_t len)
 {
-  if (len >= IntUtil::typeMax<size_t>() / 2)
+  if (len >= IntUtil::maxValue<size_t>() / 2)
     return false;
 
   char* dst = prepare(op, len);
@@ -333,7 +333,7 @@ bool StringBuilder::_opHex(uint32_t op, const void* data, size_t len) ASMJIT_NOT
   return true;
 }
 
-bool StringBuilder::_opVFormat(uint32_t op, const char* fmt, va_list ap) ASMJIT_NOTHROW
+bool StringBuilder::_opVFormat(uint32_t op, const char* fmt, va_list ap)
 {
   char buf[1024];
 
@@ -343,7 +343,7 @@ bool StringBuilder::_opVFormat(uint32_t op, const char* fmt, va_list ap) ASMJIT_
   return _opString(op, buf);
 }
 
-bool StringBuilder::setFormat(const char* fmt, ...) ASMJIT_NOTHROW
+bool StringBuilder::setFormat(const char* fmt, ...)
 {
   bool result;
 
@@ -355,7 +355,7 @@ bool StringBuilder::setFormat(const char* fmt, ...) ASMJIT_NOTHROW
   return result;
 }
 
-bool StringBuilder::appendFormat(const char* fmt, ...) ASMJIT_NOTHROW
+bool StringBuilder::appendFormat(const char* fmt, ...)
 {
   bool result;
 
@@ -367,7 +367,7 @@ bool StringBuilder::appendFormat(const char* fmt, ...) ASMJIT_NOTHROW
   return result;
 }
 
-bool StringBuilder::eq(const char* str, size_t len) const ASMJIT_NOTHROW
+bool StringBuilder::eq(const char* str, size_t len) const
 {
   const char* aData = _data;
   const char* bData = str;
