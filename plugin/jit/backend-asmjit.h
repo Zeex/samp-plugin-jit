@@ -26,13 +26,6 @@
 #define JIT_BACKEND_ASMJIT_H
 
 #include <cstddef>
-#include <functional>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
-#include <utility>
-#include <amx/amx.h>
 #include "amxptr.h"
 #include "backend.h"
 #include "macros.h"
