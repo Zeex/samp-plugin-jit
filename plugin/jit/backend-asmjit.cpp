@@ -30,6 +30,9 @@
 #include <string>
 #include <vector>
 #include <amx/amx.h>
+namespace AsmJit {
+  #include <asmjit/core/build.h>
+}
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
 #include "amxptr.h"
@@ -40,6 +43,7 @@
 
 // AsmJit core
 using AsmJit::Label;
+using AsmJit::asmjit_cast;
 
 // X86-specific
 using AsmJit::X86Assembler;
