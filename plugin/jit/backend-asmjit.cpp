@@ -1737,15 +1737,15 @@ static void emit_halt(Assembler &as, const jit::AMXInstruction &instr,
                       bool *error) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
-  const NamedLabel &L_do_halt = as.getLabel("do_halt");
-  as.mov(ecx, instr.operand());
-  as.jmp(L_do_halt);
+  const NamedLabel &L_halt_helper = as.getLabel("halt_helper");
+  as.push(instr.operand());
+  as.call(L_halt_helper);
 }
 
 static void emit_bounds(Assembler &as, const jit::AMXInstruction &instr,
                         bool *error) {
   // Abort execution if PRI > value or if PRI < 0.
-  const NamedLabel &L_do_halt = as.getLabel("do_halt");
+  const NamedLabel &L_halt_helper = as.getLabel("halt_helper");
   Label L_halt = as.newLabel();
   Label L_good = as.newLabel();
     as.cmp(eax, instr.operand());
@@ -1754,8 +1754,8 @@ static void emit_bounds(Assembler &as, const jit::AMXInstruction &instr,
     as.jl(L_halt);
     as.jmp(L_good);
   as.bind(L_halt);
-    as.mov(ecx, AMX_ERR_BOUNDS);
-    as.jmp(L_do_halt);
+    as.push(AMX_ERR_BOUNDS);
+    as.call(L_halt_helper);
   as.bind(L_good);
 }
 
@@ -1974,6 +1974,8 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
   while (!error && disas.decode(instr, &error)) {
     cell cip = instr.address();
     
+    instr_map.push_back(std::make_pair(cip, as.getCodeSize()));
+
     if (instr.opcode().id() == OP_PROC) {
       as.align(16);
     }
@@ -1981,9 +1983,6 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
     if (jump_targets.find(cip) != jump_targets.end()) {
       as.bind(as.getAmxLabel(cip));
     }
-
-    // Add this instruction to the opcode map.
-    instr_map.push_back(std::make_pair(instr.address(), as.getCodeSize()));
 
     AMXOpcodeID opcode = instr.opcode().id();
     if (opcode >= 0 &&
@@ -1993,10 +1992,6 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
       error = true;
     }
   }
-
-  as.bindByName("do_halt");
-    as.push(ecx);
-    as.call(as.getLabel("halt_helper"));
 
   if (error) {
     if (error_handler != 0) {
