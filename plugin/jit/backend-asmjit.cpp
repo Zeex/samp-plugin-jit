@@ -373,16 +373,14 @@ void emit_instr_map(Assembler &as) {
   }
 }
 
-void emit_get_amx_ptr(Assembler &as, const Label &amx_ptr,
-                             const GpReg &reg) {
-  as.mov(reg, dword_ptr(amx_ptr));
+void emit_get_amx_ptr(Assembler &as, const GpReg &reg) {
+  as.mov(reg, dword_ptr(as.getLabel("amx")));
 }
 
-void emit_get_amx_data_ptr(Assembler &as, const Label &amx_ptr,
-                                  const GpReg &reg) {
+void emit_get_amx_data_ptr(Assembler &as, const GpReg &reg) {
   Label L_quit = as.newLabel();
 
-    emit_get_amx_ptr(as, amx_ptr, eax);
+    emit_get_amx_ptr(as, eax);
 
     as.mov(reg, dword_ptr(eax, offsetof(AMX, data)));
     as.cmp(reg, 0);
@@ -399,7 +397,6 @@ void emit_get_amx_data_ptr(Assembler &as, const Label &amx_ptr,
 void emit_exec(Assembler &as) {
   set_runtime_data(as, RuntimeDataExecPtr, as.getCodeSize());
 
-  const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_instr_map = as.getLabel("instr_map");
   const NamedLabel &L_instr_map_size = as.getLabel("instr_map_size");
   const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
@@ -426,11 +423,11 @@ void emit_exec(Assembler &as) {
     as.sub(esp, 12); // for locals
 
     as.push(esi);
-    emit_get_amx_ptr(as, L_amx, esi);
+    emit_get_amx_ptr(as, esi);
 
     // JIT code expects AMX data pointer to be in ebx.
     as.push(ebx);
-    emit_get_amx_data_ptr(as, L_amx, ebx);
+    emit_get_amx_data_ptr(as, ebx);
 
     // if (amx->hea >= amx->stk) return AMX_ERR_STACKERR;
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
@@ -474,7 +471,7 @@ void emit_exec(Assembler &as) {
 
     // Get address of the public function.
     as.push(dword_ptr(ebp, arg_index));
-    emit_get_amx_ptr(as, L_amx, eax);
+    emit_get_amx_ptr(as, eax);
     as.push(eax);
     as.call(asmjit_cast<void*>(&get_public_addr));
     as.add(esp, 8);
@@ -547,7 +544,6 @@ void emit_exec(Assembler &as) {
 
 // cell JIT_CDECL exec_helper(void *address);
 void emit_exec_helper(Assembler &as) {
-  const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_ebp = as.getLabel("ebp");
   const NamedLabel &L_esp = as.getLabel("esp");
   const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
@@ -580,7 +576,7 @@ void emit_exec_helper(Assembler &as) {
     as.mov(dword_ptr(L_esp), esp);
 
     // Switch from native stack to AMX stack.
-    emit_get_amx_ptr(as, L_amx, ecx);
+    emit_get_amx_ptr(as, ecx);
     as.mov(edx, dword_ptr(ecx, offsetof(AMX, frm)));
     as.lea(ebp, dword_ptr(ebx, edx)); // ebp = amx_data + amx->frm
     as.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
@@ -600,7 +596,7 @@ void emit_exec_helper(Assembler &as) {
 
     // Keep AMX stack registers up-to-date. This wouldn't be necessary if
     // RETN didn't modify them (it pops all arguments off the stack).
-    emit_get_amx_ptr(as, L_amx, eax);
+    emit_get_amx_ptr(as, eax);
     as.mov(edx, ebp);
     as.sub(edx, ebx);
     as.mov(dword_ptr(eax, offsetof(AMX, frm)), edx); // amx->frm = ebp - amx_data
@@ -626,13 +622,12 @@ void emit_exec_helper(Assembler &as) {
 
 // void JIT_CDECL halt_helper(int error);
 void emit_halt_helper(Assembler &as) {
-  const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_reset_ebp = as.getLabel("reset_ebp");
   const NamedLabel &L_reset_esp = as.getLabel("reset_esp");
 
   as.bindByName("halt_helper");
     as.mov(eax, dword_ptr(esp, 4));
-    emit_get_amx_ptr(as, L_amx, ecx);
+    emit_get_amx_ptr(as, ecx);
     as.mov(dword_ptr(ecx, offsetof(AMX, error)), eax);
 
     // Reset stack so we can return right to call().
@@ -684,7 +679,6 @@ void emit_jump_helper(Assembler &as) {
 
 // cell JIT_CDECL sysreq_c_helper(int index, void *stack_base, void *stack_ptr);
 void emit_sysreq_c_helper(Assembler &as) {
-  const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_sysreq_d_helper = as.getLabel("sysreq_d_helper");
   Label L_call = as.newLabel();
   Label L_return = as.newLabel();
@@ -698,7 +692,7 @@ void emit_sysreq_c_helper(Assembler &as) {
     as.mov(ebp, esp);
 
     as.push(dword_ptr(ebp, arg_index));
-    emit_get_amx_ptr(as, L_amx, eax);
+    emit_get_amx_ptr(as, eax);
     as.push(eax);
     as.call(asmjit_cast<void*>(&get_native_addr));
     as.add(esp, 8);
@@ -723,7 +717,6 @@ void emit_sysreq_c_helper(Assembler &as) {
 
 // cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
 void emit_sysreq_d_helper(Assembler &as) {
-  const NamedLabel &L_amx = as.getLabel("amx");
   const NamedLabel &L_ebp = as.getLabel("ebp");
   const NamedLabel &L_esp = as.getLabel("esp");
 
@@ -734,7 +727,7 @@ void emit_sysreq_d_helper(Assembler &as) {
     as.mov(ecx, esp);                 // params
     as.mov(esi, dword_ptr(esp, -16)); // return address
 
-    emit_get_amx_ptr(as, L_amx, edx);
+    emit_get_amx_ptr(as, edx);
 
     // Switch to native stack.
     as.sub(ebp, ebx);
@@ -752,7 +745,7 @@ void emit_sysreq_d_helper(Assembler &as) {
     // eax contains return value, the code below must not overwrite it!!
 
     // Switch back to AMX stack.
-    emit_get_amx_ptr(as, L_amx, edx);
+    emit_get_amx_ptr(as, edx);
     as.mov(dword_ptr(L_ebp), ebp);
     as.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
     as.lea(ebp, dword_ptr(ebx, ecx)); // ebp = amx_data + amx->frm
@@ -971,13 +964,12 @@ void emit_lctrl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // PRI is set to the current value of any of the special registers.
   // The index parameter must be:
   // 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
-  const NamedLabel &L_amx = as.getLabel("amx");
   switch (instr.operand()) {
     case 0:
     case 1:
     case 2:
     case 3:
-      emit_get_amx_ptr(as, L_amx, eax);
+      emit_get_amx_ptr(as, eax);
       switch (instr.operand()) {
         case 0:
           as.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
@@ -1018,10 +1010,9 @@ void emit_sctrl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // set the indexed special registers to the value in PRI.
   // The index parameter must be:
   // 6=CIP
-  const NamedLabel &L_amx = as.getLabel("amx");
   switch (instr.operand()) {
     case 2:
-      emit_get_amx_ptr(as, L_amx, edx);
+      emit_get_amx_ptr(as, edx);
       as.mov(dword_ptr(edx, offsetof(AMX, hea)), eax);
       break;
     case 4:
@@ -1106,11 +1097,8 @@ void emit_stack(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 
 void emit_heap(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // ALT = HEA, HEA = HEA + value
-  const NamedLabel &L_amx = as.getLabel("amx");
-
-  emit_get_amx_ptr(as, L_amx, edx);
+  emit_get_amx_ptr(as, edx);
   as.mov(ecx, dword_ptr(edx, offsetof(AMX, hea)));
-
   if (instr.operand() >= 0) {
     as.add(dword_ptr(edx, offsetof(AMX, hea)), instr.operand());
   } else {
