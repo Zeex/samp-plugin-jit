@@ -120,19 +120,19 @@ class NamedLabel : public Label {
   std::string name_;
 };
 
-class AddressableLabel : public Label {
+class AddressedLabel : public Label {
  public:
-  AddressableLabel(cell address)
+  AddressedLabel(cell address)
     : Label(), address_(address)
   {}
 
-  AddressableLabel(cell address, const Label &label)
+  AddressedLabel(cell address, const Label &label)
     : Label(label), address_(address)
   {}
 
   cell address() const { return address_; }
 
-  bool operator<(const AddressableLabel &rhs) const {
+  bool operator<(const AddressedLabel &rhs) const {
     return address_ < rhs.address_;
   }
 
@@ -160,13 +160,13 @@ class Assembler : public X86Assembler {
     }
   }
 
-  const AddressableLabel &getAmxLabel(cell address) {
-    std::set<AddressableLabel>::const_iterator it = amx_labels_.find(address);
+  const AddressedLabel &getAmxLabel(cell address) {
+    std::set<AddressedLabel>::const_iterator it = amx_labels_.find(address);
     if (it != amx_labels_.end()) {
       return *it;
     } else {
-      std::pair<std::set<AddressableLabel>::iterator, bool> result =
-        amx_labels_.insert(AddressableLabel(address, newLabel()));
+      std::pair<std::set<AddressedLabel>::iterator, bool> result =
+        amx_labels_.insert(AddressedLabel(address, newLabel()));
       return *result.first;
     }
   }
@@ -178,7 +178,7 @@ class Assembler : public X86Assembler {
  private:
   jit::AMXPtr amx_;
   std::set<NamedLabel> labels_;
-  std::set<AddressableLabel> amx_labels_;
+  std::set<AddressedLabel> amx_labels_;
 };
 
 static void emit_float(Assembler &as) {
