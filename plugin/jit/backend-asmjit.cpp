@@ -147,8 +147,8 @@ class Assembler : public X86Assembler {
   Assembler(jit::AMXPtr amx) : amx_(amx) {}
   virtual ~Assembler() {}
 
-  jit::AMXPtr &amx() { return amx_; }
-  const jit::AMXPtr &amx() const { return amx_; }
+  jit::AMXPtr &getAmx() { return amx_; }
+  const jit::AMXPtr &getAmx() const { return amx_; }
 
   const NamedLabel &getLabel(const char *name) {
     assert(name != 0);
@@ -341,7 +341,7 @@ void emit_runtime_data(Assembler &as) {
   as.bindByName("exec_ptr");
     as.dd(0);
   as.bindByName("amx");
-    as.dintptr(reinterpret_cast<intptr_t>(as.amx().amx()));
+    as.dintptr(reinterpret_cast<intptr_t>(as.getAmx().amx()));
   as.bindByName("ebp");
     as.dd(0);
   as.bindByName("esp");
@@ -357,7 +357,7 @@ void emit_runtime_data(Assembler &as) {
 }
 
 void emit_instr_map(Assembler &as) {
-  jit::AMXDisassembler disas(as.amx());
+  jit::AMXDisassembler disas(as.getAmx());
   jit::AMXInstruction instr;
   int size = 0;
   while (disas.decode(instr)) {
@@ -1142,7 +1142,7 @@ void emit_call(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // address of the next sequential instruction on the stack.
   // The address jumped to is relative to the current CIP,
   // but the address on the stack is an absolute address.
-  cell dest = rel_code_addr(as.amx(), instr.operand());
+  cell dest = rel_code_addr(as.getAmx(), instr.operand());
   as.call(as.getAmxLabel(dest));
 }
 
@@ -1157,7 +1157,7 @@ void emit_jump_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error)
 
 const Label &get_jump_label(Assembler &as,
                                    const jit::AMXInstruction &instr) {
-  cell dest = rel_code_addr(as.amx(), instr.operand());
+  cell dest = rel_code_addr(as.getAmx(), instr.operand());
   return as.getAmxLabel(dest);
 }
 
@@ -1642,7 +1642,7 @@ void emit_sysreq_pri(Assembler &as, const jit::AMXInstruction &instr, bool *erro
 void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service
   const NamedLabel &L_sysreq_c_helper = as.getLabel("sysreq_c_helper");
-  const char *name = as.amx().get_native_name(instr.operand());
+  const char *name = as.getAmx().get_native_name(instr.operand());
   if (name == 0) {
     *error = true;
   } else {
@@ -1658,8 +1658,8 @@ void emit_sysreq_c(Assembler &as, const jit::AMXInstruction &instr, bool *error)
 void emit_sysreq_d(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // call system service
   const NamedLabel &L_sysreq_d_helper = as.getLabel("sysreq_d_helper");
-  cell index = as.amx().find_native(instr.operand());
-  const char *name = as.amx().get_native_name(index);
+  cell index = as.getAmx().find_native(instr.operand());
+  const char *name = as.getAmx().get_native_name(index);
   if (name == 0) {
     *error = true;
   } else {
@@ -1686,7 +1686,7 @@ void emit_switch(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   case_table = reinterpret_cast<CaseRecord*>(instr.operand() + sizeof(cell));
 
   // Get address of the "default" record.
-  cell default_case = rel_code_addr(as.amx(), case_table[0].address);
+  cell default_case = rel_code_addr(as.getAmx(), case_table[0].address);
 
   // The number of cases follows the CASETBL opcode (which follows the SWITCH).
   int num_records = *(reinterpret_cast<cell*>(instr.operand()) + 1);
@@ -1716,7 +1716,7 @@ void emit_switch(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
     // This is pretty slow so I probably should optimize
     // this in future...
     for (int i = 0; i < num_records; i++) {
-      cell dest = rel_code_addr(as.amx(), case_table[i + 1].address);
+      cell dest = rel_code_addr(as.getAmx(), case_table[i + 1].address);
       as.cmp(eax, case_table[i + 1].value);
       as.je(as.getAmxLabel(dest));
     }
