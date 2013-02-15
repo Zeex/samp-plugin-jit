@@ -11,9 +11,9 @@ add_library(jit STATIC
   amxopcode.h
   amxptr.cpp
   amxptr.h
+  asmjit-backend.cpp
+  asmjit-backend.h
   backend.h
-  backend-asmjit.cpp
-  backend-asmjit.h
   callconv.h
   compiler.cpp
   compiler.h

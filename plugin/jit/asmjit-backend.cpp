@@ -37,7 +37,7 @@ namespace AsmJit {
 #include <asmjit/x86.h>
 #include "amxptr.h"
 #include "amxdisasm.h"
-#include "backend-asmjit.h"
+#include "asmjit-backend.h"
 #include "callconv.h"
 #include "compiler.h"
 

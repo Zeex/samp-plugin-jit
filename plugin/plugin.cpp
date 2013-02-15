@@ -40,7 +40,7 @@
 #include <subhook.h>
 #include "version.h"
 #include "jit/amxdisasm.h"
-#include "jit/backend-asmjit.h"
+#include "jit/asmjit-backend.h"
 #include "jit/compiler.h"
 #include "jit/jit.h"
 #include "sdk/plugin.h"
