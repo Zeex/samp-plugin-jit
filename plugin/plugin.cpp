@@ -87,7 +87,7 @@ static std::string GetFileName(const std::string &path) {
 }
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-  #if defined __GNUC__
+  #if defined __GNUC__ && !defined __MINGW32__
     if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
       assert(::opcode_map != 0);
       *retval = reinterpret_cast<cell>(::opcode_map);
@@ -133,7 +133,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     }
   }
 
-  #if defined __GNUC__
+  #if defined __GNUC__ && !defined __MINGW32__
     // Get opcode table before we hook amx_Exec().
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
