@@ -34,6 +34,8 @@ struct StringUtil
   {
     for (size_t i = 0; i < len; i++) p[i] = c;
   }
+
+  ASMJIT_API static size_t strnlen(const char *s, size_t maxlen);
 };
 
 //! @}

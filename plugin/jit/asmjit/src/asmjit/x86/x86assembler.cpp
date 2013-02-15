@@ -783,7 +783,7 @@ static char* X86Assembler_dumpInstruction(char* buf,
 static char* X86Assembler_dumpComment(char* buf, size_t len, const uint8_t* binaryData, size_t binaryLen, const char* comment)
 {
   size_t currentLength = len;
-  size_t commentLength = comment ? strnlen(comment, kMaxCommentLength) : 0;
+  size_t commentLength = comment ? StringUtil::strnlen(comment, kMaxCommentLength) : 0;
 
   if (binaryLen || commentLength)
   {

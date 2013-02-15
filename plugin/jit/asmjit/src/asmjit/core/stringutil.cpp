@@ -84,6 +84,17 @@ char* StringUtil::itoa(char* dst, intptr_t i, size_t base)
   return StringUtil::utoa(dst, (size_t)i, base);
 }
 
+size_t StringUtil::strnlen(const char *s, size_t maxlen)
+{
+  #ifdef __MINGW32__
+    size_t len = 0;
+    for (size_t i = 0; s[i] != '\0' && i < maxlen; i++) len++;
+    return len;
+  #else
+    return ::strnlen(s, maxlen);
+  #endif
+}
+
 } // AsmJit namespace
 
 // [Api-End]

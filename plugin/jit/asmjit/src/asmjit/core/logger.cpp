@@ -8,6 +8,7 @@
 
 // [Dependencies - AsmJit]
 #include "../core/logger.h"
+#include "../core/stringutil.h"
 
 // [Dependencies - C]
 #include <stdarg.h>
@@ -107,7 +108,7 @@ void Logger::setInstructionPrefix(const char* prefix)
   if (!prefix)
     return;
 
-  size_t length = strnlen(prefix, ASMJIT_ARRAY_SIZE(_instructionPrefix) - 1);
+  size_t length = StringUtil::strnlen(prefix, ASMJIT_ARRAY_SIZE(_instructionPrefix) - 1);
   memcpy(_instructionPrefix, prefix, length);
 }
 
