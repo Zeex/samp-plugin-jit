@@ -410,12 +410,12 @@ void emit_exec(Assembler &as) {
   const Label &L_reset_ebp = as.getFixedLabel(LabelResetEbp);
   const Label &L_reset_esp = as.getFixedLabel(LabelResetEsp);
   const Label &L_exec_helper = as.getFixedLabel(LabelExecHelper);
-  Label L_do_call = as.newLabel();
-  Label L_check_heap = as.newLabel();
-  Label L_check_stack = as.newLabel();
-  Label L_check_natives = as.newLabel();
-  Label L_checks_done = as.newLabel();
-  Label L_cleanup = as.newLabel();
+  Label L_stack_heap_overflow = as.newLabel();
+  Label L_heap_underflow = as.newLabel();
+  Label L_stack_underflow = as.newLabel();
+  Label L_native_not_found = as.newLabel();
+  Label L_public_not_found = as.newLabel();
+  Label L_finish = as.newLabel();
   Label L_return = as.newLabel();
 
   // Offsets of exec() arguments relative to ebp.
@@ -437,43 +437,30 @@ void emit_exec(Assembler &as) {
     as.push(ebx);
     emit_get_amx_data_ptr(as, ebx);
 
-    // if (amx->hea >= amx->stk) return AMX_ERR_STACKERR;
+    // Check for stack/heap collision (stack/heap overflow).
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
     as.mov(edx, dword_ptr(esi, offsetof(AMX, stk)));
     as.cmp(ecx, edx);
-    as.jl(L_check_heap);
-    as.mov(eax, AMX_ERR_STACKERR);
-    as.jmp(L_return);
+    as.jge(L_stack_heap_overflow);
 
-  as.bind(L_check_heap);
-    // if (amx->hea < amx->hlw) return AMX_ERR_HEAPLOW;
-    as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
-    as.mov(edx, dword_ptr(esi, offsetof(AMX, hlw)));
-    as.cmp(ecx, edx);
-    as.jge(L_check_stack);
-    as.mov(eax, AMX_ERR_HEAPLOW);
-    as.jmp(L_return);
-
-  as.bind(L_check_stack);
-    // if (amx->stk > amx->stp) return AMX_ERR_STACKLOW;
+    // Check for stack underflow.
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, stk)));
     as.mov(edx, dword_ptr(esi, offsetof(AMX, stp)));
     as.cmp(ecx, edx);
-    as.jle(L_check_natives);
-    as.mov(eax, AMX_ERR_STACKLOW);
-    as.jmp(L_return);
+    as.jg(L_stack_underflow);
 
-  // Make sure all natives are registered.
-  as.bind(L_check_natives);
-    // if ((amx->flags & AMX_FLAG_NTVREG) == 0) return AMX_ERR_NOTFOUND;
+    // Check for heap underflow.
+    as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
+    as.mov(edx, dword_ptr(esi, offsetof(AMX, hlw)));
+    as.cmp(ecx, edx);
+    as.jl(L_heap_underflow);
+
+    // Make sure all natives are registered (the AMX_FLAG_NTVREG flag
+    // must be set).
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, flags)));
-    as.and_(ecx, AMX_FLAG_NTVREG);
-    as.cmp(ecx, 0);
-    as.jne(L_checks_done);
-    as.mov(eax, AMX_ERR_NOTFOUND);
-    as.jmp(L_return);
+    as.test(ecx, AMX_FLAG_NTVREG);
+    as.jz(L_native_not_found);
 
-  as.bind(L_checks_done);
     // Reset the error code.
     as.mov(dword_ptr(esi, offsetof(AMX, error)), AMX_ERR_NONE);
 
@@ -484,13 +471,9 @@ void emit_exec(Assembler &as) {
     as.call(asmjit_cast<void*>(&get_public_addr));
     as.add(esp, 8);
 
-    // If the function was not found, exit with error.
-    as.cmp(eax, 0);
-    as.jne(L_do_call);
-    as.mov(eax, AMX_ERR_INDEX);
-    as.jmp(L_return);
-
-  as.bind(L_do_call);
+    // Check whether the function was found (address should be 0).
+    as.test(eax, eax);
+    as.jz(L_public_not_found);
 
     // Get pointer to the start of the function.
     as.push(dword_ptr(L_instr_map_size));
@@ -525,13 +508,13 @@ void emit_exec(Assembler &as) {
     as.call(L_exec_helper);
     as.add(esp, 4);
 
-    // Copt the return value if retval is not NULL.
+    // Copy return value to retval if it's not null.
     as.mov(ecx, dword_ptr(esp, arg_retval));
-    as.cmp(ecx, 0);
-    as.je(L_cleanup);
+    as.test(ecx, ecx);
+    as.jz(L_finish);
     as.mov(dword_ptr(ecx), eax);
 
-  as.bind(L_cleanup);
+  as.bind(L_finish);
     // Restore reset_ebp and reset_esp (remember they are kept in locals?).
     as.mov(eax, dword_ptr(ebp, var_reset_ebp));
     as.mov(dword_ptr(L_reset_ebp), eax);
@@ -548,6 +531,26 @@ void emit_exec(Assembler &as) {
     as.mov(esp, ebp);
     as.pop(ebp);
     as.ret();
+
+  as.bind(L_stack_heap_overflow);
+    as.mov(eax, AMX_ERR_STACKERR);
+    as.jmp(L_return);
+
+  as.bind(L_heap_underflow);
+    as.mov(eax, AMX_ERR_HEAPLOW);
+    as.jmp(L_return);
+
+  as.bind(L_stack_underflow);
+    as.mov(eax, AMX_ERR_STACKLOW);
+    as.jmp(L_return);
+
+  as.bind(L_native_not_found);
+    as.mov(eax, AMX_ERR_NOTFOUND);
+    as.jmp(L_return);
+
+  as.bind(L_public_not_found);
+    as.mov(eax, AMX_ERR_INDEX);
+    as.jmp(L_return);
 }
 
 // cell JIT_CDECL exec_helper(void *address);
@@ -655,7 +658,7 @@ void emit_halt_helper(Assembler &as) {
 void emit_jump_helper(Assembler &as) {
   const Label &L_instr_map = as.getFixedLabel(LabelInstrMapPtr);
   const Label &L_instr_map_size = as.getFixedLabel(LabelInstrMapSize);
-  Label L_do_jump = as.newLabel();
+  Label L_invalid_address = as.newLabel();
 
   int arg_address = 4;
   int arg_stack_base = 8;
@@ -670,25 +673,23 @@ void emit_jump_helper(Assembler &as) {
     as.push(eax);
     as.call(asmjit_cast<void*>(&get_instr_ptr));
     as.add(esp, 12);
-
-    // If the address wasn't valid, continue execution as if no jump
-    // was initiated (this is what AMX does).
-    as.cmp(eax, 0);
-    as.jne(L_do_jump);
-    as.ret();
-
-  as.bind(L_do_jump);
+    as.test(eax, eax);
+    as.jz(L_invalid_address);
 
     // Jump to the destination address.
     as.mov(ebp, dword_ptr(esp, arg_stack_base));
     as.mov(esp, dword_ptr(esp, arg_stack_ptr));
     as.jmp(eax);
+
+  // Continue execution as if no jump was initiated (this is what AMX does).
+  as.bind(L_invalid_address);
+    as.ret();
 }
 
 // cell JIT_CDECL sysreq_c_helper(int index, void *stack_base, void *stack_ptr);
 void emit_sysreq_c_helper(Assembler &as) {
   const Label &L_sysreq_d_helper = as.getFixedLabel(LabelSysreqDHelper);
-  Label L_call = as.newLabel();
+  Label L_native_not_found = as.newLabel();
   Label L_return = as.newLabel();
 
   int arg_index = 8;
@@ -704,13 +705,9 @@ void emit_sysreq_c_helper(Assembler &as) {
     as.push(eax);
     as.call(asmjit_cast<void*>(&get_native_addr));
     as.add(esp, 8);
+    as.test(eax, eax);
+    as.jz(L_native_not_found);
 
-    as.cmp(eax, 0);
-    as.jne(L_call);
-    as.mov(eax, AMX_ERR_NOTFOUND);
-    as.jmp(L_return);
-
-  as.bind(L_call);
     as.push(dword_ptr(ebp, arg_stack_ptr));
     as.push(dword_ptr(ebp, arg_stack_base));
     as.push(eax); // address
@@ -721,6 +718,10 @@ void emit_sysreq_c_helper(Assembler &as) {
     as.mov(esp, ebp);
     as.pop(ebp);
     as.ret();
+
+  as.bind(L_native_not_found);
+    as.mov(eax, AMX_ERR_NOTFOUND);
+    as.jmp(L_return);
 }
 
 // cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
