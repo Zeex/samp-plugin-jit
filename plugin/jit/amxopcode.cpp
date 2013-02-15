@@ -22,7 +22,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cassert>
 #include <amx/amx.h>
 #include "amxopcode.h"
 
@@ -51,7 +50,6 @@ static cell lookup_opcode(cell *opcode_map, cell opcode) {
         }
       }
     }
-    assert(0 && "Could not relocated opcode");
   #else
     return opcode;
   #endif
