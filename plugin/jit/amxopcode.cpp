@@ -57,10 +57,7 @@ static cell lookup_opcode(cell *opcode_map, cell opcode) {
 
 AMXOpcodeID relocate_opcode(cell opcode) {
   #if defined __GNUC__
-    static cell *opcode_map = 0;
-    if (opcode_map == 0) {
-      opcode_map = get_opcode_map();
-    }
+    static cell *opcode_map = get_opcode_map();
     opcode = lookup_opcode(opcode_map, opcode);
   #endif
 	return static_cast<AMXOpcodeID>(opcode);
