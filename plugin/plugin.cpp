@@ -120,15 +120,9 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
-static void *AMXAPI amx_Align(void *v) { return v; }
-
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
   pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
-
-  ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align16] = (void*)amx_Align;
-  ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align32] = (void*)amx_Align;
-  ((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Align64] = (void*)amx_Align;
 
   void *ptr = SubHook::ReadDst(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
   if (ptr != 0) {
