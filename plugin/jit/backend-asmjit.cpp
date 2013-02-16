@@ -391,7 +391,7 @@ void emit_get_amx_data_ptr(Assembler &as, const GpReg &reg) {
     emit_get_amx_ptr(as, eax);
 
     as.mov(reg, dword_ptr(eax, offsetof(AMX, data)));
-    as.cmp(reg, 0);
+    as.test(reg, reg);
     as.jnz(L_quit);
 
     as.mov(reg, dword_ptr(eax, offsetof(AMX, base)));
