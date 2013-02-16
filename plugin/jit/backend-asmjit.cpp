@@ -509,7 +509,7 @@ void emit_exec(Assembler &as) {
     as.add(esp, 4);
 
     // Copy return value to retval if it's not null.
-    as.mov(ecx, dword_ptr(esp, arg_retval));
+    as.mov(ecx, dword_ptr(ebp, arg_retval));
     as.test(ecx, ecx);
     as.jz(L_finish);
     as.mov(dword_ptr(ecx), eax);
