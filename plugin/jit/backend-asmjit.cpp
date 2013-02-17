@@ -102,6 +102,7 @@ enum LabelIndex {
   LabelJumpHelper,
   LabelSysreqCHelper,
   LabelSysreqDHelper,
+  LabelBreakHelper,
 
   // Terminator (not a real label).
   LabelLast_
@@ -764,6 +765,30 @@ void emit_sysreq_d_helper(Assembler &as) {
 
     // Modify the return address so we return next to the sysreq point.
     as.push(esi);
+    as.ret();
+}
+
+// void break_helper();
+void emit_break_helper(Assembler &as) {
+  Label L_return = as.newLabel();
+
+  as.bindFixed(LabelBreakHelper);
+    emit_get_amx_ptr(as, edx);
+    as.mov(esi, dword_ptr(edx, offsetof(AMX, debug)));
+    as.test(esi, esi);
+    as.jz(L_return);
+
+    as.push(eax);
+    as.push(ecx);
+
+    as.push(edx);
+    as.call(esi);
+    as.add(esp, 4);
+
+    as.pop(ecx);
+    as.pop(eax);
+
+  as.bind(L_return);
     as.ret();
 }
 
@@ -1763,6 +1788,9 @@ void emit_nop(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 
 void emit_break(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // conditional breakpoint
+  #ifdef DEBUG
+    as.call(as.getFixedLabel(LabelBreakHelper));
+  #endif
 }
 
 // 0 means obsolete opcode (not implemented and thus won't compile).
@@ -1840,6 +1868,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
   emit_jump_helper(as);
   emit_sysreq_c_helper(as);
   emit_sysreq_d_helper(as);
+  emit_break_helper(as);
 
   std::set<cell> jump_targets;
   collect_jump_targets(amx, jump_targets);

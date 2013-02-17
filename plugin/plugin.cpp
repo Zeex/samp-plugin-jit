@@ -104,6 +104,10 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   }
 }
 
+static int AMXAPI amx_Debug_JIT(AMX *amx) {
+  return AMX_ERR_NONE;
+}
+
 class CompileErrorHandler : public jit::CompileErrorHandler {
  public:
   CompileErrorHandler(jit::JIT *jit) : jit_(jit) {}
@@ -177,6 +181,9 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     if (!jit->compile(&compiler, &error_handler)) {
       delete jit;
     } else {
+      #ifdef DEBUG
+        amx_SetDebugHook(amx, amx_Debug_JIT);
+      #endif
       ::amx_to_jit.insert(std::make_pair(amx, jit));
     }
   } else {
