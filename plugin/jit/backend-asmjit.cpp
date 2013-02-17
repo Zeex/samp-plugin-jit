@@ -632,15 +632,14 @@ void emit_exec_helper(Assembler &as) {
     as.ret();
 }
 
-// void JIT_CDECL halt_helper(int error);
+// void halt_helper(int error [edx]);
 void emit_halt_helper(Assembler &as) {
   const Label &L_reset_ebp = as.getFixedLabel(LabelResetEbp);
   const Label &L_reset_esp = as.getFixedLabel(LabelResetEsp);
 
   as.bindFixed(LabelHaltHelper);
-    as.mov(eax, dword_ptr(esp, 4));
-    emit_get_amx_ptr(as, ecx);
-    as.mov(dword_ptr(ecx, offsetof(AMX, error)), eax);
+    emit_get_amx_ptr(as, esi);
+    as.mov(dword_ptr(esi, offsetof(AMX, error)), edx); // error code in edx
 
     // Reset stack so we can return right to call().
     as.mov(esp, dword_ptr(L_reset_esp));
@@ -655,32 +654,33 @@ void emit_halt_helper(Assembler &as) {
     as.ret();
 }
 
-// void JIT_CDECL jump_helper(void *address, void *stack_base, void *stack_ptr);
+// void jump_helper(void *address [edx], void *stack_base [esi],
+//                  void *stack_ptr [edi]);
 void emit_jump_helper(Assembler &as) {
   const Label &L_instr_map = as.getFixedLabel(LabelInstrMapPtr);
   const Label &L_instr_map_size = as.getFixedLabel(LabelInstrMapSize);
   Label L_invalid_address = as.newLabel();
 
-  int arg_address = 4;
-  int arg_stack_base = 8;
-  int arg_stack_ptr = 12;
-
   as.bindFixed(LabelJumpHelper);
-    as.mov(eax, dword_ptr(esp, arg_address));
+    as.push(eax);
+    as.push(ecx);
 
-    // Get destination address.
     as.push(dword_ptr(L_instr_map_size));
     as.push(dword_ptr(L_instr_map));
-    as.push(eax);
+    as.push(edx);
     as.call(asmjit_cast<void*>(&get_instr_ptr));
     as.add(esp, 12);
-    as.test(eax, eax);
+    as.mov(edx, eax); // address
+
+    as.pop(ecx);
+    as.pop(eax);
+
+    as.test(edx, edx);
     as.jz(L_invalid_address);
 
-    // Jump to the destination address.
-    as.mov(ebp, dword_ptr(esp, arg_stack_base));
-    as.mov(esp, dword_ptr(esp, arg_stack_ptr));
-    as.jmp(eax);
+    as.mov(ebp, esi);
+    as.mov(esp, edi);
+    as.jmp(edx);
 
   // Continue execution as if no jump was initiated (this is what AMX does).
   as.bind(L_invalid_address);
@@ -1057,9 +1057,9 @@ void emit_sctrl(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
       break;
     case 6: {
       const Label &L_jump_helper = as.getFixedLabel(LabelJumpHelper);
-      as.push(esp);
-      as.push(ebp);
-      as.push(eax);
+      as.mov(edi, esp);
+      as.mov(esi, ebp);
+      as.mov(edx, eax);
       as.call(L_jump_helper);
       break;
     }
@@ -1183,9 +1183,9 @@ void emit_call(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 void emit_jump_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // CIP = PRI (indirect jump)
   const Label &L_jump_helper = as.getFixedLabel(LabelJumpHelper);
-  as.push(esp);
-  as.push(ebp);
-  as.push(eax);
+  as.mov(edi, esp);
+  as.mov(esi, ebp);
+  as.mov(edx, eax);
   as.call(L_jump_helper);
 }
 
@@ -1644,8 +1644,8 @@ void emit_halt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
   const Label &L_halt_helper = as.getFixedLabel(LabelHaltHelper);
-  as.push(instr.operand());
-  as.call(L_halt_helper);
+  as.mov(edx, instr.operand());
+  as.jmp(L_halt_helper);
 }
 
 void emit_bounds(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
@@ -1653,14 +1653,19 @@ void emit_bounds(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   const Label &L_halt_helper = as.getFixedLabel(LabelHaltHelper);
   Label L_halt = as.newLabel();
   Label L_good = as.newLabel();
+
     as.cmp(eax, instr.operand());
-  as.jg(L_halt);
+    as.jg(L_halt);
+
     as.test(eax, eax);
     as.jl(L_halt);
+
     as.jmp(L_good);
+
   as.bind(L_halt);
-    as.push(AMX_ERR_BOUNDS);
-    as.call(L_halt_helper);
+    as.mov(edx, AMX_ERR_BOUNDS);
+    as.jmp(L_halt_helper);
+
   as.bind(L_good);
 }
 
