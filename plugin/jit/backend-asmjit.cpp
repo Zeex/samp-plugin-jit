@@ -1178,13 +1178,13 @@ void emit_jump(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
 
 void emit_jzer(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI == 0 then CIP = CIP + offset
-  as.cmp(eax, 0);
+  as.test(eax, eax);
   as.jz(get_jump_label(as, instr));
 }
 
 void emit_jnz(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // if PRI != 0 then CIP = CIP + offset
-  as.cmp(eax, 0);
+  as.test(eax, eax);
   as.jnz(get_jump_label(as, instr));
 }
 
@@ -1630,7 +1630,7 @@ void emit_bounds(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   Label L_good = as.newLabel();
     as.cmp(eax, instr.operand());
   as.jg(L_halt);
-    as.cmp(eax, 0);
+    as.test(eax, eax);
     as.jl(L_halt);
     as.jmp(L_good);
   as.bind(L_halt);
