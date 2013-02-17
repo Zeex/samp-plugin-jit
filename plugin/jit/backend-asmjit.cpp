@@ -725,7 +725,7 @@ void emit_sysreq_c_helper(Assembler &as) {
     as.jmp(L_return);
 }
 
-// cell sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
+// cell JIT_CDECL sysreq_d_helper(void *address, void *stack_base, void *stack_ptr);
 void emit_sysreq_d_helper(Assembler &as) {
   const Label &L_ebp = as.getFixedLabel(LabelEbp);
   const Label &L_esp = as.getFixedLabel(LabelEsp);
