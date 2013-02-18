@@ -29,36 +29,6 @@
 
 namespace jit {
 
-CompilerOutput::CompilerOutput(BackendOutput *backend_output)
-  : backend_output_(backend_output)
-{
-}
-
-void *CompilerOutput::code() const {
-  if (backend_output_ != 0) {
-    return backend_output_->code();
-  }
-  return 0;
-}
-
-std::size_t CompilerOutput::code_size() const {
-  if (backend_output_ != 0) {
-    return backend_output_->code_size();
-  }
-  return 0;
-}
-
-EntryPoint CompilerOutput::entry_point() const {
-  if (backend_output_ != 0) {
-    return (EntryPoint)*reinterpret_cast<void**>(code());
-  }
-  return 0;
-}
-
-CompilerOutput::~CompilerOutput() {
-  delete backend_output_;
-}
-
 Compiler::Compiler(Backend *backend)
   : backend_(backend)
 {

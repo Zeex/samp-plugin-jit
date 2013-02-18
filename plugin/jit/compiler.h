@@ -26,6 +26,7 @@
 #define JIT_COMPILER_H
 
 #include "amxptr.h"
+#include "backend.h"
 #include "callconv.h"
 #include "macros.h"
 
@@ -38,27 +39,32 @@ class CompileErrorHandler;
 
 typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
 
-// Compiler output represents the output blob of the Compiler.
-//
-// First 4 bytes of the output must point to a function with the following
-// prototype:
-//
-//   int exec(cell index, cell *retval);
-//
-// This function should execute a public function at index 'index' and write
-// its return value to 'retval' if 'retval' is not NULL.
-//
-// WARNING: Do not copy the code into another buffer! There are hard-coded
-// data references in it - they simply will be not valid in the new buffer.
 class CompilerOutput {
  public:
-  CompilerOutput(BackendOutput *backend_output);
-  ~CompilerOutput();
+  CompilerOutput(BackendOutput *backend_output)
+    : backend_output_(backend_output)
+  {
+  }
 
-  void *code() const;
-  std::size_t code_size() const;
+  ~CompilerOutput() {
+    delete backend_output_;
+  }
 
-  EntryPoint entry_point() const;
+  // WARNING: Do not copy the code bufer! There's no point in doing so because
+  // it will become invalid once the containing CompilerOutput gets destroyed.
+  void *code() const {
+    return backend_output_->code();
+  }
+
+  std::size_t code_size() const {
+    assert(backend_output_ != 0);
+    return backend_output_->code_size();
+  }
+
+  EntryPoint entry_point() const {
+    assert(backend_output_ != 0);
+    return (EntryPoint)*reinterpret_cast<void**>(code());
+  }
 
  private:
   BackendOutput *backend_output_;
@@ -71,12 +77,16 @@ class Compiler {
  public:
   Compiler(Backend *backend = 0);
 
-  // Gets or sets compiler backend.
-  Backend *backend() const { return backend_; }
-  void set_backend(Backend *backend) { backend_ = backend; }
+  Backend *backend() const {
+    return backend_;
+  }
 
-  // Compiles the specified AMX script. The optional error hander is either
-  // never called or called only once - on first compilation error.
+  void set_backend(Backend *backend) {
+    backend_ = backend;
+  }
+
+  // Compiles the specified AMX script. The optional error hander is called at
+  // most only once - on first compile error.
   CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
 
  private:
