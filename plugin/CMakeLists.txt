@@ -36,6 +36,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
 endif()
 
+if(MINGW)
+  set_property(TARGET plugin APPEND_STRING PROPERTY
+               LINK_FLAGS " -Wl,--enable-stdcall-fixup")
+endif()
+
 add_subdirectory(jit)
 add_subdirectory(sdk)
 
