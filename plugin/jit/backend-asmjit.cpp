@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstring>
 #include <map>
 #include <set>
@@ -280,7 +281,7 @@ bool emit_intrinsic(Assembler &as, const char *name) {
     {"floatlog",    &emit_floatlog}
   };
 
-  for (int i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {
+  for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {
     if (std::strcmp(intrinsics[i].name, name) == 0) {
       intrinsics[i].emit(as);
       return true;
@@ -325,7 +326,7 @@ void collect_jump_targets(jit::AMXPtr amx, std::set<cell> &refs) {
 
   while (disas.decode(instr)) {
     jit::AMXOpcode opcode = instr.opcode();
-    if (opcode.is_call() || opcode.is_jump() && instr.num_operands() == 1) {
+    if ((opcode.is_call() || opcode.is_jump()) && instr.num_operands() == 1) {
       refs.insert(rel_code_addr(amx, instr.operand()));
     } else if (opcode.id() == jit::AMX_OP_CASETBL) {
       int n = instr.num_operands();
@@ -979,7 +980,7 @@ void emit_idxaddr_b(Assembler &as, const jit::AMXInstruction &instr, bool *error
 void emit_align_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Little Endian:
   #if BYTE_ORDER == LITTLE_ENDIAN
-    if (instr.operand() < sizeof(cell)) {
+    if (static_cast<std::size_t>(instr.operand()) < sizeof(cell)) {
       as.xor_(eax, sizeof(cell) - instr.operand());
     }
   #endif
@@ -988,7 +989,7 @@ void emit_align_pri(Assembler &as, const jit::AMXInstruction &instr, bool *error
 void emit_align_alt(Assembler &as, const jit::AMXInstruction &instr, bool *error) {
   // Little Endian:
   #if BYTE_ORDER == LITTLE_ENDIAN
-    if (instr.operand() < sizeof(cell)) {
+    if (static_cast<std::size_t>(instr.operand()) < sizeof(cell)) {
       as.xor_(ecx, sizeof(cell) - instr.operand());
     }
   #endif

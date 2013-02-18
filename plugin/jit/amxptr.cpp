@@ -50,7 +50,7 @@ cell AMXPtr::get_native_addr(cell index) const {
 
 cell AMXPtr::find_public(cell address) const {
   for (int i = 0; i < num_publics(); i++) {
-    if (publics()[i].address == address) {
+    if (publics()[i].address == static_cast<ucell>(address)) {
       return i;
     }
   }
@@ -59,7 +59,7 @@ cell AMXPtr::find_public(cell address) const {
 
 cell AMXPtr::find_native(cell address) const {
   for (int i = 0; i < num_natives(); i++) {
-    if (natives()[i].address == address) {
+    if (natives()[i].address == static_cast<ucell>(address)) {
       return i;
     }
   }

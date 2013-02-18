@@ -52,6 +52,7 @@ static cell lookup_opcode(cell *opcode_map, cell opcode) {
     }
     return opcode;
   #else
+    (void)opcode_map;
     return opcode;
   #endif
 }

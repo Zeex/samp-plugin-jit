@@ -45,6 +45,10 @@
 #include "jit/jit.h"
 #include "sdk/plugin.h"
 
+#if defined __GNUC__ && !defined __MINGW32__
+  #define USE_OPCODE_MAP 1
+#endif
+
 extern void *pAMXFunctions;
 
 typedef void (*logprintf_t)(const char *format, ...);
@@ -54,7 +58,9 @@ typedef std::map<AMX*, jit::JIT*> AmxToJitMap;
 static AmxToJitMap amx_to_jit;
 
 static SubHook amx_Exec_hook;
-static cell *opcode_map = 0;
+#if USE_OPCODE_MAP
+  static cell *opcode_map = 0;
+#endif
 
 static std::string GetModulePath(void *address,
                                  std::size_t max_length = FILENAME_MAX)
@@ -87,7 +93,7 @@ static std::string GetFileName(const std::string &path) {
 }
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-  #if defined __GNUC__ && !defined __MINGW32__
+  #if USE_OPCODE_MAP
     if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
       assert(::opcode_map != 0);
       *retval = reinterpret_cast<cell>(::opcode_map);
@@ -137,7 +143,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     }
   }
 
-  #if defined __GNUC__ && !defined __MINGW32__
+  #if USE_OPCODE_MAP
     // Get opcode table before we hook amx_Exec().
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
