@@ -1,11 +1,16 @@
 #include <a_samp>
 #include <test>
 
-main() {
-	f();
-	print("FAIL");
+public OnGameModeInit() {
+	TestExit();
 }
 
 f() {
 	#emit halt 1
+}
+
+main() {
+	print("main()");
+	f();
+	print("FAIL");
 }
