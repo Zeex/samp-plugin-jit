@@ -24,11 +24,8 @@
 
 #include <cassert>
 #include "amxptr.h"
-#include "callconv.h"
 #include "compiler.h"
 #include "jit.h"
-
-typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
 
 namespace jit {
 
@@ -49,7 +46,7 @@ bool JIT::compile(Compiler *compiler, CompileErrorHandler *error_handler) {
 
 int JIT::exec(cell index, cell *retval) {
   assert(output_ != 0 && "Compilation previously failed");
-  EntryPoint entry = (EntryPoint)*reinterpret_cast<void**>(output_->code());
+  EntryPoint entry = output_->entry_point();
   return entry(index, retval);
 }
 

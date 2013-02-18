@@ -48,6 +48,13 @@ std::size_t CompilerOutput::code_size() const {
   return 0;
 }
 
+EntryPoint CompilerOutput::entry_point() const {
+  if (backend_output_ != 0) {
+    return (EntryPoint)*reinterpret_cast<void**>(code());
+  }
+  return 0;
+}
+
 CompilerOutput::~CompilerOutput() {
   delete backend_output_;
 }

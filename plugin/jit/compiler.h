@@ -26,6 +26,7 @@
 #define JIT_COMPILER_H
 
 #include "amxptr.h"
+#include "callconv.h"
 #include "macros.h"
 
 namespace jit {
@@ -35,9 +36,11 @@ class Backend;
 class BackendOutput;
 class CompileErrorHandler;
 
+typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
+
 // Compiler output represents the output blob of the Compiler.
 //
-// First 4 bytes of the output must point to the a function with the following
+// First 4 bytes of the output must point to a function with the following
 // prototype:
 //
 //   int exec(cell index, cell *retval);
@@ -54,6 +57,8 @@ class CompilerOutput {
 
   void *code() const;
   std::size_t code_size() const;
+
+  EntryPoint entry_point() const;
 
  private:
   BackendOutput *backend_output_;
