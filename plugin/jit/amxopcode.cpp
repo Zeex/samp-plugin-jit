@@ -50,6 +50,7 @@ static cell lookup_opcode(cell *opcode_map, cell opcode) {
         }
       }
     }
+    return opcode;
   #else
     return opcode;
   #endif
