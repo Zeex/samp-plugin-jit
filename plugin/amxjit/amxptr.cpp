@@ -24,7 +24,7 @@
 
 #include "amxptr.h"
 
-namespace jit {
+namespace amxjit {
 
 AMXPtr::AMXPtr(AMX *amx)
   : amx_(amx)
@@ -97,4 +97,4 @@ void AMXPtr::pop(int ncells) {
   amx_->stk += ncells * sizeof(cell);
 }
 
-} // namespace jit
+} // namespace amxjit

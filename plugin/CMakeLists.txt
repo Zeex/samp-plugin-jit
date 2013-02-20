@@ -41,12 +41,12 @@ if(MINGW)
                LINK_FLAGS " -Wl,--enable-stdcall-fixup")
 endif()
 
-add_subdirectory(jit)
+add_subdirectory(amxjit)
 add_subdirectory(sdk)
 
 set(SUBHOOK_STATIC TRUE)
 add_subdirectory(subhook)
 
-target_link_libraries(plugin jit sdk subhook)
+target_link_libraries(plugin amxjit sdk subhook)
 
 install(TARGETS plugin LIBRARY DESTINATION ".")

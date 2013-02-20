@@ -22,13 +22,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_AMXPTR_H
-#define JIT_AMXPTR_H
+#ifndef AMXJIT_AMXPTR_H
+#define AMXJIT_AMXPTR_H
 
 #include <cstddef>
 #include <amx/amx.h>
 
-namespace jit {
+namespace amxjit {
 
 // AMXPtr is a lightweight wrapper around the AMX structure with a number
 // of useful methods. Instances of this class can be passed by value without
@@ -103,6 +103,6 @@ private:
   AMX *amx_;
 };
 
-} // namespace jit
+} // namespace amxjit
 
-#endif // !JIT_AMXPTR_H
+#endif // !AMXJIT_AMXPTR_H

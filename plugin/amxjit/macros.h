@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2013 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,41 +22,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_JIT_H
-#define JIT_JIT_H
+#ifndef AMXJIT_MACROS_H
+#define AMXJIT_MACROS_H
 
-#include <amx/amx.h>
-#include "amxptr.h"
-#include "macros.h"
+#define AMXJIT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
+  TypeName(const TypeName &); \
+  void operator=(const TypeName &)
 
-namespace jit {
-
-class Compiler;
-class CompilerOutput;
-class CompileErrorHandler;
-
-class JIT {
- public:
-  JIT(AMXPtr amx);
-  ~JIT();
-
-  // Compiles the AMX script. If something goes wrong it calls the specified
-  // error handler. The handler is called only once becase compilation stops
-  // after first error.
-  bool compile(Compiler *compiler, CompileErrorHandler *error_handler = 0);
-
-  // Executes a public function and returns one of AMX error codes. Use this
-  // method as a drop-in replacement for amx_Exec().
-  int exec(cell index, cell *retval);
-
- private:
-  AMXPtr amx_;
-  CompilerOutput *output_;
-
- private:
-  JIT_DISALLOW_COPY_AND_ASSIGN(JIT);
-};
-
-} // namespace jit
-
-#endif // !JIT_JIT_H
+#endif // !AMXJIT_MACROS_H

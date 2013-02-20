@@ -1,4 +1,4 @@
-// Copyright (c) 2012 Zeex
+// Copyright (c) 2012-2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,10 +22,56 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cassert>
+#ifndef AMXJIT_COMPILER_ASMJIT_H
+#define AMXJIT_COMPILER_ASMJIT_H
+
+#include <cstddef>
 #include "amxptr.h"
 #include "compiler.h"
+#include "macros.h"
 
-namespace jit {
+namespace amxjit {
 
-} // namespace jit
+class CompileErrorHandler;
+
+class CompilerAsmjit : public Compiler {
+ public:
+  CompilerAsmjit();
+  virtual ~CompilerAsmjit();
+
+  virtual CompilerOutput *compile(AMXPtr amx, 
+                                  CompileErrorHandler *error_handler);
+
+ private:
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
+};
+
+class CompilerOutputAsmjit : public CompilerOutput {
+ public:
+  CompilerOutputAsmjit(void *code, std::size_t code_size);
+  virtual ~CompilerOutputAsmjit();
+
+  virtual void *code() const {
+    return code_;
+  }
+
+  virtual std::size_t code_size() const {
+    return code_size_;
+  }
+
+  virtual EntryPoint entry_point() const {
+    assert(code_ != 0);
+    return (EntryPoint)*reinterpret_cast<void**>(code());
+  }
+
+ private:
+  void *code_;
+  std::size_t code_size_;
+  
+ private:
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputAsmjit);
+};
+
+} // namespace amxjit
+
+#endif // !AMXJIT_COMPILER_ASMJIT_H

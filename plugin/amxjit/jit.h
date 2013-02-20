@@ -22,32 +22,41 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cassert>
+#ifndef AMXJIT_AMXJIT_H
+#define AMXJIT_AMXJIT_H
+
+#include <amx/amx.h>
 #include "amxptr.h"
-#include "compiler.h"
-#include "jit.h"
+#include "macros.h"
 
-namespace jit {
+namespace amxjit {
 
-JIT::JIT(AMXPtr amx)
-  : amx_(amx)
-  , output_(0)
-{
-}
+class Compiler;
+class CompilerOutput;
+class CompileErrorHandler;
 
-JIT::~JIT() {
-  delete output_;
-}
+class JIT {
+ public:
+  JIT(AMXPtr amx);
+  ~JIT();
 
-bool JIT::compile(Compiler *compiler, CompileErrorHandler *error_handler) {
-  assert(compiler != 0 && "Compiler must not be null");
-  return (output_ = compiler->compile(amx_, error_handler)) != 0;
-}
+  // Compiles the AMX script. If something goes wrong it calls the specified
+  // error handler. The handler is called only once becase compilation stops
+  // after first error.
+  bool compile(Compiler *compiler, CompileErrorHandler *error_handler = 0);
 
-int JIT::exec(cell index, cell *retval) {
-  assert(output_ != 0 && "Compilation previously failed");
-  EntryPoint entry = output_->entry_point();
-  return entry(index, retval);
-}
+  // Executes a public function and returns one of AMX error codes. Use this
+  // method as a drop-in replacement for amx_Exec().
+  int exec(cell index, cell *retval);
 
-} // namespace jit
+ private:
+  AMXPtr amx_;
+  CompilerOutput *output_;
+
+ private:
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(JIT);
+};
+
+} // namespace amxjit
+
+#endif // !AMXJIT_AMXJIT_H

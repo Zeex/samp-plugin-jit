@@ -22,21 +22,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_CALLCONV_H
-#define JIT_CALLCONV_H
+#include <cassert>
+#include "amxptr.h"
+#include "compiler.h"
+#include "jit.h"
 
-#if defined _M_IX86 || defined __i386__
-  #if defined _MSC_VER
-    #define JIT_CDECL __cdecl
-    #define JIT_STDCALL __stdcall
-  #elif defined __GNUC__
-    #define JIT_CDECL __attribute__((cdecl))
-    #define JIT_STDCALL __attribute__((stdcall))
-  #else
-    #error Unsupported compiler
-  #endif
-#else
-  #error Unsupported architecture
-#endif
+namespace amxjit {
 
-#endif // !JIT_CALLCONV_H
+JIT::JIT(AMXPtr amx)
+  : amx_(amx)
+  , output_(0)
+{
+}
+
+JIT::~JIT() {
+  delete output_;
+}
+
+bool JIT::compile(Compiler *compiler, CompileErrorHandler *error_handler) {
+  assert(compiler != 0 && "Compiler must not be null");
+  return (output_ = compiler->compile(amx_, error_handler)) != 0;
+}
+
+int JIT::exec(cell index, cell *retval) {
+  assert(output_ != 0 && "Compilation previously failed");
+  EntryPoint entry = output_->entry_point();
+  return entry(index, retval);
+}
+
+} // namespace amxjit

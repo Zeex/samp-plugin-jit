@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Zeex
+// Copyright (c) 2012-2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,48 +22,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_COMPILER_H
-#define JIT_COMPILER_H
+#ifndef AMXJIT_CALLCONV_H
+#define AMXJIT_CALLCONV_H
 
-#include "amxptr.h"
-#include "callconv.h"
-#include "macros.h"
+#if defined _M_IX86 || defined __i386__
+  #if defined _MSC_VER
+    #define AMXJIT_CDECL __cdecl
+    #define AMXJIT_STDCALL __stdcall
+  #elif defined __GNUC__
+    #define AMXJIT_CDECL __attribute__((cdecl))
+    #define AMXJIT_STDCALL __attribute__((stdcall))
+  #else
+    #error Unsupported compiler
+  #endif
+#else
+  #error Unsupported architecture
+#endif
 
-namespace jit {
-
-class AMXInstruction;
-
-typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
-
-class CompileErrorHandler {
-public:
-  virtual ~CompileErrorHandler() {}
-  virtual void execute(const AMXInstruction &instr) = 0;
-};
-
-class CompilerOutput {
- public:
-  virtual ~CompilerOutput() {}
-
-  // Returns a pointer to the code buffer.
-  virtual void *code() const = 0;
-
-  // Returns the size of the code in bytes.
-  virtual std::size_t code_size() const = 0;
-
-  // Returns a pointer to the entry point function.
-  virtual EntryPoint entry_point() const = 0;
-};
-
-class Compiler {
- public:
-  virtual ~Compiler() {}
-
-  // Compiles the specified AMX script. The optional error hander is called at
-  // most only once - on first compile error.
-  virtual CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0) = 0;
-};
-
-} // namespace jit
-
-#endif // !JIT_COMPILER_H
+#endif // !AMXJIT_CALLCONV_H

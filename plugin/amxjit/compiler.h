@@ -22,11 +22,48 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_MACROS_H
-#define JIT_MACROS_H
+#ifndef AMXJIT_COMPILER_H
+#define AMXJIT_COMPILER_H
 
-#define JIT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName &); \
-  void operator=(const TypeName &)
+#include "amxptr.h"
+#include "callconv.h"
+#include "macros.h"
 
-#endif // !JIT_MACROS_H
+namespace amxjit {
+
+class AMXInstruction;
+
+typedef int (AMXJIT_CDECL *EntryPoint)(cell index, cell *retval);
+
+class CompileErrorHandler {
+public:
+  virtual ~CompileErrorHandler() {}
+  virtual void execute(const AMXInstruction &instr) = 0;
+};
+
+class CompilerOutput {
+ public:
+  virtual ~CompilerOutput() {}
+
+  // Returns a pointer to the code buffer.
+  virtual void *code() const = 0;
+
+  // Returns the size of the code in bytes.
+  virtual std::size_t code_size() const = 0;
+
+  // Returns a pointer to the entry point function.
+  virtual EntryPoint entry_point() const = 0;
+};
+
+class Compiler {
+ public:
+  virtual ~Compiler() {}
+
+  // Compiles the specified AMX script. The optional error hander is called at
+  // most only once - on first compile error.
+  virtual CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0) = 0;
+};
+
+} // namespace amxjit
+
+#endif // !AMXJIT_COMPILER_H

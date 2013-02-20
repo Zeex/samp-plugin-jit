@@ -4,7 +4,7 @@ include_directories(asmjit/src)
 
 add_definitions(-DASMJIT_API=)
 
-add_library(jit STATIC
+add_library(amxjit STATIC
   amxdisasm.cpp
   amxdisasm.h
   amxopcode.cpp
@@ -21,11 +21,11 @@ add_library(jit STATIC
   macros.h
 )
 
-set_property(TARGET jit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
+set_property(TARGET amxjit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")
-    set_property(TARGET jit APPEND_STRING PROPERTY
+    set_property(TARGET amxjit APPEND_STRING PROPERTY
                  COMPILE_FLAGS " -Wno-attributes")
   endif()
 endif()
@@ -33,4 +33,4 @@ endif()
 set(ASMJIT_STATIC TRUE)
 add_subdirectory(asmjit)
 
-target_link_libraries(jit asmjit sdk)
+target_link_libraries(amxjit asmjit sdk)

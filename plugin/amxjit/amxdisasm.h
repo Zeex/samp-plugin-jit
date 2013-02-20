@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_AMXDISASM_H
-#define JIT_AMXDISASM_H
+#ifndef AMXJIT_AMXDISASM_H
+#define AMXJIT_AMXDISASM_H
 
 #include <cassert>
 #include <string>
@@ -32,7 +32,7 @@
 #include "amxopcode.h"
 #include "amxptr.h"
 
-namespace jit {
+namespace amxjit {
 
 // REG_NONE is defined in WinNT.h.
 #ifdef REG_NONE
@@ -140,6 +140,6 @@ private:
   cell ip_;
 };
 
-} // namespace jit
+} // namespace amxjit
 
-#endif // !JIT_AMXDISASM_H
+#endif // !AMXJIT_AMXDISASM_H

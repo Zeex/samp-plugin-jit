@@ -22,10 +22,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_AMXOPCODE_H
-#define JIT_AMXOPCODE_H
+#ifndef AMXJIT_AMXOPCODE_H
+#define AMXJIT_AMXOPCODE_H
 
-namespace jit {
+namespace amxjit {
 
 enum AMXOpcodeID {
   AMX_OP_NONE,         AMX_OP_LOAD_PRI,     AMX_OP_LOAD_ALT,
@@ -96,6 +96,6 @@ class AMXOpcode {
   AMXOpcodeID id_;
 };
 
-} // namespace jit
+} // namespace amxjit
 
-#endif // !JIT_AMXOPCODE_H
+#endif // !AMXJIT_AMXOPCODE_H

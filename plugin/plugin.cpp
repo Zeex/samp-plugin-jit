@@ -39,10 +39,10 @@
 #endif
 #include <subhook.h>
 #include "version.h"
-#include "jit/amxdisasm.h"
-#include "jit/compiler.h"
-#include "jit/compiler-asmjit.h"
-#include "jit/jit.h"
+#include "amxjit/amxdisasm.h"
+#include "amxjit/compiler.h"
+#include "amxjit/compiler-asmjit.h"
+#include "amxjit/jit.h"
 #include "sdk/plugin.h"
 
 #if defined __GNUC__ && !defined __MINGW32__
@@ -54,7 +54,7 @@ extern void *pAMXFunctions;
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, jit::JIT*> AmxToJitMap;
+typedef std::map<AMX*, amxjit::JIT*> AmxToJitMap;
 static AmxToJitMap amx_to_jit;
 
 static SubHook amx_Exec_hook;
@@ -105,7 +105,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
     SubHook::ScopedRemove r(&amx_Exec_hook);
     return amx_Exec(amx, retval, index);
   } else {
-    jit::JIT *jit = iterator->second;
+    amxjit::JIT *jit = iterator->second;
     return jit->exec(index, retval);
   }
 }
@@ -114,16 +114,16 @@ static int AMXAPI amx_Debug_JIT(AMX *amx) {
   return AMX_ERR_NONE;
 }
 
-class CompileErrorHandler : public jit::CompileErrorHandler {
+class CompileErrorHandler : public amxjit::CompileErrorHandler {
  public:
-  CompileErrorHandler(jit::JIT *jit) : jit_(jit) {}
-  virtual void execute(const jit::AMXInstruction &instr) {
+  CompileErrorHandler(amxjit::JIT *jit) : jit_(jit) {}
+  virtual void execute(const amxjit::AMXInstruction &instr) {
     logprintf("[jit] Invalid or unsupported instruction at address %p:",
               instr.address());
     logprintf("[jit]   => %s", instr.string().c_str());
   }
  private:
-  jit::JIT *jit_;
+  amxjit::JIT *jit_;
 };
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
@@ -166,16 +166,16 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  jit::JIT *jit = new jit::JIT(amx);
+  amxjit::JIT *jit = new amxjit::JIT(amx);
 
   const char *backend_string = getenv("JIT_BACKEND");
   if (backend_string == 0) {
     backend_string = "asmjit";
   }
 
-  jit::Compiler *compiler = 0;
+  amxjit::Compiler *compiler = 0;
   if (std::strcmp(backend_string, "asmjit") == 0) {
-    compiler = new jit::CompilerAsmjit;
+    compiler = new amxjit::CompilerAsmjit;
   } else {
     logprintf("[jit] Unknown backend '%s'", backend_string);
   }

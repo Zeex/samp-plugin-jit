@@ -25,7 +25,7 @@
 #include <amx/amx.h>
 #include "amxopcode.h"
 
-namespace jit {
+namespace amxjit {
 
 static cell *get_opcode_map() {
   #if defined __GNUC__
@@ -96,4 +96,4 @@ bool AMXOpcode::is_jump() const {
   return false;
 }
 
-} // namespace jit
+} // namespace amxjit

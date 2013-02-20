@@ -27,7 +27,7 @@
 #include "amxptr.h"
 #include "amxdisasm.h"
 
-namespace jit {
+namespace amxjit {
 
 const AMXInstruction::StaticInfoTableEntry AMXInstruction::info[NUM_AMX_OPCODES] = {
   {"none",           REG_NONE,             REG_NONE},
@@ -336,4 +336,4 @@ bool AMXDisassembler::decode(AMXInstruction &instr, bool *error) {
   return true;
 }
 
-} // namespace jit
+} // namespace amxjit
