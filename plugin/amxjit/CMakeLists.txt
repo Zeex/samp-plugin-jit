@@ -33,4 +33,4 @@ endif()
 set(ASMJIT_STATIC TRUE)
 add_subdirectory(asmjit)
 
-target_link_libraries(amxjit asmjit sdk)
+target_link_libraries(amxjit asmjit)

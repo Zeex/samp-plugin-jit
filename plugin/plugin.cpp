@@ -38,12 +38,12 @@
   #include <dlfcn.h>
 #endif
 #include <subhook.h>
+#include "plugin.h"
 #include "version.h"
 #include "amxjit/amxdisasm.h"
 #include "amxjit/compiler.h"
 #include "amxjit/compiler-asmjit.h"
 #include "amxjit/jit.h"
-#include "sdk/plugin.h"
 
 #if defined __GNUC__ && !defined __MINGW32__
   #define USE_OPCODE_MAP 1
