@@ -40,8 +40,8 @@
 #include <subhook.h>
 #include "version.h"
 #include "jit/amxdisasm.h"
-#include "jit/backend-asmjit.h"
 #include "jit/compiler.h"
+#include "jit/compiler-asmjit.h"
 #include "jit/jit.h"
 #include "sdk/plugin.h"
 
@@ -173,18 +173,16 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     backend_string = "asmjit";
   }
 
-  jit::Backend *backend = 0;
+  jit::Compiler *compiler = 0;
   if (std::strcmp(backend_string, "asmjit") == 0) {
-    backend = new jit::AsmjitBackend;
+    compiler = new jit::CompilerAsmjit;
   } else {
     logprintf("[jit] Unknown backend '%s'", backend_string);
   }
 
-  jit::Compiler compiler(backend);
-
-  if (backend != 0) {
+  if (compiler != 0) {
     CompileErrorHandler error_handler(jit);
-    if (!jit->compile(&compiler, &error_handler)) {
+    if (!jit->compile(compiler, &error_handler)) {
       delete jit;
     } else {
       #ifdef DEBUG
@@ -196,7 +194,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     delete jit;
   }
 
-  delete backend;
+  delete compiler;
   return AMX_ERR_NONE;
 }
 

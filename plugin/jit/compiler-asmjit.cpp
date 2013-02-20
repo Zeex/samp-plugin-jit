@@ -38,9 +38,9 @@ namespace AsmJit {
 #include <asmjit/x86.h>
 #include "amxptr.h"
 #include "amxdisasm.h"
-#include "backend-asmjit.h"
 #include "callconv.h"
 #include "compiler.h"
+#include "compiler-asmjit.h"
 
 namespace {
 
@@ -72,7 +72,7 @@ using AsmJit::st;
 // that is written to the code buffer and is used throughout generated JIT
 // code to keep track of certain data at runtime.
 enum RuntimeDataIndex {
-  RuntimeDataExecPtr = jit::BackendRuntimeDataExec,
+  RuntimeDataExecPtr,
   RuntimeDataAmxPtr,
   RuntimeDataEbp,
   RuntimeDataEsp,
@@ -1842,20 +1842,20 @@ EmitInstruction emit_opcode[] = {
 
 namespace jit {
 
-AsmjitBackendOutput::AsmjitBackendOutput(void *code, std::size_t code_size)
+CompilerOutputAsmjit::CompilerOutputAsmjit(void *code, std::size_t code_size)
   : code_(code), code_size_(code_size)
 {
 }
 
-AsmjitBackendOutput::~AsmjitBackendOutput() {
+CompilerOutputAsmjit::~CompilerOutputAsmjit() {
   AsmJit::MemoryManager::getGlobal()->free(code_);
 }
 
-AsmjitBackend::AsmjitBackend() {}
-AsmjitBackend::~AsmjitBackend() {}
+CompilerAsmjit::CompilerAsmjit() {}
+CompilerAsmjit::~CompilerAsmjit() {}
 
-BackendOutput *AsmjitBackend::compile(AMXPtr amx,
-                                      CompileErrorHandler *error_handler)
+CompilerOutput *CompilerAsmjit::compile(AMXPtr amx,
+                                        CompileErrorHandler *error_handler)
 { 
   Assembler as(amx);
 
@@ -1932,7 +1932,7 @@ BackendOutput *AsmjitBackend::compile(AMXPtr amx,
     entry++;
   }
 
-  return new AsmjitBackendOutput(reinterpret_cast<void*>(code_ptr), code_size);
+  return new CompilerOutputAsmjit(reinterpret_cast<void*>(code_ptr), code_size);
 }
 
 } // namespace jit

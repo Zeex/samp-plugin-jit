@@ -26,80 +26,42 @@
 #define JIT_COMPILER_H
 
 #include "amxptr.h"
-#include "backend.h"
 #include "callconv.h"
 #include "macros.h"
 
 namespace jit {
 
 class AMXInstruction;
-class Backend;
-class BackendOutput;
-class CompileErrorHandler;
 
 typedef int (JIT_CDECL *EntryPoint)(cell index, cell *retval);
-
-class CompilerOutput {
- public:
-  CompilerOutput(BackendOutput *backend_output)
-    : backend_output_(backend_output)
-  {
-  }
-
-  ~CompilerOutput() {
-    delete backend_output_;
-  }
-
-  // WARNING: Do not copy the code bufer! There's no point in doing so because
-  // it will become invalid once the containing CompilerOutput gets destroyed.
-  void *code() const {
-    return backend_output_->code();
-  }
-
-  std::size_t code_size() const {
-    assert(backend_output_ != 0);
-    return backend_output_->code_size();
-  }
-
-  EntryPoint entry_point() const {
-    assert(backend_output_ != 0);
-    return (EntryPoint)*reinterpret_cast<void**>(code());
-  }
-
- private:
-  BackendOutput *backend_output_;
-
- private:
-  JIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutput);
-};
-
-class Compiler {
- public:
-  Compiler(Backend *backend = 0);
-
-  Backend *backend() const {
-    return backend_;
-  }
-
-  void set_backend(Backend *backend) {
-    backend_ = backend;
-  }
-
-  // Compiles the specified AMX script. The optional error hander is called at
-  // most only once - on first compile error.
-  CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
-
- private:
-  Backend *backend_;
-  
- private:
-  JIT_DISALLOW_COPY_AND_ASSIGN(Compiler);
-};
 
 class CompileErrorHandler {
 public:
   virtual ~CompileErrorHandler() {}
   virtual void execute(const AMXInstruction &instr) = 0;
+};
+
+class CompilerOutput {
+ public:
+  virtual ~CompilerOutput() {}
+
+  // Returns a pointer to the code buffer.
+  virtual void *code() const = 0;
+
+  // Returns the size of the code in bytes.
+  virtual std::size_t code_size() const = 0;
+
+  // Returns a pointer to the entry point function.
+  virtual EntryPoint entry_point() const = 0;
+};
+
+class Compiler {
+ public:
+  virtual ~Compiler() {}
+
+  // Compiles the specified AMX script. The optional error hander is called at
+  // most only once - on first compile error.
+  virtual CompilerOutput *compile(AMXPtr amx, CompileErrorHandler *error_handler = 0) = 0;
 };
 
 } // namespace jit

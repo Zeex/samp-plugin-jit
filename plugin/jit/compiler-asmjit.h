@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Zeex
+// Copyright (c) 2012-2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,35 +22,56 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_BACKEND_H
-#define JIT_BACKEND_H
+#ifndef JIT_COMPILER_ASMJIT_H
+#define JIT_COMPILER_ASMJIT_H
 
+#include <cstddef>
 #include "amxptr.h"
+#include "compiler.h"
+#include "macros.h"
 
 namespace jit {
 
 class CompileErrorHandler;
 
-class BackendOutput {
+class CompilerAsmjit : public Compiler {
  public:
-  virtual ~BackendOutput() {}
+  CompilerAsmjit();
+  virtual ~CompilerAsmjit();
 
-  virtual void *code() const = 0;
-  virtual std::size_t code_size() const = 0;
+  virtual CompilerOutput *compile(AMXPtr amx, 
+                                  CompileErrorHandler *error_handler);
+
+ private:
+  JIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
 };
 
-class Backend {
+class CompilerOutputAsmjit : public CompilerOutput {
  public:
-  virtual ~Backend() {};
+  CompilerOutputAsmjit(void *code, std::size_t code_size);
+  virtual ~CompilerOutputAsmjit();
 
-  virtual BackendOutput *compile(AMXPtr amx, CompileErrorHandler *eh) = 0;
-};
+  virtual void *code() const {
+    return code_;
+  }
 
-enum BackendRuntimeDataIndex {
-  BackendRuntimeDataExec = 0, // Pointer to the exec() function
-  BackendRuntimeDataLast
+  virtual std::size_t code_size() const {
+    return code_size_;
+  }
+
+  virtual EntryPoint entry_point() const {
+    assert(code_ != 0);
+    return (EntryPoint)*reinterpret_cast<void**>(code());
+  }
+
+ private:
+  void *code_;
+  std::size_t code_size_;
+  
+ private:
+  JIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputAsmjit);
 };
 
 } // namespace jit
 
-#endif // !JIT_BACKEND_H
+#endif // !JIT_COMPILER_ASMJIT_H

@@ -24,23 +24,8 @@
 
 #include <cassert>
 #include "amxptr.h"
-#include "backend.h"
 #include "compiler.h"
 
 namespace jit {
-
-Compiler::Compiler(Backend *backend)
-  : backend_(backend)
-{
-}
-
-CompilerOutput *Compiler::compile(AMXPtr amx, CompileErrorHandler *error_handler) {
-  assert(backend_ != 0 && "Backend must not be NULL");
-  BackendOutput *output = backend_->compile(amx, error_handler);
-  if (output != 0) {
-    return new CompilerOutput(output);
-  }
-  return 0;
-}
 
 } // namespace jit
