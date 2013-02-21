@@ -39,6 +39,9 @@ function(add_samp_plugin_test)
 	endif()
 
 	get_target_property(PLUGIN_PATH ${ARG_TARGET} LOCATION)
+	if(MSVC_IDE AND DEFINED CMAKE_BUILD_TYPE)
+		string(REPLACE "$(Configuration)" ${CMAKE_BUILD_TYPE} PLUGIN_PATH ${PLUGIN_PATH})
+	endif()
 
 	list(APPEND arguments
 		"--output"
