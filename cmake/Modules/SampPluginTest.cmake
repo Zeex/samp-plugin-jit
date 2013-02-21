@@ -32,10 +32,10 @@ function(add_samp_plugin_test)
 		set(ARG_EXEC "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cfg")
 	endif()
 	if(ARG_TIMEOUT)
-		list(APPEND arguments "--timeout" "${ARG_TIMEOUT}")
+		list(APPEND arguments --timeout ${ARG_TIMEOUT})
 	endif()
 	if(EXISTS "${ARG_EXEC}")
-		list(APPEND arguments "--exec" "${ARG_EXEC}")
+		list(APPEND arguments --exec "${ARG_EXEC}")
 	endif()
 
 	get_target_property(PLUGIN_PATH ${ARG_TARGET} LOCATION)
@@ -44,17 +44,17 @@ function(add_samp_plugin_test)
 	endif()
 
 	list(APPEND arguments
-		"--output"
-		"--plugin"   "${PLUGIN_PATH}"
-		"--gamemode" "${ARG_SCRIPT}"
+		--output
+		--plugin   "${PLUGIN_PATH}"
+		--gamemode "${ARG_SCRIPT}"
 	)
 
 	file(READ "${ARG_OUT_FILE}" out)
 
 	if(WIN32)
-		add_test(${name} "samp-server-cli.bat" ${arguments})
+		add_test(${name} samp-server-cli.bat ${arguments})
 	else()
-		add_test(${name} "samp-server-cli" ${arguments})
+		add_test(${name} samp-server-cli ${arguments})
 	endif()
 
 	set_tests_properties(${name} PROPERTIES
