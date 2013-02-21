@@ -1,9 +1,5 @@
 include(AmxConfig)
 
-include_directories(asmjit/src)
-
-add_definitions(-DASMJIT_API=)
-
 add_library(amxjit STATIC
   amxdisasm.cpp
   amxdisasm.h
@@ -29,8 +25,5 @@ if(CMAKE_COMPILER_IS_GNUCXX)
                  COMPILE_FLAGS " -Wno-attributes")
   endif()
 endif()
-
-set(ASMJIT_STATIC TRUE)
-add_subdirectory(asmjit)
 
 target_link_libraries(amxjit asmjit)

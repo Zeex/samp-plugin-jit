@@ -3,10 +3,7 @@ include(SampPlugin)
 
 include_directories(.)
 include_directories(amx)
-include_directories(subhook)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-add_definitions(-DSUBHOOK_STATIC)
 
 if(UNIX)
   add_definitions(-DLINUX)
@@ -47,9 +44,6 @@ if(MINGW)
 endif()
 
 add_subdirectory(amxjit)
-
-set(SUBHOOK_STATIC TRUE)
-add_subdirectory(subhook)
 
 target_link_libraries(plugin amxjit subhook)
 
