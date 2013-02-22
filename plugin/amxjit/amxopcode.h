@@ -79,7 +79,7 @@ enum AMXOpcodeID {
   AMX_OP_LAST_
 };
 
-const int NUM_AMX_OPCODES = AMX_OP_LAST_ + 1;
+const int NUM_AMX_OPCODES = AMX_OP_LAST_;
 
 AMXOpcodeID relocate_opcode(cell opcode);
 
