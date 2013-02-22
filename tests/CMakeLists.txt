@@ -13,7 +13,7 @@ macro(test name)
                        SCRIPT   ${CMAKE_CURRENT_SOURCE_DIR}/${name}/test
                        OUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${name}/full_output.txt
                        EXEC     ${CMAKE_CURRENT_SOURCE_DIR}/server.cfg
-                       TIMEOUT  0.5)
+                       TIMEOUT  10)
 endmacro()
 
 test(bugs/bug8)
@@ -35,3 +35,4 @@ test(misc/halt)
 test(misc/halt_deep)
 test(misc/indirect_jump)
 test(misc/native_call)
+test(misc/switch)
