@@ -26,6 +26,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include "amxdisasm.h"
 #include "compiler-asmjit.h"
 
 // AsmJit core
@@ -430,7 +431,7 @@ void CompilerAsmjit::emit_lctrl(cell index) {
       as_.sub(eax, ebx);
       break;
     case 6:
-      as_.mov(eax, get_instr().address() + get_instr().size());
+      as_.mov(eax, get_instr()->address() + get_instr()->size());
       break;
     case 7:
       as_.mov(eax, 1);

@@ -28,7 +28,7 @@
 #include <cassert>
 #include <string>
 #include <vector>
-#include <amx/amx.h>
+#include <utility>
 #include "amxopcode.h"
 #include "amxptr.h"
 
@@ -138,6 +138,28 @@ class AMXDisassembler {
 private:
   AMXPtr amx_;
   cell ip_;
+};
+
+class AMXCaseTable {
+ public:
+  AMXCaseTable(AMXPtr amx, cell offset);
+
+  // Returns the total number of records in the case table.
+  int num_cases() const;
+
+  // Returns the address of a 'case X:' block at the specified index.
+  cell value_at(cell index) const;
+  cell address_at(cell index) const;
+
+  // Get the minimum and maximum values.
+  cell find_min_value() const;
+  cell find_max_value() const;
+
+  // Returns the address of the 'default:' block.
+  cell default_address() const;
+
+ private:
+  std::vector<std::pair<cell, cell> > records_;
 };
 
 } // namespace amxjit

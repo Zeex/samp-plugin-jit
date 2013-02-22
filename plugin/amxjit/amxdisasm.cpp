@@ -22,9 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cassert>
 #include <iomanip>
 #include <sstream>
-#include "amxptr.h"
 #include "amxdisasm.h"
 
 namespace amxjit {
@@ -335,5 +335,69 @@ bool AMXDisassembler::decode(AMXInstruction &instr, bool *error) {
 
   return true;
 }
+
+inline cell rel_code_addr(amxjit::AMXPtr amx, cell address) {
+  return address - reinterpret_cast<cell>(amx.code());
+}
+
+AMXCaseTable::AMXCaseTable(AMXPtr amx, cell offset) {
+  struct CaseRecord {
+    cell value;    // case value
+    cell address;  // address to jump to (absolute)
+  } *case_table;
+
+  case_table = reinterpret_cast<CaseRecord*>(offset + sizeof(cell));
+  int num_records = *(reinterpret_cast<cell*>(offset) + 1);
+
+  for (int i = 0; i <= num_records; i++) {
+    cell dest = case_table[i].address - reinterpret_cast<cell>(amx.code());
+    records_.push_back(std::make_pair(case_table[i].value, dest));
+  }
+}
+
+int AMXCaseTable::num_cases() const {
+  return records_.size() - 1;
+}
+
+cell AMXCaseTable::value_at(cell index) const {
+  return records_[index + 1].first;
+}
+
+cell AMXCaseTable::address_at(cell index) const {
+  return records_[index + 1].second;
+}
+
+cell AMXCaseTable::default_address() const {
+  return records_[0].second;
+}
+
+cell AMXCaseTable::find_min_value() const {
+  assert(num_cases() > 0); // caller should check num_records
+
+  const cell *min_value = 0;
+  for (int i = 0; i < num_cases(); i++) {
+    const cell *value = &records_[i + 1].first;
+    if (min_value == 0 || *value < *min_value) {
+      min_value = value;
+    }
+  }
+
+  return *min_value;
+}
+
+cell AMXCaseTable::find_max_value() const {
+  assert(num_cases() > 0); // caller should check num_records
+
+  const cell *max_value = 0;
+  for (int i = 0; i < num_cases(); i++) {
+    const cell *value = &records_[i + 1].first;
+    if (max_value == 0 || *value > *max_value) {
+      max_value = value;
+    }
+  }
+
+  return *max_value;
+}
+
 
 } // namespace amxjit

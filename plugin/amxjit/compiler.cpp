@@ -22,14 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cassert>
 #include "amxdisasm.h"
-#include "amxptr.h"
 #include "compiler.h"
-
-inline cell rel_code_addr(amxjit::AMXPtr amx, cell address) {
-  return address - reinterpret_cast<cell>(amx.code());
-}
 
 namespace amxjit {
 
@@ -40,9 +34,9 @@ CompilerOutput *Compiler::compile(AMXPtr amx, CompileErrorHandler *error_handler
   AMXInstruction instr;
   bool error = false;
 
-  while (!error && disas.decode(instr, &error)) {
-    set_instr(instr);
+  set_instr(&instr);
 
+  while (!error && disas.decode(instr, &error)) {
     if (!process(instr)) {
       error = true;
       break;
@@ -207,7 +201,7 @@ CompilerOutput *Compiler::compile(AMXPtr amx, CompileErrorHandler *error_handler
       case AMX_OP_JSLEQ:
       case AMX_OP_JSGRTR:
       case AMX_OP_JSGEQ: {
-        cell dest = rel_code_addr(amx, instr.operand());
+        cell dest = instr.operand() - reinterpret_cast<cell>(amx.code());
         switch (instr.opcode().id()) {
           case AMX_OP_CALL:
             emit_call(dest);
@@ -479,65 +473,6 @@ CompilerOutput *Compiler::compile(AMXPtr amx, CompileErrorHandler *error_handler
   }
 
   return finish();
-}
-
-AMXCaseTable::AMXCaseTable(AMXPtr amx, cell offset) {
-  struct CaseRecord {
-    cell value;    // case value
-    cell address;  // address to jump to (absolute)
-  } *case_table;
-
-  case_table = reinterpret_cast<CaseRecord*>(offset + sizeof(cell));
-  int num_records = *(reinterpret_cast<cell*>(offset) + 1);
-
-  for (int i = 0; i <= num_records; i++) {
-    cell dest = rel_code_addr(amx, case_table[i].address);
-    records_.push_back(std::make_pair(case_table[i].value, dest));
-  }
-}
-
-int AMXCaseTable::num_cases() const {
-  return records_.size() - 1;
-}
-
-cell AMXCaseTable::value_at(cell index) const {
-  return records_[index + 1].first;
-}
-
-cell AMXCaseTable::address_at(cell index) const {
-  return records_[index + 1].second;
-}
-
-cell AMXCaseTable::default_address() const {
-  return records_[0].second;
-}
-
-cell AMXCaseTable::find_min_value() const {
-  assert(num_cases() > 0); // caller should check num_records
-
-  const cell *min_value = 0;
-  for (int i = 0; i < num_cases(); i++) {
-    const cell *value = &records_[i + 1].first;
-    if (min_value == 0 || *value < *min_value) {
-      min_value = value;
-    }
-  }
-
-  return *min_value;
-}
-
-cell AMXCaseTable::find_max_value() const {
-  assert(num_cases() > 0); // caller should check num_records
-
-  const cell *max_value = 0;
-  for (int i = 0; i < num_cases(); i++) {
-    const cell *value = &records_[i + 1].first;
-    if (max_value == 0 || *value > *max_value) {
-      max_value = value;
-    }
-  }
-
-  return *max_value;
 }
 
 } // namespace amxjit

@@ -25,6 +25,8 @@
 #ifndef AMXJIT_AMXOPCODE_H
 #define AMXJIT_AMXOPCODE_H
 
+#include <amx/amx.h>
+
 namespace amxjit {
 
 enum AMXOpcodeID {
