@@ -1106,8 +1106,8 @@ void CompilerAsmjit::emit_switch(const AMXCaseTable &case_table) {
     // This is pretty slow so I probably should optimize
     // this in future...
     for (int i = 0; i < case_table.num_cases(); i++) {
-      as_.cmp(eax, case_table.value_at(i + 1));
-      as_.je(amx_label(case_table.address_at(i + 1)));
+      as_.cmp(eax, case_table.value_at(i));
+      as_.je(amx_label(case_table.address_at(i)));
     }
   }
 
