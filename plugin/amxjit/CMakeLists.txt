@@ -1,6 +1,6 @@
 include(AmxConfig)
 
-set(AMXJIT_ALL_BACKENDS "asmjit")
+set(AMXJIT_ALL_BACKENDS "asmjit;llvm")
 
 if(NOT DEFINED AMXJIT_BUILD_BACKENDS)
   set(AMXJIT_BUILD_BACKENDS "all")
@@ -42,4 +42,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
 endif()
 
-target_link_libraries(amxjit asmjit)
+llvm_map_components_to_libraries(LLVM_LIBRARIES JIT Support X86)
+
+target_link_libraries(amxjit asmjit ${LLVM_LIBRARIES})

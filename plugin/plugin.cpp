@@ -44,6 +44,9 @@
 #if JIT_ASMJIT
   #include "amxjit/compiler-asmjit.h"
 #endif
+#if JIT_LLVM
+  #include "amxjit/compiler-llvm.h"
+#endif
 #include "amxjit/disasm.h"
 #include "amxjit/jit.h"
 
@@ -179,6 +182,11 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
   #if JIT_ASMJIT
     if (std::strcmp(backend_string, "asmjit") == 0) {
       compiler = new amxjit::CompilerAsmjit;
+    }
+  #endif
+  #if JIT_LLVM
+    if (std::strcmp(backend_string, "llvm") == 0) {
+      compiler = new amxjit::CompilerLLVM;
     }
   #endif
 
