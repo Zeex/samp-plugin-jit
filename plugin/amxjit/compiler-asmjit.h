@@ -46,11 +46,6 @@ class CompilerAsmjit : public Compiler {
  public:
   typedef void (CompilerAsmjit::*EmitIntrinsic)();
 
-  struct Intrinsic {
-    const char    *name;
-    EmitIntrinsic  emit;
-  };
-
   class AddressedLabel : public AsmJit::Label {
    public:
     AddressedLabel(cell address)

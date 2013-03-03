@@ -1661,6 +1661,11 @@ void CompilerAsmjit::emit_floatlog() {
 }
 
 bool CompilerAsmjit::emit_intrinsic(const char *name) {
+  struct Intrinsic {
+    const char    *name;
+    EmitIntrinsic  emit;
+  };
+  
   Intrinsic intrinsics[] = {
     {"float",       &CompilerAsmjit::emit_float},
     {"floatabs",    &CompilerAsmjit::emit_floatabs},
