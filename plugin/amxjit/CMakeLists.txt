@@ -1,6 +1,8 @@
 include(AmxConfig)
 
-add_library(amxjit STATIC
+set(AMXJIT_BACKENDS "asmjit" CACHE STRING "List of backends to build")
+
+set(sources
   amxdisasm.cpp
   amxdisasm.h
   amxopcode.cpp
@@ -10,12 +12,16 @@ add_library(amxjit STATIC
   callconv.h
   compiler.cpp
   compiler.h
-  compiler-asmjit.cpp
-  compiler-asmjit.h
   jit.cpp
   jit.h
   macros.h
 )
+
+foreach(backend IN LISTS AMXJIT_BACKENDS)
+  list(APPEND sources compiler-${backend}.cpp compiler-${backend}.h)
+endforeach()
+
+add_library(amxjit STATIC ${sources})
 
 set_property(TARGET amxjit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
 
