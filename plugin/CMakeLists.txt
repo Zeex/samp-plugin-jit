@@ -1,15 +1,29 @@
 include(AmxConfig)
 include(SampPlugin)
 
-set(LLVM_INSTALL_PREFIX "" CACHE PATH "LLVM installation root directory")
-include(${LLVM_INSTALL_PREFIX}/share/llvm/cmake/LLVMConfig.cmake)
+set(JIT_BACKENDS "asmjit" CACHE STRING "List of JIT backends to build")
+
+foreach(backend IN LISTS JIT_BACKENDS)
+  string(TOUPPER ${backend} backend)
+  set(JIT_${backend} TRUE)
+  add_definitions(-DJIT_${backend})
+endforeach()
+
+if(JIT_LLVM)
+  set(LLVM_INSTALL_PREFIX "" CACHE PATH "LLVM installation root directory")
+  include(${LLVM_INSTALL_PREFIX}/share/llvm/cmake/LLVMConfig.cmake)
+endif()
 
 include_directories(.)
 include_directories(amx)
-include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+if(JIT_LLVM)
+  include_directories(${LLVM_INCLUDE_DIRS})
+endif()
 
-link_directories(${LLVM_LIBRARY_DIRS})
+if(JIT_LLVM)
+  link_directories(${LLVM_LIBRARY_DIRS})
+endif()
 
 add_definitions(${LLVM_DEFINITIONS})
 if(UNIX)
@@ -48,15 +62,8 @@ if(MINGW)
                LINK_FLAGS " -Wl,--enable-stdcall-fixup")
 endif()
 
-set(JIT_BACKENDS "asmjit" CACHE STRING "List of JIT backends to build")
 set(AMXJIT_BUILD_BACKENDS ${JIT_BACKENDS})
 add_subdirectory(amxjit)
-
-foreach(backend IN LISTS JIT_BACKENDS)
-  string(TOUPPER ${backend} backend)
-  set("JIT_${backend}" TRUE)
-  set_property(TARGET plugin APPEND PROPERTY COMPILE_DEFINITIONS "JIT_${backend}=1")
-endforeach()
 
 target_link_libraries(plugin amxjit subhook)
 
