@@ -43,7 +43,15 @@ if(MINGW)
                LINK_FLAGS " -Wl,--enable-stdcall-fixup")
 endif()
 
+set(JIT_BACKENDS "asmjit" CACHE STRING "List of JIT backends to build")
+set(AMXJIT_BUILD_BACKENDS ${JIT_BACKENDS})
 add_subdirectory(amxjit)
+
+foreach(backend IN LISTS JIT_BACKENDS)
+  string(TOUPPER ${backend} backend)
+  set("JIT_${backend}" TRUE)
+  set_property(TARGET plugin APPEND PROPERTY COMPILE_DEFINITIONS "JIT_${backend}=1")
+endforeach()
 
 target_link_libraries(plugin amxjit subhook)
 

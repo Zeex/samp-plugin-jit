@@ -1,7 +1,16 @@
 include(AmxConfig)
 
-set(AMXJIT_BACKENDS "asmjit" CACHE STRING "List of backends to build")
-mark_as_advanced(AMXJIT_BACKENDS)
+set(AMXJIT_ALL_BACKENDS "asmjit")
+
+if(NOT DEFINED AMXJIT_BUILD_BACKENDS)
+  set(AMXJIT_BUILD_BACKENDS "all")
+endif()
+
+if(AMXJIT_BUILD_BACKENDS STREQUAL "all")
+  set(AMXJIT_BUILD_BACKENDS ${AMSJIT_ALL_BACKENDS})
+endif()
+
+mark_as_advanced(AMXJIT_BUILD_BACKENDS)
 
 set(sources
   amxptr.cpp
@@ -18,7 +27,7 @@ set(sources
   opcode.h
 )
 
-foreach(backend IN LISTS AMXJIT_BACKENDS)
+foreach(backend IN LISTS AMXJIT_BUILD_BACKENDS)
   list(APPEND sources compiler-${backend}.cpp compiler-${backend}.h)
 endforeach()
 
