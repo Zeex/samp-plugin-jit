@@ -1,16 +1,21 @@
 include(AmxConfig)
 include(SampPlugin)
 
+set(LLVM_INSTALL_PREFIX "" CACHE PATH "LLVM installation root directory")
+include(${LLVM_INSTALL_PREFIX}/share/llvm/cmake/LLVMConfig.cmake)
+
 include_directories(.)
 include_directories(amx)
+include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+link_directories(${LLVM_LIBRARY_DIRS})
+
+add_definitions(${LLVM_DEFINITIONS})
 if(UNIX)
   add_definitions(-DLINUX)
-endif()
-
-if(MSVC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+elseif(MSVC)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS -DNOMINMAX)
 endif()
 
 configure_file(version.h.in version.h @ONLY)

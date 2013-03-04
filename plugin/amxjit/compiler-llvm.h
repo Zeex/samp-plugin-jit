@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2013 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,51 +22,22 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXJIT_COMPILER_ASMJIT_H
-#define AMXJIT_COMPILER_ASMJIT_H
+#ifndef AMXJIT_COMPILER_LLVM_H
+#define AMXJIT_COMPILER_LLVM_H
 
 #include <cassert>
-#include <set>
-#include <vector>
-#include <utility>
 #include <amx/amx.h>
-namespace AsmJit {
-  #include <asmjit/core/build.h>
-}
-#include <asmjit/core.h>
-#include <asmjit/x86.h>
-#include "amxptr.h"
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 #include "compiler.h"
-#include "macros.h"
 
 namespace amxjit {
 
-class CompilerAsmjit : public Compiler {
+class CompilerLLVM : public Compiler {
  public:
-  typedef void (CompilerAsmjit::*EmitIntrinsic)();
-
-  class AddressedLabel : public AsmJit::Label {
-   public:
-    AddressedLabel(cell address)
-      : AsmJit::Label(), address_(address)
-    {}
-
-    AddressedLabel(cell address, const Label &label)
-      : AsmJit::Label(label), address_(address)
-    {}
-
-    cell address() const { return address_; }
-
-    bool operator<(const AddressedLabel &rhs) const {
-      return address_ < rhs.address_;
-    }
-
-   private:
-    cell address_;
-  };
-
-  CompilerAsmjit();
-  virtual ~CompilerAsmjit();
+  CompilerLLVM();
+  virtual ~CompilerLLVM();
 
  protected:
   virtual bool setup(AMXPtr amx);
@@ -205,97 +176,35 @@ class CompilerAsmjit : public Compiler {
   virtual void emit_break();
 
  private:
-  intptr_t *get_runtime_data();
-  void set_runtime_data(int index, intptr_t data);
-
-  void emit_get_amx_ptr(const AsmJit::GpReg &reg);
-  void emit_get_amx_data_ptr(const AsmJit::GpReg &reg);
-
-  void emit_runtime_data(AMXPtr amx);
-  void emit_instr_map(AMXPtr amx);
-  void emit_exec();
-  void emit_exec_helper();
-  void emit_halt_helper();
-  void emit_jump_helper();
-  void emit_sysreq_c_helper();
-  void emit_sysreq_d_helper();
-  void emit_break_helper();
-
-  bool emit_intrinsic(const char *name);
-  void emit_float();
-  void emit_floatabs();
-  void emit_floatadd();
-  void emit_floatsub();
-  void emit_floatmul();
-  void emit_floatdiv();
-  void emit_floatsqroot();
-  void emit_floatlog();
-
-  const AddressedLabel &amx_label(cell address) {
-    std::set<AddressedLabel>::const_iterator it = amx_labels_.find(address);
-    if (it != amx_labels_.end()) {
-      return *it;
-    } else {
-      std::pair<std::set<AddressedLabel>::iterator, bool> result =
-        amx_labels_.insert(AddressedLabel(address, as_.newLabel()));
-      return *result.first;
-    }
-  }
-
-  AsmJit::X86Assembler as_;
-
-  AsmJit::Label L_exec_ptr_;
-  AsmJit::Label L_amx_ptr_;
-  AsmJit::Label L_ebp_ptr_;
-  AsmJit::Label L_esp_ptr_;
-  AsmJit::Label L_reset_ebp_ptr_;
-  AsmJit::Label L_reset_esp_ptr_;
-  AsmJit::Label L_instr_map_size_;
-  AsmJit::Label L_instr_map_ptr_;
-  AsmJit::Label L_exec_;
-  AsmJit::Label L_exec_helper_;
-  AsmJit::Label L_halt_helper_;
-  AsmJit::Label L_jump_helper_;
-  AsmJit::Label L_sysreq_c_helper_;
-  AsmJit::Label L_sysreq_d_helper_;
-  AsmJit::Label L_break_helper_;
-
-  // Labels corresponding to AMX instructions.
-  std::set<AddressedLabel> amx_labels_;
-
-  // Maps AMX instructions to JIT code offsets.
-  std::vector<std::pair<cell, std::ptrdiff_t> > instr_map_;
+  llvm::LLVMContext context_;
+  llvm::Module module_;
+  llvm::IRBuilder<> builder_;
 
  private:
-  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerLLVM);
 };
 
-class CompilerOutputAsmjit : public CompilerOutput {
+class CompilerOutputLLVM : public CompilerOutput {
  public:
-  CompilerOutputAsmjit(void *code, std::size_t code_size);
-  virtual ~CompilerOutputAsmjit();
+  CompilerOutputLLVM() {}
+  virtual ~CompilerOutputLLVM() {}
 
   virtual void *code() const {
-    return code_;
+    return 0;
   }
 
   virtual std::size_t code_size() const {
-    return code_size_;
+    return 0;
   }
 
   virtual EntryPoint entry_point() const {
-    assert(code_ != 0);
-    return (EntryPoint)*reinterpret_cast<void**>(code());
+    return 0;
   }
-
- private:
-  void *code_;
-  std::size_t code_size_;
   
  private:
-  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputAsmjit);
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputLLVM);
 };
 
 } // namespace amxjit
 
-#endif // !AMXJIT_COMPILER_ASMJIT_H
+#endif // !AMXJIT_COMPILER_LLVM_H
