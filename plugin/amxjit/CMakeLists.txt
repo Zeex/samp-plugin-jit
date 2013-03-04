@@ -15,7 +15,6 @@ mark_as_advanced(AMXJIT_BUILD_BACKENDS)
 set(sources
   amxptr.cpp
   amxptr.h
-  callconv.h
   compiler.cpp
   compiler.h
   disasm.cpp

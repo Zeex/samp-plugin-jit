@@ -27,7 +27,6 @@
 
 #include <cstddef>
 #include "amxptr.h"
-#include "callconv.h"
 #include "macros.h"
 
 namespace amxjit {

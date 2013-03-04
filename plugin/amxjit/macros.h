@@ -25,6 +25,20 @@
 #ifndef AMXJIT_MACROS_H
 #define AMXJIT_MACROS_H
 
+#if defined _M_IX86 || defined __i386__
+  #if defined _MSC_VER
+    #define AMXJIT_CDECL __cdecl
+    #define AMXJIT_STDCALL __stdcall
+  #elif defined __GNUC__
+    #define AMXJIT_CDECL __attribute__((cdecl))
+    #define AMXJIT_STDCALL __attribute__((stdcall))
+  #else
+    #error Unsupported compiler
+  #endif
+#else
+  #error Unsupported architecture
+#endif
+
 #define AMXJIT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName &); \
   void operator=(const TypeName &)
