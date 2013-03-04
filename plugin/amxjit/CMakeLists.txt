@@ -1,6 +1,7 @@
 include(AmxConfig)
 
 set(AMXJIT_BACKENDS "asmjit" CACHE STRING "List of backends to build")
+mark_as_advanced(AMXJIT_BACKENDS)
 
 set(sources
   amxptr.cpp
