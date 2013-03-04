@@ -3,18 +3,18 @@ include(AmxConfig)
 set(AMXJIT_BACKENDS "asmjit" CACHE STRING "List of backends to build")
 
 set(sources
-  amxdisasm.cpp
-  amxdisasm.h
-  amxopcode.cpp
-  amxopcode.h
   amxptr.cpp
   amxptr.h
   callconv.h
   compiler.cpp
   compiler.h
+  disasm.cpp
+  disasm.h
   jit.cpp
   jit.h
   macros.h
+  opcode.cpp
+  opcode.h
 )
 
 foreach(backend IN LISTS AMXJIT_BACKENDS)

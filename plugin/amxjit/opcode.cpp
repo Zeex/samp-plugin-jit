@@ -23,7 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <amx/amx.h>
-#include "amxopcode.h"
+#include "opcode.h"
 
 namespace amxjit {
 
@@ -44,7 +44,7 @@ static cell lookup_opcode(cell *opcode_map, cell opcode) {
   #if defined __GNUC__
     if (opcode_map != 0) {
       // Search for this opcode in the opcode relocation table.
-      for (int i = 0; i < NUM_AMX_OPCODES; i++) {
+      for (int i = 0; i < NUM_OPCODES; i++) {
         if (opcode_map[i] == opcode) {
           return i;
         }
@@ -57,40 +57,40 @@ static cell lookup_opcode(cell *opcode_map, cell opcode) {
   #endif
 }
 
-AMXOpcodeID relocate_opcode(cell opcode) {
+OpcodeID relocate_opcode(cell opcode) {
   #if defined __GNUC__
     static cell *opcode_map = get_opcode_map();
     opcode = lookup_opcode(opcode_map, opcode);
   #endif
-	return static_cast<AMXOpcodeID>(opcode);
+	return static_cast<OpcodeID>(opcode);
 }
 
-bool AMXOpcode::is_call() const {
+bool Opcode::is_call() const {
   switch (id_) {
-    case AMX_OP_CALL:
-    case AMX_OP_CALL_PRI:
+    case OP_CALL:
+    case OP_CALL_PRI:
       return true;
   }
   return false;
 }
 
-bool AMXOpcode::is_jump() const {
+bool Opcode::is_jump() const {
   switch (id_) {
-    case AMX_OP_JUMP:
-    case AMX_OP_JUMP_PRI:
-    case AMX_OP_JREL:
-    case AMX_OP_JZER:
-    case AMX_OP_JNZ:
-    case AMX_OP_JEQ:
-    case AMX_OP_JNEQ:
-    case AMX_OP_JLESS:
-    case AMX_OP_JLEQ:
-    case AMX_OP_JGRTR:
-    case AMX_OP_JGEQ:
-    case AMX_OP_JSLESS:
-    case AMX_OP_JSLEQ:
-    case AMX_OP_JSGRTR:
-    case AMX_OP_JSGEQ:
+    case OP_JUMP:
+    case OP_JUMP_PRI:
+    case OP_JREL:
+    case OP_JZER:
+    case OP_JNZ:
+    case OP_JEQ:
+    case OP_JNEQ:
+    case OP_JLESS:
+    case OP_JLEQ:
+    case OP_JGRTR:
+    case OP_JGEQ:
+    case OP_JSLESS:
+    case OP_JSLEQ:
+    case OP_JSGRTR:
+    case OP_JSGEQ:
       return true;
   }
   return false;

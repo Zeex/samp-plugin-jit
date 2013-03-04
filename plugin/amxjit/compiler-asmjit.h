@@ -71,7 +71,7 @@ class CompilerAsmjit : public Compiler {
 
  protected:
   virtual bool setup(AMXPtr amx);
-  virtual bool process(const AMXInstruction &instr);
+  virtual bool process(const Instruction &instr);
   virtual void abort();
   virtual CompilerOutput *finish();
 
@@ -197,7 +197,7 @@ class CompilerAsmjit : public Compiler {
   virtual void emit_sysreq_pri();
   virtual void emit_sysreq_c(cell index, const char *name);
   virtual void emit_sysreq_d(cell address, const char *name);
-  virtual void emit_switch(const AMXCaseTable &case_table);
+  virtual void emit_switch(const CaseTable &case_table);
   virtual void emit_casetbl();
   virtual void emit_swap_pri();
   virtual void emit_swap_alt();

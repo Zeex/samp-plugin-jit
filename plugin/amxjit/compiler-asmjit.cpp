@@ -26,8 +26,8 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
-#include "amxdisasm.h"
 #include "compiler-asmjit.h"
+#include "disasm.h"
 
 // AsmJit core
 using AsmJit::Label;
@@ -158,14 +158,14 @@ bool CompilerAsmjit::setup(AMXPtr amx) {
   return true;
 }
 
-bool CompilerAsmjit::process(const AMXInstruction &instr) {
+bool CompilerAsmjit::process(const Instruction &instr) {
   cell cip = instr.address();
 
   as_.bind(amx_label(cip));
   instr_map_.push_back(std::make_pair(cip, as_.getCodeSize()));
 
   // Align functions on 16-byte boundary.
-  if (instr.opcode().id() == AMX_OP_PROC) {
+  if (instr.opcode().id() == OP_PROC) {
     as_.align(16);
   }
 
@@ -1086,7 +1086,7 @@ void CompilerAsmjit::emit_sysreq_d(cell address, const char *name) {
   }
 }
 
-void CompilerAsmjit::emit_switch(const AMXCaseTable &case_table) {
+void CompilerAsmjit::emit_switch(const CaseTable &case_table) {
   // Compare PRI to the values in the case table (whose address
   // is passed as an offset from CIP) and jump to the associated
   // address in the matching record.
@@ -1177,8 +1177,8 @@ void CompilerAsmjit::emit_runtime_data(AMXPtr amx) {
 }
 
 void CompilerAsmjit::emit_instr_map(AMXPtr amx) {
-  amxjit::AMXDisassembler disas(amx);
-  amxjit::AMXInstruction instr;
+  amxjit::Disassembler disas(amx);
+  amxjit::Instruction instr;
   int size = 0;
   while (disas.decode(instr)) {
     size++;

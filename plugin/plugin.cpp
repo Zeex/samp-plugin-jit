@@ -40,9 +40,8 @@
 #include <subhook.h>
 #include "plugin.h"
 #include "version.h"
-#include "amxjit/amxdisasm.h"
-#include "amxjit/compiler.h"
 #include "amxjit/compiler-asmjit.h"
+#include "amxjit/disasm.h"
 #include "amxjit/jit.h"
 
 #if defined __GNUC__ && !defined __MINGW32__
@@ -117,7 +116,7 @@ static int AMXAPI amx_Debug_JIT(AMX *amx) {
 class CompileErrorHandler : public amxjit::CompileErrorHandler {
  public:
   CompileErrorHandler(amxjit::JIT *jit) : jit_(jit) {}
-  virtual void execute(const amxjit::AMXInstruction &instr) {
+  virtual void execute(const amxjit::Instruction &instr) {
     logprintf("[jit] Invalid or unsupported instruction at address %p:",
               instr.address());
     logprintf("[jit]   => %s", instr.string().c_str());

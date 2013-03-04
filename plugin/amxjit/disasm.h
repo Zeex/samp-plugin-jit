@@ -22,15 +22,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXJIT_AMXDISASM_H
-#define AMXJIT_AMXDISASM_H
+#ifndef AMXJIT_DISASM_H
+#define AMXJIT_DISASM_H
 
 #include <cassert>
 #include <string>
 #include <vector>
 #include <utility>
-#include "amxopcode.h"
 #include "amxptr.h"
+#include "opcode.h"
 
 namespace amxjit {
 
@@ -39,7 +39,7 @@ namespace amxjit {
   #undef REG_NONE
 #endif
 
-enum AMXRegister {
+enum Register {
   REG_NONE = 0,
   REG_PRI = (2 << 0),
   REG_ALT = (2 << 1),
@@ -52,9 +52,9 @@ enum AMXRegister {
   REG_CIP = (2 << 8)
 };
 
-class AMXInstruction {
+class Instruction {
  public:
-  AMXInstruction();
+  Instruction();
 
  public:
   int size() const {
@@ -68,10 +68,10 @@ class AMXInstruction {
     address_ = address;
   }
 
-  AMXOpcode opcode() const {
+  Opcode opcode() const {
     return opcode_;
   }
-  void set_opcode(AMXOpcode opcode) {
+  void set_opcode(Opcode opcode) {
     opcode_ = opcode;
   }
 
@@ -105,7 +105,7 @@ class AMXInstruction {
 
  private:
   cell address_;
-  AMXOpcode opcode_;
+  Opcode opcode_;
   std::vector<cell> operands_;
 
  private:
@@ -114,12 +114,12 @@ class AMXInstruction {
     int src_regs;
     int dst_regs;
   };
-  static const StaticInfoTableEntry info[NUM_AMX_OPCODES];
+  static const StaticInfoTableEntry info[NUM_OPCODES];
 };
 
-class AMXDisassembler {
+class Disassembler {
  public:
-  AMXDisassembler(AMXPtr amx);
+  Disassembler(AMXPtr amx);
 
  public:
   // Returns the address of the currently executing instruction
@@ -133,16 +133,16 @@ class AMXDisassembler {
   // Decodes current instruction and returns true until the end of code gets
   // reached or an error occurs. The optional error argument is set to true
   // on error.
-  bool decode(AMXInstruction &instr, bool *error = 0);
+  bool decode(Instruction &instr, bool *error = 0);
 
 private:
   AMXPtr amx_;
   cell ip_;
 };
 
-class AMXCaseTable {
+class CaseTable {
  public:
-  AMXCaseTable(AMXPtr amx, cell offset);
+  CaseTable(AMXPtr amx, cell offset);
 
   // Returns the total number of records in the case table.
   int num_cases() const;
@@ -164,4 +164,4 @@ class AMXCaseTable {
 
 } // namespace amxjit
 
-#endif // !AMXJIT_AMXDISASM_H
+#endif // !AMXJIT_DISASM_H

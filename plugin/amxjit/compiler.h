@@ -32,15 +32,15 @@
 
 namespace amxjit {
 
-class AMXCaseTable;
-class AMXInstruction;
+class CaseTable;
+class Instruction;
 
 typedef int (AMXJIT_CDECL *EntryPoint)(cell index, cell *retval);
 
 class CompileErrorHandler {
 public:
   virtual ~CompileErrorHandler() {}
-  virtual void execute(const AMXInstruction &instr) = 0;
+  virtual void execute(const Instruction &instr) = 0;
 };
 
 class CompilerOutput {
@@ -71,7 +71,7 @@ class Compiler {
   virtual bool setup(AMXPtr amx) = 0;
 
   // Processes a single instruction. Returns false on error.
-  virtual bool process(const AMXInstruction &instr) = 0;
+  virtual bool process(const Instruction &instr) = 0;
 
   // This method is called on a fatal error.
   virtual void abort() = 0;
@@ -81,8 +81,8 @@ class Compiler {
   virtual CompilerOutput *finish() = 0;
 
   // Sets/returns current instruction.
-  void set_instr(const AMXInstruction *instr) { instr_ = instr; }
-  const AMXInstruction *get_instr() const { return instr_; }
+  void set_instr(const Instruction *instr) { instr_ = instr; }
+  const Instruction *get_instr() const { return instr_; }
 
   // Per-opcode methods.
   virtual void emit_load_pri(cell address) = 0;
@@ -207,7 +207,7 @@ class Compiler {
   virtual void emit_sysreq_pri() = 0;
   virtual void emit_sysreq_c(cell index, const char *name) = 0;
   virtual void emit_sysreq_d(cell address, const char *name) = 0;
-  virtual void emit_switch(const AMXCaseTable &case_table) = 0;
+  virtual void emit_switch(const CaseTable &case_table) = 0;
   virtual void emit_casetbl() = 0;
   virtual void emit_swap_pri() = 0;
   virtual void emit_swap_alt() = 0;
@@ -216,7 +216,7 @@ class Compiler {
   virtual void emit_break() = 0;
 
  private:
-   const AMXInstruction *instr_;
+   const Instruction *instr_;
 };
 
 } // namespace amxjit
