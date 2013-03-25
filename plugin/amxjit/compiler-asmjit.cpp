@@ -703,7 +703,7 @@ void CompilerAsmjit::emit_smul() {
 
 void CompilerAsmjit::emit_sdiv() {
   // PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
-  as_.xor_(edx, edx);
+  as_.cdq();
   as_.idiv(ecx);
   as_.mov(ecx, edx);
 }
@@ -711,7 +711,7 @@ void CompilerAsmjit::emit_sdiv() {
 void CompilerAsmjit::emit_sdiv_alt() {
   // PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
   as_.xchg(eax, ecx);
-  as_.xor_(edx, edx);
+  as_.cdq();
   as_.idiv(ecx);
   as_.mov(ecx, edx);
 }
