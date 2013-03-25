@@ -995,8 +995,7 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 			as->shl(ecx, static_cast<unsigned char>(instr.operand()));
 			break;
 		case OP_SMUL:
-			// PRI = PRI * ALT (signed multiply)
-			as->xor_(edx, edx);
+			// PRI = PRI * ALT (signed multiply);
 			as->imul(ecx);
 			break;
 		case OP_SDIV:
@@ -1014,7 +1013,6 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 			break;
 		case OP_UMUL:
 			// PRI = PRI * ALT (unsigned multiply)
-			as->xor_(edx, edx);
 			as->mul(ecx);
 			break;
 		case OP_UDIV:
