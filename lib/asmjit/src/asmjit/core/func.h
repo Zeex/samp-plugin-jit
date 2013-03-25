@@ -84,23 +84,23 @@ struct FuncArg
   // [Accessors]
   // --------------------------------------------------------------------------
 
-  inline uint32_t getVarType() const ASMJIT_NOTHROW
+  inline uint32_t getVarType() const
   { return _varType; }
 
-  inline uint32_t getRegIndex() const ASMJIT_NOTHROW
+  inline uint32_t getRegIndex() const
   { return _regIndex; }
 
-  inline bool hasRegIndex() const ASMJIT_NOTHROW
+  inline bool hasRegIndex() const
   { return _regIndex != kRegIndexInvalid; }
 
-  inline int32_t getStackOffset() const ASMJIT_NOTHROW
+  inline int32_t getStackOffset() const
   { return static_cast<int32_t>(_stackOffset); }
 
-  inline bool hasStackOffset() const ASMJIT_NOTHROW
+  inline bool hasStackOffset() const
   { return _stackOffset != kFuncStackInvalid; }
 
   //! @brief Get whether the argument is assigned, for private use only.
-  inline bool isAssigned() const ASMJIT_NOTHROW
+  inline bool isAssigned() const
   { return (_regIndex != kRegIndexInvalid) | (_stackOffset != kFuncStackInvalid); }
 
   // --------------------------------------------------------------------------
@@ -108,7 +108,7 @@ struct FuncArg
   // --------------------------------------------------------------------------
 
   //! @brief Reset the function argument to "unassigned state".
-  inline void reset() ASMJIT_NOTHROW
+  inline void reset()
   { _packed = 0xFFFFFFFF; }
 
   // --------------------------------------------------------------------------
@@ -195,30 +195,30 @@ struct FuncDecl
   // --------------------------------------------------------------------------
 
   //! @brief Get function return value or @ref kInvalidValue if it's void.
-  inline uint32_t getReturnType() const ASMJIT_NOTHROW
+  inline uint32_t getReturnType() const
   { return _returnType; }
 
   //! @brief Get count of function arguments.
-  inline uint32_t getArgumentsCount() const ASMJIT_NOTHROW
+  inline uint32_t getArgumentsCount() const
   { return _argumentsCount; }
 
   //! @brief Get function arguments array.
-  inline FuncArg* getArguments() ASMJIT_NOTHROW
+  inline FuncArg* getArguments()
   { return _arguments; }
 
   //! @brief Get function arguments array (const).
-  inline const FuncArg* getArguments() const ASMJIT_NOTHROW
+  inline const FuncArg* getArguments() const
   { return _arguments; }
 
   //! @brief Get function argument at index @a index.
-  inline FuncArg& getArgument(size_t index) ASMJIT_NOTHROW
+  inline FuncArg& getArgument(size_t index)
   {
     ASMJIT_ASSERT(index < static_cast<size_t>(_argumentsCount));
     return _arguments[index];
   }
 
   //! @brief Get function argument at index @a index.
-  inline const FuncArg& getArgument(size_t index) const ASMJIT_NOTHROW
+  inline const FuncArg& getArgument(size_t index) const
   {
     ASMJIT_ASSERT(index < static_cast<size_t>(_argumentsCount));
     return _arguments[index];

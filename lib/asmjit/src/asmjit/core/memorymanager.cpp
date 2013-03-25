@@ -55,7 +55,7 @@ namespace AsmJit {
 
 #define BITS_PER_ENTITY (sizeof(size_t) * 8)
 
-static void _SetBit(size_t* buf, size_t index) ASMJIT_NOTHROW
+static void _SetBit(size_t* buf, size_t index)
 {
   size_t i = index / BITS_PER_ENTITY; // size_t[]
   size_t j = index % BITS_PER_ENTITY; // size_t[][] bit index
@@ -64,7 +64,7 @@ static void _SetBit(size_t* buf, size_t index) ASMJIT_NOTHROW
   *buf |= (size_t)1 << j;
 }
 
-static void _ClearBit(size_t* buf, size_t index) ASMJIT_NOTHROW
+static void _ClearBit(size_t* buf, size_t index)
 {
   size_t i = index / BITS_PER_ENTITY; // size_t[]
   size_t j = index % BITS_PER_ENTITY; // size_t[][] bit index
@@ -73,7 +73,7 @@ static void _ClearBit(size_t* buf, size_t index) ASMJIT_NOTHROW
   *buf &= ~((size_t)1 << j);
 }
 
-static void _SetBits(size_t* buf, size_t index, size_t len) ASMJIT_NOTHROW
+static void _SetBits(size_t* buf, size_t index, size_t len)
 {
   if (len == 0) return;
 
@@ -102,7 +102,7 @@ static void _SetBits(size_t* buf, size_t index, size_t len) ASMJIT_NOTHROW
   }
 }
 
-static void _ClearBits(size_t* buf, size_t index, size_t len) ASMJIT_NOTHROW
+static void _ClearBits(size_t* buf, size_t index, size_t len)
 {
   if (len == 0) return;
 
@@ -197,7 +197,7 @@ struct MemNode : public RbNode<MemNode>
   // --------------------------------------------------------------------------
 
   // Get available space.
-  inline size_t getAvailable() const ASMJIT_NOTHROW { return size - used; }
+  inline size_t getAvailable() const { return size - used; }
 
   inline void fillData(MemNode* other)
   {
@@ -226,7 +226,7 @@ struct PermanentNode
   PermanentNode* prev;     // Pointer to prev chunk or NULL.
 
   // Get available space.
-  inline size_t getAvailable() const ASMJIT_NOTHROW { return size - used; }
+  inline size_t getAvailable() const { return size - used; }
 };
 
 // ============================================================================
@@ -240,27 +240,27 @@ struct MemoryManagerPrivate
   // --------------------------------------------------------------------------
 
 #if !defined(ASMJIT_WINDOWS)
-  MemoryManagerPrivate() ASMJIT_NOTHROW;
+  MemoryManagerPrivate();
 #else
-  MemoryManagerPrivate(HANDLE hProcess) ASMJIT_NOTHROW;
+  MemoryManagerPrivate(HANDLE hProcess);
 #endif // ASMJIT_WINDOWS
-  ~MemoryManagerPrivate() ASMJIT_NOTHROW;
+  ~MemoryManagerPrivate();
 
   // --------------------------------------------------------------------------
   // [Allocation]
   // --------------------------------------------------------------------------
 
-  MemNode* createNode(size_t size, size_t density) ASMJIT_NOTHROW;
+  MemNode* createNode(size_t size, size_t density);
 
-  void* allocPermanent(size_t vsize) ASMJIT_NOTHROW;
-  void* allocFreeable(size_t vsize) ASMJIT_NOTHROW;
+  void* allocPermanent(size_t vsize);
+  void* allocFreeable(size_t vsize);
 
-  bool free(void* address) ASMJIT_NOTHROW;
-  bool shrink(void* address, size_t used) ASMJIT_NOTHROW;
-  void freeAll(bool keepVirtualMemory) ASMJIT_NOTHROW;
+  bool free(void* address);
+  bool shrink(void* address, size_t used);
+  void freeAll(bool keepVirtualMemory);
 
   // Helpers to avoid ifdefs in the code.
-  inline uint8_t* allocVirtualMemory(size_t size, size_t* vsize) ASMJIT_NOTHROW
+  inline uint8_t* allocVirtualMemory(size_t size, size_t* vsize)
   {
 #if !defined(ASMJIT_WINDOWS)
     return (uint8_t*)VirtualMemory::alloc(size, vsize, true);
@@ -269,7 +269,7 @@ struct MemoryManagerPrivate
 #endif
   }
 
-  inline void freeVirtualMemory(void* vmem, size_t vsize) ASMJIT_NOTHROW
+  inline void freeVirtualMemory(void* vmem, size_t vsize)
   {
 #if !defined(ASMJIT_WINDOWS)
     VirtualMemory::free(vmem, vsize);
@@ -282,11 +282,11 @@ struct MemoryManagerPrivate
   // [NodeList RB-Tree]
   // --------------------------------------------------------------------------
 
-  bool checkTree() ASMJIT_NOTHROW;
+  bool checkTree();
 
-  void insertNode(MemNode* node) ASMJIT_NOTHROW;
-  MemNode* removeNode(MemNode* node) ASMJIT_NOTHROW;
-  MemNode* findPtr(uint8_t* mem) ASMJIT_NOTHROW;
+  void insertNode(MemNode* node);
+  MemNode* removeNode(MemNode* node);
+  MemNode* findPtr(uint8_t* mem);
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -322,9 +322,9 @@ struct MemoryManagerPrivate
 // ============================================================================
 
 #if !defined(ASMJIT_WINDOWS)
-MemoryManagerPrivate::MemoryManagerPrivate() ASMJIT_NOTHROW :
+MemoryManagerPrivate::MemoryManagerPrivate() :
 #else
-MemoryManagerPrivate::MemoryManagerPrivate(HANDLE hProcess) ASMJIT_NOTHROW :
+MemoryManagerPrivate::MemoryManagerPrivate(HANDLE hProcess) :
   _hProcess(hProcess),
 #endif
   _newChunkSize(65536),
@@ -340,7 +340,7 @@ MemoryManagerPrivate::MemoryManagerPrivate(HANDLE hProcess) ASMJIT_NOTHROW :
 {
 }
 
-MemoryManagerPrivate::~MemoryManagerPrivate() ASMJIT_NOTHROW
+MemoryManagerPrivate::~MemoryManagerPrivate()
 {
   // Freeable memory cleanup - Also frees the virtual memory if configured to.
   freeAll(_keepVirtualMemory);
@@ -362,7 +362,7 @@ MemoryManagerPrivate::~MemoryManagerPrivate() ASMJIT_NOTHROW
 // Allocates virtual memory node and MemNode structure.
 //
 // Returns MemNode* on success, otherwise NULL.
-MemNode* MemoryManagerPrivate::createNode(size_t size, size_t density) ASMJIT_NOTHROW
+MemNode* MemoryManagerPrivate::createNode(size_t size, size_t density)
 {
   size_t vsize;
   uint8_t* vmem = allocVirtualMemory(size, &vsize);
@@ -408,7 +408,7 @@ MemNode* MemoryManagerPrivate::createNode(size_t size, size_t density) ASMJIT_NO
   return node;
 }
 
-void* MemoryManagerPrivate::allocPermanent(size_t vsize) ASMJIT_NOTHROW
+void* MemoryManagerPrivate::allocPermanent(size_t vsize)
 {
   static const size_t permanentAlignment = 32;
   static const size_t permanentNodeSize  = 32768;
@@ -459,7 +459,7 @@ void* MemoryManagerPrivate::allocPermanent(size_t vsize) ASMJIT_NOTHROW
   return (void*)result;
 }
 
-void* MemoryManagerPrivate::allocFreeable(size_t vsize) ASMJIT_NOTHROW
+void* MemoryManagerPrivate::allocFreeable(size_t vsize)
 {
   size_t i;               // Current index.
   size_t need;            // How many we need to be freed.
@@ -579,7 +579,7 @@ _Found:
   return result;
 }
 
-bool MemoryManagerPrivate::free(void* address) ASMJIT_NOTHROW
+bool MemoryManagerPrivate::free(void* address)
 {
   if (address == NULL) return true;
 
@@ -664,7 +664,7 @@ bool MemoryManagerPrivate::free(void* address) ASMJIT_NOTHROW
   return true;
 }
 
-bool MemoryManagerPrivate::shrink(void* address, size_t used) ASMJIT_NOTHROW
+bool MemoryManagerPrivate::shrink(void* address, size_t used)
 {
   if (address == NULL) return false;
   if (used == 0) return free(address);
@@ -742,7 +742,7 @@ _EnterFreeLoop:
   return true;
 }
 
-void MemoryManagerPrivate::freeAll(bool keepVirtualMemory) ASMJIT_NOTHROW
+void MemoryManagerPrivate::freeAll(bool keepVirtualMemory)
 {
   MemNode* node = _first;
 
@@ -818,12 +818,12 @@ static inline MemNode* rbRotateDouble(MemNode* root, int dir)
   return rbRotateSingle(root, dir);
 }
 
-bool MemoryManagerPrivate::checkTree() ASMJIT_NOTHROW
+bool MemoryManagerPrivate::checkTree()
 {
   return rbAssert(_root) > 0;
 }
 
-void MemoryManagerPrivate::insertNode(MemNode* node) ASMJIT_NOTHROW
+void MemoryManagerPrivate::insertNode(MemNode* node)
 {
   if (_root == NULL)
   {
@@ -906,7 +906,7 @@ void MemoryManagerPrivate::insertNode(MemNode* node) ASMJIT_NOTHROW
   }
 }
 
-MemNode* MemoryManagerPrivate::removeNode(MemNode* node) ASMJIT_NOTHROW
+MemNode* MemoryManagerPrivate::removeNode(MemNode* node)
 {
   // False tree root.
   RbNode<MemNode> head = {0}; 
@@ -997,7 +997,7 @@ MemNode* MemoryManagerPrivate::removeNode(MemNode* node) ASMJIT_NOTHROW
   return q;
 }
 
-MemNode* MemoryManagerPrivate::findPtr(uint8_t* mem) ASMJIT_NOTHROW
+MemNode* MemoryManagerPrivate::findPtr(uint8_t* mem)
 {
   MemNode* cur = _root;
   while (cur)
@@ -1032,15 +1032,15 @@ MemNode* MemoryManagerPrivate::findPtr(uint8_t* mem) ASMJIT_NOTHROW
 // [AsmJit::MemoryManager]
 // ============================================================================
 
-MemoryManager::MemoryManager() ASMJIT_NOTHROW
+MemoryManager::MemoryManager()
 {
 }
 
-MemoryManager::~MemoryManager() ASMJIT_NOTHROW
+MemoryManager::~MemoryManager()
 {
 }
 
-MemoryManager* MemoryManager::getGlobal() ASMJIT_NOTHROW
+MemoryManager* MemoryManager::getGlobal()
 {
   static VirtualMemoryManager memmgr;
   return &memmgr;
@@ -1051,32 +1051,32 @@ MemoryManager* MemoryManager::getGlobal() ASMJIT_NOTHROW
 // ============================================================================
 
 #if !defined(ASMJIT_WINDOWS)
-VirtualMemoryManager::VirtualMemoryManager() ASMJIT_NOTHROW
+VirtualMemoryManager::VirtualMemoryManager()
 {
   MemoryManagerPrivate* d = new(std::nothrow) MemoryManagerPrivate();
   _d = (void*)d;
 }
 #else
-VirtualMemoryManager::VirtualMemoryManager() ASMJIT_NOTHROW
+VirtualMemoryManager::VirtualMemoryManager()
 {
   MemoryManagerPrivate* d = new(std::nothrow) MemoryManagerPrivate(GetCurrentProcess());
   _d = (void*)d;
 }
 
-VirtualMemoryManager::VirtualMemoryManager(HANDLE hProcess) ASMJIT_NOTHROW
+VirtualMemoryManager::VirtualMemoryManager(HANDLE hProcess)
 {
   MemoryManagerPrivate* d = new(std::nothrow) MemoryManagerPrivate(hProcess);
   _d = (void*)d;
 }
 #endif // ASMJIT_WINDOWS
 
-VirtualMemoryManager::~VirtualMemoryManager() ASMJIT_NOTHROW
+VirtualMemoryManager::~VirtualMemoryManager()
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   delete d;
 }
 
-void* VirtualMemoryManager::alloc(size_t size, uint32_t type) ASMJIT_NOTHROW
+void* VirtualMemoryManager::alloc(size_t size, uint32_t type)
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
 
@@ -1086,19 +1086,19 @@ void* VirtualMemoryManager::alloc(size_t size, uint32_t type) ASMJIT_NOTHROW
     return d->allocFreeable(size);
 }
 
-bool VirtualMemoryManager::free(void* address) ASMJIT_NOTHROW
+bool VirtualMemoryManager::free(void* address)
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   return d->free(address);
 }
 
-bool VirtualMemoryManager::shrink(void* address, size_t used) ASMJIT_NOTHROW
+bool VirtualMemoryManager::shrink(void* address, size_t used)
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   return d->shrink(address, used);
 }
 
-void VirtualMemoryManager::freeAll() ASMJIT_NOTHROW
+void VirtualMemoryManager::freeAll()
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
 
@@ -1106,25 +1106,25 @@ void VirtualMemoryManager::freeAll() ASMJIT_NOTHROW
   return d->freeAll(false);
 }
 
-size_t VirtualMemoryManager::getUsedBytes() ASMJIT_NOTHROW
+size_t VirtualMemoryManager::getUsedBytes()
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   return d->_used;
 }
 
-size_t VirtualMemoryManager::getAllocatedBytes() ASMJIT_NOTHROW
+size_t VirtualMemoryManager::getAllocatedBytes()
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   return d->_allocated;
 }
 
-bool VirtualMemoryManager::getKeepVirtualMemory() const ASMJIT_NOTHROW
+bool VirtualMemoryManager::getKeepVirtualMemory() const
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   return d->_keepVirtualMemory;
 }
 
-void VirtualMemoryManager::setKeepVirtualMemory(bool keepVirtualMemory) ASMJIT_NOTHROW
+void VirtualMemoryManager::setKeepVirtualMemory(bool keepVirtualMemory)
 {
   MemoryManagerPrivate* d = reinterpret_cast<MemoryManagerPrivate*>(_d);
   d->_keepVirtualMemory = keepVirtualMemory;

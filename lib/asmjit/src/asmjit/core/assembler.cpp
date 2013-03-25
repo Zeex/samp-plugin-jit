@@ -23,7 +23,7 @@ namespace AsmJit {
 // [AsmJit::Assembler - Construction / Destruction]
 // ============================================================================
 
-Assembler::Assembler(Context* context) ASMJIT_NOTHROW :
+Assembler::Assembler(Context* context) :
   _zoneMemory(16384 - sizeof(ZoneChunk) - 32),
   _buffer(),
   _context(context != NULL 
@@ -39,7 +39,7 @@ Assembler::Assembler(Context* context) ASMJIT_NOTHROW :
 {
 }
 
-Assembler::~Assembler() ASMJIT_NOTHROW
+Assembler::~Assembler()
 {
 }
 
@@ -47,7 +47,7 @@ Assembler::~Assembler() ASMJIT_NOTHROW
 // [AsmJit::Assembler - Logging]
 // ============================================================================
 
-void Assembler::setLogger(Logger* logger) ASMJIT_NOTHROW
+void Assembler::setLogger(Logger* logger)
 {
   _logger = logger;
 }
@@ -56,7 +56,7 @@ void Assembler::setLogger(Logger* logger) ASMJIT_NOTHROW
 // [AsmJit::Assembler - Error Handling]
 // ============================================================================
 
-void Assembler::setError(uint32_t error) ASMJIT_NOTHROW
+void Assembler::setError(uint32_t error)
 {
   _error = error;
   if (_error == kErrorOk)
@@ -70,7 +70,7 @@ void Assembler::setError(uint32_t error) ASMJIT_NOTHROW
 // [AsmJit::Assembler - Properties]
 // ============================================================================
 
-uint32_t Assembler::getProperty(uint32_t propertyId) const ASMJIT_NOTHROW
+uint32_t Assembler::getProperty(uint32_t propertyId) const
 {
   if (propertyId > 31)
     return 0;
@@ -78,7 +78,7 @@ uint32_t Assembler::getProperty(uint32_t propertyId) const ASMJIT_NOTHROW
   return (_properties & (IntUtil::maskFromIndex(propertyId))) != 0;
 }
 
-void Assembler::setProperty(uint32_t propertyId, uint32_t value) ASMJIT_NOTHROW
+void Assembler::setProperty(uint32_t propertyId, uint32_t value)
 {
   if (propertyId > 31)
     return;
@@ -93,7 +93,7 @@ void Assembler::setProperty(uint32_t propertyId, uint32_t value) ASMJIT_NOTHROW
 // [AsmJit::Assembler - TakeCode]
 // ============================================================================
 
-uint8_t* Assembler::takeCode() ASMJIT_NOTHROW
+uint8_t* Assembler::takeCode()
 {
   uint8_t* code = _buffer.take();
   _relocData.clear();
@@ -109,7 +109,7 @@ uint8_t* Assembler::takeCode() ASMJIT_NOTHROW
 // [AsmJit::Assembler - Clear / Reset]
 // ============================================================================
 
-void Assembler::clear() ASMJIT_NOTHROW
+void Assembler::clear()
 {
   _purge();
 
@@ -117,7 +117,7 @@ void Assembler::clear() ASMJIT_NOTHROW
     setError(kErrorOk);
 }
 
-void Assembler::reset() ASMJIT_NOTHROW
+void Assembler::reset()
 {
   _purge();
 
@@ -131,7 +131,7 @@ void Assembler::reset() ASMJIT_NOTHROW
     setError(kErrorOk);
 }
 
-void Assembler::_purge() ASMJIT_NOTHROW
+void Assembler::_purge()
 {
   _zoneMemory.clear();
   _buffer.clear();
@@ -150,7 +150,7 @@ void Assembler::_purge() ASMJIT_NOTHROW
 // [AsmJit::Assembler - Emit]
 // ============================================================================
 
-void Assembler::embed(const void* data, size_t len) ASMJIT_NOTHROW
+void Assembler::embed(const void* data, size_t len)
 {
   if (!canEmit())
     return;
@@ -188,7 +188,7 @@ void Assembler::embed(const void* data, size_t len) ASMJIT_NOTHROW
 // [AsmJit::Assembler - Helpers]
 // ============================================================================
 
-Assembler::LabelLink* Assembler::_newLabelLink() ASMJIT_NOTHROW
+Assembler::LabelLink* Assembler::_newLabelLink()
 {
   LabelLink* link = _unusedLinks;
 

@@ -107,7 +107,7 @@ struct X86CpuInfo : public CpuInfo
 //! @c cpuid() function has one input parameter that is passed to cpuid through 
 //! eax register and results in four output values representing result of cpuid 
 //! instruction (eax, ebx, ecx and edx registers).
-ASMJIT_API void x86CpuId(uint32_t in, X86CpuId* out) ASMJIT_NOTHROW;
+ASMJIT_API void x86CpuId(uint32_t in, X86CpuId* out);
 
 // ============================================================================
 // [AsmJit::x86CpuDetect]
@@ -116,7 +116,7 @@ ASMJIT_API void x86CpuId(uint32_t in, X86CpuId* out) ASMJIT_NOTHROW;
 //! @brief Detect CPU features to CpuInfo structure @a out.
 //!
 //! @sa @c CpuInfo.
-ASMJIT_API void x86CpuDetect(X86CpuInfo* out) ASMJIT_NOTHROW;
+ASMJIT_API void x86CpuDetect(X86CpuInfo* out);
 #endif // ASMJIT_X86 || ASMJIT_X64
 
 //! @}

@@ -143,6 +143,9 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 	jit->setAssembler(&as);
 
 	AsmJit::FileLogger logger;
+	logger.setHexImmediate(true);
+	logger.setHexDisplacement(true);
+	logger.setInstructionPrefix("\t");
 	as.setLogger(&logger);
 
 	AMXPathFinder finder;

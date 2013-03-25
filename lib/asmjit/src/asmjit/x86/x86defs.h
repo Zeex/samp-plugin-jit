@@ -735,17 +735,31 @@ enum kX86EmitOption
   //! This option should be used carefully, because there are unencodable
   //! combinations. If you want to access ah, bh, ch or dh registers then you
   //! can't emit REX prefix and it will cause an illegal instruction error.
-  kX86EmitOptionRex = (1 << 0),
+  kX86EmitOptionRex = 0x1,
 
   //! @brief Tell @c Assembler or @c Compiler to emit and validate lock prefix.
   //!
   //! If this option is used and instruction doesn't support LOCK prefix then
   //! invalid instruction error is generated.
-  kX86EmitOptionLock = (1 << 1),
+  kX86EmitOptionLock = 0x2,
 
-  //! @brief Emit short/near jump or conditional jump instead of far one, 
-  //! saving some bytes.
-  kX86EmitOptionShortJump = (1 << 2)
+  //! @brief Emit short/near jump or conditional jump instead of far one to
+  //! some bytes.
+  //!
+  //! @note This option could be dangerous in case that the short jump is not
+  //! possible (displacement can't fit into signed 8-bit integer). AsmJit can
+  //! automatically generate back short jumps, but always generates long forward
+  //! jumps, because the information about the code size between the instruction
+  //! and target is not known.
+  kX86EmitOptionShortJump = 0x4,
+
+  //! @brief Emit full immediate instead of BYTE in all cases.
+  //!
+  //! @note AsmJit is able to emit both forms of immediate value. In case that
+  //! the instruction supports short form and immediate can fit into a signed 
+  //! 8-bit integer short for is preferred, but if for any reason the full form
+  //! is required it can be overridden by using this option.
+  kX86EmitOptionFullImmediate = 0x8
 };
 
 // ============================================================================
@@ -789,6 +803,7 @@ enum kX86InstCode
   kX86InstBts,             // X86/X64
   kX86InstCall,            // X86/X64
   kX86InstCbw,             // X86/X64
+  kX86InstCdq,             // X86/X64
   kX86InstCdqe,            // X64 only
   kX86InstClc,             // X86/X64
   kX86InstCld,             // X86/X64
@@ -838,6 +853,7 @@ enum kX86InstCode
   kX86InstComISD,          // SSE2
   kX86InstComISS,          // SSE
   kX86InstCpuId,           // X86/X64 (i486)
+  kX86InstCqo,             // X64 only
   kX86InstCrc32,           // SSE4.2
   kX86InstCvtDQ2PD,        // SSE2
   kX86InstCvtDQ2PS,        // SSE2
@@ -861,6 +877,7 @@ enum kX86InstCode
   kX86InstCvttPS2PI,       // SSE
   kX86InstCvttSD2SI,       // SSE2
   kX86InstCvttSS2SI,       // SSE
+  kX86InstCwd,             // X86/X64
   kX86InstCwde,            // X86/X64
   kX86InstDaa,             // X86 only
   kX86InstDas,             // X86 only
@@ -1538,49 +1555,49 @@ struct X86InstInfo
   // --------------------------------------------------------------------------
 
   //! @brief Get instruction code, see @ref kX86InstCode.
-  inline uint32_t getCode() const ASMJIT_NOTHROW
+  inline uint32_t getCode() const
   { return _code; }
 
   //! @brief Get instruction name string (null terminated string).
-  inline const char* getName() const ASMJIT_NOTHROW
+  inline const char* getName() const
   { return x86InstName + static_cast<uint32_t>(_nameIndex); }
 
   //! @brief Get instruction name index (index to @ref x86InstName array).
-  inline uint32_t getNameIndex() const ASMJIT_NOTHROW
+  inline uint32_t getNameIndex() const
   { return _nameIndex; }
 
   //! @brief Get instruction group, see @ref kX86InstGroup.
-  inline uint32_t getGroup() const ASMJIT_NOTHROW
+  inline uint32_t getGroup() const
   { return _group; }
 
   //! @brief Get instruction flags, see @ref kX86InstFlags.
-  inline uint32_t getFlags() const ASMJIT_NOTHROW
+  inline uint32_t getFlags() const
   { return _group; }
 
   //! @brief Get whether the instruction is conditional or standard jump.
-  inline bool isJump() const ASMJIT_NOTHROW
+  inline bool isJump() const
   { return (_flags & kX86InstFlagJump) != 0; }
 
   //! @brief Get whether the instruction is MOV type.
-  inline bool isMov() const ASMJIT_NOTHROW
+  inline bool isMov() const
   { return (_flags & kX86InstFlagMov) != 0; }
 
   //! @brief Get whether the instruction is X87 FPU type.
-  inline bool isFpu() const ASMJIT_NOTHROW
+  inline bool isFpu() const
   { return (_flags & kX86InstFlagFpu) != 0; }
 
   //! @brief Get whether the instruction can be prefixed by LOCK prefix.
-  inline bool isLockable() const ASMJIT_NOTHROW
+  inline bool isLockable() const
   { return (_flags & kX86InstFlagLockable) != 0; }
 
   //! @brief Get whether the instruction is special type (this is used by
   //! @c Compiler to manage additional variables or functionality).
-  inline bool isSpecial() const ASMJIT_NOTHROW
+  inline bool isSpecial() const
   { return (_flags & kX86InstFlagSpecial) != 0; }
 
   //! @brief Get whether the instruction is special type and it performs
   //! memory access.
-  inline bool isSpecialMem() const ASMJIT_NOTHROW
+  inline bool isSpecialMem() const
   { return (_flags & kX86InstFlagSpecialMem) != 0; }
 
   // --------------------------------------------------------------------------
@@ -2133,23 +2150,23 @@ struct X86VarInfo
   // --------------------------------------------------------------------------
 
   //! @brief Get register code base, see @ref kX86RegCode.
-  inline uint32_t getCode() const ASMJIT_NOTHROW
+  inline uint32_t getCode() const
   { return _code; }
 
   //! @brief Get register size in bytes.
-  inline uint32_t getSize() const ASMJIT_NOTHROW
+  inline uint32_t getSize() const
   { return _size; }
 
   //! @brief Get variable class, see @ref kX86VarClass.
-  inline uint32_t getClass() const ASMJIT_NOTHROW
+  inline uint32_t getClass() const
   { return _class; }
 
   //! @brief Get variable flags, see @ref kX86VarFlags.
-  inline uint32_t getFlags() const ASMJIT_NOTHROW
+  inline uint32_t getFlags() const
   { return _flags; }
 
   //! @brief Get variable type name.
-  inline const char* getName() const ASMJIT_NOTHROW
+  inline const char* getName() const
   { return _name; }
 
   // --------------------------------------------------------------------------

@@ -20,19 +20,19 @@ namespace AsmJit {
 // [AsmJit::ZoneMemory]
 // ============================================================================
 
-ZoneMemory::ZoneMemory(size_t chunkSize) ASMJIT_NOTHROW
+ZoneMemory::ZoneMemory(size_t chunkSize)
 {
   _chunks = NULL;
   _total = 0;
   _chunkSize = chunkSize;
 }
 
-ZoneMemory::~ZoneMemory() ASMJIT_NOTHROW
+ZoneMemory::~ZoneMemory()
 {
   reset();
 }
 
-void* ZoneMemory::alloc(size_t size) ASMJIT_NOTHROW
+void* ZoneMemory::alloc(size_t size)
 {
   ZoneChunk* cur = _chunks;
 
@@ -52,17 +52,20 @@ void* ZoneMemory::alloc(size_t size) ASMJIT_NOTHROW
 
     cur->prev = _chunks;
     cur->pos = 0;
-    cur->size = _chunkSize;
+    cur->size = chSize;
+
     _chunks = cur;
   }
 
   uint8_t* p = cur->data + cur->pos;
   cur->pos += size;
   _total += size;
+
+  ASMJIT_ASSERT(cur->pos <= cur->size);
   return (void*)p;
 }
 
-char* ZoneMemory::sdup(const char* str) ASMJIT_NOTHROW
+char* ZoneMemory::sdup(const char* str)
 {
   if (str == NULL) return NULL;
 
@@ -82,7 +85,7 @@ char* ZoneMemory::sdup(const char* str) ASMJIT_NOTHROW
   return m;
 }
 
-void ZoneMemory::clear() ASMJIT_NOTHROW
+void ZoneMemory::clear()
 {
   ZoneChunk* cur = _chunks;
 
@@ -102,7 +105,7 @@ void ZoneMemory::clear() ASMJIT_NOTHROW
   _total = 0;
 }
 
-void ZoneMemory::reset() ASMJIT_NOTHROW
+void ZoneMemory::reset()
 {
   ZoneChunk* cur = _chunks;
 

@@ -24,7 +24,7 @@ namespace AsmJit {
 // [AsmJit::X86FuncDecl - Accessors]
 // ============================================================================
 
-uint32_t X86FuncDecl::findArgumentByRegCode(uint32_t regCode) const ASMJIT_NOTHROW
+uint32_t X86FuncDecl::findArgumentByRegCode(uint32_t regCode) const
 {
   uint32_t type = regCode & kRegTypeMask;
   uint32_t idx = regCode & kRegIndexMask;
@@ -69,7 +69,7 @@ uint32_t X86FuncDecl::findArgumentByRegCode(uint32_t regCode) const ASMJIT_NOTHR
 // [AsmJit::X86FuncDecl - SetPrototype - InitCallingConvention]
 // ============================================================================
 
-static void X86FuncDecl_initCallingConvention(X86FuncDecl* self, uint32_t convention) ASMJIT_NOTHROW
+static void X86FuncDecl_initCallingConvention(X86FuncDecl* self, uint32_t convention)
 {
   uint32_t i;
 
@@ -363,7 +363,7 @@ static void X86FuncDecl_initCallingConvention(X86FuncDecl* self, uint32_t conven
 // ============================================================================
 
 static void X86FuncDecl_initDefinition(X86FuncDecl* self,
-  uint32_t returnType, const uint32_t* argumentsData, uint32_t argumentsCount) ASMJIT_NOTHROW
+  uint32_t returnType, const uint32_t* argumentsData, uint32_t argumentsCount)
 {
   ASMJIT_ASSERT(argumentsCount <= kFuncArgsMax);
 
@@ -579,7 +579,7 @@ static void X86FuncDecl_initDefinition(X86FuncDecl* self,
   self->_argumentsStackSize = (uint32_t)(-stackOffset);
 }
 
-void X86FuncDecl::setPrototype(uint32_t convention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount) ASMJIT_NOTHROW
+void X86FuncDecl::setPrototype(uint32_t convention, uint32_t returnType, const uint32_t* arguments, uint32_t argumentsCount)
 {
   // Limit maximum function arguments to kFuncArgsMax.
   if (argumentsCount > kFuncArgsMax)
@@ -593,7 +593,7 @@ void X86FuncDecl::setPrototype(uint32_t convention, uint32_t returnType, const u
 // [AsmJit::X86FuncDecl - Reset]
 // ============================================================================
 
-void X86FuncDecl::reset() ASMJIT_NOTHROW
+void X86FuncDecl::reset()
 {
   uint32_t i;
 

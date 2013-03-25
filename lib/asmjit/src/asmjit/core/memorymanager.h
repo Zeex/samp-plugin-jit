@@ -39,10 +39,10 @@ struct MemoryManager
   // --------------------------------------------------------------------------
 
   //! @brief Create memory manager instance.
-  ASMJIT_API MemoryManager() ASMJIT_NOTHROW;
+  ASMJIT_API MemoryManager();
   //! @brief Destroy memory manager instance, this means also to free all memory
   //! blocks.
-  ASMJIT_API virtual ~MemoryManager() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~MemoryManager();
 
   // --------------------------------------------------------------------------
   // [Interface]
@@ -53,18 +53,18 @@ struct MemoryManager
   //! Note that if you are implementing your own virtual memory manager then you
   //! can quitly ignore type of allocation. This is mainly for AsmJit to memory
   //! manager that allocated memory will be never freed.
-  virtual void* alloc(size_t size, uint32_t type = kMemAllocFreeable) ASMJIT_NOTHROW = 0;
+  virtual void* alloc(size_t size, uint32_t type = kMemAllocFreeable) = 0;
   //! @brief Free previously allocated memory at a given @a address.
-  virtual bool free(void* address) ASMJIT_NOTHROW = 0;
+  virtual bool free(void* address) = 0;
   //! @brief Free some tail memory.
-  virtual bool shrink(void* address, size_t used) ASMJIT_NOTHROW = 0;
+  virtual bool shrink(void* address, size_t used) = 0;
   //! @brief Free all allocated memory.
-  virtual void freeAll() ASMJIT_NOTHROW = 0;
+  virtual void freeAll() = 0;
 
   //! @brief Get how many bytes are currently used.
-  virtual size_t getUsedBytes() ASMJIT_NOTHROW = 0;
+  virtual size_t getUsedBytes() = 0;
   //! @brief Get how many bytes are currently allocated.
-  virtual size_t getAllocatedBytes() ASMJIT_NOTHROW = 0;
+  virtual size_t getAllocatedBytes() = 0;
 
   // --------------------------------------------------------------------------
   // [Statics]
@@ -75,7 +75,7 @@ struct MemoryManager
   //! Global instance is instance of @c VirtualMemoryManager class. Global memory
   //! manager is used by default by @ref Assembler::make() and @ref Compiler::make()
   //! methods.
-  ASMJIT_API static MemoryManager* getGlobal() ASMJIT_NOTHROW;
+  ASMJIT_API static MemoryManager* getGlobal();
 };
 
 // ============================================================================
@@ -92,31 +92,31 @@ struct VirtualMemoryManager : public MemoryManager
   // --------------------------------------------------------------------------
 
   //! @brief Create a @c VirtualMemoryManager instance.
-  ASMJIT_API VirtualMemoryManager() ASMJIT_NOTHROW;
+  ASMJIT_API VirtualMemoryManager();
 
 #if defined(ASMJIT_WINDOWS)
   //! @brief Create a @c VirtualMemoryManager instance for process @a hProcess.
   //!
   //! This is specialized version of constructor available only for windows and
   //! usable to alloc/free memory of different process.
-  ASMJIT_API VirtualMemoryManager(HANDLE hProcess) ASMJIT_NOTHROW;
+  ASMJIT_API VirtualMemoryManager(HANDLE hProcess);
 #endif // ASMJIT_WINDOWS
 
   //! @brief Destroy the @c VirtualMemoryManager instance, this means also to
   //! free all blocks.
-  ASMJIT_API virtual ~VirtualMemoryManager() ASMJIT_NOTHROW;
+  ASMJIT_API virtual ~VirtualMemoryManager();
 
   // --------------------------------------------------------------------------
   // [Interface]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API virtual void* alloc(size_t size, uint32_t type = kMemAllocFreeable) ASMJIT_NOTHROW;
-  ASMJIT_API virtual bool free(void* address) ASMJIT_NOTHROW;
-  ASMJIT_API virtual bool shrink(void* address, size_t used) ASMJIT_NOTHROW;
-  ASMJIT_API virtual void freeAll() ASMJIT_NOTHROW;
+  ASMJIT_API virtual void* alloc(size_t size, uint32_t type = kMemAllocFreeable);
+  ASMJIT_API virtual bool free(void* address);
+  ASMJIT_API virtual bool shrink(void* address, size_t used);
+  ASMJIT_API virtual void freeAll();
 
-  ASMJIT_API virtual size_t getUsedBytes() ASMJIT_NOTHROW;
-  ASMJIT_API virtual size_t getAllocatedBytes() ASMJIT_NOTHROW;
+  ASMJIT_API virtual size_t getUsedBytes();
+  ASMJIT_API virtual size_t getAllocatedBytes();
 
   // --------------------------------------------------------------------------
   // [Virtual Memory Manager Specific]
@@ -126,7 +126,7 @@ struct VirtualMemoryManager : public MemoryManager
   //! destroyed.
   //!
   //! @sa @c setKeepVirtualMemory().
-  ASMJIT_API bool getKeepVirtualMemory() const ASMJIT_NOTHROW;
+  ASMJIT_API bool getKeepVirtualMemory() const;
 
   //! @brief Set whether to keep allocated memory after memory manager is
   //! destroyed.
@@ -140,7 +140,7 @@ struct VirtualMemoryManager : public MemoryManager
   //! @note Memory allocated with kMemAllocPermanent is always kept.
   //!
   //! @sa @c getKeepVirtualMemory().
-  ASMJIT_API void setKeepVirtualMemory(bool keepVirtualMemory) ASMJIT_NOTHROW;
+  ASMJIT_API void setKeepVirtualMemory(bool keepVirtualMemory);
 
   // --------------------------------------------------------------------------
   // [Debug]

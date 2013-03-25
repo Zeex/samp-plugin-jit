@@ -25,7 +25,7 @@ namespace AsmJit {
 // [AsmJit::Compiler - Construction / Destruction]
 // ============================================================================
 
-Compiler::Compiler(Context* context) ASMJIT_NOTHROW :
+Compiler::Compiler(Context* context) :
   _zoneMemory(16384 - sizeof(ZoneChunk) - 32),
   _linkMemory(1024 - 32),
   _context(context != NULL ? context : static_cast<Context*>(JitContext::getGlobal())),
@@ -43,7 +43,7 @@ Compiler::Compiler(Context* context) ASMJIT_NOTHROW :
 {
 }
 
-Compiler::~Compiler() ASMJIT_NOTHROW
+Compiler::~Compiler()
 {
   reset();
 }
@@ -52,7 +52,7 @@ Compiler::~Compiler() ASMJIT_NOTHROW
 // [AsmJit::Compiler - Logging]
 // ============================================================================
 
-void Compiler::setLogger(Logger* logger) ASMJIT_NOTHROW
+void Compiler::setLogger(Logger* logger)
 {
   _logger = logger;
 }
@@ -61,7 +61,7 @@ void Compiler::setLogger(Logger* logger) ASMJIT_NOTHROW
 // [AsmJit::Compiler - Error Handling]
 // ============================================================================
 
-void Compiler::setError(uint32_t error) ASMJIT_NOTHROW
+void Compiler::setError(uint32_t error)
 {
   _error = error;
   if (_error == kErrorOk)
@@ -98,7 +98,7 @@ void Compiler::setProperty(uint32_t propertyId, uint32_t value)
 // [AsmJit::Compiler - Clear / Reset]
 // ============================================================================
 
-void Compiler::clear() ASMJIT_NOTHROW
+void Compiler::clear()
 {
   _purge();
 
@@ -106,7 +106,7 @@ void Compiler::clear() ASMJIT_NOTHROW
     setError(kErrorOk);
 }
 
-void Compiler::reset() ASMJIT_NOTHROW
+void Compiler::reset()
 {
   _purge();
 
@@ -120,7 +120,7 @@ void Compiler::reset() ASMJIT_NOTHROW
     setError(kErrorOk);
 }
 
-void Compiler::_purge() ASMJIT_NOTHROW
+void Compiler::_purge()
 {
   _zoneMemory.clear();
   _linkMemory.clear();
@@ -144,14 +144,14 @@ void Compiler::_purge() ASMJIT_NOTHROW
 // [AsmJit::Compiler - Item Management]
 // ============================================================================
 
-CompilerItem* Compiler::setCurrentItem(CompilerItem* item) ASMJIT_NOTHROW
+CompilerItem* Compiler::setCurrentItem(CompilerItem* item)
 {
   CompilerItem* old = _current;
   _current = item;
   return old;
 }
 
-void Compiler::addItem(CompilerItem* item) ASMJIT_NOTHROW
+void Compiler::addItem(CompilerItem* item)
 {
   ASMJIT_ASSERT(item != NULL);
   ASMJIT_ASSERT(item->_prev == NULL);
@@ -189,7 +189,7 @@ void Compiler::addItem(CompilerItem* item) ASMJIT_NOTHROW
   _current = item;
 }
 
-void Compiler::addItemAfter(CompilerItem* item, CompilerItem* ref) ASMJIT_NOTHROW
+void Compiler::addItemAfter(CompilerItem* item, CompilerItem* ref)
 {
   ASMJIT_ASSERT(item != NULL);
   ASMJIT_ASSERT(item->_prev == NULL);
@@ -209,7 +209,7 @@ void Compiler::addItemAfter(CompilerItem* item, CompilerItem* ref) ASMJIT_NOTHRO
     _last = item;
 }
 
-void Compiler::removeItem(CompilerItem* item) ASMJIT_NOTHROW
+void Compiler::removeItem(CompilerItem* item)
 {
   CompilerItem* prev = item->_prev;
   CompilerItem* next = item->_next;
@@ -228,7 +228,7 @@ void Compiler::removeItem(CompilerItem* item) ASMJIT_NOTHROW
 // [AsmJit::Compiler - Comment]
 // ============================================================================
 
-void Compiler::comment(const char* fmt, ...) ASMJIT_NOTHROW
+void Compiler::comment(const char* fmt, ...)
 {
   char buf[128];
   char* p = buf;
@@ -255,7 +255,7 @@ void Compiler::comment(const char* fmt, ...) ASMJIT_NOTHROW
 // [AsmJit::Compiler - Embed]
 // ============================================================================
 
-void Compiler::embed(const void* data, size_t len) ASMJIT_NOTHROW
+void Compiler::embed(const void* data, size_t len)
 {
   // Align length to 16 bytes.
   size_t alignedSize = IntUtil::align<size_t>(len, sizeof(uintptr_t));

@@ -31,34 +31,35 @@ namespace AsmJit {
 //! logging or HTML output.
 struct StringBuilder
 {
+  ASMJIT_NO_COPY(StringBuilder)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API StringBuilder() ASMJIT_NOTHROW;
-  ASMJIT_API ~StringBuilder() ASMJIT_NOTHROW;
+  ASMJIT_API StringBuilder();
+  ASMJIT_API ~StringBuilder();
 
-  inline StringBuilder(_DontInitialize&) ASMJIT_NOTHROW {}
+  inline StringBuilder(const _DontInitialize&) {}
 
   // --------------------------------------------------------------------------
   // [Accessors]
   // --------------------------------------------------------------------------
 
-public:
   //! @brief Get string builder capacity.
-  inline size_t getCapacity() const ASMJIT_NOTHROW
+  inline size_t getCapacity() const
   { return _capacity; }
 
   //! @brief Get length.
-  inline size_t getLength() const ASMJIT_NOTHROW
+  inline size_t getLength() const
   { return _length; }
 
   //! @brief Get null-terminated string data.
-  inline char* getData() ASMJIT_NOTHROW
+  inline char* getData()
   { return _data; }
 
   //! @brief Get null-terminated string data (const).
-  inline const char* getData() const ASMJIT_NOTHROW
+  inline const char* getData() const
   { return _data; }
 
   // --------------------------------------------------------------------------
@@ -66,82 +67,82 @@ public:
   // --------------------------------------------------------------------------
 
   //! @brief Prepare to set/append.
-  ASMJIT_API char* prepare(uint32_t op, size_t len) ASMJIT_NOTHROW;
+  ASMJIT_API char* prepare(uint32_t op, size_t len);
 
   //! @brief Reserve @a to bytes in string builder.
-  ASMJIT_API bool reserve(size_t to) ASMJIT_NOTHROW;
+  ASMJIT_API bool reserve(size_t to);
 
   // --------------------------------------------------------------------------
   // [Clear]
   // --------------------------------------------------------------------------
 
   //! @brief Clear the content in String builder.
-  ASMJIT_API void clear() ASMJIT_NOTHROW;
+  ASMJIT_API void clear();
 
   // --------------------------------------------------------------------------
   // [Methods]
   // --------------------------------------------------------------------------
 
-  ASMJIT_API bool _opString(uint32_t op, const char* str, size_t len = kInvalidSize) ASMJIT_NOTHROW;
-  ASMJIT_API bool _opVFormat(uint32_t op, const char* fmt, va_list ap) ASMJIT_NOTHROW; 
-  ASMJIT_API bool _opChars(uint32_t op, char c, size_t len) ASMJIT_NOTHROW;
-  ASMJIT_API bool _opNumber(uint32_t op, uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) ASMJIT_NOTHROW;
-  ASMJIT_API bool _opHex(uint32_t op, const void* data, size_t length) ASMJIT_NOTHROW;
+  ASMJIT_API bool _opString(uint32_t op, const char* str, size_t len = kInvalidSize);
+  ASMJIT_API bool _opVFormat(uint32_t op, const char* fmt, va_list ap); 
+  ASMJIT_API bool _opChars(uint32_t op, char c, size_t len);
+  ASMJIT_API bool _opNumber(uint32_t op, uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0);
+  ASMJIT_API bool _opHex(uint32_t op, const void* data, size_t length);
 
   //! @brief Replace the current content by @a str of @a len.
-  inline bool setString(const char* str, size_t len = kInvalidSize) ASMJIT_NOTHROW
+  inline bool setString(const char* str, size_t len = kInvalidSize)
   { return _opString(kStringBuilderOpSet, str, len); }
 
   //! @brief Replace the current content by formatted string @a fmt.
-  inline bool setVFormat(const char* fmt, va_list ap) ASMJIT_NOTHROW
+  inline bool setVFormat(const char* fmt, va_list ap)
   { return _opVFormat(kStringBuilderOpSet, fmt, ap); }
 
   //! @brief Replace the current content by formatted string @a fmt.
-  ASMJIT_API bool setFormat(const char* fmt, ...) ASMJIT_NOTHROW;
+  ASMJIT_API bool setFormat(const char* fmt, ...);
 
   //! @brief Replace the current content by @a c of @a len.
-  inline bool setChars(char c, size_t len) ASMJIT_NOTHROW
+  inline bool setChars(char c, size_t len)
   { return _opChars(kStringBuilderOpSet, c, len); }
 
   //! @brief Replace the current content by @a i..
-  inline bool setNumber(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) ASMJIT_NOTHROW
+  inline bool setNumber(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0)
   { return _opNumber(kStringBuilderOpSet, i, base, width, flags); }
 
   //! @brief Append @a str of @a len.
-  inline bool appendString(const char* str, size_t len = kInvalidSize) ASMJIT_NOTHROW
+  inline bool appendString(const char* str, size_t len = kInvalidSize)
   { return _opString(kStringBuilderOpAppend, str, len); }
 
   //! @brief Append a formatted string @a fmt to the current content.
-  inline bool appendVFormat(const char* fmt, va_list ap) ASMJIT_NOTHROW
+  inline bool appendVFormat(const char* fmt, va_list ap)
   { return _opVFormat(kStringBuilderOpAppend, fmt, ap); }
 
   //! @brief Append a formatted string @a fmt to the current content.
-  ASMJIT_API bool appendFormat(const char* fmt, ...) ASMJIT_NOTHROW;
+  ASMJIT_API bool appendFormat(const char* fmt, ...);
 
   //! @brief Append @a c of @a len.
-  inline bool appendChars(char c, size_t len) ASMJIT_NOTHROW
+  inline bool appendChars(char c, size_t len)
   { return _opChars(kStringBuilderOpAppend, c, len); }
 
   //! @brief Append @a i.
-  inline bool appendNumber(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0) ASMJIT_NOTHROW
+  inline bool appendNumber(uint64_t i, uint32_t base = 0, size_t width = 0, uint32_t flags = 0)
   { return _opNumber(kStringBuilderOpAppend, i, base, width, flags); }
 
   //! @brief Check for equality with other @a str.
-  ASMJIT_API bool eq(const char* str, size_t len = kInvalidSize) const ASMJIT_NOTHROW;
+  ASMJIT_API bool eq(const char* str, size_t len = kInvalidSize) const;
 
   //! @brief Check for equality with StringBuilder @a other.
-  inline bool eq(const StringBuilder& other) const ASMJIT_NOTHROW
+  inline bool eq(const StringBuilder& other) const
   { return eq(other._data); }
 
   // --------------------------------------------------------------------------
   // [Operator Overload]
   // --------------------------------------------------------------------------
 
-  inline bool operator==(const StringBuilder& other) const ASMJIT_NOTHROW { return  eq(other); }
-  inline bool operator!=(const StringBuilder& other) const ASMJIT_NOTHROW { return !eq(other); }
+  inline bool operator==(const StringBuilder& other) const { return  eq(other); }
+  inline bool operator!=(const StringBuilder& other) const { return !eq(other); }
 
-  inline bool operator==(const char* str) const ASMJIT_NOTHROW { return  eq(str); }
-  inline bool operator!=(const char* str) const ASMJIT_NOTHROW { return !eq(str); }
+  inline bool operator==(const char* str) const { return  eq(str); }
+  inline bool operator!=(const char* str) const { return !eq(str); }
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -155,8 +156,6 @@ public:
   size_t _capacity;
   //! @brief Whether the string can be freed.
   size_t _canFree;
-
-  ASMJIT_NO_COPY(StringBuilder)
 };
 
 // ============================================================================
@@ -166,6 +165,8 @@ public:
 template<size_t N>
 struct StringBuilderT : public StringBuilder
 {
+  ASMJIT_NO_COPY(StringBuilderT<N>)
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -187,8 +188,6 @@ struct StringBuilderT : public StringBuilder
 
   //! @brief Embedded data.
   char _embeddedData[(N + sizeof(uintptr_t)) & ~(sizeof(uintptr_t) - 1)];
-
-  ASMJIT_NO_COPY(StringBuilderT<N>)
 };
 
 //! @}

@@ -59,6 +59,40 @@ enum kStringBuilderNumFlags
 };
 
 // ============================================================================
+// [AsmJit::kLoggerOption]
+// ============================================================================
+
+enum kLoggerFlag
+{
+  //! @brief Whether logger is enabled or disabled.
+  //!
+  //! Default @c true.
+  kLoggerIsEnabled = 0x00000001,
+
+  //! @brief Whether logger is enabled and can be used.
+  //!
+  //! This value can be set by inherited classes to inform @c Logger that
+  //! assigned stream (or something that can log output) is invalid. If
+  //! @c _used is false it means that there is no logging output and AsmJit
+  //! shouldn't use this logger (because all messages will be lost).
+  //!
+  //! This is designed only to optimize cases that logger exists, but its
+  //! configured not to output messages. The API inside Logging and AsmJit
+  //! should only check this value when needed. The API outside AsmJit should
+  //! check only whether logging is @c _enabled.
+  //!
+  //! Default @c true.
+  kLoggerIsUsed = 0x00000002,
+
+  //! @brief Whether to output instructions also in binary form.
+  kLoggerOutputBinary = 0x00000010,
+  //! @brief Whether to output immediates as hexadecimal numbers.
+  kLoggerOutputHexImmediate = 0x00000020,
+  //! @brief Whether to output displacements as hexadecimal numbers.
+  kLoggerOutputHexDisplacement = 0x00000040
+};
+
+// ============================================================================
 // [AsmJit::kCpu]
 // ============================================================================
 
@@ -551,7 +585,7 @@ enum kError
 // ============================================================================
 
 //! @brief Translates error code (see @c kError) into text representation.
-ASMJIT_API const char* getErrorString(uint32_t error) ASMJIT_NOTHROW;
+ASMJIT_API const char* getErrorString(uint32_t error);
 
 //! @}
 

@@ -40,14 +40,7 @@
 
 // If you are embedding AsmJit library into your project (statically), undef
 // ASMJIT_API macro.
-//
-// If you have problems with throw() in compilation time, undef ASMJIT_NOTHROW
-// to disable this feature. ASMJIT_NOTHROW marks functions which never throw an
-// exception.
-
 // #define ASMJIT_API
-// #define ASMJIT_NOTHROW
-
 
 // ============================================================================
 // [AsmJit - Memory Management]

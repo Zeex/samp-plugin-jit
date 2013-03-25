@@ -27,7 +27,7 @@ namespace AsmJit {
 // [AsmJit::CompilerItem - Construction / Destruction]
 // ============================================================================
 
-CompilerItem::CompilerItem(Compiler* compiler, uint32_t type) ASMJIT_NOTHROW :
+CompilerItem::CompilerItem(Compiler* compiler, uint32_t type) :
   _compiler(compiler),
   _prev(NULL),
   _next(NULL),
@@ -40,7 +40,7 @@ CompilerItem::CompilerItem(Compiler* compiler, uint32_t type) ASMJIT_NOTHROW :
 {
 }
 
-CompilerItem::~CompilerItem() ASMJIT_NOTHROW
+CompilerItem::~CompilerItem()
 {
 }
 
@@ -48,30 +48,30 @@ CompilerItem::~CompilerItem() ASMJIT_NOTHROW
 // [AsmJit::CompilerItem - Interface]
 // ============================================================================
 
-void CompilerItem::prepare(CompilerContext& cc) ASMJIT_NOTHROW
+void CompilerItem::prepare(CompilerContext& cc)
 {
   _offset = cc._currentOffset;
 }
 
-CompilerItem* CompilerItem::translate(CompilerContext& cc) ASMJIT_NOTHROW
+CompilerItem* CompilerItem::translate(CompilerContext& cc)
 {
   return translated();
 }
 
-void CompilerItem::emit(Assembler& a) ASMJIT_NOTHROW {}
-void CompilerItem::post(Assembler& a) ASMJIT_NOTHROW {}
+void CompilerItem::emit(Assembler& a) {}
+void CompilerItem::post(Assembler& a) {}
 
 // ============================================================================
 // [AsmJit::CompilerItem - Misc]
 // ============================================================================
 
-int CompilerItem::getMaxSize() const ASMJIT_NOTHROW
+int CompilerItem::getMaxSize() const
 {
   // Default maximum size is -1 which means that it's not known.
   return -1;
 }
 
-bool CompilerItem::_tryUnuseVar(CompilerVar* v) ASMJIT_NOTHROW
+bool CompilerItem::_tryUnuseVar(CompilerVar* v)
 {
   return false;
 }
@@ -80,15 +80,15 @@ bool CompilerItem::_tryUnuseVar(CompilerVar* v) ASMJIT_NOTHROW
 // [AsmJit::CompilerItem - Comment]
 // ============================================================================
 
-void CompilerItem::setComment(const char* str) ASMJIT_NOTHROW
+void CompilerItem::setComment(const char* str)
 {
   _comment = _compiler->getZoneMemory().sdup(str);
 }
 
-void CompilerItem::formatComment(const char* fmt, ...) ASMJIT_NOTHROW
+void CompilerItem::formatComment(const char* fmt, ...)
 {
   // The capacity should be large enough.
-  char buf[80];
+  char buf[128];
 
   va_list ap;
   va_start(ap, fmt);
@@ -106,12 +106,12 @@ void CompilerItem::formatComment(const char* fmt, ...) ASMJIT_NOTHROW
 // [AsmJit::CompilerMark - Construction / Destruction]
 // ============================================================================
 
-CompilerMark::CompilerMark(Compiler* compiler) ASMJIT_NOTHROW :
+CompilerMark::CompilerMark(Compiler* compiler) :
   CompilerItem(compiler, kCompilerItemMark)
 {
 }
 
-CompilerMark::~CompilerMark() ASMJIT_NOTHROW
+CompilerMark::~CompilerMark()
 {
 }
 
@@ -119,7 +119,7 @@ CompilerMark::~CompilerMark() ASMJIT_NOTHROW
 // [AsmJit::CompilerMark - Misc]
 // ============================================================================
 
-int CompilerMark::getMaxSize() const ASMJIT_NOTHROW
+int CompilerMark::getMaxSize() const
 {
   return 0;
 }
@@ -128,14 +128,14 @@ int CompilerMark::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::CompilerComment - Construction / Destruction]
 // ============================================================================
 
-CompilerComment::CompilerComment(Compiler* compiler, const char* str) ASMJIT_NOTHROW :
+CompilerComment::CompilerComment(Compiler* compiler, const char* str) :
   CompilerItem(compiler, kCompilerItemComment)
 {
   if (str != NULL)
     setComment(str);
 }
 
-CompilerComment::~CompilerComment() ASMJIT_NOTHROW
+CompilerComment::~CompilerComment()
 {
 }
 
@@ -143,19 +143,21 @@ CompilerComment::~CompilerComment() ASMJIT_NOTHROW
 // [AsmJit::CompilerComment - Interface]
 // ============================================================================
 
-void CompilerComment::emit(Assembler& a) ASMJIT_NOTHROW
+void CompilerComment::emit(Assembler& a)
 {
   Logger* logger = a.getLogger();
+  if (logger == NULL || !logger->isUsed())
+    return;
 
-  if (logger != NULL)
-    logger->logString(getComment());
+  logger->logString(logger->getInstructionPrefix());
+  logger->logString(getComment());
 }
 
 // ============================================================================
 // [AsmJit::CompilerComment - Misc]
 // ============================================================================
 
-int CompilerComment::getMaxSize() const ASMJIT_NOTHROW
+int CompilerComment::getMaxSize() const
 {
   return 0;
 }
@@ -164,14 +166,14 @@ int CompilerComment::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::CompilerEmbed - Construction / Destruction]
 // ============================================================================
 
-CompilerEmbed::CompilerEmbed(Compiler* compiler, const void* data, size_t length) ASMJIT_NOTHROW :
+CompilerEmbed::CompilerEmbed(Compiler* compiler, const void* data, size_t length) :
   CompilerItem(compiler, kCompilerItemEmbed)
 {
   _length = length;
   memcpy(_data, data, length);
 }
 
-CompilerEmbed::~CompilerEmbed() ASMJIT_NOTHROW
+CompilerEmbed::~CompilerEmbed()
 {
 }
 
@@ -179,7 +181,7 @@ CompilerEmbed::~CompilerEmbed() ASMJIT_NOTHROW
 // [AsmJit::CompilerEmbed - Interface]
 // ============================================================================
 
-void CompilerEmbed::emit(Assembler& a) ASMJIT_NOTHROW
+void CompilerEmbed::emit(Assembler& a)
 {
   a.embed(_data, _length);
 }
@@ -188,7 +190,7 @@ void CompilerEmbed::emit(Assembler& a) ASMJIT_NOTHROW
 // [AsmJit::CompilerEmbed - Misc]
 // ============================================================================
 
-int CompilerEmbed::getMaxSize() const ASMJIT_NOTHROW
+int CompilerEmbed::getMaxSize() const
 {
   return (int)_length;;
 }
@@ -197,12 +199,12 @@ int CompilerEmbed::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::CompilerAlign - Construction / Destruction]
 // ============================================================================
 
-CompilerAlign::CompilerAlign(Compiler* compiler, uint32_t size) ASMJIT_NOTHROW :
+CompilerAlign::CompilerAlign(Compiler* compiler, uint32_t size) :
   CompilerItem(compiler, kCompilerItemAlign), _size(size)
 {
 }
 
-CompilerAlign::~CompilerAlign() ASMJIT_NOTHROW
+CompilerAlign::~CompilerAlign()
 {
 }
 
@@ -210,7 +212,7 @@ CompilerAlign::~CompilerAlign() ASMJIT_NOTHROW
 // [AsmJit::CompilerAlign - Misc]
 // ============================================================================
 
-int CompilerAlign::getMaxSize() const ASMJIT_NOTHROW
+int CompilerAlign::getMaxSize() const
 {
   if (_size == 0)
     return 0;
@@ -222,7 +224,7 @@ int CompilerAlign::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::CompilerHint - Construction / Destruction]
 // ============================================================================
 
-CompilerHint::CompilerHint(Compiler* compiler, CompilerVar* var, uint32_t hintId, uint32_t hintValue) ASMJIT_NOTHROW :
+CompilerHint::CompilerHint(Compiler* compiler, CompilerVar* var, uint32_t hintId, uint32_t hintValue) :
   CompilerItem(compiler, kCompilerItemHint),
   _var(var),
   _hintId(hintId),
@@ -231,7 +233,7 @@ CompilerHint::CompilerHint(Compiler* compiler, CompilerVar* var, uint32_t hintId
   ASMJIT_ASSERT(var != NULL);
 }
 
-CompilerHint::~CompilerHint() ASMJIT_NOTHROW
+CompilerHint::~CompilerHint()
 {
 }
 
@@ -239,7 +241,7 @@ CompilerHint::~CompilerHint() ASMJIT_NOTHROW
 // [AsmJit::CompilerTarget - Construction / Destruction]
 // ============================================================================
 
-CompilerTarget::CompilerTarget(Compiler* compiler, const Label& label) ASMJIT_NOTHROW :
+CompilerTarget::CompilerTarget(Compiler* compiler, const Label& label) :
   CompilerItem(compiler, kCompilerItemTarget),
   _label(label),
   _from(NULL),
@@ -248,7 +250,7 @@ CompilerTarget::CompilerTarget(Compiler* compiler, const Label& label) ASMJIT_NO
 {
 }
 
-CompilerTarget::~CompilerTarget() ASMJIT_NOTHROW
+CompilerTarget::~CompilerTarget()
 {
 }
 
@@ -256,7 +258,7 @@ CompilerTarget::~CompilerTarget() ASMJIT_NOTHROW
 // [AsmJit::CompilerTarget - Misc]
 // ============================================================================
 
-int CompilerTarget::getMaxSize() const ASMJIT_NOTHROW
+int CompilerTarget::getMaxSize() const
 {
   return 0;
 }
@@ -265,7 +267,7 @@ int CompilerTarget::getMaxSize() const ASMJIT_NOTHROW
 // [AsmJit::CompilerInst - Construction / Destruction]
 // ============================================================================
 
-CompilerInst::CompilerInst(Compiler* compiler, uint32_t code, Operand* opData, uint32_t opCount) ASMJIT_NOTHROW :
+CompilerInst::CompilerInst(Compiler* compiler, uint32_t code, Operand* opData, uint32_t opCount) :
   CompilerItem(compiler, kCompilerItemInst),
   _code(code),
   _emitOptions(static_cast<uint8_t>(compiler->_emitOptions)),
@@ -278,7 +280,7 @@ CompilerInst::CompilerInst(Compiler* compiler, uint32_t code, Operand* opData, u
   compiler->_emitOptions = 0;
 }
 
-CompilerInst::~CompilerInst() ASMJIT_NOTHROW
+CompilerInst::~CompilerInst()
 {
 }
 
@@ -286,7 +288,7 @@ CompilerInst::~CompilerInst() ASMJIT_NOTHROW
 // [AsmJit::CompilerInst - GetJumpTarget]
 // ============================================================================
 
-CompilerTarget* CompilerInst::getJumpTarget() const ASMJIT_NOTHROW
+CompilerTarget* CompilerInst::getJumpTarget() const
 {
   return NULL;
 }
