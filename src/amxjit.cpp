@@ -1001,14 +1001,14 @@ bool JIT::compile(JITCompileErrorHandler *errorHandler) {
 			break;
 		case OP_SDIV:
 			// PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
-			as->xor_(edx, edx);
+			as->cdq();
 			as->idiv(ecx);
 			as->mov(ecx, edx);
 			break;
 		case OP_SDIV_ALT:
 			// PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
 			as->xchg(eax, ecx);
-			as->xor_(edx, edx);
+			as->cdq();
 			as->idiv(ecx);
 			as->mov(ecx, edx);
 			break;
