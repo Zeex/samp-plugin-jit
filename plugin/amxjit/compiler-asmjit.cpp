@@ -697,7 +697,6 @@ void CompilerAsmjit::emit_shr_c_alt(cell value) {
 
 void CompilerAsmjit::emit_smul() {
   // PRI = PRI * ALT (signed multiply)
-  as_.xor_(edx, edx);
   as_.imul(ecx);
 }
 
@@ -718,7 +717,6 @@ void CompilerAsmjit::emit_sdiv_alt() {
 
 void CompilerAsmjit::emit_umul() {
   // PRI = PRI * ALT (unsigned multiply)
-  as_.xor_(edx, edx);
   as_.mul(ecx);
 }
 
