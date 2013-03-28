@@ -26,6 +26,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <string>
 #include "compiler-asmjit.h"
 #include "disasm.h"
 
