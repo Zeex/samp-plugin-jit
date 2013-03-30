@@ -10,6 +10,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   include(cmake/GlobalBuildConfig.cmake)
 endif()
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
   string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
