@@ -45,19 +45,19 @@ class CompilerAsmjit : public Compiler {
  public:
   typedef void (CompilerAsmjit::*EmitIntrinsic)();
 
-  class AddressedLabel : public AsmJit::Label {
+  class AddressableLabel : public AsmJit::Label {
    public:
-    AddressedLabel(cell address)
+    AddressableLabel(cell address)
       : AsmJit::Label(), address_(address)
     {}
 
-    AddressedLabel(cell address, const Label &label)
+    AddressableLabel(cell address, const Label &label)
       : AsmJit::Label(label), address_(address)
     {}
 
     cell address() const { return address_; }
 
-    bool operator<(const AddressedLabel &rhs) const {
+    bool operator<(const AddressableLabel &rhs) const {
       return address_ < rhs.address_;
     }
 
@@ -231,13 +231,13 @@ class CompilerAsmjit : public Compiler {
   void emit_floatsqroot();
   void emit_floatlog();
 
-  const AddressedLabel &amx_label(cell address) {
-    std::set<AddressedLabel>::const_iterator it = amx_labels_.find(address);
+  const AddressableLabel &amx_label(cell address) {
+    std::set<AddressableLabel>::const_iterator it = amx_labels_.find(address);
     if (it != amx_labels_.end()) {
       return *it;
     } else {
-      std::pair<std::set<AddressedLabel>::iterator, bool> result =
-        amx_labels_.insert(AddressedLabel(address, as_.newLabel()));
+      std::pair<std::set<AddressableLabel>::iterator, bool> result =
+        amx_labels_.insert(AddressableLabel(address, as_.newLabel()));
       return *result.first;
     }
   }
@@ -261,7 +261,7 @@ class CompilerAsmjit : public Compiler {
   AsmJit::Label L_break_helper_;
 
   // Labels corresponding to AMX instructions.
-  std::set<AddressedLabel> amx_labels_;
+  std::set<AddressableLabel> amx_labels_;
 
   // Maps AMX instructions to JIT code offsets.
   std::vector<std::pair<cell, std::ptrdiff_t> > instr_map_;
