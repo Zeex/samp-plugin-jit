@@ -9,7 +9,12 @@ set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY INCLUDE_DIRECTORIES
 )
 
 set(ASMJIT_STATIC TRUE)
-add_subdirectory(asmjit/asmjit)
-
 set(SUBHOOK_STATIC TRUE)
+
+add_subdirectory(asmjit/asmjit)
 add_subdirectory(subhook)
+
+file(RELATIVE_PATH this_folder ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+set_property(TARGET asmjit PROPERTY FOLDER ${this_folder})
+set_property(TARGET subhook PROPERTY FOLDER ${this_folder})
