@@ -10,13 +10,13 @@ foreach(backend IN LISTS JIT_BACKENDS)
 endforeach()
 
 if(JIT_LLVM)
-  set(LLVM_INSTALL_PREFIX "" CACHE PATH "LLVM installation root directory")
-  include(${LLVM_INSTALL_PREFIX}/share/llvm/cmake/LLVMConfig.cmake)
+  find_package(LLVM REQUIRED)
 endif()
 
 include_directories(.)
 include_directories(amx)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 if(JIT_LLVM)
   include_directories(${LLVM_INCLUDE_DIRS})
 endif()
