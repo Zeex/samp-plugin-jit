@@ -1665,7 +1665,7 @@ bool CompilerAsmjit::emit_intrinsic(const char *name) {
     EmitIntrinsic  emit;
   };
   
-  Intrinsic intrinsics[] = {
+  static const Intrinsic intrinsics[] = {
     {"float",       &CompilerAsmjit::emit_float},
     {"floatabs",    &CompilerAsmjit::emit_floatabs},
     {"floatadd",    &CompilerAsmjit::emit_floatadd},
