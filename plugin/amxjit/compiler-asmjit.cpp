@@ -1408,13 +1408,13 @@ void CompilerAsmjit::emit_exec_helper() {
 
     // Keep AMX stack registers up-to-date. This wouldn't be necessary if
     // RETN didn't modify them (it pops all arguments off the stack).
-    emit_get_amx_ptr(eax);
+    emit_get_amx_ptr(ecx);
     as_.mov(edx, ebp);
     as_.sub(edx, ebx);
-    as_.mov(dword_ptr(eax, offsetof(AMX, frm)), edx); // amx->frm = ebp - amx_data
+    as_.mov(dword_ptr(ecx, offsetof(AMX, frm)), edx); // amx->frm = ebp - amx_data
     as_.mov(edx, esp);
     as_.sub(edx, ebx);
-    as_.mov(dword_ptr(eax, offsetof(AMX, stk)), edx); // amx->stk = esp - amx_data
+    as_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx); // amx->stk = esp - amx_data
 
     // Switch back to native stack.
     as_.mov(ebp, dword_ptr(L_ebp_ptr_));
