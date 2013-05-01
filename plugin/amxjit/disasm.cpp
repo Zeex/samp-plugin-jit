@@ -191,41 +191,42 @@ const Instruction::StaticInfoTableEntry Instruction::info[NUM_OPCODES] = {
 };
 
 Instruction::Instruction() 
-  : address_(0),
-    opcode_(OP_NONE)
+ : address(0),
+   opcode(OP_NONE)
 {
 }
 
-const char *Instruction::name() const {
-  if (opcode_.id() >= 0 && opcode_.id() < NUM_OPCODES) {
-    return info[opcode_.id()].name;
+const char *Instruction::GetName() const {
+  if (opcode.GetId() >= 0 && opcode.GetId() < NUM_OPCODES) {
+    return info[opcode.GetId()].name;
   }
   return 0;
 }
 
-int Instruction::get_src_regs() const {
-  if (opcode_.id() >= 0 && opcode_.id() < NUM_OPCODES) {
-    return info[opcode_.id()].src_regs;
+int Instruction::GetSrcRegs() const {
+  if (opcode.GetId() >= 0 && opcode.GetId() < NUM_OPCODES) {
+    return info[opcode.GetId()].srcRegs;
   }
   return 0;
 }
 
-int Instruction::get_dst_regs() const {
-  if (opcode_.id() >= 0 && opcode_.id() < NUM_OPCODES) {
-    return info[opcode_.id()].dst_regs;
+int Instruction::GetDstRegs() const {
+  if (opcode.GetId() >= 0 && opcode.GetId() < NUM_OPCODES) {
+    return info[opcode.GetId()].dstRegs;
   }
   return 0;
 }
 
-std::string Instruction::string() const {
+std::string Instruction::AsString() const {
   std::stringstream stream;
-  if (name() != 0) {
-    stream << name();
+  if (GetName() != 0) {
+    stream << GetName();
   } else {
-    stream << std::setw(8) << std::setfill('0') << std::hex << opcode_.id();
+    stream << std::setw(8) << std::setfill('0')
+           << std::hex << opcode.GetId();
   }
-  for (std::vector<cell>::const_iterator iterator = operands_.begin();
-      iterator != operands_.end(); ++iterator) {
+  for (std::vector<cell>::const_iterator iterator = operands.begin();
+      iterator != operands.end(); ++iterator) {
     stream << ' ';
     cell oper = *iterator;
     if (oper < 0 || oper > 9) {
@@ -239,30 +240,31 @@ std::string Instruction::string() const {
 }
 
 Disassembler::Disassembler(AMXPtr amx)
-  : amx_(amx),
-    ip_(0)
+ : amx(amx),
+   ip(0)
 {
 }
 
-bool Disassembler::decode(Instruction &instr, bool *error) {
+bool Disassembler::Decode(Instruction &instr, bool *error) {
   if (error != 0) {
     *error = false;
   }
 
-  if (ip_ < 0 || amx_.hdr()->cod + ip_ >= amx_.hdr()->dat) {
-    // Went out of the code section.
+  if (ip < 0 ||
+      amx.GetHeader()->cod + ip >= amx.GetHeader()->dat) {
+    // Went out of code.
     return false;
   }
 
-  instr.operands().clear();
-  instr.set_address(ip_);
+  instr.GetOperands().clear();
+  instr.SetAddress(ip);
 
-  Opcode opcode(*reinterpret_cast<cell*>(amx_.code() + ip_));
+  Opcode opcode(*reinterpret_cast<cell*>(amx.GetCode() + ip));
 
-  ip_ += sizeof(cell);
-  instr.set_opcode(opcode);
+  ip += sizeof(cell);
+  instr.SetOpcode(opcode);
 
-  switch (opcode.id()) {
+  switch (opcode.GetId()) {
     // Instructions with one operand.
     case OP_LOAD_PRI:   case OP_LOAD_ALT:   case OP_LOAD_S_PRI:
     case OP_LOAD_S_ALT: case OP_LREF_PRI:   case OP_LREF_ALT:
@@ -288,8 +290,8 @@ bool Disassembler::decode(Instruction &instr, bool *error) {
     case OP_CMPS:       case OP_FILL:       case OP_HALT:
     case OP_BOUNDS:     case OP_CALL:       case OP_SYSREQ_C:
     case OP_PUSH_ADR:   case OP_SYSREQ_D:   case OP_SWITCH:
-      instr.add_operand(*reinterpret_cast<cell*>(amx_.code() + ip_));
-      ip_ += sizeof(cell);
+      instr.AddOperand(*reinterpret_cast<cell*>(amx.GetCode() + ip));
+      ip += sizeof(cell);
       break;
 
     // Instructions with no operands.
@@ -317,11 +319,11 @@ bool Disassembler::decode(Instruction &instr, bool *error) {
 
     // Special instructions.
     case OP_CASETBL: {
-      int num = *reinterpret_cast<cell*>(amx_.code() + ip_) + 1;
+      int num = *reinterpret_cast<cell*>(amx.GetCode() + ip) + 1;
       // num case records follow, each is 2 cells big.
       for (int i = 0; i < num * 2; i++) {
-        instr.add_operand(*reinterpret_cast<cell*>(amx_.code() + ip_));
-        ip_ += sizeof(cell);
+        instr.AddOperand(*reinterpret_cast<cell*>(amx.GetCode() + ip));
+        ip += sizeof(cell);
       }
       break;
     }
@@ -336,67 +338,63 @@ bool Disassembler::decode(Instruction &instr, bool *error) {
   return true;
 }
 
-inline cell rel_code_addr(amxjit::AMXPtr amx, cell address) {
-  return address - reinterpret_cast<cell>(amx.code());
-}
-
 CaseTable::CaseTable(AMXPtr amx, cell offset) {
   struct CaseRecord {
     cell value;    // case value
     cell address;  // address to jump to (absolute)
-  } *case_table;
+  } *caseTable;
 
-  case_table = reinterpret_cast<CaseRecord*>(offset + sizeof(cell));
-  int num_records = *(reinterpret_cast<cell*>(offset) + 1);
+  caseTable = reinterpret_cast<CaseRecord*>(offset + sizeof(cell));
+  int numRecords = *(reinterpret_cast<cell*>(offset) + 1);
 
-  for (int i = 0; i <= num_records; i++) {
-    cell dest = case_table[i].address - reinterpret_cast<cell>(amx.code());
-    records_.push_back(std::make_pair(case_table[i].value, dest));
+  for (int i = 0; i <= numRecords; i++) {
+    cell dest = caseTable[i].address - reinterpret_cast<cell>(amx.GetCode());
+    records.push_back(std::make_pair(caseTable[i].value, dest));
   }
 }
 
-int CaseTable::num_cases() const {
-  return records_.size() - 1;
+int CaseTable::GetNumCases() const {
+  return records.size() - 1;
 }
 
-cell CaseTable::value_at(cell index) const {
-  return records_[index + 1].first;
+cell CaseTable::GetValue(cell index) const {
+  return records[index + 1].first;
 }
 
-cell CaseTable::address_at(cell index) const {
-  return records_[index + 1].second;
+cell CaseTable::GetAddress(cell index) const {
+  return records[index + 1].second;
 }
 
-cell CaseTable::default_address() const {
-  return records_[0].second;
+cell CaseTable::GetDefaultAddress() const {
+  return records[0].second;
 }
 
-cell CaseTable::find_min_value() const {
-  assert(num_cases() > 0); // caller should check num_records
+cell CaseTable::FindMinValue() const {
+  assert(GetNumCases() > 0);
 
-  const cell *min_value = 0;
-  for (int i = 0; i < num_cases(); i++) {
-    const cell *value = &records_[i + 1].first;
-    if (min_value == 0 || *value < *min_value) {
-      min_value = value;
+  const cell *minValue = 0;
+  for (int i = 0; i < GetNumCases(); i++) {
+    const cell *value = &records[i + 1].first;
+    if (minValue == 0 || *value < *minValue) {
+      minValue = value;
     }
   }
 
-  return *min_value;
+  return *minValue;
 }
 
-cell CaseTable::find_max_value() const {
-  assert(num_cases() > 0); // caller should check num_records
+cell CaseTable::FindMaxValue() const {
+  assert(GetNumCases() > 0);
 
-  const cell *max_value = 0;
-  for (int i = 0; i < num_cases(); i++) {
-    const cell *value = &records_[i + 1].first;
-    if (max_value == 0 || *value > *max_value) {
-      max_value = value;
+  const cell *maxValue = 0;
+  for (int i = 0; i < GetNumCases(); i++) {
+    const cell *value = &records[i + 1].first;
+    if (maxValue == 0 || *value > *maxValue) {
+      maxValue = value;
     }
   }
 
-  return *max_value;
+  return *maxValue;
 }
 
 

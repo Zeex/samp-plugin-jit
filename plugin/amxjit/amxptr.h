@@ -38,69 +38,80 @@ class AMXPtr {
  public:
   AMXPtr(AMX *amx);
 
-  operator AMX*() { return amx_; }
-  operator AMX*() const { return amx_; }
+  operator AMX*() { return amx; }
+  operator AMX*() const { return amx; }
 
-  AMX *operator->() { return amx_; }
-  AMX *operator->() const { return amx_; }
+  AMX *operator->() { return amx; }
+  AMX *operator->() const { return amx; }
 
-  AMX *amx() const {
-    return amx_;
-  }
-  AMX_HEADER *hdr() const {
-    return reinterpret_cast<AMX_HEADER*>(amx()->base);
+  AMX *GetStruct() const {
+    return amx;
   }
 
-  unsigned char *code() const {
-    return amx()->base + hdr()->cod;
-  }
-  std::size_t code_size() const {
-    return hdr()->dat - hdr()->cod;
+  AMX_HEADER *GetHeader() const {
+    return reinterpret_cast<AMX_HEADER*>(amx->base);
   }
 
-  unsigned char *data() const {
-    return amx()->data != 0 ? amx()->data : amx()->base + hdr()->dat;
-  }
-  std::size_t data_size() const {
-    return hdr()->hea - hdr()->dat;
+  unsigned char *GetCode() const {
+    return amx->base + GetHeader()->cod;
   }
 
-  int num_publics() const {
-    return (hdr()->natives - hdr()->publics) / hdr()->defsize;
-  }
-  int num_natives() const {
-    return (hdr()->libraries - hdr()->natives) / hdr()->defsize;
+  std::size_t GetCodeSize() const {
+    return GetHeader()->dat - GetHeader()->cod;
   }
 
-  AMX_FUNCSTUBNT *publics() const {
-    return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr()->publics + amx()->base);
+  unsigned char *GetData() const {
+    return amx->data != 0 ? amx->data
+                          : amx->base + GetHeader()->dat;
   }
-  AMX_FUNCSTUBNT *natives() const {
-    return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr()->natives + amx()->base);
-  }
-
-  cell get_public_addr(cell index) const;
-  cell get_native_addr(cell index) const;
-
-  const char *get_public_name(cell index) const;
-  const char *get_native_name(cell index) const;
-
-  cell find_public(cell address) const;
-  cell find_native(cell address) const;
-
-  cell *stack() const {
-    return reinterpret_cast<cell*>(data() + amx()->stk);
-  }
-  cell stack_size() const {
-    return hdr()->stp - hdr()->hea;
+  std::size_t GetDataSize() const {
+    return GetHeader()->hea - GetHeader()->dat;
   }
 
-  cell *push(cell value);
-  cell pop();
-  void pop(int ncells);
+  int GetNumPublics() const {
+    return (GetHeader()->natives - GetHeader()->publics)
+            / GetHeader()->defsize;
+  }
+
+  int GetNumNatives() const {
+    return (GetHeader()->libraries - GetHeader()->natives)
+            / GetHeader()->defsize;
+  }
+
+  AMX_FUNCSTUBNT *GetPublics() const {
+    return reinterpret_cast<AMX_FUNCSTUBNT*>(GetHeader()->publics
+                                             + amx->base);
+  }
+
+  AMX_FUNCSTUBNT *GetNatives() const {
+    return reinterpret_cast<AMX_FUNCSTUBNT*>(GetHeader()->natives
+                                             + amx->base);
+  }
+
+  cell GetPublicAddress(cell index) const;
+  cell GetNativeAddress(cell index) const;
+
+  const char *GetPublicName(cell index) const;
+  const char *GetNativeName(cell index) const;
+
+  cell FindPublic(cell address) const;
+  cell FindNative(cell address) const;
+
+  cell *GetStack() const {
+    return reinterpret_cast<cell*>(GetData() + amx->stk);
+  }
+
+  cell GetStackSize() const {
+    return GetHeader()->stp - GetHeader()->hea;
+  }
+
+  cell *PushStack(cell value);
+
+  cell PopStack();
+  void PopStack(int ncells);
 
 private:
-  AMX *amx_;
+  AMX *amx;
 };
 
 } // namespace amxjit

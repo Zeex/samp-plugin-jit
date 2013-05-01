@@ -27,46 +27,46 @@
 
 namespace amxjit {
 
-static cell *get_opcode_map() {
+static cell *GetOpcodeMap() {
   #if defined __GNUC__
-    cell *opcode_map;
+    cell *opcodeMap;
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
-    amx_Exec(&amx, reinterpret_cast<cell*>(&opcode_map), 0);
+    amx_Exec(&amx, reinterpret_cast<cell*>(&opcodeMap), 0);
     amx.flags &= ~AMX_FLAG_BROWSE;
-    return opcode_map;
+    return opcodeMap;
   #else
     return 0;
   #endif
 }
 
-static cell lookup_opcode(cell *opcode_map, cell opcode) {
+static cell LookupOpcode(cell *opcodeMap, cell opcode) {
   #if defined __GNUC__
-    if (opcode_map != 0) {
+    if (opcodeMap != 0) {
       // Search for this opcode in the opcode relocation table.
       for (int i = 0; i < NUM_OPCODES; i++) {
-        if (opcode_map[i] == opcode) {
+        if (opcodeMap[i] == opcode) {
           return i;
         }
       }
     }
     return opcode;
   #else
-    (void)opcode_map;
+    (void)opcodeMap;
     return opcode;
   #endif
 }
 
-OpcodeID relocate_opcode(cell opcode) {
+OpcodeID RelocateOpcode(cell opcode) {
   #if defined __GNUC__
-    static cell *opcode_map = get_opcode_map();
-    opcode = lookup_opcode(opcode_map, opcode);
+    static cell *opcodeMap = GetOpcodeMap();
+    opcode = LookupOpcode(opcodeMap, opcode);
   #endif
 	return static_cast<OpcodeID>(opcode);
 }
 
-bool Opcode::is_call() const {
-  switch (id_) {
+bool Opcode::IsCall() const {
+  switch (id) {
     case OP_CALL:
     case OP_CALL_PRI:
       return true;
@@ -74,8 +74,8 @@ bool Opcode::is_call() const {
   return false;
 }
 
-bool Opcode::is_jump() const {
-  switch (id_) {
+bool Opcode::IsJump() const {
+  switch (id) {
     case OP_JUMP:
     case OP_JUMP_PRI:
     case OP_JREL:

@@ -81,21 +81,31 @@ enum OpcodeID {
 
 const int NUM_OPCODES = OP_LAST_;
 
-OpcodeID relocate_opcode(cell opcode);
+OpcodeID RelocateOpcode(cell opcode);
 
 class Opcode {
  public:
-  Opcode(): id_(OP_NONE) {}
-  Opcode(cell value) : id_(relocate_opcode(value)) {}
-  Opcode(OpcodeID id) : id_(id) {}
+  Opcode()
+   : id(OP_NONE)
+  {}
 
-  OpcodeID id() const { return static_cast<OpcodeID>(id_); }
+  Opcode(cell value)
+   : id(RelocateOpcode(value))
+  {}
 
-  bool is_call() const;
-  bool is_jump() const;
+  Opcode(OpcodeID id)
+   : id(id)
+  {}
+
+  OpcodeID GetId() const {
+    return static_cast<OpcodeID>(id);
+  }
+
+  bool IsCall() const;
+  bool IsJump() const;
 
  private:
-  OpcodeID id_;
+  OpcodeID id;
 };
 
 } // namespace amxjit

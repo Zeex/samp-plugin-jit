@@ -27,74 +27,83 @@
 namespace amxjit {
 
 AMXPtr::AMXPtr(AMX *amx)
-  : amx_(amx)
+ : amx(amx)
 {
 }
 
-cell AMXPtr::get_public_addr(cell index) const {
+cell AMXPtr::GetPublicAddress(cell index) const {
   if (index == AMX_EXEC_MAIN) {
-    return hdr()->cip;
+    AMX_HEADER *header = GetHeader();
+    return header->cip;
   }
-  if (index < 0 || index >= num_publics()) {
-    return 0;
+  if (index >= 0 || index < GetNumPublics()) {
+    AMX_FUNCSTUBNT *publics = GetPublics();
+    return publics[index].address;
   }
-  return publics()[index].address;
+  return 0;
 }
 
-cell AMXPtr::get_native_addr(cell index) const {
-  if (index < 0 || index >= num_natives()) {
-    return 0;
+cell AMXPtr::GetNativeAddress(cell index) const {
+  if (index >= 0 && index < GetNumNatives()) {
+    AMX_FUNCSTUBNT *natives = GetNatives();
+    return natives[index].address;
   }
-  return natives()[index].address;
+  return 0;
 }
 
-cell AMXPtr::find_public(cell address) const {
-  for (int i = 0; i < num_publics(); i++) {
-    if (publics()[i].address == static_cast<ucell>(address)) {
+cell AMXPtr::FindPublic(cell address) const {
+  int numPublics = GetNumPublics();
+  AMX_FUNCSTUBNT *publics = GetPublics();
+  for (int i = 0; i < numPublics; i++) {
+    if (publics[i].address == static_cast<ucell>(address)) {
       return i;
     }
   }
   return -1;
 }
 
-cell AMXPtr::find_native(cell address) const {
-  for (int i = 0; i < num_natives(); i++) {
-    if (natives()[i].address == static_cast<ucell>(address)) {
+cell AMXPtr::FindNative(cell address) const {
+  int numNatives = GetNumNatives();
+  AMX_FUNCSTUBNT *natives = GetNatives();
+  for (int i = 0; i < numNatives; i++) {
+    if (natives[i].address == static_cast<ucell>(address)) {
       return i;
     }
   }
   return -1;
 }
 
-const char *AMXPtr::get_public_name(cell index) const {
-  if (index < 0 || index >= num_publics()) {
-    return 0;
+const char *AMXPtr::GetPublicName(cell index) const {
+  if (index >= 0 && index < GetNumPublics()) {
+    return reinterpret_cast<char*>(amx->base
+                                   + GetPublics()[index].nameofs);
   }
-  return reinterpret_cast<char*>(amx_->base + publics()[index].nameofs);
+  return 0;
 }
 
-const char *AMXPtr::get_native_name(cell index) const {
-  if (index < 0 || index >= num_natives()) {
-    return 0;
+const char *AMXPtr::GetNativeName(cell index) const {
+  if (index >= 0 && index < GetNumNatives()) {
+    return reinterpret_cast<char*>(amx->base
+                                   + GetNatives()[index].nameofs);
   }
-  return reinterpret_cast<char*>(amx_->base + natives()[index].nameofs);
+  return 0;
 }
 
-cell *AMXPtr::push(cell value) {
-  amx_->stk -= sizeof(cell);
-  cell *s = stack();
+cell *AMXPtr::PushStack(cell value) {
+  amx->stk -= sizeof(cell);
+  cell *s = GetStack();
   *s = value;
   return s;
 }
 
-cell AMXPtr::pop() {
-  cell *s = stack();
-  amx_->stk += sizeof(cell);
+cell AMXPtr::PopStack() {
+  cell *s = GetStack();
+  amx->stk += sizeof(cell);
   return *s;
 }
 
-void AMXPtr::pop(int ncells) {
-  amx_->stk += ncells * sizeof(cell);
+void AMXPtr::PopStack(int ncells) {
+  amx->stk += ncells * sizeof(cell);
 }
 
 } // namespace amxjit

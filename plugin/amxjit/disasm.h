@@ -56,63 +56,71 @@ class Instruction {
   Instruction();
 
  public:
-  int size() const {
-    return sizeof(cell) * (1 + operands_.size());
+  int GetSize() const {
+    return sizeof(cell) * (1 + operands.size());
   }
 
-  const cell address() const {
-    return address_;
-  }
-  void set_address(cell address) {
-    address_ = address;
+  const cell GetAddress() const {
+    return address;
   }
 
-  Opcode opcode() const {
-    return opcode_;
-  }
-  void set_opcode(Opcode opcode) {
-    opcode_ = opcode;
+  void SetAddress(cell address) {
+    this->address = address;
   }
 
-  cell operand(unsigned int index = 0u) const {
-    assert(index < operands_.size());
-    return operands_[index];
+  Opcode GetOpcode() const {
+    return opcode;
   }
-  std::vector<cell> &operands() {
-    return operands_;
+
+  void SetOpcode(Opcode opcode) {
+    this->opcode = opcode;
   }
-  const std::vector<cell> &operands() const {
-    return operands_;
+
+  cell GetOperand(unsigned int index = 0u) const {
+    assert(index < operands.size());
+    return operands[index];
   }
-  void set_operands(std::vector<cell> operands) {
-    operands_ = operands;
+
+  std::vector<cell> &GetOperands() {
+    return operands;
   }
-  void add_operand(cell value) {
-    operands_.push_back(value);
+
+  const std::vector<cell> &GetOperands() const {
+    return operands;
   }
-  int num_operands() const {
-    return operands_.size();
+
+  void SetOperands(std::vector<cell> operands) {
+    operands = operands;
+  }
+
+  void AddOperand(cell value) {
+    operands.push_back(value);
+  }
+
+  int GetNumOperands() const {
+    return operands.size();
   }
 
  public:
-  const char *name() const;
+  const char *GetName() const;
 
-  int get_src_regs() const;
-  int get_dst_regs() const;
+  int GetSrcRegs() const;
+  int GetDstRegs() const;
 
-  std::string string() const;
+  std::string AsString() const;
 
  private:
-  cell address_;
-  Opcode opcode_;
-  std::vector<cell> operands_;
+  cell address;
+  Opcode opcode;
+  std::vector<cell> operands;
 
  private:
   struct StaticInfoTableEntry {
     const char *name;
-    int src_regs;
-    int dst_regs;
+    int srcRegs;
+    int dstRegs;
   };
+
   static const StaticInfoTableEntry info[NUM_OPCODES];
 };
 
@@ -121,22 +129,18 @@ class Disassembler {
   Disassembler(AMXPtr amx);
 
  public:
-  // Returns the address of the currently executing instruction
-  // (instruction pointer).
-  cell ip() const { return ip_; }
+  // Gets/sets the instruction pointer.
+  cell GetInstrPtr() const { return ip; }
+  void SetInstrPtr(cell ip) { this->ip = ip; }
 
-  // Sets the instruction pointer.
-  void set_ip(cell ip) { ip_ = ip; }
-
- public:
   // Decodes current instruction and returns true until the end of code gets
   // reached or an error occurs. The optional error argument is set to true
   // on error.
-  bool decode(Instruction &instr, bool *error = 0);
+  bool Decode(Instruction &instr, bool *error = 0);
 
-private:
-  AMXPtr amx_;
-  cell ip_;
+ private:
+  AMXPtr amx;
+  cell ip;
 };
 
 class CaseTable {
@@ -144,21 +148,21 @@ class CaseTable {
   CaseTable(AMXPtr amx, cell offset);
 
   // Returns the total number of records in the case table.
-  int num_cases() const;
+  int GetNumCases() const;
 
   // Returns the address of a 'case X:' block at the specified index.
-  cell value_at(cell index) const;
-  cell address_at(cell index) const;
+  cell GetValue(cell index) const;
+  cell GetAddress(cell index) const;
 
-  // Get the minimum and maximum values.
-  cell find_min_value() const;
-  cell find_max_value() const;
+  // Finds the minimum and maximum values in the table.
+  cell FindMinValue() const;
+  cell FindMaxValue() const;
 
   // Returns the address of the 'default:' block.
-  cell default_address() const;
+  cell GetDefaultAddress() const;
 
  private:
-  std::vector<std::pair<cell, cell> > records_;
+  std::vector<std::pair<cell, cell> > records;
 };
 
 } // namespace amxjit

@@ -30,221 +30,221 @@
 namespace amxjit {
 
 CompilerLLVM::CompilerLLVM()
-  : context_(),
-    module_("amx", context_),
-    builder_(llvm::BasicBlock::Create(context_))
+ : context(),
+   module("amx", context),
+   builder(llvm::BasicBlock::Create(context))
 {
 }
 
 CompilerLLVM::~CompilerLLVM() {
 }
 
-bool CompilerLLVM::setup(AMXPtr amx) {
+bool CompilerLLVM::Setup(AMXPtr amx) {
   llvm::InitializeNativeTarget();
   return true;
 }
 
-bool CompilerLLVM::process(const Instruction &instr) {
+bool CompilerLLVM::Process(const Instruction &instr) {
   return true;
 }
 
-void CompilerLLVM::abort() {
+void CompilerLLVM::Abort() {
 }
 
-CompilerOutput *CompilerLLVM::finish() {
+CompilerOutput *CompilerLLVM::Finish() {
   return 0;
 }
 
-void CompilerLLVM::emit_load_pri(cell address) {
+void CompilerLLVM::load_pri(cell address) {
   // PRI = [address]
 }
 
-void CompilerLLVM::emit_load_alt(cell address) {
+void CompilerLLVM::load_alt(cell address) {
   // ALT = [address]
 }
 
-void CompilerLLVM::emit_load_s_pri(cell offset) {
+void CompilerLLVM::load_s_pri(cell offset) {
   // PRI = [FRM + offset]
 }
 
-void CompilerLLVM::emit_load_s_alt(cell offset) {
+void CompilerLLVM::load_s_alt(cell offset) {
   // ALT = [FRM + offset]
 }
 
-void CompilerLLVM::emit_lref_pri(cell address) {
+void CompilerLLVM::lref_pri(cell address) {
   // PRI = [ [address] ]
 }
 
-void CompilerLLVM::emit_lref_alt(cell address) {
+void CompilerLLVM::lref_alt(cell address) {
   // ALT = [ [address] ]
 }
 
-void CompilerLLVM::emit_lref_s_pri(cell offset) {
+void CompilerLLVM::lref_s_pri(cell offset) {
   // PRI = [ [FRM + offset] ]
 }
 
-void CompilerLLVM::emit_lref_s_alt(cell offset) {
+void CompilerLLVM::lref_s_alt(cell offset) {
   // PRI = [ [FRM + offset] ]
 }
 
-void CompilerLLVM::emit_load_i() {
+void CompilerLLVM::load_i() {
   // PRI = [PRI] (full cell)
 }
 
-void CompilerLLVM::emit_lodb_i(cell number) {
+void CompilerLLVM::lodb_i(cell number) {
   // PRI = "number" bytes from [PRI] (read 1/2/4 bytes)
 }
 
-void CompilerLLVM::emit_const_pri(cell value) {
+void CompilerLLVM::const_pri(cell value) {
   // PRI = value
 }
 
-void CompilerLLVM::emit_const_alt(cell value) {
+void CompilerLLVM::const_alt(cell value) {
   // ALT = value
 }
 
-void CompilerLLVM::emit_addr_pri(cell offset) {
+void CompilerLLVM::addr_pri(cell offset) {
   // PRI = FRM + offset
 }
 
-void CompilerLLVM::emit_addr_alt(cell offset) {
+void CompilerLLVM::addr_alt(cell offset) {
   // ALT = FRM + offset
 }
 
-void CompilerLLVM::emit_stor_pri(cell address) {
+void CompilerLLVM::stor_pri(cell address) {
   // [address] = PRI
 }
 
-void CompilerLLVM::emit_stor_alt(cell address) {
+void CompilerLLVM::stor_alt(cell address) {
   // [address] = ALT
 }
 
-void CompilerLLVM::emit_stor_s_pri(cell offset) {
+void CompilerLLVM::stor_s_pri(cell offset) {
   // [FRM + offset] = ALT
 }
 
-void CompilerLLVM::emit_stor_s_alt(cell offset) {
+void CompilerLLVM::stor_s_alt(cell offset) {
   // [FRM + offset] = ALT
 }
 
-void CompilerLLVM::emit_sref_pri(cell address) {
+void CompilerLLVM::sref_pri(cell address) {
   // [ [address] ] = PRI
 }
 
-void CompilerLLVM::emit_sref_alt(cell address) {
+void CompilerLLVM::sref_alt(cell address) {
   // [ [address] ] = ALT
 }
 
-void CompilerLLVM::emit_sref_s_pri(cell offset) {
+void CompilerLLVM::sref_s_pri(cell offset) {
   // [ [FRM + offset] ] = PRI
 }
 
-void CompilerLLVM::emit_sref_s_alt(cell offset) {
+void CompilerLLVM::sref_s_alt(cell offset) {
   // [ [FRM + offset] ] = ALT
 }
 
-void CompilerLLVM::emit_stor_i() {
+void CompilerLLVM::stor_i() {
   // [ALT] = PRI (full cell)
 }
 
-void CompilerLLVM::emit_strb_i(cell number) {
+void CompilerLLVM::strb_i(cell number) {
   // "number" bytes at [ALT] = PRI (write 1/2/4 bytes)
 }
 
-void CompilerLLVM::emit_lidx() {
+void CompilerLLVM::lidx() {
   // PRI = [ ALT + (PRI x cell size) ]
 }
 
-void CompilerLLVM::emit_lidx_b(cell shift) {
+void CompilerLLVM::lidx_b(cell shift) {
   // PRI = [ ALT + (PRI << shift) ]
 }
 
-void CompilerLLVM::emit_idxaddr() {
+void CompilerLLVM::idxaddr() {
   // PRI = ALT + (PRI x cell size) (calculate indexed address)
 }
 
-void CompilerLLVM::emit_idxaddr_b(cell shift) {
+void CompilerLLVM::idxaddr_b(cell shift) {
   // PRI = ALT + (PRI << shift) (calculate indexed address)
 }
 
-void CompilerLLVM::emit_align_pri(cell number) {
+void CompilerLLVM::align_pri(cell number) {
   // Little Endian: PRI ^= cell size - number
 }
 
-void CompilerLLVM::emit_align_alt(cell number) {
+void CompilerLLVM::align_alt(cell number) {
   // Little Endian: ALT ^= cell size - number
 }
 
-void CompilerLLVM::emit_lctrl(cell index) {
+void CompilerLLVM::lctrl(cell index) {
   // PRI is set to the current value of any of the special registers.
   // The index parameter must be:
   // 3=STP, 4=STK, 5=FRM, 6=CIP (of the next instruction)
 }
 
-void CompilerLLVM::emit_sctrl(cell index) {
+void CompilerLLVM::sctrl(cell index) {
   // set the indexed special registers to the value in PRI.
   // The index parameter must be:
   // 6=CIP
 }
 
-void CompilerLLVM::emit_move_pri() {
+void CompilerLLVM::move_pri() {
   // PRI = ALT
 }
 
-void CompilerLLVM::emit_move_alt() {
+void CompilerLLVM::move_alt() {
   // ALT = PRI
 }
 
-void CompilerLLVM::emit_xchg() {
+void CompilerLLVM::xchg() {
   // Exchange PRI and ALT
 }
 
-void CompilerLLVM::emit_push_pri() {
+void CompilerLLVM::push_pri() {
   // [STK] = PRI, STK = STK - cell size
 }
 
-void CompilerLLVM::emit_push_alt() {
+void CompilerLLVM::push_alt() {
   // [STK] = ALT, STK = STK - cell size
 }
 
-void CompilerLLVM::emit_push_c(cell value) {
+void CompilerLLVM::push_c(cell value) {
   // [STK] = value, STK = STK - cell size
 }
 
-void CompilerLLVM::emit_push(cell address) {
+void CompilerLLVM::push(cell address) {
   // [STK] = [address], STK = STK - cell size
 }
 
-void CompilerLLVM::emit_push_s(cell offset) {
+void CompilerLLVM::push_s(cell offset) {
   // [STK] = [FRM + offset], STK = STK - cell size
 }
 
-void CompilerLLVM::emit_pop_pri() {
+void CompilerLLVM::pop_pri() {
   // STK = STK + cell size, PRI = [STK]
 }
 
-void CompilerLLVM::emit_pop_alt() {
+void CompilerLLVM::pop_alt() {
   // STK = STK + cell size, ALT = [STK]
 }
 
-void CompilerLLVM::emit_stack(cell value) {
+void CompilerLLVM::stack(cell value) {
   // ALT = STK, STK = STK + value
 }
 
-void CompilerLLVM::emit_heap(cell value) {
+void CompilerLLVM::heap(cell value) {
   // ALT = HEA, HEA = HEA + value
 }
 
-void CompilerLLVM::emit_proc() {
+void CompilerLLVM::proc() {
   // [STK] = FRM, STK = STK - cell size, FRM = STK
 }
 
-void CompilerLLVM::emit_ret() {
+void CompilerLLVM::ret() {
   // STK = STK + cell size, FRM = [STK],
   // CIP = [STK], STK = STK + cell size
 }
 
-void CompilerLLVM::emit_retn() {
+void CompilerLLVM::retn() {
   // STK = STK + cell size, FRM = [STK],
   // CIP = [STK], STK = STK + cell size
   // The RETN instruction removes a specified number of bytes
@@ -252,7 +252,7 @@ void CompilerLLVM::emit_retn() {
   // pushed prior to the call.
 }
 
-void CompilerLLVM::emit_call(cell address) {
+void CompilerLLVM::call(cell address) {
   // [STK] = CIP + 5, STK = STK - cell size
   // CIP = CIP + offset
   // The CALL instruction jumps to an address after storing the
@@ -261,340 +261,340 @@ void CompilerLLVM::emit_call(cell address) {
   // but the address on the stack is an absolute address.
 }
 
-void CompilerLLVM::emit_jump_pri() {
+void CompilerLLVM::jump_pri() {
   // CIP = PRI (indirect jump)
 }
 
-void CompilerLLVM::emit_jump(cell address) {
+void CompilerLLVM::jump(cell address) {
   // CIP = CIP + offset (jump to the address relative from
   // the current position)
 }
 
-void CompilerLLVM::emit_jzer(cell address) {
+void CompilerLLVM::jzer(cell address) {
   // if PRI == 0 then CIP = CIP + offset
 }
 
-void CompilerLLVM::emit_jnz(cell address) {
+void CompilerLLVM::jnz(cell address) {
   // if PRI != 0 then CIP = CIP + offset
 }
 
-void CompilerLLVM::emit_jeq(cell address) {
+void CompilerLLVM::jeq(cell address) {
   // if PRI == ALT then CIP = CIP + offset
 }
 
-void CompilerLLVM::emit_jneq(cell address) {
+void CompilerLLVM::jneq(cell address) {
   // if PRI != ALT then CIP = CIP + offset
 }
 
-void CompilerLLVM::emit_jless(cell address) {
+void CompilerLLVM::jless(cell address) {
   // if PRI < ALT then CIP = CIP + offset (unsigned)
 }
 
-void CompilerLLVM::emit_jleq(cell address) {
+void CompilerLLVM::jleq(cell address) {
   // if PRI <= ALT then CIP = CIP + offset (unsigned)
 }
 
-void CompilerLLVM::emit_jgrtr(cell address) {
+void CompilerLLVM::jgrtr(cell address) {
   // if PRI > ALT then CIP = CIP + offset (unsigned)
 }
 
-void CompilerLLVM::emit_jgeq(cell address) {
+void CompilerLLVM::jgeq(cell address) {
   // if PRI >= ALT then CIP = CIP + offset (unsigned)
 }
 
-void CompilerLLVM::emit_jsless(cell address) {
+void CompilerLLVM::jsless(cell address) {
   // if PRI < ALT then CIP = CIP + offset (signed)
 }
 
-void CompilerLLVM::emit_jsleq(cell address) {
+void CompilerLLVM::jsleq(cell address) {
   // if PRI <= ALT then CIP = CIP + offset (signed)
 }
 
-void CompilerLLVM::emit_jsgrtr(cell address) {
+void CompilerLLVM::jsgrtr(cell address) {
   // if PRI > ALT then CIP = CIP + offset (signed)
 }
 
-void CompilerLLVM::emit_jsgeq(cell address) {
+void CompilerLLVM::jsgeq(cell address) {
   // if PRI >= ALT then CIP = CIP + offset (signed)
 }
 
-void CompilerLLVM::emit_shl() {
+void CompilerLLVM::shl() {
   // PRI = PRI << ALT
 }
 
-void CompilerLLVM::emit_shr() {
+void CompilerLLVM::shr() {
   // PRI = PRI >> ALT (without sign extension)
 }
 
-void CompilerLLVM::emit_sshr() {
+void CompilerLLVM::sshr() {
   // PRI = PRI >> ALT with sign extension
 }
 
-void CompilerLLVM::emit_shl_c_pri(cell value) {
+void CompilerLLVM::shl_c_pri(cell value) {
   // PRI = PRI << value
 }
 
-void CompilerLLVM::emit_shl_c_alt(cell value) {
+void CompilerLLVM::shl_c_alt(cell value) {
   // ALT = ALT << value
 }
 
-void CompilerLLVM::emit_shr_c_pri(cell value) {
+void CompilerLLVM::shr_c_pri(cell value) {
   // PRI = PRI >> value (without sign extension)
 }
 
-void CompilerLLVM::emit_shr_c_alt(cell value) {
+void CompilerLLVM::shr_c_alt(cell value) {
   // PRI = PRI >> value (without sign extension)
 }
 
-void CompilerLLVM::emit_smul() {
+void CompilerLLVM::smul() {
   // PRI = PRI * ALT (signed multiply)
 }
 
-void CompilerLLVM::emit_sdiv() {
+void CompilerLLVM::sdiv() {
   // PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
 }
 
-void CompilerLLVM::emit_sdiv_alt() {
+void CompilerLLVM::sdiv_alt() {
   // PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
 }
 
-void CompilerLLVM::emit_umul() {
+void CompilerLLVM::umul() {
   // PRI = PRI * ALT (unsigned multiply)
 }
 
-void CompilerLLVM::emit_udiv() {
+void CompilerLLVM::udiv() {
   // PRI = PRI / ALT (unsigned divide), ALT = PRI mod ALT
 }
 
-void CompilerLLVM::emit_udiv_alt() {
+void CompilerLLVM::udiv_alt() {
   // PRI = ALT / PRI (unsigned divide), ALT = ALT mod PRI
 }
 
-void CompilerLLVM::emit_add() {
+void CompilerLLVM::add() {
   // PRI = PRI + ALT
 }
 
-void CompilerLLVM::emit_sub() {
+void CompilerLLVM::sub() {
   // PRI = PRI - ALT
 }
 
-void CompilerLLVM::emit_sub_alt() {
+void CompilerLLVM::sub_alt() {
   // PRI = ALT - PRI
   // or:
   // PRI = -(PRI - ALT)
 }
 
-void CompilerLLVM::emit_and() {
+void CompilerLLVM::and() {
   // PRI = PRI & ALT
 }
 
-void CompilerLLVM::emit_or() {
+void CompilerLLVM::or() {
   // PRI = PRI | ALT
 }
 
-void CompilerLLVM::emit_xor() {
+void CompilerLLVM::xor() {
   // PRI = PRI ^ ALT
 }
 
-void CompilerLLVM::emit_not() {
+void CompilerLLVM::not() {
   // PRI = !PRI
 }
 
-void CompilerLLVM::emit_neg() {
+void CompilerLLVM::neg() {
   // PRI = -PRI
 }
 
-void CompilerLLVM::emit_invert() {
+void CompilerLLVM::invert() {
   // PRI = ~PRI
 }
 
-void CompilerLLVM::emit_add_c(cell value) {
+void CompilerLLVM::add_c(cell value) {
   // PRI = PRI + value
 }
 
-void CompilerLLVM::emit_smul_c(cell value) {
+void CompilerLLVM::smul_c(cell value) {
   // PRI = PRI * value
 }
 
-void CompilerLLVM::emit_zero_pri() {
+void CompilerLLVM::zero_pri() {
   // PRI = 0
 }
 
-void CompilerLLVM::emit_zero_alt() {
+void CompilerLLVM::zero_alt() {
   // ALT = 0
 }
 
-void CompilerLLVM::emit_zero(cell address) {
+void CompilerLLVM::zero(cell address) {
   // [address] = 0
 }
 
-void CompilerLLVM::emit_zero_s(cell offset) {
+void CompilerLLVM::zero_s(cell offset) {
   // [FRM + offset] = 0
 }
 
-void CompilerLLVM::emit_sign_pri() {
+void CompilerLLVM::sign_pri() {
   // sign extent the byte in PRI to a cell
 }
 
-void CompilerLLVM::emit_sign_alt() {
+void CompilerLLVM::sign_alt() {
   // sign extent the byte in ALT to a cell
 }
 
-void CompilerLLVM::emit_eq() {
+void CompilerLLVM::eq() {
   // PRI = PRI == ALT ? 1 :
 }
 
-void CompilerLLVM::emit_neq() {
+void CompilerLLVM::neq() {
   // PRI = PRI != ALT ? 1 :
 }
 
-void CompilerLLVM::emit_less() {
+void CompilerLLVM::less() {
   // PRI = PRI < ALT ? 1 :
 }
 
-void CompilerLLVM::emit_leq() {
+void CompilerLLVM::leq() {
   // PRI = PRI <= ALT ? 1 :
 }
 
-void CompilerLLVM::emit_grtr() {
+void CompilerLLVM::grtr() {
   // PRI = PRI > ALT ? 1 :
 }
 
-void CompilerLLVM::emit_geq() {
+void CompilerLLVM::geq() {
   // PRI = PRI >= ALT ? 1 :
 }
 
-void CompilerLLVM::emit_sless() {
+void CompilerLLVM::sless() {
   // PRI = PRI < ALT ? 1 :
 }
 
-void CompilerLLVM::emit_sleq() {
+void CompilerLLVM::sleq() {
   // PRI = PRI <= ALT ? 1 :
 }
 
-void CompilerLLVM::emit_sgrtr() {
+void CompilerLLVM::sgrtr() {
   // PRI = PRI > ALT ? 1 :
 }
 
-void CompilerLLVM::emit_sgeq() {
+void CompilerLLVM::sgeq() {
   // PRI = PRI >= ALT ? 1 :
 }
 
-void CompilerLLVM::emit_eq_c_pri(cell value) {
+void CompilerLLVM::eq_c_pri(cell value) {
   // PRI = PRI == value ? 1 :
 }
 
-void CompilerLLVM::emit_eq_c_alt(cell value) {
+void CompilerLLVM::eq_c_alt(cell value) {
   // PRI = ALT == value ? 1 :
 }
 
-void CompilerLLVM::emit_inc_pri() {
+void CompilerLLVM::inc_pri() {
   // PRI = PRI + 1
 }
 
-void CompilerLLVM::emit_inc_alt() {
+void CompilerLLVM::inc_alt() {
   // ALT = ALT + 1
 }
 
-void CompilerLLVM::emit_inc(cell address) {
+void CompilerLLVM::inc(cell address) {
   // [address] = [address] + 1
 }
 
-void CompilerLLVM::emit_inc_s(cell offset) {
+void CompilerLLVM::inc_s(cell offset) {
   // [FRM + offset] = [FRM + offset] + 1
 }
 
-void CompilerLLVM::emit_inc_i() {
+void CompilerLLVM::inc_i() {
   // [PRI] = [PRI] + 1
 }
 
-void CompilerLLVM::emit_dec_pri() {
+void CompilerLLVM::dec_pri() {
   // PRI = PRI - 1
 }
 
-void CompilerLLVM::emit_dec_alt() {
+void CompilerLLVM::dec_alt() {
   // ALT = ALT - 1
 }
 
-void CompilerLLVM::emit_dec(cell address) {
+void CompilerLLVM::dec(cell address) {
   // [address] = [address] - 1
 }
 
-void CompilerLLVM::emit_dec_s(cell offset) {
+void CompilerLLVM::dec_s(cell offset) {
   // [FRM + offset] = [FRM + offset] - 1
 }
 
-void CompilerLLVM::emit_dec_i() {
+void CompilerLLVM::dec_i() {
   // [PRI] = [PRI] - 1
 }
 
-void CompilerLLVM::emit_movs(cell num_bytes) {
+void CompilerLLVM::movs(cell num_bytes) {
   // Copy memory from [PRI] to [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
 }
 
-void CompilerLLVM::emit_cmps(cell num_bytes) {
+void CompilerLLVM::cmps(cell num_bytes) {
   // Compare memory blocks at [PRI] and [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
 }
 
-void CompilerLLVM::emit_fill(cell num_bytes) {
+void CompilerLLVM::fill(cell num_bytes) {
   // Fill memory at [ALT] with value in [PRI]. The parameter
   // specifies the number of bytes, which must be a multiple
   // of the cell size.
 }
 
-void CompilerLLVM::emit_halt(cell error_code) {
+void CompilerLLVM::halt(cell error_code) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
 }
 
-void CompilerLLVM::emit_bounds(cell value) {
+void CompilerLLVM::bounds(cell value) {
   // Abort execution if PRI > value or if PRI < 0.
 }
 
-void CompilerLLVM::emit_sysreq_pri() {
+void CompilerLLVM::sysreq_pri() {
   // call system service, service number in PRI
 }
 
-void CompilerLLVM::emit_sysreq_c(cell index, const char *name) {
+void CompilerLLVM::sysreq_c(cell index, const char *name) {
   // call system service
 }
 
-void CompilerLLVM::emit_sysreq_d(cell address, const char *name) {
+void CompilerLLVM::sysreq_d(cell address, const char *name) {
   // call system service
 }
 
-void CompilerLLVM::emit_switch(const CaseTable &case_table) {
+void CompilerLLVM::switch_(const CaseTable &case_table) {
   // Compare PRI to the values in the case table (whose address
   // is passed as an offset from CIP) and jump to the associated
   // address in the matching record.
 }
 
-void CompilerLLVM::emit_casetbl() {
+void CompilerLLVM::casetbl() {
   // A variable number of case records follows this opcode, where
   // each record takes two cells.
 }
 
-void CompilerLLVM::emit_swap_pri() {
+void CompilerLLVM::swap_pri() {
   // [STK] = PRI and PRI = [STK]
 }
 
-void CompilerLLVM::emit_swap_alt() {
+void CompilerLLVM::swap_alt() {
   // [STK] = ALT and ALT = [STK]
 }
 
-void CompilerLLVM::emit_push_adr(cell offset) {
+void CompilerLLVM::push_adr(cell offset) {
   // [STK] = FRM + offset, STK = STK - cell size
 }
 
-void CompilerLLVM::emit_nop() {
+void CompilerLLVM::nop() {
   // no-operation, for code alignment
 }
 
-void CompilerLLVM::emit_break() {
+void CompilerLLVM::break_() {
   // conditional breakpoint
 }
 
