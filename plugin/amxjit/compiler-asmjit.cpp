@@ -70,15 +70,15 @@ enum RuntimeDataIndex {
 };
 
 struct InstrMapEntry {
-  cell  amxInstrOffset;
-  void *jitInstrPtr;
+  cell  address;
+  void *start;
 };
 
 class CompareInstrMapEntries
  : std::binary_function<const InstrMapEntry&, const InstrMapEntry&, bool> {
  public:
   bool operator()(const InstrMapEntry &lhs, const InstrMapEntry &rhs) const {
-    return lhs.amxInstrOffset < rhs.amxInstrOffset;
+    return lhs.address < rhs.address;
   }
 };
 
@@ -90,7 +90,7 @@ cell AMXJIT_CDECL GetNativeAddress(AMX *amx, int index) {
   return amxjit::AMXPtr(amx).GetNativeAddress(index);
 }
 
-void *AMXJIT_CDECL GetInstrPtr(cell address, void *instrMap,
+void *AMXJIT_CDECL GetInstrStartPtr(cell address, void *instrMap,
                                std::size_t instrMapSize) {
   assert(instrMap != 0);
   InstrMapEntry *begin = reinterpret_cast<InstrMapEntry*>(instrMap);
@@ -101,7 +101,7 @@ void *AMXJIT_CDECL GetInstrPtr(cell address, void *instrMap,
                             CompareInstrMapEntries());
 
   if (result.first != result.second) {
-    return result.first->jitInstrPtr;
+    return result.first->start;
   }
 
   return 0;
@@ -161,8 +161,8 @@ bool CompilerAsmjit::Setup(AMXPtr amx) {
 bool CompilerAsmjit::Process(const Instruction &instr) {
   cell cip = instr.GetAddress();
 
-  as.bind(GetAmxLabel(cip));
-  instrMap.push_back(std::make_pair(cip, as.getCodeSize()));
+  as.bind(GetLabel(cip));
+  instrMap[cip] = as.getCodeSize();
 
   // Align functions on 16-byte boundary.
   if (instr.GetOpcode().GetId() == OP_PROC) {
@@ -188,9 +188,10 @@ CompilerOutput *CompilerAsmjit::Finish() {
   intptr_t instrMapPtr = runtimeData[RuntimeDataInstrMapPtr];
   InstrMapEntry *entry = reinterpret_cast<InstrMapEntry*>(instrMapPtr);
 
-  for (std::size_t i = 0; i < instrMap.size(); i++) {
-    entry->amxInstrOffset = instrMap[i].first;
-    entry->jitInstrPtr = reinterpret_cast<void*>(instrMap[i].second + codePtr);
+  for (std::map<cell, std::ptrdiff_t>::const_iterator iterator = instrMap.begin();
+       iterator != instrMap.end(); iterator++) {
+    entry->address = iterator->first;
+    entry->start = reinterpret_cast<void*>(iterator->second + codePtr);
     entry++;
   }
 
@@ -571,7 +572,7 @@ void CompilerAsmjit::call(cell address) {
   // address of the next sequential instruction on the stack.
   // The address jumped to is relative to the current CIP,
   // but the address on the stack is an absolute address.
-  as.call(GetAmxLabel(address));
+  as.call(GetLabel(address));
 }
 
 void CompilerAsmjit::jump_pri() {
@@ -585,79 +586,79 @@ void CompilerAsmjit::jump_pri() {
 void CompilerAsmjit::jump(cell address) {
   // CIP = CIP + offset (jump to the address relative from
   // the current position)
-  as.jmp(GetAmxLabel(address));
+  as.jmp(GetLabel(address));
 }
 
 void CompilerAsmjit::jzer(cell address) {
   // if PRI == 0 then CIP = CIP + offset
   as.test(eax, eax);
-  as.jz(GetAmxLabel(address));
+  as.jz(GetLabel(address));
 }
 
 void CompilerAsmjit::jnz(cell address) {
   // if PRI != 0 then CIP = CIP + offset
   as.test(eax, eax);
-  as.jnz(GetAmxLabel(address));
+  as.jnz(GetLabel(address));
 }
 
 void CompilerAsmjit::jeq(cell address) {
   // if PRI == ALT then CIP = CIP + offset
   as.cmp(eax, ecx);
-  as.je(GetAmxLabel(address));
+  as.je(GetLabel(address));
 }
 
 void CompilerAsmjit::jneq(cell address) {
   // if PRI != ALT then CIP = CIP + offset
   as.cmp(eax, ecx);
-  as.jne(GetAmxLabel(address));
+  as.jne(GetLabel(address));
 }
 
 void CompilerAsmjit::jless(cell address) {
   // if PRI < ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
-  as.jb(GetAmxLabel(address));
+  as.jb(GetLabel(address));
 }
 
 void CompilerAsmjit::jleq(cell address) {
   // if PRI <= ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
-  as.jbe(GetAmxLabel(address));
+  as.jbe(GetLabel(address));
 }
 
 void CompilerAsmjit::jgrtr(cell address) {
   // if PRI > ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
-  as.ja(GetAmxLabel(address));
+  as.ja(GetLabel(address));
 }
 
 void CompilerAsmjit::jgeq(cell address) {
   // if PRI >= ALT then CIP = CIP + offset (unsigned)
   as.cmp(eax, ecx);
-  as.jae(GetAmxLabel(address));
+  as.jae(GetLabel(address));
 }
 
 void CompilerAsmjit::jsless(cell address) {
   // if PRI < ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
-  as.jl(GetAmxLabel(address));
+  as.jl(GetLabel(address));
 }
 
 void CompilerAsmjit::jsleq(cell address) {
   // if PRI <= ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
-  as.jle(GetAmxLabel(address));
+  as.jle(GetLabel(address));
 }
 
 void CompilerAsmjit::jsgrtr(cell address) {
   // if PRI > ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
-  as.jg(GetAmxLabel(address));
+  as.jg(GetLabel(address));
 }
 
 void CompilerAsmjit::jsgeq(cell address) {
   // if PRI >= ALT then CIP = CIP + offset (signed)
   as.cmp(eax, ecx);
-  as.jge(GetAmxLabel(address));
+  as.jge(GetLabel(address));
 }
 
 void CompilerAsmjit::shl() {
@@ -1097,21 +1098,21 @@ void CompilerAsmjit::switch_(const CaseTable &caseTable) {
     // Check if the value in eax is in the allowed range.
     // If not, jump to the default case (i.e. no match).
     as.cmp(eax, minValue);
-    as.jl(GetAmxLabel(caseTable.GetDefaultAddress()));
+    as.jl(GetLabel(caseTable.GetDefaultAddress()));
     as.cmp(eax, maxValue);
-    as.jg(GetAmxLabel(caseTable.GetDefaultAddress()));
+    as.jg(GetLabel(caseTable.GetDefaultAddress()));
 
     // OK now sequentially compare eax with each value.
     // This is pretty slow so I probably should optimize
     // this in future...
     for (int i = 0; i < caseTable.GetNumCases(); i++) {
       as.cmp(eax, caseTable.GetValue(i));
-      as.je(GetAmxLabel(caseTable.GetAddress(i)));
+      as.je(GetLabel(caseTable.GetAddress(i)));
     }
   }
 
   // No match found - go for default case.
-  as.jmp(GetAmxLabel(caseTable.GetDefaultAddress()));
+  as.jmp(GetLabel(caseTable.GetDefaultAddress()));
 }
 
 void CompilerAsmjit::casetbl() {
@@ -1147,12 +1148,107 @@ void CompilerAsmjit::break_() {
   #endif
 }
 
-intptr_t *CompilerAsmjit::GetRuntimeData() {
-  return reinterpret_cast<intptr_t*>(as.getCode());
+void CompilerAsmjit::float_() {
+  as.fild(dword_ptr(esp, 4));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
 }
 
-void CompilerAsmjit::SetRuntimeData(int index, intptr_t data) {
-  GetRuntimeData()[index] = data;
+void CompilerAsmjit::floatabs() {
+  as.fld(dword_ptr(esp, 4));
+  as.fabs();
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+void CompilerAsmjit::floatadd() {
+  as.fld(dword_ptr(esp, 4));
+  as.fadd(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+void CompilerAsmjit::floatsub() {
+  as.fld(dword_ptr(esp, 4));
+  as.fsub(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+void CompilerAsmjit::floatmul() {
+  as.fld(dword_ptr(esp, 4));
+  as.fmul(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+void CompilerAsmjit::floatdiv() {
+  as.fld(dword_ptr(esp, 4));
+  as.fdiv(dword_ptr(esp, 8));
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+void CompilerAsmjit::floatsqroot() {
+  as.fld(dword_ptr(esp, 4));
+  as.fsqrt();
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+void CompilerAsmjit::floatlog() {
+  as.fld1();
+  as.fld(dword_ptr(esp, 8));
+  as.fyl2x();
+  as.fld1();
+  as.fdivrp(st(1));
+  as.fld(dword_ptr(esp, 4));
+  as.fyl2x();
+  as.sub(esp, 4);
+  as.fstp(dword_ptr(esp));
+  as.mov(eax, dword_ptr(esp));
+  as.add(esp, 4);
+}
+
+bool CompilerAsmjit::EmitIntrinsic(const char *name) {
+  struct Intrinsic {
+    const char          *name;
+    EmitIntrinsicMethod  emit;
+  };
+  
+  static const Intrinsic intrinsics[] = {
+    {"float",       &CompilerAsmjit::float_},
+    {"floatabs",    &CompilerAsmjit::floatabs},
+    {"floatadd",    &CompilerAsmjit::floatadd},
+    {"floatsub",    &CompilerAsmjit::floatsub},
+    {"floatmul",    &CompilerAsmjit::floatmul},
+    {"floatdiv",    &CompilerAsmjit::floatdiv},
+    {"floatsqroot", &CompilerAsmjit::floatsqroot},
+    {"floatlog",    &CompilerAsmjit::floatlog}
+  };
+
+  for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {
+    if (std::strcmp(intrinsics[i].name, name) == 0) {
+      (this->*intrinsics[i].emit)();
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void CompilerAsmjit::EmitRuntimeData(AMXPtr amx) {
@@ -1189,26 +1285,6 @@ void CompilerAsmjit::EmitInstrMap(AMXPtr amx) {
   for (int i = 0; i < size; i++) {
     as.dstruct(dummy);
   }
-}
-
-void CompilerAsmjit::EmitGetAmxPtr(const GpReg &reg) {
-  as.mov(reg, dword_ptr(amxPtrLabel));
-}
-
-void CompilerAsmjit::EmitGetAmxDataPtr(const GpReg &reg) {
-  Label exitLabel = as.newLabel();
-
-    EmitGetAmxPtr(eax);
-
-    as.mov(reg, dword_ptr(eax, offsetof(AMX, data)));
-    as.test(reg, reg);
-    as.jnz(exitLabel);
-
-    as.mov(reg, dword_ptr(eax, offsetof(AMX, base)));
-    as.mov(eax, dword_ptr(reg, offsetof(AMX_HEADER, dat)));
-    as.add(reg, eax);
-
-  as.bind(exitLabel);
 }
 
 // int AMXJIT_CDECL Exec(cell index, cell *retval);
@@ -1284,7 +1360,7 @@ void CompilerAsmjit::EmitExec() {
     as.push(dword_ptr(instrMapSizeLabel));
     as.push(dword_ptr(instrMapPtrLabel));
     as.push(eax);
-    as.call(asmjit_cast<void*>(&GetInstrPtr));
+    as.call(asmjit_cast<void*>(&GetInstrStartPtr));
     as.add(esp, 12);
     as.mov(dword_ptr(ebp, varAddress), eax);
 
@@ -1462,7 +1538,7 @@ void CompilerAsmjit::EmitJumpHelper() {
     as.push(dword_ptr(instrMapSizeLabel));
     as.push(dword_ptr(instrMapPtrLabel));
     as.push(edx);
-    as.call(asmjit_cast<void*>(&GetInstrPtr));
+    as.call(asmjit_cast<void*>(&GetInstrStartPtr));
     as.add(esp, 12);
     as.mov(edx, eax); // address
 
@@ -1581,107 +1657,24 @@ void CompilerAsmjit::EmitBreakHelper() {
     as.ret();
 }
 
-void CompilerAsmjit::EmitFloat() {
-  as.fild(dword_ptr(esp, 4));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
+void CompilerAsmjit::EmitGetAmxPtr(const GpReg &reg) {
+  as.mov(reg, dword_ptr(amxPtrLabel));
 }
 
-void CompilerAsmjit::EmitFloatabs() {
-  as.fld(dword_ptr(esp, 4));
-  as.fabs();
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
+void CompilerAsmjit::EmitGetAmxDataPtr(const GpReg &reg) {
+  Label exitLabel = as.newLabel();
 
-void CompilerAsmjit::EmitFloatadd() {
-  as.fld(dword_ptr(esp, 4));
-  as.fadd(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
+    EmitGetAmxPtr(eax);
 
-void CompilerAsmjit::EmitFloatsub() {
-  as.fld(dword_ptr(esp, 4));
-  as.fsub(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
+    as.mov(reg, dword_ptr(eax, offsetof(AMX, data)));
+    as.test(reg, reg);
+    as.jnz(exitLabel);
 
-void CompilerAsmjit::EmitFloatmul() {
-  as.fld(dword_ptr(esp, 4));
-  as.fmul(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
+    as.mov(reg, dword_ptr(eax, offsetof(AMX, base)));
+    as.mov(eax, dword_ptr(reg, offsetof(AMX_HEADER, dat)));
+    as.add(reg, eax);
 
-void CompilerAsmjit::EmitFloatdiv() {
-  as.fld(dword_ptr(esp, 4));
-  as.fdiv(dword_ptr(esp, 8));
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void CompilerAsmjit::EmitFloatsqroot() {
-  as.fld(dword_ptr(esp, 4));
-  as.fsqrt();
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-void CompilerAsmjit::EmitFloatlog() {
-  as.fld1();
-  as.fld(dword_ptr(esp, 8));
-  as.fyl2x();
-  as.fld1();
-  as.fdivrp(st(1));
-  as.fld(dword_ptr(esp, 4));
-  as.fyl2x();
-  as.sub(esp, 4);
-  as.fstp(dword_ptr(esp));
-  as.mov(eax, dword_ptr(esp));
-  as.add(esp, 4);
-}
-
-bool CompilerAsmjit::EmitIntrinsic(const char *name) {
-  struct Intrinsic {
-    const char          *name;
-    EmitIntrinsicMethod  emit;
-  };
-  
-  static const Intrinsic intrinsics[] = {
-    {"float",       &CompilerAsmjit::EmitFloat},
-    {"floatabs",    &CompilerAsmjit::EmitFloatabs},
-    {"floatadd",    &CompilerAsmjit::EmitFloatadd},
-    {"floatsub",    &CompilerAsmjit::EmitFloatsub},
-    {"floatmul",    &CompilerAsmjit::EmitFloatmul},
-    {"floatdiv",    &CompilerAsmjit::EmitFloatdiv},
-    {"floatsqroot", &CompilerAsmjit::EmitFloatsqroot},
-    {"floatlog",    &CompilerAsmjit::EmitFloatlog}
-  };
-
-  for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {
-    if (std::strcmp(intrinsics[i].name, name) == 0) {
-      (this->*intrinsics[i].emit)();
-      return true;
-    }
-  }
-
-  return false;
+  as.bind(exitLabel);
 }
 
 } // namespace amxjit

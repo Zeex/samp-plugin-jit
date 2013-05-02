@@ -26,10 +26,8 @@
 #define AMXJIT_COMPILER_ASMJIT_H
 
 #include <cassert>
-#include <set>
-#include <vector>
-#include <utility>
-#include <amx/amx.h>
+#include <cstddef>
+#include <map>
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
 #include "amxptr.h"
@@ -42,28 +40,6 @@ class CompilerAsmjit : public Compiler {
  public:
   typedef void (CompilerAsmjit::*EmitIntrinsicMethod)();
 
-  class AmxLabel : public AsmJit::Label {
-   public:
-    AmxLabel(cell address)
-     : AsmJit::Label(),
-       address(address)
-    {}
-
-    AmxLabel(cell address, const Label &label)
-     : AsmJit::Label(label),
-       address(address)
-    {}
-
-    cell GetAddress() const { return address; }
-
-    bool operator<(const AmxLabel &that) const {
-      return this->address < that.address;
-    }
-
-   private:
-    cell address;
-  };
-
   CompilerAsmjit();
   virtual ~CompilerAsmjit();
 
@@ -73,6 +49,7 @@ class CompilerAsmjit : public Compiler {
   virtual void Abort();
   virtual CompilerOutput *Finish();
 
+ protected:
   virtual void load_pri(cell address);
   virtual void load_alt(cell address);
   virtual void load_s_pri(cell offset);
@@ -204,12 +181,17 @@ class CompilerAsmjit : public Compiler {
   virtual void break_();
 
  private:
-  intptr_t *GetRuntimeData();
-  void SetRuntimeData(int index, intptr_t data);
+  bool EmitIntrinsic(const char *name);
+  void float_();
+  void floatabs();
+  void floatadd();
+  void floatsub();
+  void floatmul();
+  void floatdiv();
+  void floatsqroot();
+  void floatlog();
 
-  void EmitGetAmxPtr(const AsmJit::GpReg &reg);
-  void EmitGetAmxDataPtr(const AsmJit::GpReg &reg);
-
+ private:
   void EmitRuntimeData(AMXPtr amx);
   void EmitInstrMap(AMXPtr amx);
   void EmitExec();
@@ -220,27 +202,28 @@ class CompilerAsmjit : public Compiler {
   void EmitSysreqDHelper();
   void EmitBreakHelper();
 
-  bool EmitIntrinsic(const char *name);
-  void EmitFloat();
-  void EmitFloatabs();
-  void EmitFloatadd();
-  void EmitFloatsub();
-  void EmitFloatmul();
-  void EmitFloatdiv();
-  void EmitFloatsqroot();
-  void EmitFloatlog();
+ private:
+  void EmitGetAmxPtr(const AsmJit::GpReg &reg);
+  void EmitGetAmxDataPtr(const AsmJit::GpReg &reg);
 
-  const AmxLabel &GetAmxLabel(cell address) {
-    std::set<AmxLabel>::const_iterator it = amxLabels.find(address);
-    if (it != amxLabels.end()) {
-      return *it;
-    } else {
-      std::pair<std::set<AmxLabel>::iterator, bool> result =
-        amxLabels.insert(AmxLabel(address, as.newLabel()));
-      return *result.first;
-    }
+ private:
+  intptr_t *GetRuntimeData() {
+    return reinterpret_cast<intptr_t*>(as.getCode());
   }
 
+  void SetRuntimeData(int index, intptr_t data) {
+    GetRuntimeData()[index] = data;
+  }
+
+  const AsmJit::Label &GetLabel(cell address) {
+    AsmJit::Label &label = labelMap[address];
+    if (label.getId() == AsmJit::kInvalidValue) {
+      return label = as.newLabel();
+    }
+    return label;
+  }
+
+ private:
   AsmJit::X86Assembler as;
 
   AsmJit::Label execPtrLabel;
@@ -259,11 +242,11 @@ class CompilerAsmjit : public Compiler {
   AsmJit::Label sysreqDHelperLabel;
   AsmJit::Label breakHelperLabel;
 
-  // Labels corresponding to AMX instructions.
-  std::set<AmxLabel> amxLabels;
+  // Maps AMX instruction addresses to labels.
+  std::map<cell, AsmJit::Label> labelMap;
 
-  // Maps AMX instructions to JIT code offsets.
-  std::vector<std::pair<cell, std::ptrdiff_t> > instrMap;
+  // Maps AMX instruction addresses to JIT code offsets.
+  std::map<cell, std::ptrdiff_t> instrMap;
 
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
