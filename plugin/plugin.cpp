@@ -32,9 +32,7 @@
 #ifdef _WIN32
   #include <windows.h>
 #else
-  #ifndef _GNU_SOURCE
-    #define _GNU_SOURCE 1 // for dl_addr()
-  #endif
+  #define _GNU_SOURCE
   #include <dlfcn.h>
 #endif
 #include <subhook.h>
