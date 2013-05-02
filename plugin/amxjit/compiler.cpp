@@ -298,16 +298,16 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         sub_alt();
         break;
       case OP_AND:
-        and();
+        and_();
         break;
       case OP_OR:
-        or();
+        or_();
         break;
       case OP_XOR:
-        xor();
+        xor_();
         break;
       case OP_NOT:
-        not();
+        not_();
         break;
       case OP_NEG:
         neg();

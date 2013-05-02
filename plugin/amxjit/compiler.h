@@ -166,10 +166,10 @@ class Compiler {
   virtual void add() = 0;
   virtual void sub() = 0;
   virtual void sub_alt() = 0;
-  virtual void and() = 0;
-  virtual void or() = 0;
-  virtual void xor() = 0;
-  virtual void not() = 0;
+  virtual void and_() = 0;
+  virtual void or_() = 0;
+  virtual void xor_() = 0;
+  virtual void not_() = 0;
   virtual void neg() = 0;
   virtual void invert() = 0;
   virtual void add_c(cell value) = 0;

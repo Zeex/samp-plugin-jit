@@ -384,19 +384,19 @@ void CompilerLLVM::sub_alt() {
   // PRI = -(PRI - ALT)
 }
 
-void CompilerLLVM::and() {
+void CompilerLLVM::and_() {
   // PRI = PRI & ALT
 }
 
-void CompilerLLVM::or() {
+void CompilerLLVM::or_() {
   // PRI = PRI | ALT
 }
 
-void CompilerLLVM::xor() {
+void CompilerLLVM::xor_() {
   // PRI = PRI ^ ALT
 }
 
-void CompilerLLVM::not() {
+void CompilerLLVM::not_() {
   // PRI = !PRI
 }
 

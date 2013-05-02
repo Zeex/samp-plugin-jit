@@ -32,7 +32,6 @@
 
 // AsmJit core
 using AsmJit::Label;
-using AsmJit::asmjit_cast;
 
 // X86-specific
 using AsmJit::X86Assembler;
@@ -754,22 +753,22 @@ void CompilerAsmjit::sub_alt() {
   as.neg(eax);
 }
 
-void CompilerAsmjit::and() {
+void CompilerAsmjit::and_() {
   // PRI = PRI & ALT
   as.and_(eax, ecx);
 }
 
-void CompilerAsmjit::or() {
+void CompilerAsmjit::or_() {
   // PRI = PRI | ALT
   as.or_(eax, ecx);
 }
 
-void CompilerAsmjit::xor() {
+void CompilerAsmjit::xor_() {
   // PRI = PRI ^ ALT
   as.xor_(eax, ecx);
 }
 
-void CompilerAsmjit::not() {
+void CompilerAsmjit::not_() {
   // PRI = !PRI
   as.test(eax, eax);
   as.setz(al);

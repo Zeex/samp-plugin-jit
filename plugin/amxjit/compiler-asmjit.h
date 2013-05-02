@@ -30,9 +30,6 @@
 #include <vector>
 #include <utility>
 #include <amx/amx.h>
-namespace AsmJit {
-  #include <asmjit/core/build.h>
-}
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
 #include "amxptr.h"
@@ -154,10 +151,10 @@ class CompilerAsmjit : public Compiler {
   virtual void add();
   virtual void sub();
   virtual void sub_alt();
-  virtual void and();
-  virtual void or();
-  virtual void xor();
-  virtual void not();
+  virtual void and_();
+  virtual void or_();
+  virtual void xor_();
+  virtual void not_();
   virtual void neg();
   virtual void invert();
   virtual void add_c(cell value);

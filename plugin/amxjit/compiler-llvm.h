@@ -123,10 +123,10 @@ class CompilerLLVM : public Compiler {
   virtual void add();
   virtual void sub();
   virtual void sub_alt();
-  virtual void and();
-  virtual void or();
-  virtual void xor();
-  virtual void not();
+  virtual void and_();
+  virtual void or_();
+  virtual void xor_();
+  virtual void not_();
   virtual void neg();
   virtual void invert();
   virtual void add_c(cell value);
