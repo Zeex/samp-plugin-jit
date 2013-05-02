@@ -528,25 +528,25 @@ void CompilerLLVM::dec_i() {
   // [PRI] = [PRI] - 1
 }
 
-void CompilerLLVM::movs(cell num_bytes) {
+void CompilerLLVM::movs(cell numBytes) {
   // Copy memory from [PRI] to [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
 }
 
-void CompilerLLVM::cmps(cell num_bytes) {
+void CompilerLLVM::cmps(cell numBytes) {
   // Compare memory blocks at [PRI] and [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
 }
 
-void CompilerLLVM::fill(cell num_bytes) {
+void CompilerLLVM::fill(cell numBytes) {
   // Fill memory at [ALT] with value in [PRI]. The parameter
   // specifies the number of bytes, which must be a multiple
   // of the cell size.
 }
 
-void CompilerLLVM::halt(cell error_code) {
+void CompilerLLVM::halt(cell errorCode) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
 }
@@ -567,7 +567,7 @@ void CompilerLLVM::sysreq_d(cell address, const char *name) {
   // call system service
 }
 
-void CompilerLLVM::switch_(const CaseTable &case_table) {
+void CompilerLLVM::switch_(const CaseTable &caseTable) {
   // Compare PRI to the values in the case table (whose address
   // is passed as an offset from CIP) and jump to the associated
   // address in the matching record.
