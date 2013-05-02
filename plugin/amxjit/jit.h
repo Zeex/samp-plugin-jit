@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXJIT_AMXJIT_H
-#define AMXJIT_AMXJIT_H
+#ifndef AMXJIT_JIT_H
+#define AMXJIT_JIT_H
 
 #include <amx/amx.h>
 #include "amxptr.h"
@@ -59,4 +59,4 @@ class JIT {
 
 } // namespace amxjit
 
-#endif // !AMXJIT_AMXJIT_H
+#endif // !AMXJIT_JIT_H
