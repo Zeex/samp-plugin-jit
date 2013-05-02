@@ -71,16 +71,16 @@ enum RuntimeDataIndex {
 };
 
 struct InstrMapEntry {
-  cell  amxAddress;
-  void *jitAddress;
+  cell  amxInstrOffset;
+  void *jitInstrPtr;
 };
 
 class CompareInstrMapEntries
-  : std::binary_function<const InstrMapEntry&, const InstrMapEntry&, bool> {
+ : std::binary_function<const InstrMapEntry&, const InstrMapEntry&, bool> {
  public:
-   bool operator()(const InstrMapEntry &lhs, const InstrMapEntry &rhs) const {
-    return lhs.amxAddress < rhs.amxAddress;
-   }
+  bool operator()(const InstrMapEntry &lhs, const InstrMapEntry &rhs) const {
+    return lhs.amxInstrOffset < rhs.amxInstrOffset;
+  }
 };
 
 cell AMXJIT_CDECL GetPublicAddress(AMX *amx, int index) {
@@ -102,7 +102,7 @@ void *AMXJIT_CDECL GetInstrPtr(cell address, void *instrMap,
                             CompareInstrMapEntries());
 
   if (result.first != result.second) {
-    return result.first->jitAddress;
+    return result.first->jitInstrPtr;
   }
 
   return 0;
@@ -190,8 +190,8 @@ CompilerOutput *CompilerAsmjit::Finish() {
   InstrMapEntry *entry = reinterpret_cast<InstrMapEntry*>(instrMapPtr);
 
   for (std::size_t i = 0; i < instrMap.size(); i++) {
-    entry->amxAddress = instrMap[i].first;
-    entry->jitAddress = reinterpret_cast<void*>(instrMap[i].second + codePtr);
+    entry->amxInstrOffset = instrMap[i].first;
+    entry->jitInstrPtr = reinterpret_cast<void*>(instrMap[i].second + codePtr);
     entry++;
   }
 
@@ -1176,8 +1176,8 @@ void CompilerAsmjit::EmitRuntimeData(AMXPtr amx) {
 }
 
 void CompilerAsmjit::EmitInstrMap(AMXPtr amx) {
-  amxjit::Disassembler disas(amx);
-  amxjit::Instruction instr;
+  Disassembler disas(amx);
+  Instruction instr;
   int size = 0;
   while (disas.Decode(instr)) {
     size++;
