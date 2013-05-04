@@ -405,7 +405,7 @@ void CompilerAsmjit::lctrl(cell index) {
     case 1:
     case 2:
     case 3:
-      EmitGetAmxPtr(eax);
+      EmitAmxPtrMove(eax);
       switch (index) {
         case 0:
           as.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
@@ -446,7 +446,7 @@ void CompilerAsmjit::sctrl(cell index) {
   // 6=CIP
   switch (index) {
     case 2:
-      EmitGetAmxPtr(edx);
+      EmitAmxPtrMove(edx);
       as.mov(dword_ptr(edx, offsetof(AMX, hea)), eax);
       break;
     case 4:
@@ -527,7 +527,7 @@ void CompilerAsmjit::stack(cell value) {
 
 void CompilerAsmjit::heap(cell value) {
   // ALT = HEA, HEA = HEA + value
-  EmitGetAmxPtr(edx);
+  EmitAmxPtrMove(edx);
   as.mov(ecx, dword_ptr(edx, offsetof(AMX, hea)));
   if (value >= 0) {
     as.add(dword_ptr(edx, offsetof(AMX, hea)), value);
@@ -1317,11 +1317,11 @@ void CompilerAsmjit::EmitExec() {
     as.sub(esp, 12); // for locals
 
     as.push(esi);
-    EmitGetAmxPtr(esi);
+    EmitAmxPtrMove(esi);
 
     // JIT code expects AMX data pointer to be in ebx.
     as.push(ebx);
-    EmitGetAmxDataPtr(ebx);
+    EmitAmxDataPtrMove(ebx);
 
     // Check for stack/heap collision (stack/heap overflow).
     as.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
@@ -1352,7 +1352,7 @@ void CompilerAsmjit::EmitExec() {
 
     // Get address of the public function.
     as.push(dword_ptr(ebp, argIndex));
-    EmitGetAmxPtr(eax);
+    EmitAmxPtrMove(eax);
     as.push(eax);
     as.call(asmjit_cast<void*>(&GetPublicAddress));
     as.add(esp, 8);
@@ -1468,7 +1468,7 @@ void CompilerAsmjit::EmitExecHelper() {
     as.mov(dword_ptr(espPtrLabel), esp);
 
     // Switch from native stack to AMX stack.
-    EmitGetAmxPtr(ecx);
+    EmitAmxPtrMove(ecx);
     as.mov(edx, dword_ptr(ecx, offsetof(AMX, frm)));
     as.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + amx->frm
     as.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
@@ -1488,7 +1488,7 @@ void CompilerAsmjit::EmitExecHelper() {
 
     // Keep AMX stack registers up-to-date. This wouldn't be necessary if
     // RETN didn't modify them (it pops all arguments off the stack).
-    EmitGetAmxPtr(ecx);
+    EmitAmxPtrMove(ecx);
     as.mov(edx, ebp);
     as.sub(edx, ebx);
     as.mov(dword_ptr(ecx, offsetof(AMX, frm)), edx); // amx->frm = ebp - data
@@ -1515,7 +1515,7 @@ void CompilerAsmjit::EmitExecHelper() {
 // void HaltHelper(int error [edx]);
 void CompilerAsmjit::EmitHaltHelper() {
   as.bind(haltHelperLabel);
-    EmitGetAmxPtr(esi);
+    EmitAmxPtrMove(esi);
     as.mov(dword_ptr(esi, offsetof(AMX, error)), edx); // error code in edx
 
     // Reset stack so we can return right to call().
@@ -1576,7 +1576,7 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     as.mov(ebp, esp);
 
     as.push(dword_ptr(ebp, argIndex));
-    EmitGetAmxPtr(eax);
+    EmitAmxPtrMove(eax);
     as.push(eax);
     as.call(asmjit_cast<void*>(&GetNativeAddress));
     as.add(esp, 8);
@@ -1608,7 +1608,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     as.mov(ecx, esp);                 // params
     as.mov(esi, dword_ptr(esp, -16)); // return address
 
-    EmitGetAmxPtr(edx);
+    EmitAmxPtrMove(edx);
 
     // Switch to native stack.
     as.sub(ebp, ebx);
@@ -1625,7 +1625,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     as.add(esp, 8);
 
     // Switch back to AMX stack.
-    EmitGetAmxPtr(edx);
+    EmitAmxPtrMove(edx);
     as.mov(dword_ptr(ebpPtrLabel), ebp);
     as.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
     as.lea(ebp, dword_ptr(ebx, ecx)); // ebp = data + amx->frm
@@ -1643,7 +1643,7 @@ void CompilerAsmjit::EmitBreakHelper() {
   Label returnLabel = as.newLabel();
 
   as.bind(breakHelperLabel);
-    EmitGetAmxPtr(edx);
+    EmitAmxPtrMove(edx);
     as.mov(esi, dword_ptr(edx, offsetof(AMX, debug)));
     as.test(esi, esi);
     as.jz(returnLabel);
@@ -1662,22 +1662,22 @@ void CompilerAsmjit::EmitBreakHelper() {
     as.ret();
 }
 
-void CompilerAsmjit::EmitGetAmxPtr(const GpReg &reg) {
-  as.mov(reg, dword_ptr(amxPtrLabel));
+void CompilerAsmjit::EmitAmxPtrMove(const GpReg &dest) {
+  as.mov(dest, dword_ptr(amxPtrLabel));
 }
 
-void CompilerAsmjit::EmitGetAmxDataPtr(const GpReg &reg) {
+void CompilerAsmjit::EmitAmxDataPtrMove(const GpReg &dest) {
   Label exitLabel = as.newLabel();
 
-    EmitGetAmxPtr(eax);
+    EmitAmxPtrMove(eax);
 
-    as.mov(reg, dword_ptr(eax, offsetof(AMX, data)));
-    as.test(reg, reg);
+    as.mov(dest, dword_ptr(eax, offsetof(AMX, data)));
+    as.test(dest, dest);
     as.jnz(exitLabel);
 
-    as.mov(reg, dword_ptr(eax, offsetof(AMX, base)));
-    as.mov(eax, dword_ptr(reg, offsetof(AMX_HEADER, dat)));
-    as.add(reg, eax);
+    as.mov(dest, dword_ptr(eax, offsetof(AMX, base)));
+    as.mov(eax, dword_ptr(dest, offsetof(AMX_HEADER, dat)));
+    as.add(dest, eax);
 
   as.bind(exitLabel);
 }

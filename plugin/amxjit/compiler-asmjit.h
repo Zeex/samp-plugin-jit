@@ -203,8 +203,8 @@ class CompilerAsmjit : public Compiler {
   void EmitBreakHelper();
 
  private:
-  void EmitGetAmxPtr(const AsmJit::GpReg &reg);
-  void EmitGetAmxDataPtr(const AsmJit::GpReg &reg);
+  void EmitAmxPtrMove(const AsmJit::GpReg &dest);
+  void EmitAmxDataPtrMove(const AsmJit::GpReg &dest);
 
  private:
   intptr_t *GetRuntimeData() {
