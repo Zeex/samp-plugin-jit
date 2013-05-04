@@ -26,11 +26,6 @@
 
 namespace amxjit {
 
-AMXPtr::AMXPtr(AMX *amx)
- : amx(amx)
-{
-}
-
 cell AMXPtr::GetPublicAddress(cell index) const {
   if (index == AMX_EXEC_MAIN) {
     AMX_HEADER *header = GetHeader();
@@ -75,7 +70,7 @@ cell AMXPtr::FindNative(cell address) const {
 
 const char *AMXPtr::GetPublicName(cell index) const {
   if (index >= 0 && index < GetNumPublics()) {
-    return reinterpret_cast<char*>(amx->base
+    return reinterpret_cast<char*>(AccessAmx()->base
                                    + GetPublics()[index].nameofs);
   }
   return 0;
@@ -83,14 +78,14 @@ const char *AMXPtr::GetPublicName(cell index) const {
 
 const char *AMXPtr::GetNativeName(cell index) const {
   if (index >= 0 && index < GetNumNatives()) {
-    return reinterpret_cast<char*>(amx->base
+    return reinterpret_cast<char*>(AccessAmx()->base
                                    + GetNatives()[index].nameofs);
   }
   return 0;
 }
 
 cell *AMXPtr::PushStack(cell value) {
-  amx->stk -= sizeof(cell);
+  AccessAmx()->stk -= sizeof(cell);
   cell *s = GetStack();
   *s = value;
   return s;
@@ -98,12 +93,12 @@ cell *AMXPtr::PushStack(cell value) {
 
 cell AMXPtr::PopStack() {
   cell *s = GetStack();
-  amx->stk += sizeof(cell);
+  AccessAmx()->stk += sizeof(cell);
   return *s;
 }
 
 void AMXPtr::PopStack(int ncells) {
-  amx->stk += ncells * sizeof(cell);
+  AccessAmx()->stk += ncells * sizeof(cell);
 }
 
 } // namespace amxjit

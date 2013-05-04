@@ -25,6 +25,7 @@
 #ifndef AMXJIT_AMXPTR_H
 #define AMXJIT_AMXPTR_H
 
+#include <cassert>
 #include <cstddef>
 #include <amx/amx.h>
 
@@ -36,24 +37,25 @@ namespace amxjit {
 // and from AMX* when possible.
 class AMXPtr {
  public:
-  AMXPtr(AMX *amx);
+  AMXPtr() : amx(0) {}
+  AMXPtr(AMX *amx) : amx(amx) {}
 
   operator AMX*() { return amx; }
   operator AMX*() const { return amx; }
 
-  AMX *operator->() { return amx; }
-  AMX *operator->() const { return amx; }
+  AMX *operator->() { return AccessAmx(); }
+  const AMX *operator->() const { return AccessAmx(); }
 
   AMX *GetStruct() const {
     return amx;
   }
 
   AMX_HEADER *GetHeader() const {
-    return reinterpret_cast<AMX_HEADER*>(amx->base);
+    return reinterpret_cast<AMX_HEADER*>(AccessAmx()->base);
   }
 
   unsigned char *GetCode() const {
-    return amx->base + GetHeader()->cod;
+    return AccessAmx()->base + GetHeader()->cod;
   }
 
   std::size_t GetCodeSize() const {
@@ -61,8 +63,8 @@ class AMXPtr {
   }
 
   unsigned char *GetData() const {
-    return amx->data != 0 ? amx->data
-                          : amx->base + GetHeader()->dat;
+    return AccessAmx()->data != 0 ? AccessAmx()->data
+                                  : AccessAmx()->base + GetHeader()->dat;
   }
   std::size_t GetDataSize() const {
     return GetHeader()->hea - GetHeader()->dat;
@@ -80,12 +82,12 @@ class AMXPtr {
 
   AMX_FUNCSTUBNT *GetPublics() const {
     return reinterpret_cast<AMX_FUNCSTUBNT*>(GetHeader()->publics
-                                             + amx->base);
+                                             + AccessAmx()->base);
   }
 
   AMX_FUNCSTUBNT *GetNatives() const {
     return reinterpret_cast<AMX_FUNCSTUBNT*>(GetHeader()->natives
-                                             + amx->base);
+                                             + AccessAmx()->base);
   }
 
   cell GetPublicAddress(cell index) const;
@@ -98,7 +100,7 @@ class AMXPtr {
   cell FindNative(cell address) const;
 
   cell *GetStack() const {
-    return reinterpret_cast<cell*>(GetData() + amx->stk);
+    return reinterpret_cast<cell*>(GetData() + AccessAmx()->stk);
   }
 
   cell GetStackSize() const {
@@ -110,7 +112,18 @@ class AMXPtr {
   cell PopStack();
   void PopStack(int ncells);
 
-private:
+ private:
+  AMX *AccessAmx() {
+    assert(amx != 0);
+    return amx;
+  }
+
+  const AMX *AccessAmx() const {
+    assert(amx != 0);
+    return amx;
+  }
+
+ private:
   AMX *amx;
 };
 
