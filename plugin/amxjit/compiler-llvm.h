@@ -40,7 +40,7 @@ class CompilerLLVM : public Compiler {
   virtual ~CompilerLLVM();
 
  protected:
-  virtual bool Setup(AMXPtr amx);
+  virtual bool Setup();
   virtual bool Process(const Instruction &instr);
   virtual void Abort();
   virtual CompilerOutput *Finish();

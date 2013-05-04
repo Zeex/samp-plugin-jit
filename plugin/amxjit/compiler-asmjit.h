@@ -44,7 +44,7 @@ class CompilerAsmjit : public Compiler {
   virtual ~CompilerAsmjit();
 
  protected:
-  virtual bool Setup(AMXPtr amx);
+  virtual bool Setup();
   virtual bool Process(const Instruction &instr);
   virtual void Abort();
   virtual CompilerOutput *Finish();
@@ -192,8 +192,8 @@ class CompilerAsmjit : public Compiler {
   void floatlog();
 
  private:
-  void EmitRuntimeData(AMXPtr amx);
-  void EmitInstrMap(AMXPtr amx);
+  void EmitRuntimeData();
+  void EmitInstrMap();
   void EmitExec();
   void EmitExecHelper();
   void EmitHaltHelper();

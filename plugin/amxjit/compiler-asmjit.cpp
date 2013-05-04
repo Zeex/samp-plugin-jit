@@ -145,9 +145,9 @@ CompilerAsmjit::~CompilerAsmjit()
 {
 }
 
-bool CompilerAsmjit::Setup(AMXPtr amx) { 
-  EmitRuntimeData(amx);
-  EmitInstrMap(amx);
+bool CompilerAsmjit::Setup() { 
+  EmitRuntimeData();
+  EmitInstrMap();
   EmitExec();
   EmitExecHelper();
   EmitHaltHelper();
@@ -432,7 +432,7 @@ void CompilerAsmjit::lctrl(cell index) {
       as.sub(eax, ebx);
       break;
     case 6:
-      as.mov(eax, GetCurrentInstr()->GetAddress() + GetCurrentInstr()->GetSize());
+      as.mov(eax, GetCurrentInstr().GetAddress() + GetCurrentInstr().GetSize());
       break;
     case 7:
       as.mov(eax, 1);
@@ -1251,11 +1251,11 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   return false;
 }
 
-void CompilerAsmjit::EmitRuntimeData(AMXPtr amx) {
+void CompilerAsmjit::EmitRuntimeData() {
   as.bind(execPtrLabel);
     as.dd(0);
   as.bind(amxPtrLabel);
-    as.dintptr(reinterpret_cast<intptr_t>(amx.GetStruct()));
+    as.dintptr(reinterpret_cast<intptr_t>(GetCurrentAmx().GetStruct()));
   as.bind(ebpPtrLabel);
     as.dd(0);
   as.bind(espPtrLabel);
@@ -1270,8 +1270,8 @@ void CompilerAsmjit::EmitRuntimeData(AMXPtr amx) {
     as.dd(0);
 }
 
-void CompilerAsmjit::EmitInstrMap(AMXPtr amx) {
-  Disassembler disas(amx);
+void CompilerAsmjit::EmitInstrMap() {
+  Disassembler disas(GetCurrentAmx());
   Instruction instr;
   int size = 0;
   while (disas.Decode(instr)) {

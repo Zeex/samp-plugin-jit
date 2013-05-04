@@ -29,13 +29,16 @@
 namespace amxjit {
 
 CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler) {
-  Setup(amx);
+  Instruction instr;
+
+  compiling = true;
+  currentAmx = amx;
+  currentInstr = &instr;
+
+  Setup();
 
   Disassembler disas(amx);
-  Instruction instr;
   bool error = false;
-
-  SetCurrentInstr(&instr);
 
   while (!error && disas.Decode(instr, &error)) {
     if (!Process(instr)) {
@@ -473,7 +476,10 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
     return 0;
   }
 
-  return Finish();
+  CompilerOutput *output = Finish();
+
+  compiling = false;
+  return output;
 }
 
 } // namespace amxjit

@@ -25,6 +25,7 @@
 #ifndef AMXJIT_COMPILER_H
 #define AMXJIT_COMPILER_H
 
+#include <cassert>
 #include <cstddef>
 #include "amxptr.h"
 #include "macros.h"
@@ -67,7 +68,7 @@ class Compiler {
  protected:
   // This method is called just before the compilation begins.
   // Returns false on error.
-  virtual bool Setup(AMXPtr amx) = 0;
+  virtual bool Setup() = 0;
 
   // Processes a single instruction. Returns false on error.
   virtual bool Process(const Instruction &instr) = 0;
@@ -79,12 +80,16 @@ class Compiler {
   // CompilerOutput or null which would indicate a fatal error.
   virtual CompilerOutput *Finish() = 0;
 
-  // Gets/sets currently processed instruction.
-  const Instruction *GetCurrentInstr() const {
-    return currentInstr;
+  // Returnss the current AMX instance.
+  AMXPtr GetCurrentAmx() const {
+    assert(compiling);
+    return currentAmx;
   }
-  void SetCurrentInstr(const Instruction *instr)  {
-    currentInstr = instr;
+
+  // Returns currently processed instruction.
+  const Instruction &GetCurrentInstr() const {
+    assert(compiling);
+    return *currentInstr;
   }
 
   // Per-opcode methods.
@@ -219,7 +224,9 @@ class Compiler {
   virtual void break_() = 0;
 
  private:
-   const Instruction *currentInstr;
+   bool compiling;
+   AMXPtr currentAmx;
+   Instruction *currentInstr;
 };
 
 } // namespace amxjit

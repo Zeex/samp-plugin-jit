@@ -39,7 +39,7 @@ CompilerLLVM::CompilerLLVM()
 CompilerLLVM::~CompilerLLVM() {
 }
 
-bool CompilerLLVM::Setup(AMXPtr amx) {
+bool CompilerLLVM::Setup() {
   llvm::InitializeNativeTarget();
   return true;
 }
