@@ -28,6 +28,14 @@
 
 namespace amxjit {
 
+Compiler::Compiler()
+ : compiling(false)
+{
+}
+
+Compiler::~Compiler() {
+}
+
 CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler) {
   Instruction instr;
 

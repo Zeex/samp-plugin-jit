@@ -59,7 +59,8 @@ class CompilerOutput {
 
 class Compiler {
  public:
-  virtual ~Compiler() {}
+  Compiler();
+  virtual ~Compiler();
 
   // Compiles the specified AMX script. The optional error hander is called at
   // most only once - on first compile error.
