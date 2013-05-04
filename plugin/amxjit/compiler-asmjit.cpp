@@ -1065,10 +1065,15 @@ void CompilerAsmjit::sysreq_c(cell index, const char *name) {
   // call system service
   if (name != 0) {
     if (!EmitIntrinsic(name)) {
-      as.push(esp);   // stackPtr
-      as.push(ebp);   // stackBase
-      as.push(index); // index
-      as.call(sysreqCHelperLabel);
+      as.push(esp); // stackPtr
+      as.push(ebp); // stackBase
+      #if DEBUG
+        as.push(index); // index
+        as.call(sysreqCHelperLabel);
+      #else
+        as.push(GetCurrentAmx().GetNativeAddress(index)); // address
+        as.call(sysreqDHelperLabel);
+      #endif
     }
   }
 }
