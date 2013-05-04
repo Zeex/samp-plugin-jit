@@ -200,7 +200,6 @@ class CompilerAsmjit : public Compiler {
   void EmitJumpHelper();
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
-  void EmitBreakHelper();
 
  private:
   void EmitAmxPtrMove(const AsmJit::GpReg &dest);
@@ -240,7 +239,6 @@ class CompilerAsmjit : public Compiler {
   AsmJit::Label jumpHelperLabel;
   AsmJit::Label sysreqCHelperLabel;
   AsmJit::Label sysreqDHelperLabel;
-  AsmJit::Label breakHelperLabel;
 
   // Maps AMX instruction addresses to labels.
   std::map<cell, AsmJit::Label> labelMap;

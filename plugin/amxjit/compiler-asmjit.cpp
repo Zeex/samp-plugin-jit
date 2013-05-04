@@ -136,8 +136,7 @@ CompilerAsmjit::CompilerAsmjit()
    haltHelperLabel(as.newLabel()),
    jumpHelperLabel(as.newLabel()),
    sysreqCHelperLabel(as.newLabel()),
-   sysreqDHelperLabel(as.newLabel()),
-   breakHelperLabel(as.newLabel())
+   sysreqDHelperLabel(as.newLabel())
 {
 }
 
@@ -154,7 +153,6 @@ bool CompilerAsmjit::Setup() {
   EmitJumpHelper();
   EmitSysreqCHelper();
   EmitSysreqDHelper();
-  EmitBreakHelper();
   return true;
 }
 
@@ -1148,9 +1146,6 @@ void CompilerAsmjit::nop() {
 
 void CompilerAsmjit::break_() {
   // conditional breakpoint
-  #ifdef DEBUG
-    as.call(breakHelperLabel);
-  #endif
 }
 
 void CompilerAsmjit::float_() {
@@ -1635,30 +1630,6 @@ void CompilerAsmjit::EmitSysreqDHelper() {
 
     // Modify the return address so we return next to the sysreq point.
     as.push(esi);
-    as.ret();
-}
-
-// void BreakHelper();
-void CompilerAsmjit::EmitBreakHelper() {
-  Label returnLabel = as.newLabel();
-
-  as.bind(breakHelperLabel);
-    EmitAmxPtrMove(edx);
-    as.mov(esi, dword_ptr(edx, offsetof(AMX, debug)));
-    as.test(esi, esi);
-    as.jz(returnLabel);
-
-    as.push(eax);
-    as.push(ecx);
-
-    as.push(edx);
-    as.call(esi);
-    as.add(esp, 4);
-
-    as.pop(ecx);
-    as.pop(eax);
-
-  as.bind(returnLabel);
     as.ret();
 }
 
