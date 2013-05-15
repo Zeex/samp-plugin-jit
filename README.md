@@ -1,4 +1,4 @@
 [Download here][download]
 =========================
 
-[download]:https://github.com/Zeex/samp-plugin-jit/tree/downloads
+[download]: https://www.dropbox.com/sh/12glfg33b6zfgnx/2NWWz33Mzn
