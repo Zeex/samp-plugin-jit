@@ -64,7 +64,7 @@ class Compiler {
 
   // Compiles the specified AMX script. The optional error hander is called at
   // most only once - on first compile error.
-  CompilerOutput *Compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
+  CompilerOutput *Compile(AMXPtr amx, CompileErrorHandler *errorHandler = 0);
 
  protected:
   // This method is called just before the compilation begins.
