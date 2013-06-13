@@ -29,9 +29,10 @@ namespace amxjit {
 cell AMXPtr::GetPublicAddress(cell index) const {
   if (index == AMX_EXEC_MAIN) {
     AMX_HEADER *header = GetHeader();
-    return header->cip;
-  }
-  if (index >= 0 || index < GetNumPublics()) {
+    if (header->cip > 0) {
+      return header->cip;
+    }
+  } else if (index >= 0 || index < GetNumPublics()) {
     AMX_FUNCSTUBNT *publics = GetPublics();
     return publics[index].address;
   }
