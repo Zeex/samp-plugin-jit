@@ -81,7 +81,7 @@ static cell OnJITCompile(AMX *amx) {
     amx_Exec(amx, &retval, index);
     return retval;
   }
-  return 0;
+  return 1;
 }
 
 static bool Compile(AMX *amx, amxjit::JIT *jit) {
