@@ -65,6 +65,60 @@ static SubHook ExecHook;
   static cell *opcodeMap = 0;
 #endif
 
+class CompileErrorHandler : public amxjit::CompileErrorHandler {
+ public:
+  virtual void Execute(const amxjit::Instruction &instr) {
+    logprintf("[jit] Invalid or unsupported instruction at address %p:",
+              instr.GetAddress());
+    logprintf("[jit]   => %s", instr.AsString().c_str());
+  }
+};
+
+static cell OnJITCompile(AMX *amx) {
+  int index;
+  if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
+    cell retval;
+    amx_Exec(amx, &retval, index);
+    return retval;
+  }
+  return 0;
+}
+
+static bool Compile(AMX *amx, amxjit::JIT *jit) {
+  bool result = false;
+
+  if (!OnJITCompile(amx)) {
+    logprintf("[jit] Compilation was disabled");
+  } else {
+    const char *backendString = getenv("JIT_BACKEND");
+    if (backendString == 0) {
+      backendString = "asmjit";
+    }
+
+    amxjit::Compiler *compiler = 0;
+    #if JIT_ASMJIT
+      if (std::strcmp(backendString, "asmjit") == 0) {
+        compiler = new amxjit::CompilerAsmjit;
+      }
+    #endif
+    #if JIT_LLVM
+      if (std::strcmp(backendString, "llvm") == 0) {
+        compiler = new amxjit::CompilerLLVM;
+      }
+    #endif
+
+    if (compiler != 0) {
+      CompileErrorHandler errorHandler;
+      result = jit->Compile(compiler, &errorHandler);
+      delete compiler;
+    } else {
+      logprintf("[jit] Unknown backend '%s'", backendString);
+    }
+  }
+
+  return result;
+}
+
 static std::string GetModulePath(void *address,
                                  std::size_t maxLength = FILENAME_MAX)
 {
@@ -103,34 +157,31 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
       return AMX_ERR_NONE;
     }
   #endif
-  AmxToJitMap::iterator iterator = ::amxToJit.find(amx);
-  if (iterator == ::amxToJit.end()) {
+
+  amxjit::JIT *jit = 0;
+
+  if (index == AMX_EXEC_MAIN) {
+    jit = new amxjit::JIT(amx);
+    if (Compile(amx, jit)) {
+      ::amxToJit[amx] = jit;
+    } else {
+      delete jit;
+      jit = 0;
+    }
+  } else {
+    AmxToJitMap::iterator iterator = ::amxToJit.find(amx);
+    if (iterator != ::amxToJit.end()) {
+      jit = iterator->second;
+    }
+  }
+
+  if (jit != 0) {
+    return jit->Exec(index, retval);
+  } else {
     SubHook::ScopedRemove r(&ExecHook);
     return amx_Exec(amx, retval, index);
-  } else {
-    amxjit::JIT *jit = iterator->second;
-    return jit->Exec(index, retval);
   }
 }
-
-static cell OnJITCompile(AMX *amx) {
-  int index;
-  if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
-    cell retval;
-    amx_Exec(amx, &retval, index);
-    return retval;
-  }
-  return 0;
-}
-
-class CompileErrorHandler : public amxjit::CompileErrorHandler {
- public:
-  virtual void Execute(const amxjit::Instruction &instr) {
-    logprintf("[jit] Invalid or unsupported instruction at address %p:",
-              instr.GetAddress());
-    logprintf("[jit]   => %s", instr.AsString().c_str());
-  }
-};
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
@@ -172,43 +223,6 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  if (!OnJITCompile(amx)) {
-    logprintf("[jit] Compilation was disabled");
-    return AMX_ERR_NONE;
-  }
-
-  amxjit::JIT *jit = new amxjit::JIT(amx);
-
-  const char *backendString = getenv("JIT_BACKEND");
-  if (backendString == 0) {
-    backendString = "asmjit";
-  }
-
-  amxjit::Compiler *compiler = 0;
-  #if JIT_ASMJIT
-    if (std::strcmp(backendString, "asmjit") == 0) {
-      compiler = new amxjit::CompilerAsmjit;
-    }
-  #endif
-  #if JIT_LLVM
-    if (std::strcmp(backendString, "llvm") == 0) {
-      compiler = new amxjit::CompilerLLVM;
-    }
-  #endif
-
-  if (compiler != 0) {
-    CompileErrorHandler errorHandler;
-    if (!jit->Compile(compiler, &errorHandler)) {
-      delete jit;
-    } else {
-      ::amxToJit.insert(std::make_pair(amx, jit));
-    }
-  } else {
-    logprintf("[jit] Unknown backend '%s'", backendString);
-    delete jit;
-  }
-
-  delete compiler;
   return AMX_ERR_NONE;
 }
 
