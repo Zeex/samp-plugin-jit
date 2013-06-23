@@ -113,6 +113,16 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   }
 }
 
+static cell OnJITCompile(AMX *amx) {
+  int index;
+  if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
+    cell retval;
+    amx_Exec(amx, &retval, index);
+    return retval;
+  }
+  return 0;
+}
+
 class CompileErrorHandler : public amxjit::CompileErrorHandler {
  public:
   virtual void Execute(const amxjit::Instruction &instr) {
@@ -162,6 +172,11 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload() {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+  if (!OnJITCompile(amx)) {
+    logprintf("[jit] Compilation was disabled");
+    return AMX_ERR_NONE;
+  }
+
   amxjit::JIT *jit = new amxjit::JIT(amx);
 
   const char *backendString = getenv("JIT_BACKEND");
