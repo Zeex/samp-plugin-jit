@@ -60,7 +60,7 @@ static LogprintfType logprintf;
 typedef std::map<AMX*, amxjit::JIT*> AmxToJitMap;
 static AmxToJitMap amxToJit;
 
-static SubHook ExecHook;
+static SubHook execHook;
 #if USE_OPCODE_MAP
   static cell *opcodeMap = 0;
 #endif
@@ -178,7 +178,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   if (jit != 0) {
     return jit->Exec(index, retval);
   } else {
-    SubHook::ScopedRemove r(&ExecHook);
+    SubHook::ScopedRemove r(&execHook);
     return amx_Exec(amx, retval, index);
   }
 }
@@ -201,15 +201,15 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   }
 
   #if USE_OPCODE_MAP
-    // Get opcode table before we hook amx_Exec().
+    // Get the opcode map before we hook amx_Exec().
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
     amx_Exec(&amx, reinterpret_cast<cell*>(&::opcodeMap), 0);
     amx.flags &= ~AMX_FLAG_BROWSE;
   #endif
 
-  ExecHook.Install(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec],
-                        (void*)amx_Exec_JIT);
+  void **exports = reinterpret_cast<void**>(pAMXFunctions);
+  execHook.Install(exports[PLUGIN_AMX_EXPORT_Exec], (void*)amx_Exec_JIT);
 
   logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
   return true;
