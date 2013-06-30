@@ -1,0 +1,8 @@
+JIT 2.0 - 30/06/2013
+====================
+
+o Restructured code to allow multiple compiler backends (though there's only
+  at the moment - asmjit)
+o Added the OnJITCompile callback to let self-modifying code initialize itself
+  before compilation begins
+o Fixed server crash when running a gamemode that doesn't define main()
