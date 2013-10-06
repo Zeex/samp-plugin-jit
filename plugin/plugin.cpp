@@ -32,7 +32,6 @@
 #ifdef _WIN32
   #include <windows.h>
 #else
-  #define _GNU_SOURCE
   #include <dlfcn.h>
 #endif
 #include <subhook.h>
