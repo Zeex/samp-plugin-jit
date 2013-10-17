@@ -108,7 +108,7 @@ static bool Compile(AMX *amx, amxjit::JIT *jit) {
       result = jit->Compile(compiler, &errorHandler);
       delete compiler;
     } else {
-      logprintf("[jit] Unknown backend '%s'", backend.c_str());
+      logprintf("[jit] Unrecognized backend '%s'", backend.c_str());
     }
   }
 
