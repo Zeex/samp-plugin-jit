@@ -40,6 +40,8 @@ add_samp_plugin(plugin
   amx/getch.h
   amx/sclinux.h
   amxplugin.cpp
+  configreader.cpp
+  configreader.h
   plugin.cpp
   plugin.def
   plugin.h

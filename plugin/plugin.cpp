@@ -35,6 +35,7 @@
   #include <dlfcn.h>
 #endif
 #include <subhook.h>
+#include "configreader.h"
 #include "plugin.h"
 #include "version.h"
 #include "amxjit/compiler.h"
@@ -89,29 +90,25 @@ static bool Compile(AMX *amx, amxjit::JIT *jit) {
   if (!OnJITCompile(amx)) {
     logprintf("[jit] Compilation was disabled");
   } else {
-    const char *backendString = getenv("JIT_BACKEND");
-    if (backendString == 0) {
-      backendString = "asmjit";
-    }
-
+    std::string backend = "asmjit";
+    ConfigReader("server.cfg").GetOption("jit_backend", backend);
     amxjit::Compiler *compiler = 0;
     #if JIT_ASMJIT
-      if (std::strcmp(backendString, "asmjit") == 0) {
+      if (backend == "asmjit") {
         compiler = new amxjit::CompilerAsmjit;
       }
     #endif
     #if JIT_LLVM
-      if (std::strcmp(backendString, "llvm") == 0) {
+      if (backend == "llvm") {
         compiler = new amxjit::CompilerLLVM;
       }
     #endif
-
     if (compiler != 0) {
       CompileErrorHandler errorHandler;
       result = jit->Compile(compiler, &errorHandler);
       delete compiler;
     } else {
-      logprintf("[jit] Unknown backend '%s'", backendString);
+      logprintf("[jit] Unknown backend '%s'", backend.c_str());
     }
   }
 
