@@ -55,9 +55,7 @@ using AsmJit::st;
 
 namespace {
 
-// Indices of runtime data block elements. Runtime data is the first thing
-// that is written to the code buffer and is used throughout generated JIT
-// code to keep track of certain data at runtime.
+// TODO: Use a struct instead of enum
 enum RuntimeDataIndex {
   RuntimeDataExecPtr,
   RuntimeDataAmxPtr,
@@ -75,7 +73,7 @@ struct InstrMapEntry {
 };
 
 class CompareInstrMapEntries
- : std::binary_function<const InstrMapEntry&, const InstrMapEntry&, bool> {
+  : std::binary_function<const InstrMapEntry&, const InstrMapEntry&, bool> {
  public:
   bool operator()(const InstrMapEntry &lhs, const InstrMapEntry &rhs) const {
     return lhs.address < rhs.address;
@@ -94,7 +92,7 @@ void *AMXJIT_CDECL GetInstrStartPtr(cell address, void *instrMap,
                                std::size_t instrMapSize) {
   assert(instrMap != 0);
   InstrMapEntry *begin = reinterpret_cast<InstrMapEntry*>(instrMap);
-  InstrMapEntry target = {address, 0};
+  InstrMapEntry target = { address, 0 };
 
   std::pair<InstrMapEntry*, InstrMapEntry*> result;
   result = std::equal_range(begin, begin + instrMapSize, target,
