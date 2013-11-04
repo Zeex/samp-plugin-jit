@@ -231,8 +231,8 @@ class CompilerAsmjit : public Compiler {
   AsmJit::Label espPtrLabel;
   AsmJit::Label resetEbpPtrLabel;
   AsmJit::Label resetEspPtrLabel;
-  AsmJit::Label instrMapSizeLabel;
   AsmJit::Label instrMapPtrLabel;
+  AsmJit::Label instrMapSizeLabel;
   AsmJit::Label execLabel;
   AsmJit::Label execHelperLabel;
   AsmJit::Label haltHelperLabel;
@@ -271,7 +271,7 @@ class CompilerOutputAsmjit : public CompilerOutput {
  private:
   void *code;
   std::size_t codeSize;
-  
+
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputAsmjit);
 };
