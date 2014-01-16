@@ -25,7 +25,6 @@
 #ifndef AMXJIT_COMPILER_ASMJIT_H
 #define AMXJIT_COMPILER_ASMJIT_H
 
-#include <cassert>
 #include <cstddef>
 #include <map>
 #include <asmjit/core.h>
@@ -192,7 +191,7 @@ class CompilerAsmjit: public Compiler {
   void floatlog();
 
  private:
-  void EmitRuntimeData();
+  void EmitRuntimeInfo();
   void EmitInstrTable();
   void EmitExec();
   void EmitExecHelper();
@@ -201,19 +200,10 @@ class CompilerAsmjit: public Compiler {
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
 
- private:
   void EmitAmxPtrMove(const AsmJit::GpReg &dest);
   void EmitAmxDataPtrMove(const AsmJit::GpReg &dest);
 
  private:
-  intptr_t *GetRuntimeData() {
-    return reinterpret_cast<intptr_t*>(asm_.getCode());
-  }
-
-  void SetRuntimeData(int index, intptr_t data) {
-    GetRuntimeData()[index] = data;
-  }
-
   const AsmJit::Label &GetLabel(cell address) {
     AsmJit::Label &label = label_map_[address];
     if (label.getId() == AsmJit::kInvalidValue) {
@@ -255,18 +245,10 @@ class CompilerOutputAsmjit : public CompilerOutput {
   CompilerOutputAsmjit(void *code, std::size_t code_size);
   virtual ~CompilerOutputAsmjit();
 
-  virtual void *GetCode() const {
-    return code_;
-  }
+  virtual void *GetCode() const { return code_; }
+  virtual std::size_t GetCodeSize() const { return code_size_; }
 
-  virtual std::size_t GetCodeSize() const {
-    return code_size_;
-  }
-
-  virtual EntryPoint GetEntryPoint() const {
-    assert(code_ != 0);
-    return (EntryPoint)*reinterpret_cast<void**>(GetCode());
-  }
+  virtual EntryPoint GetEntryPoint() const;
 
  private:
   void *code_;

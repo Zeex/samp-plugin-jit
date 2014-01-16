@@ -55,16 +55,15 @@ using AsmJit::st;
 
 namespace {
 
-// TODO: Use a struct instead of enum
-enum RuntimeDataIndex {
-  RuntimeDataExecPtr,
-  RuntimeDataAmxPtr,
-  RuntimeDataEbp,
-  RuntimeDataEsp,
-  RuntimeDataResetEbp,
-  RuntimeDataResetEsp,
-  RuntimeDataInstrTableSize,
-  RuntimeDataInstrTablePtr
+struct RuntimeInfoBlock {
+  intptr_t exec;
+  intptr_t amx;
+  intptr_t ebp;
+  intptr_t esp;
+  intptr_t reset_ebp;
+  intptr_t reset_esp;
+  intptr_t instr_table;
+  intptr_t instr_table_size;
 };
 
 cell AMXJIT_CDECL GetPublicAddress(AMX *amx, int index) {
@@ -116,6 +115,11 @@ CompilerOutputAsmjit::~CompilerOutputAsmjit() {
   AsmJit::MemoryManager::getGlobal()->free(code_);
 }
 
+EntryPoint CompilerOutputAsmjit::GetEntryPoint() const {
+  assert(code_ != 0);
+  return (EntryPoint)*reinterpret_cast<void**>(GetCode());
+}
+
 CompilerAsmjit::CompilerAsmjit():
   asm_(),
   exec_ptr_label_(asm_.newLabel()),
@@ -140,7 +144,7 @@ CompilerAsmjit::~CompilerAsmjit()
 }
 
 bool CompilerAsmjit::Setup() { 
-  EmitRuntimeData();
+  EmitRuntimeInfo();
   EmitInstrTable();
   EmitExec();
   EmitExecHelper();
@@ -170,25 +174,21 @@ void CompilerAsmjit::Abort() {
 }
 
 CompilerOutput *CompilerAsmjit::Finish() {
-  intptr_t code_ptr = reinterpret_cast<intptr_t>(asm_.make());
-  std::size_t code_size = asm_.getCodeSize();
+  void *code = asm_.make();
+  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code);
 
-  intptr_t *data = reinterpret_cast<intptr_t*>(code_ptr);
+  rib->exec += reinterpret_cast<intptr_t>(code);
+  rib->instr_table += reinterpret_cast<intptr_t>(code);
 
-  data[RuntimeDataExecPtr] += code_ptr;
-  data[RuntimeDataInstrTablePtr] += code_ptr;
-
-  intptr_t instr_table_ptr = data[RuntimeDataInstrTablePtr];
-  InstrTableEntry *entry = reinterpret_cast<InstrTableEntry*>(instr_table_ptr);
-
+  InstrTableEntry *ite = reinterpret_cast<InstrTableEntry*>(rib->instr_table);
   for (InstrMap::const_iterator it = instr_map_.begin();
        it != instr_map_.end(); it++) {
-    entry->address = it->first;
-    entry->start = reinterpret_cast<void*>(it->second + code_ptr);
-    entry++;
+    ite->address = it->first;
+    ite->start = static_cast<unsigned char*>(code) + it->second;
+    ite++;
   }
 
-  return new CompilerOutputAsmjit(reinterpret_cast<void*>(code_ptr), code_size);
+  return new CompilerOutputAsmjit(code, asm_.getCodeSize());
 }
 
 void CompilerAsmjit::load_pri(cell address) {
@@ -1241,7 +1241,8 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   return false;
 }
 
-void CompilerAsmjit::EmitRuntimeData() {
+void CompilerAsmjit::EmitRuntimeInfo() {
+  // This must have the same structure as RuntimeInfoBlock.
   asm_.bind(exec_ptr_label_);
     asm_.dd(0);
   asm_.bind(amx_ptr_label_);
@@ -1254,23 +1255,24 @@ void CompilerAsmjit::EmitRuntimeData() {
     asm_.dd(0);
   asm_.bind(reset_esp_ptr_label_);
     asm_.dd(0);
-  asm_.bind(instr_table_size_label_);
-    asm_.dd(0);
   asm_.bind(instr_table_ptr_label_);
+    asm_.dd(0);
+  asm_.bind(instr_table_size_label_);
     asm_.dd(0);
 }
 
 void CompilerAsmjit::EmitInstrTable() {
-  Disassembler disasm(GetCurrentAmx());
-  Instruction instr;
-
   int num_entries = 0;
+
+  Instruction instr;
+  Disassembler disasm(GetCurrentAmx());
   while (disasm.Decode(instr)) {
     num_entries++;
   }
 
-  SetRuntimeData(RuntimeDataInstrTableSize, num_entries);
-  SetRuntimeData(RuntimeDataInstrTablePtr, asm_.getCodeSize());
+  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(asm_.getCode());
+  rib->instr_table = asm_.getCodeSize();
+  rib->instr_table_size = num_entries;
 
   InstrTableEntry dummy;
   for (int i = 0; i < num_entries; i++) {
@@ -1280,7 +1282,8 @@ void CompilerAsmjit::EmitInstrTable() {
 
 // int AMXJIT_CDECL Exec(cell index, cell *retval);
 void CompilerAsmjit::EmitExec() {
-  SetRuntimeData(RuntimeDataExecPtr, asm_.getCodeSize());
+  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(asm_.getCode());
+  rib->exec = asm_.getCodeSize();
 
   Label stack_heap_overflow_label = asm_.newLabel();
   Label heap_underflow_label = asm_.newLabel();
