@@ -86,14 +86,14 @@ class InstrTableEntry {
   void *start;
 };
 
-void *AMXJIT_CDECL GetInstrStartPtr(cell address,
-                                    InstrTableEntry *instr_table,
-                                    std::size_t instr_table_size) {
-  assert(instr_table != 0);
-  assert(instr_table_size > 0);
+void *AMXJIT_CDECL GetInstrStartPtr(cell address, RuntimeInfoBlock *rib) {
+  assert(rib->instr_table != 0);
+  assert(rib->instr_table_size > 0);
+  InstrTableEntry *instr_table =
+    reinterpret_cast<InstrTableEntry*>(rib->instr_table);
   InstrTableEntry target(address);
   std::pair<InstrTableEntry*, InstrTableEntry*> result = 
-    std::equal_range(instr_table, instr_table + instr_table_size, target);
+    std::equal_range(instr_table, instr_table + rib->instr_table_size, target);
   if (result.first != result.second) {
     return result.first->start;
   }
@@ -122,6 +122,7 @@ EntryPoint CompilerOutputAsmjit::GetEntryPoint() const {
 
 CompilerAsmjit::CompilerAsmjit():
   asm_(),
+  rib_start_label_(asm_.newLabel()),
   exec_ptr_label_(asm_.newLabel()),
   amx_ptr_label_(asm_.newLabel()),
   ebp_ptr_label_(asm_.newLabel()),
@@ -1243,6 +1244,7 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
 
 void CompilerAsmjit::EmitRuntimeInfo() {
   // This must have the same structure as RuntimeInfoBlock.
+  asm_.bind(rib_start_label_);
   asm_.bind(exec_ptr_label_);
     asm_.dd(0);
   asm_.bind(amx_ptr_label_);
@@ -1351,11 +1353,11 @@ void CompilerAsmjit::EmitExec() {
     asm_.jz(public_not_found_label);
 
     // Get pointer to the start of the function.
-    asm_.push(dword_ptr(instr_table_size_label_));
-    asm_.push(dword_ptr(instr_table_ptr_label_));
+    asm_.lea(ecx, dword_ptr(rib_start_label_));
+    asm_.push(ecx);
     asm_.push(eax);
     asm_.call(asmjit_cast<void*>(&GetInstrStartPtr));
-    asm_.add(esp, 12);
+    asm_.add(esp, 8);
     asm_.mov(dword_ptr(ebp, var_address), eax);
 
     // Push size of arguments and reset parameter count.
@@ -1529,11 +1531,11 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.push(eax);
     asm_.push(ecx);
 
-    asm_.push(dword_ptr(instr_table_size_label_));
-    asm_.push(dword_ptr(instr_table_ptr_label_));
+    asm_.lea(ecx, dword_ptr(rib_start_label_));
+    asm_.push(ecx);
     asm_.push(edx);
     asm_.call(asmjit_cast<void*>(&GetInstrStartPtr));
-    asm_.add(esp, 12);
+    asm_.add(esp, 8);
     asm_.mov(edx, eax); // address
 
     asm_.pop(ecx);

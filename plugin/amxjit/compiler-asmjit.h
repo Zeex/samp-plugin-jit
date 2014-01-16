@@ -215,6 +215,7 @@ class CompilerAsmjit: public Compiler {
  private:
   AsmJit::X86Assembler asm_;
 
+  AsmJit::Label rib_start_label_;
   AsmJit::Label exec_ptr_label_;
   AsmJit::Label amx_ptr_label_;
   AsmJit::Label ebp_ptr_label_;
