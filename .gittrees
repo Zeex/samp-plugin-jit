@@ -1,0 +1,4 @@
+[subtree "deps/subhook"]
+	url = https://github.com/Zeex/subhook.git
+	path = deps/subhook
+	branch = master
