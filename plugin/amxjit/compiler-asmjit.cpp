@@ -28,6 +28,7 @@
 #include <cstring>
 #include <string>
 #include "compiler-asmjit.h"
+#include "cstdint.h"
 #include "disasm.h"
 
 // AsmJit core
@@ -56,14 +57,14 @@ using AsmJit::st;
 namespace {
 
 struct RuntimeInfoBlock {
-  intptr_t exec;
-  intptr_t amx;
-  intptr_t ebp;
-  intptr_t esp;
-  intptr_t reset_ebp;
-  intptr_t reset_esp;
-  intptr_t instr_table;
-  intptr_t instr_table_size;
+  amxjit::intptr_t exec;
+  amxjit::intptr_t amx;
+  amxjit::intptr_t ebp;
+  amxjit::intptr_t esp;
+  amxjit::intptr_t reset_ebp;
+  amxjit::intptr_t reset_esp;
+  amxjit::intptr_t instr_table;
+  amxjit::intptr_t instr_table_size;
 };
 
 cell AMXJIT_CDECL GetPublicAddress(AMX *amx, int index) {

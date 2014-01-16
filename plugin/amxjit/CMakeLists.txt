@@ -17,6 +17,7 @@ set(sources
   amxptr.h
   compiler.cpp
   compiler.h
+  cstdint.h
   disasm.cpp
   disasm.h
   jit.cpp
