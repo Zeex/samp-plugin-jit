@@ -1,8 +1,6 @@
 project(jit)
 
 cmake_minimum_required(VERSION 2.8.6)
-cmake_policy(SET CMP0043 OLD)
-
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 include(GetGitRevisionDescription)
