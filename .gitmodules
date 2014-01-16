@@ -1,6 +1,0 @@
-[submodule "third_party/subhook"]
-	path = third_party/subhook
-	url = git://github.com/Zeex/subhook.git
-[submodule "third_party/asmjit"]
-	path = third_party/asmjit
-	url = git://github.com/Zeex/asmjit.git

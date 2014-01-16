@@ -7,8 +7,8 @@ set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS
              ASMJIT_API= SUBHOOK_STATIC)
 
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY INCLUDE_DIRECTORIES
-            ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/asmjit/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/subhook)
+             ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/asmjit/src
+             ${CMAKE_CURRENT_SOURCE_DIR}/subhook)
 
 add_subdirectory(asmjit/asmjit)
 add_subdirectory(subhook)
