@@ -62,9 +62,8 @@ class Compiler {
   Compiler();
   virtual ~Compiler();
 
-  // Compiles the specified AMX script. The optional error hander is called at
-  // most only once - on first compile error.
-  CompilerOutput *Compile(AMXPtr amx, CompileErrorHandler *errorHandler = 0);
+  // Compiles the specified AMX script.
+  CompilerOutput *Compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
 
  protected:
   // This method is called just before the compilation begins.
@@ -83,14 +82,14 @@ class Compiler {
 
   // Returnss the current AMX instance.
   AMXPtr GetCurrentAmx() const {
-    assert(compiling);
-    return currentAmx;
+    assert(is_compiling_);
+    return current_amx_;
   }
 
   // Returns currently processed instruction.
   const Instruction &GetCurrentInstr() const {
-    assert(compiling);
-    return *currentInstr;
+    assert(is_compiling_);
+    return *current_instr_;
   }
 
   // Per-opcode methods.
@@ -208,15 +207,15 @@ class Compiler {
   virtual void dec(cell address) = 0;
   virtual void dec_s(cell offset) = 0;
   virtual void dec_i() = 0;
-  virtual void movs(cell numBytes) = 0;
-  virtual void cmps(cell numBytes) = 0;
-  virtual void fill(cell numBytes) = 0;
-  virtual void halt(cell errorCode) = 0;
+  virtual void movs(cell num_bytes) = 0;
+  virtual void cmps(cell num_bytes) = 0;
+  virtual void fill(cell num_bytes) = 0;
+  virtual void halt(cell error_code) = 0;
   virtual void bounds(cell value) = 0;
   virtual void sysreq_pri() = 0;
   virtual void sysreq_c(cell index, const char *name) = 0;
   virtual void sysreq_d(cell address, const char *name) = 0;
-  virtual void switch_(const CaseTable &caseTable) = 0;
+  virtual void switch_(const CaseTable &case_table) = 0;
   virtual void casetbl() = 0;
   virtual void swap_pri() = 0;
   virtual void swap_alt() = 0;
@@ -225,9 +224,9 @@ class Compiler {
   virtual void break_() = 0;
 
  private:
-   bool compiling;
-   AMXPtr currentAmx;
-   Instruction *currentInstr;
+   bool is_compiling_;
+   AMXPtr current_amx_;
+   Instruction *current_instr_;
 };
 
 } // namespace amxjit

@@ -29,7 +29,7 @@
 
 namespace amxjit {
 
-const Instruction::StaticInfoTableEntry Instruction::info[NUM_OPCODES] = {
+const Instruction::StaticInstrInfo Instruction::info[NUM_OPCODES] = {
   {"none",           REG_NONE,             REG_NONE},
   {"load.pri",       REG_NONE,             REG_PRI},
   {"load.alt",       REG_NONE,             REG_ALT},
@@ -190,43 +190,38 @@ const Instruction::StaticInfoTableEntry Instruction::info[NUM_OPCODES] = {
   {"break",          REG_NONE,             REG_NONE}
 };
 
-Instruction::Instruction() 
- : address(0),
-   opcode(OP_NONE)
+Instruction::Instruction():
+  address_(0),
+  opcode_(OP_NONE)
 {
 }
 
-const char *Instruction::GetName() const {
-  if (opcode.GetId() >= 0 && opcode.GetId() < NUM_OPCODES) {
-    return info[opcode.GetId()].name;
+std::size_t Instruction::size() const {
+  return sizeof(cell) * (1 + operands_.size());
+}
+
+cell Instruction::operand(std::size_t index) const {
+  assert(index < operands_.size());
+  return operands_[index];
+}
+
+const char *Instruction::name() const {
+  if (opcode_.GetId() >= 0 && opcode_.GetId() < NUM_OPCODES) {
+    return info[opcode_.GetId()].name;
   }
   return 0;
 }
 
-int Instruction::GetSrcRegs() const {
-  if (opcode.GetId() >= 0 && opcode.GetId() < NUM_OPCODES) {
-    return info[opcode.GetId()].srcRegs;
-  }
-  return 0;
-}
-
-int Instruction::GetDstRegs() const {
-  if (opcode.GetId() >= 0 && opcode.GetId() < NUM_OPCODES) {
-    return info[opcode.GetId()].dstRegs;
-  }
-  return 0;
-}
-
-std::string Instruction::AsString() const {
+std::string Instruction::ToString() const {
   std::stringstream stream;
-  if (GetName() != 0) {
-    stream << GetName();
+  if (name() != 0) {
+    stream << name();
   } else {
     stream << std::setw(8) << std::setfill('0')
-           << std::hex << opcode.GetId();
+           << std::hex << opcode_.GetId();
   }
-  for (std::vector<cell>::const_iterator iterator = operands.begin();
-      iterator != operands.end(); ++iterator) {
+  for (std::vector<cell>::const_iterator iterator = operands_.begin();
+      iterator != operands_.end(); ++iterator) {
     stream << ' ';
     cell oper = *iterator;
     if (oper < 0 || oper > 9) {
@@ -239,33 +234,76 @@ std::string Instruction::AsString() const {
   return stream.str();
 }
 
-Disassembler::Disassembler(AMXPtr amx)
- : amx(amx),
-   ip(0)
-{
+CaseTable::CaseTable(AMXPtr amx_, cell offset) {
+  struct CaseRecord {
+    cell value;    // case value
+    cell address;  // address to jump to (absolute)
+  } *case_table;
+
+  case_table = reinterpret_cast<CaseRecord*>(offset + sizeof(cell));
+  int numRecords = *(reinterpret_cast<cell*>(offset) + 1);
+
+  for (int i = 0; i <= numRecords; i++) {
+    cell dest = case_table[i].address - reinterpret_cast<cell>(amx_.code());
+    records_.push_back(std::make_pair(case_table[i].value, dest));
+  }
 }
 
-bool Disassembler::Decode(Instruction &instr, bool *error) {
-  if (error != 0) {
-    *error = false;
+int CaseTable::num_cases() const {
+  return records_.size() - 1;
+}
+
+cell CaseTable::GetCaseValue(cell index) const {
+  return records_[index + 1].first;
+}
+
+cell CaseTable::GetCaseAddress(cell index) const {
+  return records_[index + 1].second;
+}
+
+cell CaseTable::GetDefaultAddress() const {
+  return records_[0].second;
+}
+
+cell CaseTable::FindMinValue() const {
+  assert(num_cases() > 0);
+  const cell *min_value = 0;
+  for (int i = 0; i < num_cases(); i++) {
+    const cell *value = &records_[i + 1].first;
+    if (min_value == 0 || *value < *min_value) {
+      min_value = value;
+    }
   }
+  return *min_value;
+}
 
-  if (ip < 0 ||
-      amx.GetHeader()->cod + ip >= amx.GetHeader()->dat) {
-    // Went out of code.
-    return false;
+cell CaseTable::FindMaxValue() const {
+  assert(num_cases() > 0);
+  const cell *max_value = 0;
+  for (int i = 0; i < num_cases(); i++) {
+    const cell *value = &records_[i + 1].first;
+    if (max_value == 0 || *value > *max_value) {
+      max_value = value;
+    }
   }
+  return *max_value;
+}
 
-  instr.GetOperands().clear();
-  instr.SetAddress(ip);
+bool DecodeInstruction(AMXPtr amx, cell address) {
+  static Instruction instr;
+  return DecodeInstruction(amx, address, instr);
+}
 
-  Opcode opcode(*reinterpret_cast<cell*>(amx.GetCode() + ip));
+bool DecodeInstruction(AMXPtr amx, cell address, Instruction &instr) {
+  instr.RemoveOperands();
+  instr.set_address(address);
 
-  ip += sizeof(cell);
-  instr.SetOpcode(opcode);
+  Opcode opcode(*reinterpret_cast<cell*>(amx.code() + address));
+
+  address += sizeof(cell);
+  instr.set_opcode(opcode);
 
   switch (opcode.GetId()) {
-    // Instructions with one operand.
     case OP_LOAD_PRI:   case OP_LOAD_ALT:   case OP_LOAD_S_PRI:
     case OP_LOAD_S_ALT: case OP_LREF_PRI:   case OP_LREF_ALT:
     case OP_LREF_S_PRI: case OP_LREF_S_ALT: case OP_LODB_I:
@@ -290,11 +328,9 @@ bool Disassembler::Decode(Instruction &instr, bool *error) {
     case OP_CMPS:       case OP_FILL:       case OP_HALT:
     case OP_BOUNDS:     case OP_CALL:       case OP_SYSREQ_C:
     case OP_PUSH_ADR:   case OP_SYSREQ_D:   case OP_SWITCH:
-      instr.AddOperand(*reinterpret_cast<cell*>(amx.GetCode() + ip));
-      ip += sizeof(cell);
+      instr.AppendOperand(*reinterpret_cast<cell*>(amx.code() + address));
+      address += sizeof(cell);
       break;
-
-    // Instructions with no operands.
     case OP_LOAD_I:     case OP_STOR_I:     case OP_LIDX:
     case OP_IDXADDR:    case OP_MOVE_PRI:   case OP_MOVE_ALT:
     case OP_XCHG:       case OP_PUSH_PRI:   case OP_PUSH_ALT:
@@ -316,86 +352,43 @@ bool Disassembler::Decode(Instruction &instr, bool *error) {
     case OP_JUMP_PRI:   case OP_SWAP_PRI:   case OP_SWAP_ALT:
     case OP_NOP:        case OP_BREAK:
       break;
-
-    // Special instructions.
     case OP_CASETBL: {
-      int num = *reinterpret_cast<cell*>(amx.GetCode() + ip) + 1;
-      // num case records follow, each is 2 cells big.
-      for (int i = 0; i < num * 2; i++) {
-        instr.AddOperand(*reinterpret_cast<cell*>(amx.GetCode() + ip));
-        ip += sizeof(cell);
+      int num_cases = *reinterpret_cast<cell*>(amx.code() + address) + 1;
+      for (int i = 0; i < num_cases * 2; i++) {
+        instr.AppendOperand(*reinterpret_cast<cell*>(amx.code() + address));
+        address += sizeof(cell);
       }
       break;
     }
-
     default:
-      if (error != 0) {
-        *error = true;
-      }
       return false;
   }
 
   return true;
 }
 
-CaseTable::CaseTable(AMXPtr amx, cell offset) {
-  struct CaseRecord {
-    cell value;    // case value
-    cell address;  // address to jump to (absolute)
-  } *caseTable;
-
-  caseTable = reinterpret_cast<CaseRecord*>(offset + sizeof(cell));
-  int numRecords = *(reinterpret_cast<cell*>(offset) + 1);
-
-  for (int i = 0; i <= numRecords; i++) {
-    cell dest = caseTable[i].address - reinterpret_cast<cell>(amx.GetCode());
-    records.push_back(std::make_pair(caseTable[i].value, dest));
-  }
-}
-
-int CaseTable::GetNumCases() const {
-  return records.size() - 1;
-}
-
-cell CaseTable::GetValue(cell index) const {
-  return records[index + 1].first;
-}
-
-cell CaseTable::GetAddress(cell index) const {
-  return records[index + 1].second;
-}
-
-cell CaseTable::GetDefaultAddress() const {
-  return records[0].second;
-}
-
-cell CaseTable::FindMinValue() const {
-  assert(GetNumCases() > 0);
-
-  const cell *minValue = 0;
-  for (int i = 0; i < GetNumCases(); i++) {
-    const cell *value = &records[i + 1].first;
-    if (minValue == 0 || *value < *minValue) {
-      minValue = value;
+bool Disassembler::Decode(Instruction &instr) {
+  if (cur_address_ >= 0 &&
+      amx_.header()->cod + cur_address_ < amx_.header()->dat) {
+    if (DecodeInstruction(amx_, cur_address_, instr)) {
+      cur_address_ += instr.size();
+      return true;
     }
   }
-
-  return *minValue;
+  return false;
 }
 
-cell CaseTable::FindMaxValue() const {
-  assert(GetNumCases() > 0);
-
-  const cell *maxValue = 0;
-  for (int i = 0; i < GetNumCases(); i++) {
-    const cell *value = &records[i + 1].first;
-    if (maxValue == 0 || *value > *maxValue) {
-      maxValue = value;
+bool Disassembler::Decode(Instruction &instr, bool &error) {
+  bool result = false;
+  if (cur_address_ >= 0 &&
+      amx_.header()->cod + cur_address_ < amx_.header()->dat) {
+    result = DecodeInstruction(amx_, cur_address_, instr);
+    if (result) {
+      cur_address_ += instr.size();
     }
+    error = !result;
   }
-
-  return *maxValue;
+  return result;
 }
-
 
 } // namespace amxjit

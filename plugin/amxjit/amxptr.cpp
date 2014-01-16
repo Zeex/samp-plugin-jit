@@ -22,35 +22,84 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cassert>
 #include "amxptr.h"
 
 namespace amxjit {
 
+AMX *AMXPtr::AccessAmx() {
+  assert(amx_ != 0);
+  return amx_;
+}
+
+const AMX *AMXPtr::AccessAmx() const {
+  assert(amx_ != 0);
+  return amx_;
+}
+
+AMX_HEADER *AMXPtr::header() const {
+  return reinterpret_cast<AMX_HEADER*>(AccessAmx()->base);
+}
+
+unsigned char *AMXPtr::code() const {
+  return AccessAmx()->base + header()->cod;
+}
+
+std::size_t AMXPtr::code_size() const {
+  return header()->dat - header()->cod;
+}
+
+unsigned char *AMXPtr::data() const {
+  return AccessAmx()->data != 0 ? AccessAmx()->data
+                                : AccessAmx()->base + header()->dat;
+}
+std::size_t AMXPtr::data_size() const {
+  return header()->hea - header()->dat;
+}
+
+int AMXPtr::num_publics() const {
+  return (header()->natives - header()->publics)
+          / header()->defsize;
+}
+
+int AMXPtr::num_natives() const {
+  return (header()->libraries - header()->natives)
+          / header()->defsize;
+}
+
+AMX_FUNCSTUBNT *AMXPtr::publics() const {
+  return reinterpret_cast<AMX_FUNCSTUBNT*>(header()->publics
+                                            + AccessAmx()->base);
+}
+
+AMX_FUNCSTUBNT *AMXPtr::natives() const {
+  return reinterpret_cast<AMX_FUNCSTUBNT*>(header()->natives
+                                            + AccessAmx()->base);
+}
+
 cell AMXPtr::GetPublicAddress(cell index) const {
   if (index == AMX_EXEC_MAIN) {
-    AMX_HEADER *header = GetHeader();
-    if (header->cip > 0) {
-      return header->cip;
+    AMX_HEADER *hdr = header();
+    if (hdr->cip > 0) {
+      return hdr->cip;
     }
-  } else if (index >= 0 || index < GetNumPublics()) {
-    AMX_FUNCSTUBNT *publics = GetPublics();
-    return publics[index].address;
+  } else if (index >= 0 || index < num_publics()) {
+    return publics()[index].address;
   }
   return 0;
 }
 
 cell AMXPtr::GetNativeAddress(cell index) const {
-  if (index >= 0 && index < GetNumNatives()) {
-    AMX_FUNCSTUBNT *natives = GetNatives();
-    return natives[index].address;
+  if (index >= 0 && index < num_natives()) {
+    return natives()[index].address;
   }
   return 0;
 }
 
 cell AMXPtr::FindPublic(cell address) const {
-  int numPublics = GetNumPublics();
-  AMX_FUNCSTUBNT *publics = GetPublics();
-  for (int i = 0; i < numPublics; i++) {
+  int n = num_publics();
+  AMX_FUNCSTUBNT *publics = this->publics();
+  for (int i = 0; i < n; i++) {
     if (publics[i].address == static_cast<ucell>(address)) {
       return i;
     }
@@ -59,9 +108,9 @@ cell AMXPtr::FindPublic(cell address) const {
 }
 
 cell AMXPtr::FindNative(cell address) const {
-  int numNatives = GetNumNatives();
-  AMX_FUNCSTUBNT *natives = GetNatives();
-  for (int i = 0; i < numNatives; i++) {
+  int n = num_natives();
+  AMX_FUNCSTUBNT *natives = this->natives();
+  for (int i = 0; i < n; i++) {
     if (natives[i].address == static_cast<ucell>(address)) {
       return i;
     }
@@ -70,36 +119,19 @@ cell AMXPtr::FindNative(cell address) const {
 }
 
 const char *AMXPtr::GetPublicName(cell index) const {
-  if (index >= 0 && index < GetNumPublics()) {
+  if (index >= 0 && index < num_publics()) {
     return reinterpret_cast<char*>(AccessAmx()->base
-                                   + GetPublics()[index].nameofs);
+                                   + publics()[index].nameofs);
   }
   return 0;
 }
 
 const char *AMXPtr::GetNativeName(cell index) const {
-  if (index >= 0 && index < GetNumNatives()) {
+  if (index >= 0 && index < num_natives()) {
     return reinterpret_cast<char*>(AccessAmx()->base
-                                   + GetNatives()[index].nameofs);
+                                   + natives()[index].nameofs);
   }
   return 0;
-}
-
-cell *AMXPtr::PushStack(cell value) {
-  AccessAmx()->stk -= sizeof(cell);
-  cell *s = GetStack();
-  *s = value;
-  return s;
-}
-
-cell AMXPtr::PopStack() {
-  cell *s = GetStack();
-  AccessAmx()->stk += sizeof(cell);
-  return *s;
-}
-
-void AMXPtr::PopStack(int ncells) {
-  AccessAmx()->stk += ncells * sizeof(cell);
 }
 
 } // namespace amxjit

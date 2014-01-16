@@ -25,70 +25,36 @@
 #ifndef AMXJIT_AMXPTR_H
 #define AMXJIT_AMXPTR_H
 
-#include <cassert>
 #include <cstddef>
 #include <amx/amx.h>
 
 namespace amxjit {
 
-// AMXPtr is a lightweight wrapper around the AMX structure with a number
-// of useful methods. Instances of this class can be passed by value without
-// a harm just like raw AMX pointers and are in fact implicitly converted to
-// and from AMX* when possible.
 class AMXPtr {
  public:
-  AMXPtr() : amx(0) {}
-  AMXPtr(AMX *amx) : amx(amx) {}
+  AMXPtr(): amx_(0) {}
+  AMXPtr(AMX *amx): amx_(amx) {}
 
-  operator AMX*() { return amx; }
-  operator AMX*() const { return amx; }
+  operator AMX*() { return amx_; }
+  operator AMX*() const { return amx_; }
 
   AMX *operator->() { return AccessAmx(); }
   const AMX *operator->() const { return AccessAmx(); }
 
-  AMX *GetStruct() const {
-    return amx;
-  }
+  AMX *raw() const { return amx_; }
+  AMX_HEADER *header() const;
 
-  AMX_HEADER *GetHeader() const {
-    return reinterpret_cast<AMX_HEADER*>(AccessAmx()->base);
-  }
+  unsigned char *code() const;
+  unsigned char *data() const;
 
-  unsigned char *GetCode() const {
-    return AccessAmx()->base + GetHeader()->cod;
-  }
+  std::size_t code_size() const;
+  std::size_t data_size() const ;
 
-  std::size_t GetCodeSize() const {
-    return GetHeader()->dat - GetHeader()->cod;
-  }
+  int num_publics() const;
+  int num_natives() const;
 
-  unsigned char *GetData() const {
-    return AccessAmx()->data != 0 ? AccessAmx()->data
-                                  : AccessAmx()->base + GetHeader()->dat;
-  }
-  std::size_t GetDataSize() const {
-    return GetHeader()->hea - GetHeader()->dat;
-  }
-
-  int GetNumPublics() const {
-    return (GetHeader()->natives - GetHeader()->publics)
-            / GetHeader()->defsize;
-  }
-
-  int GetNumNatives() const {
-    return (GetHeader()->libraries - GetHeader()->natives)
-            / GetHeader()->defsize;
-  }
-
-  AMX_FUNCSTUBNT *GetPublics() const {
-    return reinterpret_cast<AMX_FUNCSTUBNT*>(GetHeader()->publics
-                                             + AccessAmx()->base);
-  }
-
-  AMX_FUNCSTUBNT *GetNatives() const {
-    return reinterpret_cast<AMX_FUNCSTUBNT*>(GetHeader()->natives
-                                             + AccessAmx()->base);
-  }
+  AMX_FUNCSTUBNT *publics() const;
+  AMX_FUNCSTUBNT *natives() const;
 
   cell GetPublicAddress(cell index) const;
   cell GetNativeAddress(cell index) const;
@@ -99,32 +65,12 @@ class AMXPtr {
   cell FindPublic(cell address) const;
   cell FindNative(cell address) const;
 
-  cell *GetStack() const {
-    return reinterpret_cast<cell*>(GetData() + AccessAmx()->stk);
-  }
-
-  cell GetStackSize() const {
-    return GetHeader()->stp - GetHeader()->hea;
-  }
-
-  cell *PushStack(cell value);
-
-  cell PopStack();
-  void PopStack(int ncells);
+ private:
+  AMX *AccessAmx();
+  const AMX *AccessAmx() const;
 
  private:
-  AMX *AccessAmx() {
-    assert(amx != 0);
-    return amx;
-  }
-
-  const AMX *AccessAmx() const {
-    assert(amx != 0);
-    return amx;
-  }
-
- private:
-  AMX *amx;
+  AMX *amx_;
 };
 
 } // namespace amxjit

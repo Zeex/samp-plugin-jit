@@ -40,13 +40,14 @@ class JIT {
   JIT(AMXPtr amx);
   ~JIT();
 
-  // Compiles the AMX script. If something goes wrong it calls the specified
-  // error handler. The handler is called only once becase compilation stops
-  // after first error.
-  bool Compile(Compiler *compiler, CompileErrorHandler *errorHandler = 0);
+  // Compiles the AMX script. If something goes wrong it calls the
+  // error handler. The handler is called only once as compilation
+  // stops after the first error.
+  bool Compile(Compiler *compiler,
+               CompileErrorHandler *error_handler = 0);
 
-  // Executes a public function and returns one of AMX error codes. Use this
-  // method as a drop-in replacement for amx_Exec().
+  // Executes a public function and returns one of AMX error codes.
+  // Use this method as a drop-in replacement for amx_Exec().
   int Exec(cell index, cell *retval);
 
  private:

@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Zeex
+// Copyright (c) 2013-2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 
 namespace amxjit {
 
-class CompilerLLVM : public Compiler {
+class CompilerLLVM: public Compiler {
  public:
   CompilerLLVM();
   virtual ~CompilerLLVM();
@@ -45,6 +45,7 @@ class CompilerLLVM : public Compiler {
   virtual void Abort();
   virtual CompilerOutput *Finish();
 
+ protected:
   virtual void load_pri(cell address);
   virtual void load_alt(cell address);
   virtual void load_s_pri(cell offset);
@@ -159,15 +160,15 @@ class CompilerLLVM : public Compiler {
   virtual void dec(cell address);
   virtual void dec_s(cell offset);
   virtual void dec_i();
-  virtual void movs(cell numBytes);
-  virtual void cmps(cell numBytes);
-  virtual void fill(cell numBytes);
-  virtual void halt(cell errorCode);
+  virtual void movs(cell num_bytes);
+  virtual void cmps(cell num_bytes);
+  virtual void fill(cell num_bytes);
+  virtual void halt(cell error_code);
   virtual void bounds(cell value);
   virtual void sysreq_pri();
   virtual void sysreq_c(cell index, const char *name);
   virtual void sysreq_d(cell address, const char *name);
-  virtual void switch_(const CaseTable &caseTable);
+  virtual void switch_(const CaseTable &case_table);
   virtual void casetbl();
   virtual void swap_pri();
   virtual void swap_alt();
@@ -184,7 +185,7 @@ class CompilerLLVM : public Compiler {
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerLLVM);
 };
 
-class CompilerOutputLLVM : public CompilerOutput {
+class CompilerOutputLLVM: public CompilerOutput {
  public:
   CompilerOutputLLVM() {}
   virtual ~CompilerOutputLLVM() {}

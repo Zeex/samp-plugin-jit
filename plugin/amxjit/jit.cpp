@@ -29,9 +29,9 @@
 
 namespace amxjit {
 
-JIT::JIT(AMXPtr amx)
- : amx(amx),
-   output(0)
+JIT::JIT(AMXPtr amx):
+  amx(amx),
+  output(0)
 {
 }
 
@@ -39,15 +39,15 @@ JIT::~JIT() {
   delete output;
 }
 
-bool JIT::Compile(Compiler *compiler, CompileErrorHandler *errorHandler) {
+bool JIT::Compile(Compiler *compiler, CompileErrorHandler *error_handler) {
   assert(compiler != 0 && "Compiler must not be null");
-  return (output = compiler->Compile(amx, errorHandler)) != 0;
+  return (output = compiler->Compile(amx, error_handler)) != 0;
 }
 
 int JIT::Exec(cell index, cell *retval) {
   assert(output != 0 && "Compilation previously failed");
-  EntryPoint entryPoint = output->GetEntryPoint();
-  return entryPoint(index, retval);
+  EntryPoint entry_point = output->GetEntryPoint();
+  return entry_point(index, retval);
 }
 
 } // namespace amxjit

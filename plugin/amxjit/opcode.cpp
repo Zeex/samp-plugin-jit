@@ -27,40 +27,40 @@
 
 namespace amxjit {
 
-static cell *GetOpcodeMap() {
+static cell *GetOpcodeTable() {
   #if defined __GNUC__
-    cell *opcodeMap;
+    cell *opcode_table;
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
-    amx_Exec(&amx, reinterpret_cast<cell*>(&opcodeMap), 0);
+    amx_Exec(&amx, reinterpret_cast<cell*>(&opcode_table), 0);
     amx.flags &= ~AMX_FLAG_BROWSE;
-    return opcodeMap;
+    return opcode_table;
   #else
     return 0;
   #endif
 }
 
-static cell LookupOpcode(cell *opcodeMap, cell opcode) {
+static cell FindOpcode(cell *opcode_table, cell opcode) {
   #if defined __GNUC__
-    if (opcodeMap != 0) {
+    if (opcode_table != 0) {
       // Search for this opcode in the opcode relocation table.
       for (int i = 0; i < NUM_OPCODES; i++) {
-        if (opcodeMap[i] == opcode) {
+        if (opcode_table[i] == opcode) {
           return i;
         }
       }
     }
     return opcode;
   #else
-    (void)opcodeMap;
+    (void)opcode_table;
     return opcode;
   #endif
 }
 
 OpcodeID RelocateOpcode(cell opcode) {
   #if defined __GNUC__
-    static cell *opcodeMap = GetOpcodeMap();
-    opcode = LookupOpcode(opcodeMap, opcode);
+    static cell *opcode_table = GetOpcodeTable();
+    opcode = FindOpcode(opcode_table, opcode);
   #endif
 	return static_cast<OpcodeID>(opcode);
 }

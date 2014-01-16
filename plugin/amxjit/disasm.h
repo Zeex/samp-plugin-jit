@@ -25,7 +25,7 @@
 #ifndef AMXJIT_DISASM_H
 #define AMXJIT_DISASM_H
 
-#include <cassert>
+#include <cstddef>
 #include <vector>
 #include <utility>
 #include "amxptr.h"
@@ -33,10 +33,8 @@
 
 namespace amxjit {
 
-// REG_NONE is defined in WinNT.h.
-#ifdef REG_NONE
-  #undef REG_NONE
-#endif
+// Win32 defines REG_NONE in WinNT.h.
+#undef REG_NONE
 
 enum Register {
   REG_NONE = 0,
@@ -55,114 +53,91 @@ class Instruction {
  public:
   Instruction();
 
- public:
-  int GetSize() const {
-    return sizeof(cell) * (1 + operands.size());
+  const char *name() const;
+  std::size_t size() const;
+
+  const cell address() const { return address_; }
+  void set_address(cell address) { address_ = address; }
+
+  Opcode opcode() const { return opcode_; }
+  void set_opcode(Opcode opcode) { opcode_ = opcode; }
+
+  cell operand(std::size_t index = 0) const;
+
+  const std::vector<cell> &operands() const {
+    return operands_;
+  }
+  void set_operands(std::vector<cell> operands) {
+    operands_ = operands;
   }
 
-  const cell GetAddress() const {
-    return address;
-  }
+  void AppendOperand(cell value) { operands_.push_back(value); }
+  void RemoveOperands() { operands_.clear(); }
 
-  void SetAddress(cell address) {
-    this->address = address;
-  }
-
-  Opcode GetOpcode() const {
-    return opcode;
-  }
-
-  void SetOpcode(Opcode opcode) {
-    this->opcode = opcode;
-  }
-
-  cell GetOperand(unsigned int index = 0u) const {
-    assert(index < operands.size());
-    return operands[index];
-  }
-
-  std::vector<cell> &GetOperands() {
-    return operands;
-  }
-
-  const std::vector<cell> &GetOperands() const {
-    return operands;
-  }
-
-  void SetOperands(std::vector<cell> operands) {
-    operands = operands;
-  }
-
-  void AddOperand(cell value) {
-    operands.push_back(value);
-  }
-
-  int GetNumOperands() const {
-    return operands.size();
-  }
-
- public:
-  const char *GetName() const;
-
-  int GetSrcRegs() const;
-  int GetDstRegs() const;
-
-  std::string AsString() const;
+  std::string ToString() const;
 
  private:
-  cell address;
-  Opcode opcode;
-  std::vector<cell> operands;
+  cell address_;
+  Opcode opcode_;
+  std::vector<cell> operands_;
 
  private:
-  struct StaticInfoTableEntry {
+  struct StaticInstrInfo {
     const char *name;
-    int srcRegs;
-    int dstRegs;
+    int src_regs;
+    int dst_regs;
   };
-
-  static const StaticInfoTableEntry info[NUM_OPCODES];
-};
-
-class Disassembler {
- public:
-  Disassembler(AMXPtr amx);
-
- public:
-  // Gets/sets the instruction pointer.
-  cell GetInstrPtr() const { return ip; }
-  void SetInstrPtr(cell ip) { this->ip = ip; }
-
-  // Decodes current instruction and returns true until the end of code gets
-  // reached or an error occurs. The optional error argument is set to true
-  // on error.
-  bool Decode(Instruction &instr, bool *error = 0);
-
- private:
-  AMXPtr amx;
-  cell ip;
+  static const StaticInstrInfo info[NUM_OPCODES];
 };
 
 class CaseTable {
  public:
   CaseTable(AMXPtr amx, cell offset);
 
-  // Returns the total number of records in the case table.
-  int GetNumCases() const;
+  // Returns the total number of records_ in the case table.
+  int num_cases() const;
 
-  // Returns the address of a 'case X:' block at the specified index.
-  cell GetValue(cell index) const;
-  cell GetAddress(cell index) const;
+  // Returns the address of a "case X:" block.
+  cell GetCaseValue(cell index) const;
+  cell GetCaseAddress(cell index) const;
 
   // Finds the minimum and maximum values in the table.
   cell FindMinValue() const;
   cell FindMaxValue() const;
 
-  // Returns the address of the 'default:' block.
+  // Returns the address of the "default:" block.
   cell GetDefaultAddress() const;
 
  private:
-  std::vector<std::pair<cell, cell> > records;
+  std::vector<std::pair<cell, cell> > records_;
+};
+
+// Decodes a single AMX instruction at the specified address and
+// stored the result in instr. Returns false on error.
+bool DecodeInstruction(AMXPtr amx, cell address);
+bool DecodeInstruction(AMXPtr amx, cell address, Instruction &instr);
+
+// Disassembler is merely a convenience wrapper around
+// DecodeInstruction. It's well suited for whlie loops
+// like the following:
+//
+//   Instruction instr;
+//   Disassembler disasm(amx);
+//
+//   while (disasm.Decode(instr)) {
+//     ... do something with instr ...
+//   }
+//
+// The error argument is set to true if DecodeInstruction returns
+// an error (usually means an invalid instruction).
+class Disassembler {
+ public:
+  Disassembler(AMXPtr amx): amx_(amx), cur_address_() {}
+  bool Decode(Instruction &instr);
+  bool Decode(Instruction &instr, bool &error);
+ private:
+  AMXPtr amx_;
+  cell cur_address_;
 };
 
 } // namespace amxjit

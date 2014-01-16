@@ -28,128 +28,128 @@
 
 namespace amxjit {
 
-Compiler::Compiler()
- : compiling(false)
+Compiler::Compiler():
+  is_compiling_(false)
 {
 }
 
 Compiler::~Compiler() {
 }
 
-CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler) {
+CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *error_handler) {
   Instruction instr;
 
-  compiling = true;
-  currentAmx = amx;
-  currentInstr = &instr;
+  is_compiling_ = true;
+  current_amx_ = amx;
+  current_instr_ = &instr;
 
   Setup();
 
-  Disassembler disas(amx);
+  Disassembler disasm(amx);
   bool error = false;
 
-  while (!error && disas.Decode(instr, &error)) {
+  while (disasm.Decode(instr, error)) {
     if (!Process(instr)) {
       error = true;
       break;
     }
 
-    switch (instr.GetOpcode().GetId()) {
+    switch (instr.opcode().GetId()) {
       case OP_LOAD_PRI:
-        load_pri(instr.GetOperand());
+        load_pri(instr.operand());
         break;
       case OP_LOAD_ALT:
-        load_alt(instr.GetOperand());
+        load_alt(instr.operand());
         break;
       case OP_LOAD_S_PRI:
-        load_s_pri(instr.GetOperand());
+        load_s_pri(instr.operand());
         break;
       case OP_LOAD_S_ALT:
-        load_s_alt(instr.GetOperand());
+        load_s_alt(instr.operand());
         break;
       case OP_LREF_PRI:
-        lref_pri(instr.GetOperand());
+        lref_pri(instr.operand());
         break;
       case OP_LREF_ALT:
-        lref_alt(instr.GetOperand());
+        lref_alt(instr.operand());
         break;
       case OP_LREF_S_PRI:
-        lref_s_pri(instr.GetOperand());
+        lref_s_pri(instr.operand());
         break;
       case OP_LREF_S_ALT:
-        lref_s_alt(instr.GetOperand());
+        lref_s_alt(instr.operand());
         break;
       case OP_LOAD_I:
         load_i();
         break;
       case OP_LODB_I:
-        lodb_i(instr.GetOperand());
+        lodb_i(instr.operand());
         break;
       case OP_CONST_PRI:
-        const_pri(instr.GetOperand());
+        const_pri(instr.operand());
         break;
       case OP_CONST_ALT:
-        const_alt(instr.GetOperand());
+        const_alt(instr.operand());
         break;
       case OP_ADDR_PRI:
-        addr_pri(instr.GetOperand());
+        addr_pri(instr.operand());
         break;
       case OP_ADDR_ALT:
-        addr_alt(instr.GetOperand());
+        addr_alt(instr.operand());
         break;
       case OP_STOR_PRI:
-        stor_pri(instr.GetOperand());
+        stor_pri(instr.operand());
         break;
       case OP_STOR_ALT:
-        stor_alt(instr.GetOperand());
+        stor_alt(instr.operand());
         break;
       case OP_STOR_S_PRI:
-        stor_s_pri(instr.GetOperand());
+        stor_s_pri(instr.operand());
         break;
       case OP_STOR_S_ALT:
-        stor_s_alt(instr.GetOperand());
+        stor_s_alt(instr.operand());
         break;
       case OP_SREF_PRI:
-        sref_pri(instr.GetOperand());
+        sref_pri(instr.operand());
         break;
       case OP_SREF_ALT:
-        sref_alt(instr.GetOperand());
+        sref_alt(instr.operand());
         break;
       case OP_SREF_S_PRI:
-        sref_s_pri(instr.GetOperand());
+        sref_s_pri(instr.operand());
         break;
       case OP_SREF_S_ALT:
-        sref_s_alt(instr.GetOperand());
+        sref_s_alt(instr.operand());
         break;
       case OP_STOR_I:
         stor_i();
         break;
       case OP_STRB_I:
-        strb_i(instr.GetOperand());
+        strb_i(instr.operand());
         break;
       case OP_LIDX:
         lidx();
         break;
       case OP_LIDX_B:
-        lidx_b(instr.GetOperand());
+        lidx_b(instr.operand());
         break;
       case OP_IDXADDR:
         idxaddr();
         break;
       case OP_IDXADDR_B:
-        idxaddr_b(instr.GetOperand());
+        idxaddr_b(instr.operand());
         break;
       case OP_ALIGN_PRI:
-        align_pri(instr.GetOperand());
+        align_pri(instr.operand());
         break;
       case OP_ALIGN_ALT:
-        align_alt(instr.GetOperand());
+        align_alt(instr.operand());
         break;
       case OP_LCTRL:
-        lctrl(instr.GetOperand());
+        lctrl(instr.operand());
         break;
       case OP_SCTRL:
-        sctrl(instr.GetOperand());
+        sctrl(instr.operand());
         break;
       case OP_MOVE_PRI:
         move_pri();
@@ -167,13 +167,13 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         push_alt();
         break;
       case OP_PUSH_C:
-        push_c(instr.GetOperand());
+        push_c(instr.operand());
         break;
       case OP_PUSH:
-        push(instr.GetOperand());
+        push(instr.operand());
         break;
       case OP_PUSH_S:
-        push_s(instr.GetOperand());
+        push_s(instr.operand());
         break;
       case OP_POP_PRI:
         pop_pri();
@@ -182,10 +182,10 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         pop_alt();
         break;
       case OP_STACK: // value
-        stack(instr.GetOperand());
+        stack(instr.operand());
         break;
       case OP_HEAP:
-        heap(instr.GetOperand());
+        heap(instr.operand());
         break;
       case OP_PROC:
         proc();
@@ -213,8 +213,8 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
       case OP_JSLEQ:
       case OP_JSGRTR:
       case OP_JSGEQ: {
-        cell dest = instr.GetOperand() - reinterpret_cast<cell>(amx.GetCode());
-        switch (instr.GetOpcode().GetId()) {
+        cell dest = instr.operand() - reinterpret_cast<cell>(amx.code());
+        switch (instr.opcode().GetId()) {
           case OP_CALL:
             call(dest);
             break;
@@ -270,16 +270,16 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         sshr();
         break;
       case OP_SHL_C_PRI:
-        shl_c_pri(instr.GetOperand());
+        shl_c_pri(instr.operand());
         break;
       case OP_SHL_C_ALT:
-        shl_c_alt(instr.GetOperand());
+        shl_c_alt(instr.operand());
         break;
       case OP_SHR_C_PRI:
-        shr_c_pri(instr.GetOperand());
+        shr_c_pri(instr.operand());
         break;
       case OP_SHR_C_ALT:
-        shr_c_alt(instr.GetOperand());
+        shr_c_alt(instr.operand());
         break;
       case OP_SMUL:
         smul();
@@ -327,10 +327,10 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         invert();
         break;
       case OP_ADD_C:
-        add_c(instr.GetOperand());
+        add_c(instr.operand());
         break;
       case OP_SMUL_C:
-        smul_c(instr.GetOperand());
+        smul_c(instr.operand());
         break;
       case OP_ZERO_PRI:
         zero_pri();
@@ -339,10 +339,10 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         zero_alt();
         break;
       case OP_ZERO:
-        zero(instr.GetOperand());
+        zero(instr.operand());
         break;
       case OP_ZERO_S:
-        zero_s(instr.GetOperand());
+        zero_s(instr.operand());
         break;
       case OP_SIGN_PRI:
         sign_pri();
@@ -381,10 +381,10 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         sgeq();
         break;
       case OP_EQ_C_PRI:
-        eq_c_pri(instr.GetOperand());
+        eq_c_pri(instr.operand());
         break;
       case OP_EQ_C_ALT:
-        eq_c_alt(instr.GetOperand());
+        eq_c_alt(instr.operand());
         break;
       case OP_INC_PRI:
         inc_pri();
@@ -393,10 +393,10 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         inc_alt();
         break;
       case OP_INC:
-        inc(instr.GetOperand());
+        inc(instr.operand());
         break;
       case OP_INC_S:
-        inc_s(instr.GetOperand());
+        inc_s(instr.operand());
         break;
       case OP_INC_I:
         inc_i();
@@ -408,52 +408,52 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         dec_alt();
         break;
       case OP_DEC:
-        dec(instr.GetOperand());
+        dec(instr.operand());
         break;
       case OP_DEC_S:
-        dec_s(instr.GetOperand());
+        dec_s(instr.operand());
         break;
       case OP_DEC_I:
         dec_i();
         break;
       case OP_MOVS:
-        movs(instr.GetOperand());
+        movs(instr.operand());
         break;
       case OP_CMPS:
-        cmps(instr.GetOperand());
+        cmps(instr.operand());
         break;
       case OP_FILL:
-        fill(instr.GetOperand());
+        fill(instr.operand());
         break;
       case OP_HALT:
-        halt(instr.GetOperand());
+        halt(instr.operand());
         break;
       case OP_BOUNDS:
-        bounds(instr.GetOperand());
+        bounds(instr.operand());
         break;
       case OP_SYSREQ_PRI:
         sysreq_pri();
         break;
       case OP_SYSREQ_C: {
-        const char *name = amx.GetNativeName(instr.GetOperand());
+        const char *name = amx.GetNativeName(instr.operand());
         if (name == 0) {
           error = true;
         } else {
-          sysreq_c(instr.GetOperand(), name);
+          sysreq_c(instr.operand(), name);
           }
         break;
       }
       case OP_SYSREQ_D: {
-        const char *name = amx.GetNativeName(amx.FindNative(instr.GetOperand()));
+        const char *name = amx.GetNativeName(amx.FindNative(instr.operand()));
         if (name == 0) {
           error = true;
         } else {
-          sysreq_d(instr.GetOperand(), name);
+          sysreq_d(instr.operand(), name);
         }
         break;
       }
       case OP_SWITCH:
-        switch_(CaseTable(amx, instr.GetOperand()));
+        switch_(CaseTable(amx, instr.operand()));
         break;
       case OP_CASETBL:
         casetbl();
@@ -465,7 +465,7 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
         swap_alt();
         break;
       case OP_PUSH_ADR:
-        push_adr(instr.GetOperand());
+        push_adr(instr.operand());
         break;
       case OP_NOP:
         nop();
@@ -479,14 +479,14 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *errorHandler)
   }
 
   if (error) {
-    errorHandler->Execute(instr);
+    error_handler->Execute(instr);
     Abort();
     return 0;
   }
 
   CompilerOutput *output = Finish();
 
-  compiling = false;
+  is_compiling_ = false;
   return output;
 }
 

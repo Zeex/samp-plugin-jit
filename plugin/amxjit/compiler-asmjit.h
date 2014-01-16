@@ -36,7 +36,7 @@
 
 namespace amxjit {
 
-class CompilerAsmjit : public Compiler {
+class CompilerAsmjit: public Compiler {
  public:
   typedef void (CompilerAsmjit::*EmitIntrinsicMethod)();
 
@@ -164,15 +164,15 @@ class CompilerAsmjit : public Compiler {
   virtual void dec(cell address);
   virtual void dec_s(cell offset);
   virtual void dec_i();
-  virtual void movs(cell numBytes);
-  virtual void cmps(cell numBytes);
-  virtual void fill(cell numBytes);
-  virtual void halt(cell errorCode);
+  virtual void movs(cell num_bytes);
+  virtual void cmps(cell num_bytes);
+  virtual void fill(cell num_bytes);
+  virtual void halt(cell error_code);
   virtual void bounds(cell value);
   virtual void sysreq_pri();
   virtual void sysreq_c(cell index, const char *name);
   virtual void sysreq_d(cell address, const char *name);
-  virtual void switch_(const CaseTable &caseTable);
+  virtual void switch_(const CaseTable &case_table);
   virtual void casetbl();
   virtual void swap_pri();
   virtual void swap_alt();
@@ -193,7 +193,7 @@ class CompilerAsmjit : public Compiler {
 
  private:
   void EmitRuntimeData();
-  void EmitInstrMap();
+  void EmitInstrTable();
   void EmitExec();
   void EmitExecHelper();
   void EmitHaltHelper();
@@ -207,7 +207,7 @@ class CompilerAsmjit : public Compiler {
 
  private:
   intptr_t *GetRuntimeData() {
-    return reinterpret_cast<intptr_t*>(as.getCode());
+    return reinterpret_cast<intptr_t*>(asm_.getCode());
   }
 
   void SetRuntimeData(int index, intptr_t data) {
@@ -215,36 +215,36 @@ class CompilerAsmjit : public Compiler {
   }
 
   const AsmJit::Label &GetLabel(cell address) {
-    AsmJit::Label &label = labelMap[address];
+    AsmJit::Label &label = label_map_[address];
     if (label.getId() == AsmJit::kInvalidValue) {
-      return label = as.newLabel();
+      return label = asm_.newLabel();
     }
     return label;
   }
 
  private:
-  AsmJit::X86Assembler as;
+  AsmJit::X86Assembler asm_;
 
-  AsmJit::Label execPtrLabel;
-  AsmJit::Label amxPtrLabel;
-  AsmJit::Label ebpPtrLabel;
-  AsmJit::Label espPtrLabel;
-  AsmJit::Label resetEbpPtrLabel;
-  AsmJit::Label resetEspPtrLabel;
-  AsmJit::Label instrMapPtrLabel;
-  AsmJit::Label instrMapSizeLabel;
-  AsmJit::Label execLabel;
-  AsmJit::Label execHelperLabel;
-  AsmJit::Label haltHelperLabel;
-  AsmJit::Label jumpHelperLabel;
-  AsmJit::Label sysreqCHelperLabel;
-  AsmJit::Label sysreqDHelperLabel;
+  AsmJit::Label exec_ptr_label_;
+  AsmJit::Label amx_ptr_label_;
+  AsmJit::Label ebp_ptr_label_;
+  AsmJit::Label esp_ptr_label_;
+  AsmJit::Label reset_ebp_ptr_label_;
+  AsmJit::Label reset_esp_ptr_label_;
+  AsmJit::Label instr_table_ptr_label_;
+  AsmJit::Label instr_table_size_label_;
+  AsmJit::Label exec_label_;
+  AsmJit::Label exec_helper_label_;
+  AsmJit::Label halt_helper_label_;
+  AsmJit::Label jump_helper_label_;
+  AsmJit::Label sysreq_c_helper_label_;
+  AsmJit::Label sysreq_d_helper_label_;
 
-  // Maps AMX instruction addresses to labels.
-  std::map<cell, AsmJit::Label> labelMap;
+  typedef std::map<cell, AsmJit::Label> LabelMap;
+  LabelMap label_map_;
 
-  // Maps AMX instruction addresses to JIT code offsets.
-  std::map<cell, std::ptrdiff_t> instrMap;
+  typedef std::map<cell, std::ptrdiff_t> InstrMap;
+  InstrMap instr_map_;
 
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
@@ -252,25 +252,25 @@ class CompilerAsmjit : public Compiler {
 
 class CompilerOutputAsmjit : public CompilerOutput {
  public:
-  CompilerOutputAsmjit(void *code, std::size_t codeSize);
+  CompilerOutputAsmjit(void *code, std::size_t code_size);
   virtual ~CompilerOutputAsmjit();
 
   virtual void *GetCode() const {
-    return code;
+    return code_;
   }
 
   virtual std::size_t GetCodeSize() const {
-    return codeSize;
+    return code_size_;
   }
 
   virtual EntryPoint GetEntryPoint() const {
-    assert(code != 0);
+    assert(code_ != 0);
     return (EntryPoint)*reinterpret_cast<void**>(GetCode());
   }
 
  private:
-  void *code;
-  std::size_t codeSize;
+  void *code_;
+  std::size_t code_size_;
 
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputAsmjit);
