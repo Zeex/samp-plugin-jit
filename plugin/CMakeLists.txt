@@ -1,5 +1,5 @@
 include(AmxConfig)
-include(SampPlugin)
+include(Plugin)
 
 set(JIT_BACKENDS "asmjit" CACHE STRING "List of JIT backends to build")
 
@@ -35,7 +35,7 @@ endif()
 configure_file(version.h.in version.h @ONLY)
 configure_file(plugin.rc.in plugin.rc @ONLY)
 
-add_samp_plugin(plugin
+add_plugin(plugin
   amx/amx.h
   amx/getch.h
   amx/sclinux.h
