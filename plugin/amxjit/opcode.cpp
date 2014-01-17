@@ -22,13 +22,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <amx/amx.h>
 #include "opcode.h"
 
 namespace amxjit {
+namespace {
 
-static cell *GetOpcodeTable() {
-  #if defined __GNUC__
+cell *GetOpcodeTable() {
+  #ifdef __GNUC__
     cell *opcode_table;
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
@@ -40,10 +40,9 @@ static cell *GetOpcodeTable() {
   #endif
 }
 
-static cell FindOpcode(cell *opcode_table, cell opcode) {
-  #if defined __GNUC__
+cell FindOpcode(cell *opcode_table, cell opcode) {
+  #ifdef __GNUC__
     if (opcode_table != 0) {
-      // Search for this opcode in the opcode relocation table.
       for (int i = 0; i < NUM_OPCODES; i++) {
         if (opcode_table[i] == opcode) {
           return i;
@@ -57,8 +56,10 @@ static cell FindOpcode(cell *opcode_table, cell opcode) {
   #endif
 }
 
+} // anonymous namespace
+
 OpcodeID RelocateOpcode(cell opcode) {
-  #if defined __GNUC__
+  #ifdef __GNUC__
     static cell *opcode_table = GetOpcodeTable();
     opcode = FindOpcode(opcode_table, opcode);
   #endif

@@ -85,17 +85,9 @@ OpcodeID RelocateOpcode(cell opcode);
 
 class Opcode {
  public:
-  Opcode()
-   : id(OP_NONE)
-  {}
-
-  Opcode(cell value)
-   : id(RelocateOpcode(value))
-  {}
-
-  Opcode(OpcodeID id)
-   : id(id)
-  {}
+  Opcode(): id(OP_NONE) {}
+  Opcode(cell value): id(RelocateOpcode(value)) {}
+  Opcode(OpcodeID id): id(id) {}
 
   OpcodeID GetId() const {
     return static_cast<OpcodeID>(id);
