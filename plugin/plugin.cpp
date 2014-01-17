@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cassert>
 #include <string>
 
 #include "jit.h"
@@ -36,6 +37,10 @@ extern void *pAMXFunctions;
 namespace {
 
 SubHook amx_Exec_hook;
+
+#ifdef LINUX
+  cell *opcode_table = 0;
+#endif
 
 void InitLogprintf(void **plugin_data) {
   logprintf = (logprintf_t)plugin_data[PLUGIN_DATA_LOGPRINTF];
@@ -59,6 +64,13 @@ std::string GetFileName(const std::string &path) {
 
 int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   SubHook::ScopedRemove _(&amx_Exec_hook);
+  #ifdef LINUX
+    if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
+      assert(::opcode_table != 0);
+      *retval = reinterpret_cast<cell>(::opcode_table);
+      return AMX_ERR_NONE;
+    }
+  #endif
   return JIT::GetInstance(amx)->Exec(retval, index);
 }
 
@@ -75,9 +87,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   void *exec_start = GetAmxFunction(PLUGIN_AMX_EXPORT_Exec);
   void *other_guy = SubHook::ReadDst(exec_start);
 
-  if (other_guy == 0) {
-    amx_Exec_hook.Install(exec_start, (void*)amx_Exec_JIT);
-  } else {
+  if (other_guy != 0) {
     std::string module = GetFileName(os::GetModuleName(other_guy));
     if (!module.empty()) {
       logprintf("  JIT must be loaded before '%s'", module.c_str());
@@ -86,6 +96,15 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     }
     return false;
   }
+
+  #ifdef LINUX
+    // Get the opcode table before we hook amx_Exec().
+    AMX amx = {0};
+    amx.flags |= AMX_FLAG_BROWSE;
+    amx_Exec(&amx, reinterpret_cast<cell*>(&::opcode_table), 0);
+    amx.flags &= ~AMX_FLAG_BROWSE;
+  #endif
+  amx_Exec_hook.Install(exec_start, (void*)amx_Exec_JIT);
 
   logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
   return true;
