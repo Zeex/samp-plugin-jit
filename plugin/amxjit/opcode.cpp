@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cassert>
 #include "opcode.h"
 
 namespace amxjit {
@@ -29,7 +30,7 @@ namespace {
 
 cell *GetOpcodeTable() {
   #ifdef AMXJIT_RELOCATE_OPCODES
-    cell *opcode_table;
+    cell *opcode_table = 0;
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
     amx_Exec(&amx, reinterpret_cast<cell*>(&opcode_table), 0);
@@ -42,11 +43,10 @@ cell *GetOpcodeTable() {
 
 cell FindOpcode(cell *opcode_table, cell opcode) {
   #ifdef AMXJIT_RELOCATE_OPCODES
-    if (opcode_table != 0) {
-      for (int i = 0; i < NUM_OPCODES; i++) {
-        if (opcode_table[i] == opcode) {
-          return i;
-        }
+    assert(opcode_table != 0);
+    for (int i = 0; i < NUM_OPCODES; i++) {
+      if (opcode_table[i] == opcode) {
+        return i;
       }
     }
     return opcode;
