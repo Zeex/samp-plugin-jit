@@ -21,14 +21,14 @@ if(JIT_LLVM)
   include_directories(${LLVM_INCLUDE_DIRS})
 endif()
 
-if(JIT_LLVM)
-  link_directories(${LLVM_LIBRARY_DIRS})
-endif()
-
 add_definitions(${LLVM_DEFINITIONS})
+
 if(UNIX)
   add_definitions(-DLINUX)
-elseif(MSVC)
+  add_definitions(-DAMXJIT_RELOCATE_OPCODES)
+endif()
+
+if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -DNOMINMAX)
 endif()
 
@@ -75,6 +75,10 @@ endif()
 if(MINGW)
   set_property(TARGET plugin APPEND_STRING PROPERTY
                LINK_FLAGS " -Wl,--enable-stdcall-fixup")
+endif()
+
+if(JIT_LLVM)
+  link_directories(${LLVM_LIBRARY_DIRS})
 endif()
 
 set(AMXJIT_BUILD_BACKENDS ${JIT_BACKENDS})

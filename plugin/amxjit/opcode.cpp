@@ -28,7 +28,7 @@ namespace amxjit {
 namespace {
 
 cell *GetOpcodeTable() {
-  #ifdef __GNUC__
+  #ifdef AMXJIT_RELOCATE_OPCODES
     cell *opcode_table;
     AMX amx = {0};
     amx.flags |= AMX_FLAG_BROWSE;
@@ -41,7 +41,7 @@ cell *GetOpcodeTable() {
 }
 
 cell FindOpcode(cell *opcode_table, cell opcode) {
-  #ifdef __GNUC__
+  #ifdef AMXJIT_RELOCATE_OPCODES
     if (opcode_table != 0) {
       for (int i = 0; i < NUM_OPCODES; i++) {
         if (opcode_table[i] == opcode) {
@@ -59,7 +59,7 @@ cell FindOpcode(cell *opcode_table, cell opcode) {
 } // anonymous namespace
 
 OpcodeID RelocateOpcode(cell opcode) {
-  #ifdef __GNUC__
+  #ifdef AMXJIT_RELOCATE_OPCODES
     static cell *opcode_table = GetOpcodeTable();
     opcode = FindOpcode(opcode_table, opcode);
   #endif
