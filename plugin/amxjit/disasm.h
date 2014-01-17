@@ -26,6 +26,7 @@
 #define AMXJIT_DISASM_H
 
 #include <cstddef>
+#include <string>
 #include <vector>
 #include <utility>
 #include "amxptr.h"

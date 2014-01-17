@@ -32,7 +32,7 @@ namespace amxjit {
 }
 
 class JIT: public AMXService<JIT> {
- template<typename T> friend class AMXService;
+ friend class AMXService<JIT>;
 
  public:
   int Exec(cell *retval, int index);
