@@ -22,91 +22,34 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cassert>
-#include <map>
 #include <string>
-#include <utility>
-#include <subhook.h>
-#include "configreader.h"
+
+#include "jit.h"
+#include "logprintf.h"
 #include "os.h"
 #include "plugin.h"
 #include "version.h"
-#if JIT_ASMJIT
-  #include "amxjit/compiler-asmjit.h"
-#endif
-#if JIT_LLVM
-  #include "amxjit/compiler-llvm.h"
-#endif
-#include "amxjit/disasm.h"
+#include <subhook.h>
 
 extern void *pAMXFunctions;
 
-typedef void (*logprintf_t)(const char *format, ...);
-static logprintf_t logprintf;
+namespace {
 
-typedef std::map<AMX*, amxjit::CompileOutput*> AmxMap;
-static AmxMap amx_map;
+SubHook amx_Exec_hook;
 
-static SubHook amx_Exec_hook;
-#ifdef LINUX
-  static cell *opcode_table = 0;
-#endif
-
-class CompileErrorHandler : public amxjit::CompileErrorHandler {
- public:
-  virtual void Execute(const amxjit::Instruction &instr) {
-    logprintf("[jit] Invalid or unsupported instruction at address %p:",
-              instr.address());
-    logprintf("[jit]   => %s", instr.ToString().c_str());
-  }
-};
-
-static cell OnJITCompile(AMX *amx) {
-  int index;
-  if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
-    cell retval;
-    amx_Exec(amx, &retval, index);
-    return retval;
-  }
-  return 1;
+void InitLogprintf(void **plugin_data) {
+  logprintf = (logprintf_t)plugin_data[PLUGIN_DATA_LOGPRINTF];
 }
 
-static amxjit::CompileOutput *Compile(AMX *amx) {
-  if (!OnJITCompile(amx)) {
-    logprintf("[jit] Compilation was disabled");
-    return 0;
-  }
-
-  amxjit::Compiler *compiler = 0;
-  amxjit::CompileOutput *output = 0;
-
-  std::string backend = "asmjit";
-  ConfigReader("server.cfg").GetOption("jit_backend", backend);
-  
-  #if JIT_ASMJIT
-    if (backend == "asmjit") {
-      compiler = new amxjit::CompilerAsmjit;
-    }
-  #endif
-  #if JIT_LLVM
-    if (backend == "llvm") {
-      compiler = new amxjit::CompilerLLVM;
-    }
-  #endif
-
-  if (compiler != 0) {
-    CompileErrorHandler error_handler;
-    compiler->SetErrorHandler(&error_handler);
-    output = compiler->Compile(amx);
-    delete compiler;
-  } else {
-    logprintf("[jit] Unrecognized backend '%s'", backend.c_str());
-  }
-
-  return output;
+void InitAmxExports(void **plugin_data) {
+  pAMXFunctions = plugin_data[PLUGIN_DATA_AMX_EXPORTS];
 }
 
-static std::string GetFileName(const std::string &path) {
+void *GetAmxFunction(int index) {
+  return static_cast<void**>(pAMXFunctions)[index];
+}
+
+std::string GetFileName(const std::string &path) {
   std::string::size_type pos = path.find_last_of("/\\");
   if (pos != std::string::npos) {
     return path.substr(pos + 1);
@@ -114,83 +57,46 @@ static std::string GetFileName(const std::string &path) {
   return path;
 }
 
-static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-  #ifdef LINUX
-    if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-      assert(::opcode_table != 0);
-      *retval = reinterpret_cast<cell>(::opcode_table);
-      return AMX_ERR_NONE;
-    }
-  #endif
-
-  amxjit::CompileOutput *code = 0;
-  if (index == AMX_EXEC_MAIN) {
-    code = Compile(amx);
-    ::amx_map.insert(std::make_pair(amx, code));
-  } else {
-    AmxMap::iterator it = ::amx_map.find(amx);
-    if (it != ::amx_map.end()) {
-      code = it->second;
-    }
-  }
-
-  if (code != 0) {
-    amxjit::EntryPoint entry_point = code->GetEntryPoint();
-    return entry_point(index, retval);
-  }
-
-  SubHook::ScopedRemove r(&amx_Exec_hook);
-  return amx_Exec(amx, retval, index);
+int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
+  SubHook::ScopedRemove _(&amx_Exec_hook);
+  return JIT::GetInstance(amx)->Exec(retval, index);
 }
+
+} // anonymous namespace
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-  logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
-  pAMXFunctions = reinterpret_cast<void*>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
+  InitLogprintf(ppData);
+  InitAmxExports(ppData);
+  
+  void *exec_start = GetAmxFunction(PLUGIN_AMX_EXPORT_Exec);
+  void *other_guy = SubHook::ReadDst(exec_start);
 
-  void *ptr = SubHook::ReadDst(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
-  if (ptr != 0) {
-    std::string module = GetFileName(os::GetModuleName(ptr));
+  if (other_guy == 0) {
+    amx_Exec_hook.Install(exec_start, (void*)amx_Exec_JIT);
+  } else {
+    std::string module = GetFileName(os::GetModuleName(other_guy));
     if (!module.empty()) {
       logprintf("  JIT must be loaded before '%s'", module.c_str());
-      return false;
+    } else {
+      logprintf("  Sorry, your server is messed up");
     }
+    return false;
   }
-
-  #ifdef LINUX
-    // Get the opcode map before we hook amx_Exec().
-    AMX amx = {0};
-    amx.flags |= AMX_FLAG_BROWSE;
-    amx_Exec(&amx, reinterpret_cast<cell*>(&::opcode_table), 0);
-    amx.flags &= ~AMX_FLAG_BROWSE;
-  #endif
-
-  void **exports = reinterpret_cast<void**>(pAMXFunctions);
-  amx_Exec_hook.Install(exports[PLUGIN_AMX_EXPORT_Exec], (void*)amx_Exec_JIT);
 
   logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
   return true;
 }
 
-PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-  for (AmxMap::iterator it = ::amx_map.begin();
-       it != ::amx_map.end(); it++) {
-    it->second->Delete();
-  }
-}
-
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+  JIT::CreateInstance(amx);
   return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-  AmxMap::iterator it = ::amx_map.find(amx);
-  if (it != ::amx_map.end()) {
-    it->second->Delete();
-    ::amx_map.erase(it);
-  }
-  return AMX_ERR_NONE;
+ JIT::DestroyInstance(amx);
+ return AMX_ERR_NONE;
 }

@@ -40,8 +40,13 @@ set(PLUGIN_SOURCES
   amx/getch.h
   amx/sclinux.h
   amxplugin.cpp
+  amxservice.h
   configreader.cpp
   configreader.h
+  jit.h
+  jit.cpp
+  logprintf.cpp
+  logprintf.h
   os.h
   plugin.cpp
   plugin.def
