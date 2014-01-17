@@ -43,7 +43,7 @@ class CompilerLLVM: public Compiler {
   virtual bool Setup();
   virtual bool Process(const Instruction &instr);
   virtual void Abort();
-  virtual CompilerOutput *Finish();
+  virtual CompileOutput *Finish();
 
  protected:
   virtual void load_pri(cell address);
@@ -185,25 +185,25 @@ class CompilerLLVM: public Compiler {
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerLLVM);
 };
 
-class CompilerOutputLLVM: public CompilerOutput {
+class CompileOutputLLVM: public CompileOutput {
  public:
-  CompilerOutputLLVM() {}
-  virtual ~CompilerOutputLLVM() {}
+  CompileOutputLLVM() {}
+  virtual ~CompileOutputLLVM() {}
 
   virtual void *GetCode() const {
-    return 0;
-  }
-
-  virtual std::size_t GetCodeSize() const {
     return 0;
   }
 
   virtual EntryPoint GetEntryPoint() const {
     return 0;
   }
+
+  virtual void Delete() {
+    return;
+  }
   
  private:
-  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputLLVM);
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompileOutputLLVM);
 };
 
 } // namespace amxjit

@@ -22,30 +22,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <string>
 #include "compiler.h"
 #include "disasm.h"
 
 namespace amxjit {
 
 Compiler::Compiler():
-  is_compiling_(false)
+  error_handler_()
 {
 }
 
 Compiler::~Compiler() {
 }
 
-CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *error_handler) {
-  Instruction instr;
+void Compiler::SetErrorHandler(CompileErrorHandler *handler) {
+  error_handler_ = handler;
+}
 
-  is_compiling_ = true;
-  current_amx_ = amx;
-  current_instr_ = &instr;
-
-  Setup();
+CompileOutput *Compiler::Compile(AMXPtr amx) {
+  Prepare(amx);
 
   Disassembler disasm(amx);
+  Instruction instr;
   bool error = false;
 
   while (disasm.Decode(instr, error)) {
@@ -146,7 +144,7 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *error_handler
         align_alt(instr.operand());
         break;
       case OP_LCTRL:
-        lctrl(instr.operand());
+        lctrl(instr.operand(), instr.address() + instr.size());
         break;
       case OP_SCTRL:
         sctrl(instr.operand());
@@ -479,15 +477,14 @@ CompilerOutput *Compiler::Compile(AMXPtr amx, CompileErrorHandler *error_handler
   }
 
   if (error) {
-    error_handler->Execute(instr);
+    if (error_handler_ != 0) {
+      error_handler_->Execute(instr);
+    }
     Abort();
     return 0;
   }
 
-  CompilerOutput *output = Finish();
-
-  is_compiling_ = false;
-  return output;
+  return Finish();
 }
 
 } // namespace amxjit

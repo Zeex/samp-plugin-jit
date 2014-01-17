@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2014 Zeex
+// Copyright (c) 2011-2014 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,42 +22,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXJIT_JIT_H
-#define AMXJIT_JIT_H
+#ifndef OS_H
+#define OS_H
 
-#include <amx/amx.h>
-#include "amxptr.h"
-#include "macros.h"
+#include <string>
 
-namespace amxjit {
+namespace os {
 
-class Compiler;
-class CompilerOutput;
-class CompileErrorHandler;
+// Returns the name of the module (executable or DLL) which the specified
+// address belongs to, or an empty string if failed.
+std::string GetModuleName(void *address);
 
-class JIT {
- public:
-  JIT(AMXPtr amx);
-  ~JIT();
+} // namespace os
 
-  // Compiles the AMX script. If something goes wrong it calls the
-  // error handler. The handler is called only once as compilation
-  // stops after the first error.
-  bool Compile(Compiler *compiler,
-               CompileErrorHandler *error_handler = 0);
-
-  // Executes a public function and returns one of AMX error codes.
-  // Use this method as a drop-in replacement for amx_Exec().
-  int Exec(cell index, cell *retval);
-
- private:
-  AMXPtr amx;
-  CompilerOutput *output;
-
- private:
-  AMXJIT_DISALLOW_COPY_AND_ASSIGN(JIT);
-};
-
-} // namespace amxjit
-
-#endif // !AMXJIT_JIT_H
+#endif // !OS_H

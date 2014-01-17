@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2014 Zeex
+// Copyright (c) 2011-2014 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,59 +22,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXJIT_AMXPTR_H
-#define AMXJIT_AMXPTR_H
+#include <vector>
+#include <string>
 
-#include <cstddef>
-#include <amx/amx.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-namespace amxjit {
+namespace os {
 
-class AMXPtr {
- public:
-  AMXPtr(): amx_(0) {}
-  AMXPtr(AMX *amx): amx_(amx) {}
+std::string GetModuleName(void *address) {
+  std::vector<char> filename(MAX_PATH);
+  if (address != 0) {
+    MEMORY_BASIC_INFORMATION mbi;
+    if (VirtualQuery(address, &mbi, sizeof(mbi)) != 0) {
+      DWORD size = filename.size();
+      do {
+        size = GetModuleFileName((HMODULE)mbi.AllocationBase,
+                                 &filename[0], filename.size());
+        if (size < filename.size() ||
+            GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+          break;
+        }
+        filename.resize(size *= 2);
+      } while (true);
+    }
+  }
+  return std::string(&filename[0]);
+}
 
-  operator AMX*() { return amx_; }
-  operator AMX*() const { return amx_; }
-
-  AMX *operator->() { return AccessAmx(); }
-  const AMX *operator->() const { return AccessAmx(); }
-
-  void Reset();
-
-  AMX *raw() const { return amx_; }
-  AMX_HEADER *header() const;
-
-  unsigned char *code() const;
-  unsigned char *data() const;
-
-  std::size_t code_size() const;
-  std::size_t data_size() const ;
-
-  int num_publics() const;
-  int num_natives() const;
-
-  AMX_FUNCSTUBNT *publics() const;
-  AMX_FUNCSTUBNT *natives() const;
-
-  cell GetPublicAddress(cell index) const;
-  cell GetNativeAddress(cell index) const;
-
-  const char *GetPublicName(cell index) const;
-  const char *GetNativeName(cell index) const;
-
-  cell FindPublic(cell address) const;
-  cell FindNative(cell address) const;
-
- private:
-  AMX *AccessAmx();
-  const AMX *AccessAmx() const;
-
- private:
-  AMX *amx_;
-};
-
-} // namespace amxjit
-
-#endif // !AMXJIT_AMXPTR_H
+} // namespace os

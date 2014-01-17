@@ -37,6 +37,10 @@ const AMX *AMXPtr::AccessAmx() const {
   return amx_;
 }
 
+void AMXPtr::Reset() {
+  amx_ = 0;
+}
+
 AMX_HEADER *AMXPtr::header() const {
   return reinterpret_cast<AMX_HEADER*>(AccessAmx()->base);
 }

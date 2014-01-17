@@ -35,13 +35,14 @@ endif()
 configure_file(version.h.in version.h @ONLY)
 configure_file(plugin.rc.in plugin.rc @ONLY)
 
-add_plugin(plugin
+set(PLUGIN_SOURCES
   amx/amx.h
   amx/getch.h
   amx/sclinux.h
   amxplugin.cpp
   configreader.cpp
   configreader.h
+  os.h
   plugin.cpp
   plugin.def
   plugin.h
@@ -50,6 +51,13 @@ add_plugin(plugin
   ${CMAKE_CURRENT_BINARY_DIR}/version.h
 )
 
+if(WIN32)
+  list(APPEND PLUGIN_SOURCES os-win32.cpp)
+else()
+  list(APPEND PLUGIN_SOURCES os-unix.cpp)
+endif()
+
+add_plugin(plugin ${PLUGIN_SOURCES})
 set_property(TARGET plugin APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
 
 if(CMAKE_COMPILER_IS_GNUCXX)

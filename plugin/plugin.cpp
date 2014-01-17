@@ -23,22 +23,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <map>
 #include <string>
-#include <vector>
-#ifdef _WIN32
-  #include <windows.h>
-#else
-  #include <dlfcn.h>
-#endif
+#include <utility>
 #include <subhook.h>
 #include "configreader.h"
+#include "os.h"
 #include "plugin.h"
 #include "version.h"
-#include "amxjit/compiler.h"
 #if JIT_ASMJIT
   #include "amxjit/compiler-asmjit.h"
 #endif
@@ -46,15 +38,14 @@
   #include "amxjit/compiler-llvm.h"
 #endif
 #include "amxjit/disasm.h"
-#include "amxjit/jit.h"
 
 extern void *pAMXFunctions;
 
 typedef void (*logprintf_t)(const char *format, ...);
 static logprintf_t logprintf;
 
-typedef std::map<AMX*, amxjit::JIT*> JITMap;
-static JITMap jit_map;
+typedef std::map<AMX*, amxjit::CompileOutput*> AmxMap;
+static AmxMap amx_map;
 
 static SubHook amx_Exec_hook;
 #ifdef LINUX
@@ -80,57 +71,39 @@ static cell OnJITCompile(AMX *amx) {
   return 1;
 }
 
-static bool Compile(AMX *amx, amxjit::JIT *jit) {
-  bool result = false;
-
+static amxjit::CompileOutput *Compile(AMX *amx) {
   if (!OnJITCompile(amx)) {
     logprintf("[jit] Compilation was disabled");
-  } else {
-    std::string backend = "asmjit";
-    ConfigReader("server.cfg").GetOption("jit_backend", backend);
-    amxjit::Compiler *compiler = 0;
-    #if JIT_ASMJIT
-      if (backend == "asmjit") {
-        compiler = new amxjit::CompilerAsmjit;
-      }
-    #endif
-    #if JIT_LLVM
-      if (backend == "llvm") {
-        compiler = new amxjit::CompilerLLVM;
-      }
-    #endif
-    if (compiler != 0) {
-      CompileErrorHandler error_handler;
-      result = jit->Compile(compiler, &error_handler);
-      delete compiler;
-    } else {
-      logprintf("[jit] Unrecognized backend '%s'", backend.c_str());
-    }
+    return 0;
   }
 
-  return result;
-}
+  amxjit::Compiler *compiler = 0;
+  amxjit::CompileOutput *output = 0;
 
-static std::string GetModulePath(void *address,
-                                 std::size_t max_length = FILENAME_MAX)
-{
-  #ifdef _WIN32
-    std::vector<char> name(max_length + 1);
-    if (address != 0) {
-      MEMORY_BASIC_INFORMATION mbi;
-      VirtualQuery(address, &mbi, sizeof(mbi));
-      GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], max_length);
+  std::string backend = "asmjit";
+  ConfigReader("server.cfg").GetOption("jit_backend", backend);
+  
+  #if JIT_ASMJIT
+    if (backend == "asmjit") {
+      compiler = new amxjit::CompilerAsmjit;
     }
-    return std::string(&name[0]);
-  #else
-    std::vector<char> name(max_length + 1);
-    if (address != 0) {
-      Dl_info info;
-      dladdr(address, &info);
-      strncpy(&name[0], info.dli_fname, max_length);
-    }  
-    return std::string(&name[0]);
   #endif
+  #if JIT_LLVM
+    if (backend == "llvm") {
+      compiler = new amxjit::CompilerLLVM;
+    }
+  #endif
+
+  if (compiler != 0) {
+    CompileErrorHandler error_handler;
+    compiler->SetErrorHandler(&error_handler);
+    output = compiler->Compile(amx);
+    delete compiler;
+  } else {
+    logprintf("[jit] Unrecognized backend '%s'", backend.c_str());
+  }
+
+  return output;
 }
 
 static std::string GetFileName(const std::string &path) {
@@ -150,29 +123,24 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
     }
   #endif
 
-  amxjit::JIT *jit = 0;
-
+  amxjit::CompileOutput *code = 0;
   if (index == AMX_EXEC_MAIN) {
-    jit = new amxjit::JIT(amx);
-    if (Compile(amx, jit)) {
-      ::jit_map[amx] = jit;
-    } else {
-      delete jit;
-      jit = 0;
-    }
+    code = Compile(amx);
+    ::amx_map.insert(std::make_pair(amx, code));
   } else {
-    JITMap::iterator iterator = ::jit_map.find(amx);
-    if (iterator != ::jit_map.end()) {
-      jit = iterator->second;
+    AmxMap::iterator it = ::amx_map.find(amx);
+    if (it != ::amx_map.end()) {
+      code = it->second;
     }
   }
 
-  if (jit != 0) {
-    return jit->Exec(index, retval);
-  } else {
-    SubHook::ScopedRemove r(&amx_Exec_hook);
-    return amx_Exec(amx, retval, index);
+  if (code != 0) {
+    amxjit::EntryPoint entry_point = code->GetEntryPoint();
+    return entry_point(index, retval);
   }
+
+  SubHook::ScopedRemove r(&amx_Exec_hook);
+  return amx_Exec(amx, retval, index);
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
@@ -185,7 +153,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
   void *ptr = SubHook::ReadDst(((void**)pAMXFunctions)[PLUGIN_AMX_EXPORT_Exec]);
   if (ptr != 0) {
-    std::string module = GetFileName(GetModulePath(ptr));
+    std::string module = GetFileName(os::GetModuleName(ptr));
     if (!module.empty()) {
       logprintf("  JIT must be loaded before '%s'", module.c_str());
       return false;
@@ -208,9 +176,9 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-  for (JITMap::iterator iterator = jit_map.begin();
-       iterator != jit_map.end(); iterator++) {
-    delete iterator->second;
+  for (AmxMap::iterator it = ::amx_map.begin();
+       it != ::amx_map.end(); it++) {
+    it->second->Delete();
   }
 }
 
@@ -219,10 +187,10 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-  JITMap::iterator iterator = jit_map.find(amx);
-  if (iterator != jit_map.end()) {
-    delete iterator->second;
-    jit_map.erase(iterator);
+  AmxMap::iterator it = ::amx_map.find(amx);
+  if (it != ::amx_map.end()) {
+    it->second->Delete();
+    ::amx_map.erase(it);
   }
   return AMX_ERR_NONE;
 }

@@ -43,10 +43,10 @@ class CompilerAsmjit: public Compiler {
   virtual ~CompilerAsmjit();
 
  protected:
-  virtual bool Setup();
+  virtual bool Prepare(AMXPtr amx);
   virtual bool Process(const Instruction &instr);
   virtual void Abort();
-  virtual CompilerOutput *Finish();
+  virtual CompileOutput *Finish();
 
  protected:
   virtual void load_pri(cell address);
@@ -79,7 +79,7 @@ class CompilerAsmjit: public Compiler {
   virtual void idxaddr_b(cell shift);
   virtual void align_pri(cell number);
   virtual void align_alt(cell number);
-  virtual void lctrl(cell index);
+  virtual void lctrl(cell index, cell cip);
   virtual void sctrl(cell index);
   virtual void move_pri();
   virtual void move_alt();
@@ -200,21 +200,16 @@ class CompilerAsmjit: public Compiler {
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
 
-  void EmitAmxPtrMove(const AsmJit::GpReg &dest);
-  void EmitAmxDataPtrMove(const AsmJit::GpReg &dest);
+  void CopyAmxPtr(const AsmJit::GpReg &dest);
+  void CopyAmxDataPtr(const AsmJit::GpReg &dest);
 
  private:
-  const AsmJit::Label &GetLabel(cell address) {
-    AsmJit::Label &label = label_map_[address];
-    if (label.getId() == AsmJit::kInvalidValue) {
-      return label = asm_.newLabel();
-    }
-    return label;
-  }
+  const AsmJit::Label &GetLabel(cell address);
 
  private:
+  AMXPtr current_amx_;
+
   AsmJit::X86Assembler asm_;
-
   AsmJit::Label rib_start_label_;
   AsmJit::Label exec_ptr_label_;
   AsmJit::Label amx_ptr_label_;
@@ -241,22 +236,21 @@ class CompilerAsmjit: public Compiler {
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
 };
 
-class CompilerOutputAsmjit : public CompilerOutput {
+class CompileOutputAsmjit : public CompileOutput {
  public:
-  CompilerOutputAsmjit(void *code, std::size_t code_size);
-  virtual ~CompilerOutputAsmjit();
+  CompileOutputAsmjit(void *code);
+  virtual ~CompileOutputAsmjit();
 
-  virtual void *GetCode() const { return code_; }
-  virtual std::size_t GetCodeSize() const { return code_size_; }
-
+  virtual void *GetCode() const;
   virtual EntryPoint GetEntryPoint() const;
+
+  virtual void Delete();
 
  private:
   void *code_;
-  std::size_t code_size_;
 
  private:
-  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerOutputAsmjit);
+  AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompileOutputAsmjit);
 };
 
 } // namespace amxjit

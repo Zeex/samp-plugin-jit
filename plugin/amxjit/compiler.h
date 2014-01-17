@@ -35,7 +35,7 @@ namespace amxjit {
 class CaseTable;
 class Instruction;
 
-typedef int (AMXJIT_CDECL *EntryPoint)(cell index, cell *retval);
+typedef int (AMXAPI *EntryPoint)(cell index, cell *retval);
 
 class CompileErrorHandler {
 public:
@@ -43,18 +43,19 @@ public:
   virtual void Execute(const Instruction &instr) = 0;
 };
 
-class CompilerOutput {
+class CompileOutput {
  public:
-  virtual ~CompilerOutput() {}
+  virtual ~CompileOutput() {}
 
   // Returns a pointer to the code buffer.
   virtual void *GetCode() const = 0;
 
-  // Returns the size of the code in bytes.
-  virtual std::size_t GetCodeSize() const = 0;
-
   // Returns a pointer to the entry point function.
   virtual EntryPoint GetEntryPoint() const = 0;
+
+  // Deletes the objeect. After doing this none of its methods
+  // should be ever called!
+  virtual void Delete() = 0;
 };
 
 class Compiler {
@@ -62,13 +63,16 @@ class Compiler {
   Compiler();
   virtual ~Compiler();
 
+  // Sets the error callback that will be called on error.
+  void SetErrorHandler(CompileErrorHandler *handler);
+
   // Compiles the specified AMX script.
-  CompilerOutput *Compile(AMXPtr amx, CompileErrorHandler *error_handler = 0);
+  CompileOutput *Compile(AMXPtr amx);
 
  protected:
   // This method is called just before the compilation begins.
   // Returns false on error.
-  virtual bool Setup() = 0;
+  virtual bool Prepare(AMXPtr amx) = 0;
 
   // Processes a single instruction. Returns false on error.
   virtual bool Process(const Instruction &instr) = 0;
@@ -78,19 +82,7 @@ class Compiler {
 
   // Final compilation step. This method shuld either return a runnable
   // CompilerOutput or null which would indicate a fatal error.
-  virtual CompilerOutput *Finish() = 0;
-
-  // Returnss the current AMX instance.
-  AMXPtr GetCurrentAmx() const {
-    assert(is_compiling_);
-    return current_amx_;
-  }
-
-  // Returns currently processed instruction.
-  const Instruction &GetCurrentInstr() const {
-    assert(is_compiling_);
-    return *current_instr_;
-  }
+  virtual CompileOutput *Finish() = 0;
 
   // Per-opcode methods.
   virtual void load_pri(cell address) = 0;
@@ -123,7 +115,7 @@ class Compiler {
   virtual void idxaddr_b(cell shift) = 0;
   virtual void align_pri(cell number) = 0;
   virtual void align_alt(cell number) = 0;
-  virtual void lctrl(cell index) = 0;
+  virtual void lctrl(cell index, cell cip) = 0;
   virtual void sctrl(cell index) = 0;
   virtual void move_pri() = 0;
   virtual void move_alt() = 0;
@@ -223,10 +215,8 @@ class Compiler {
   virtual void nop() = 0;
   virtual void break_() = 0;
 
- private:
-   bool is_compiling_;
-   AMXPtr current_amx_;
-   Instruction *current_instr_;
+private:
+  CompileErrorHandler *error_handler_;
 };
 
 } // namespace amxjit

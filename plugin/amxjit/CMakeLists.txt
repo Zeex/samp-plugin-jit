@@ -12,6 +12,11 @@ endif()
 
 mark_as_advanced(AMXJIT_BUILD_BACKENDS)
 
+foreach(backend IN LISTS AMXJIT_BUILD_BACKENDS)
+  string(TOUPPER ${backend} backend)
+  set(AMXJIT_${backend} TRUE)
+endforeach()
+
 set(sources
   amxptr.cpp
   amxptr.h
@@ -20,8 +25,6 @@ set(sources
   cstdint.h
   disasm.cpp
   disasm.h
-  jit.cpp
-  jit.h
   macros.h
   opcode.cpp
   opcode.h
@@ -42,13 +45,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
 endif()
 
-list(FIND AMXJIT_BUILD_BACKENDS "asmjit" index)
-if(NOT index EQUAL -1)
+if(AMXJIT_ASMJIT)
   target_link_libraries(amxjit asmjit)
 endif()
 
-list(FIND AMXJIT_BUILD_BACKENDS "llvm" index)
-if(NOT index EQUAL -1)
+if(AMXJIT_LLVM)
   llvm_map_components_to_libraries(LLVM_LIBRARIES JIT Support X86)
   target_link_libraries(amxjit ${LLVM_LIBRARIES})
 endif()
