@@ -962,7 +962,6 @@ void CompilerAsmjit::movs(cell num_bytes) {
   // Copy memory from [PRI] to [ALT]. The parameter
   // specifies the number of bytes. The blocks should not
   // overlap.
-  asm_.cld();
   asm_.lea(esi, dword_ptr(ebx, eax));
   asm_.lea(edi, dword_ptr(ebx, ecx));
   asm_.push(ecx);
@@ -987,7 +986,6 @@ void CompilerAsmjit::cmps(cell num_bytes) {
   Label below_label = asm_.newLabel();
   Label equal_label = asm_.newLabel();
   Label continue_label = asm_.newLabel();
-    asm_.cld();
     asm_.lea(edi, dword_ptr(ebx, eax));
     asm_.lea(esi, dword_ptr(ebx, ecx));
     asm_.push(ecx);
@@ -1012,7 +1010,6 @@ void CompilerAsmjit::fill(cell num_bytes) {
   // Fill memory at [ALT] with value in [PRI]. The parameter
   // specifies the number of bytes, which must be a multiple
   // of the cell size.
-  asm_.cld();
   asm_.lea(edi, dword_ptr(ebx, ecx));
   asm_.push(ecx);
   asm_.mov(ecx, num_bytes / sizeof(cell));
