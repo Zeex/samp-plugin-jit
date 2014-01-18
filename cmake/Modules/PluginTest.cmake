@@ -1,10 +1,10 @@
 # PluginTest - add tests for SA-MP plugins.
-#
+# 
 # This module reuires the samp-server-cli script to be present in PATH in
 # order to be able to run the tests. The script can be downloaded here:
-#
+# 
 #   https://github.com/Zeex/samp-server-cli
-#
+# 
 # Additionally the SAMP_SERVER_ROOT environment variable must be defined and
 # must point to the SA-MP server's root directory.
 
