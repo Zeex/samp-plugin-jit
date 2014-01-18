@@ -134,8 +134,6 @@ CompilerAsmjit::CompilerAsmjit():
   esp_label_(asm_.newLabel()),
   reset_ebp_label_(asm_.newLabel()),
   reset_esp_label_(asm_.newLabel()),
-  instr_table_ptr_label_(asm_.newLabel()),
-  instr_table_size_label_(asm_.newLabel()),
   exec_label_(asm_.newLabel()),
   exec_helper_label_(asm_.newLabel()),
   halt_helper_label_(asm_.newLabel()),
@@ -1243,19 +1241,17 @@ void CompilerAsmjit::EmitRuntimeInfo() {
   // This must have the same structure as RuntimeInfoBlock.
   asm_.bind(rib_start_label_);
   asm_.bind(exec_ptr_label_);
-    asm_.dd(0);
+    asm_.dd(0); // rib->exec
   asm_.bind(ebp_label_);
-    asm_.dd(0);
+    asm_.dd(0); // rib->ebp
   asm_.bind(esp_label_);
-    asm_.dd(0);
+    asm_.dd(0); // rib->esp
   asm_.bind(reset_ebp_label_);
-    asm_.dd(0);
+    asm_.dd(0); // rib->reset_ebp
   asm_.bind(reset_esp_label_);
-    asm_.dd(0);
-  asm_.bind(instr_table_ptr_label_);
-    asm_.dd(0);
-  asm_.bind(instr_table_size_label_);
-    asm_.dd(0);
+    asm_.dd(0); // rib->reset_esp
+    asm_.dd(0); // rib->instr_map
+    asm_.dd(0); // rib->instr_map_size
 }
 
 void CompilerAsmjit::EmitInstrTable() {
