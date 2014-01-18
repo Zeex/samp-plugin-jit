@@ -210,10 +210,10 @@ class CompilerAsmjit: public Compiler {
   AsmJit::Label rib_start_label_;
   AsmJit::Label exec_ptr_label_;
   AsmJit::Label amx_ptr_label_;
-  AsmJit::Label ebp_ptr_label_;
-  AsmJit::Label esp_ptr_label_;
-  AsmJit::Label reset_ebp_ptr_label_;
-  AsmJit::Label reset_esp_ptr_label_;
+  AsmJit::Label ebp_label_;
+  AsmJit::Label esp_label_;
+  AsmJit::Label reset_ebp_label_;
+  AsmJit::Label reset_esp_label_;
   AsmJit::Label instr_table_ptr_label_;
   AsmJit::Label instr_table_size_label_;
   AsmJit::Label exec_label_;

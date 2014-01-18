@@ -131,10 +131,10 @@ CompilerAsmjit::CompilerAsmjit():
   rib_start_label_(asm_.newLabel()),
   exec_ptr_label_(asm_.newLabel()),
   amx_ptr_label_(asm_.newLabel()),
-  ebp_ptr_label_(asm_.newLabel()),
-  esp_ptr_label_(asm_.newLabel()),
-  reset_ebp_ptr_label_(asm_.newLabel()),
-  reset_esp_ptr_label_(asm_.newLabel()),
+  ebp_label_(asm_.newLabel()),
+  esp_label_(asm_.newLabel()),
+  reset_ebp_label_(asm_.newLabel()),
+  reset_esp_label_(asm_.newLabel()),
   instr_table_ptr_label_(asm_.newLabel()),
   instr_table_size_label_(asm_.newLabel()),
   exec_label_(asm_.newLabel()),
@@ -1045,8 +1045,8 @@ void CompilerAsmjit::bounds(cell value) {
 
 void CompilerAsmjit::sysreq_pri() {
   // call system service, service number in PRI
-  asm_.push(esp); // stackPtr
-  asm_.push(ebp); // stackBase
+  asm_.push(esp); // stack_ptr
+  asm_.push(ebp); // stack_base
   asm_.push(eax); // index
   asm_.call(sysreq_c_helper_label_);
 }
@@ -1055,8 +1055,8 @@ void CompilerAsmjit::sysreq_c(cell index, const char *name) {
   // call system service
   if (name != 0) {
     if (!EmitIntrinsic(name)) {
-      asm_.push(esp); // stackPtr
-      asm_.push(ebp); // stackBase
+      asm_.push(esp); // stack_ptr
+      asm_.push(ebp); // stack_base
       #if DEBUG
         asm_.push(index); // index
         asm_.call(sysreq_c_helper_label_);
@@ -1072,8 +1072,8 @@ void CompilerAsmjit::sysreq_d(cell address, const char *name) {
   // call system service
   if (name != 0) {
     if (!EmitIntrinsic(name)) {
-      asm_.push(esp);     // stackPtr
-      asm_.push(ebp);     // stackBase
+      asm_.push(esp);     // stack_ptr
+      asm_.push(ebp);     // stack_base
       asm_.push(address); // address
       asm_.call(sysreq_d_helper_label_);
     }
@@ -1250,13 +1250,13 @@ void CompilerAsmjit::EmitRuntimeInfo() {
     asm_.dd(0);
   asm_.bind(amx_ptr_label_);
     asm_.dintptr(reinterpret_cast<intptr_t>(current_amx_.raw()));
-  asm_.bind(ebp_ptr_label_);
+  asm_.bind(ebp_label_);
     asm_.dd(0);
-  asm_.bind(esp_ptr_label_);
+  asm_.bind(esp_label_);
     asm_.dd(0);
-  asm_.bind(reset_ebp_ptr_label_);
+  asm_.bind(reset_ebp_label_);
     asm_.dd(0);
-  asm_.bind(reset_esp_ptr_label_);
+  asm_.bind(reset_esp_label_);
     asm_.dd(0);
   asm_.bind(instr_table_ptr_label_);
     asm_.dd(0);
@@ -1357,11 +1357,11 @@ void CompilerAsmjit::EmitExec() {
     asm_.call(asmjit_cast<void*>(&GetPublicAddress));
     asm_.add(esp, 8);
 
-    // Check whether the function was found (address should be 0).
+    // Check whether the function was found (address would be 0).
     asm_.test(eax, eax);
     asm_.jz(public_not_found_label);
 
-    // Get pointer to the start of the function.
+    // Get the function's start address.
     asm_.lea(ecx, dword_ptr(rib_start_label_));
     asm_.push(ecx);
     asm_.push(eax);
@@ -1369,12 +1369,7 @@ void CompilerAsmjit::EmitExec() {
     asm_.add(esp, 8);
     asm_.mov(dword_ptr(ebp, var_address), eax);
 
-    // Push size of arguments and reset parameter count.
-    // Pseudo code:
-    //   stk = amx->stk - sizeof(cell);
-    //   *(data + stk) = amx->paramcount;
-    //   amx->stk = stk;
-    //   amx->paramcount = 0;
+    // Push the number of arguments and reset parameter count.
     asm_.mov(eax, dword_ptr(esi, offsetof(AMX, paramcount)));
     asm_.imul(eax, eax, sizeof(cell));
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, stk)));
@@ -1383,10 +1378,10 @@ void CompilerAsmjit::EmitExec() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), ecx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, paramcount)), 0);
 
-    // Keep a copy of the old resetEbp and resetEsp on the stack.
-    asm_.mov(eax, dword_ptr(reset_ebp_ptr_label_));
+    // Keep a copy of the old reset_ebp and reset_esp on the stack.
+    asm_.mov(eax, dword_ptr(reset_ebp_label_));
     asm_.mov(dword_ptr(ebp, var_reset_ebp), eax);
-    asm_.mov(eax, dword_ptr(reset_esp_ptr_label_));
+    asm_.mov(eax, dword_ptr(reset_esp_label_));
     asm_.mov(dword_ptr(ebp, var_reset_esp), eax);
 
     // Call the function.
@@ -1401,11 +1396,11 @@ void CompilerAsmjit::EmitExec() {
     asm_.mov(dword_ptr(ecx), eax);
 
   asm_.bind(finish_label);
-    // Restore resetEbp and resetEsp (remember they are kept in locals?).
+    // Restore reset_ebp and reset_esp (they are kept in locals).
     asm_.mov(eax, dword_ptr(ebp, var_reset_ebp));
-    asm_.mov(dword_ptr(reset_ebp_ptr_label_), eax);
+    asm_.mov(dword_ptr(reset_ebp_label_), eax);
     asm_.mov(eax, dword_ptr(ebp, var_reset_esp));
-    asm_.mov(dword_ptr(reset_esp_ptr_label_), eax);
+    asm_.mov(dword_ptr(reset_esp_label_), eax);
 
     // Copy amx->error for return and reset it.
     asm_.mov(eax, AMX_ERR_NONE);
@@ -1442,20 +1437,20 @@ void CompilerAsmjit::EmitExec() {
 // cell AMXJIT_CDECL ExecHelper(void *address);
 void CompilerAsmjit::EmitExecHelper() {
   asm_.bind(exec_helper_label_);
-    // Store function address in eax.
+    // Store the function address in eax.
     asm_.mov(eax, dword_ptr(esp, 4));
 
     // These are caller-saved in JIT code.
     asm_.push(esi);
     asm_.push(edi);
 
-    // Store old ebp and esp on the stack.
-    asm_.push(dword_ptr(ebp_ptr_label_));
-    asm_.push(dword_ptr(esp_ptr_label_));
+    // Store the old ebp and esp on the stack.
+    asm_.push(dword_ptr(ebp_label_));
+    asm_.push(dword_ptr(esp_label_));
 
-    // Most recent ebp and esp are stored in member variables.
-    asm_.mov(dword_ptr(ebp_ptr_label_), ebp);
-    asm_.mov(dword_ptr(esp_ptr_label_), esp);
+    // The most recent ebp and esp are stored in RIB.
+    asm_.mov(dword_ptr(ebp_label_), ebp);
+    asm_.mov(dword_ptr(esp_label_), esp);
 
     // Switch from native stack to AMX stack.
     asm_.mov(ecx, dword_ptr(amx_ptr_label_));
@@ -1467,8 +1462,8 @@ void CompilerAsmjit::EmitExecHelper() {
     // In order to make halt() work we have to be able to return
     // to this point somehow.
     asm_.lea(ecx, dword_ptr(esp, - 4));
-    asm_.mov(dword_ptr(reset_esp_ptr_label_), ecx);
-    asm_.mov(dword_ptr(reset_ebp_ptr_label_), ebp);
+    asm_.mov(dword_ptr(reset_esp_label_), ecx);
+    asm_.mov(dword_ptr(reset_ebp_label_), ebp);
 
     // Call the function. Prior to this point ebx should point to the
     // AMX data and the both stack pointers should point to somewhere
@@ -1486,11 +1481,11 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx); // amx->stk = esp - data
 
     // Switch back to native stack.
-    asm_.mov(ebp, dword_ptr(ebp_ptr_label_));
-    asm_.mov(esp, dword_ptr(esp_ptr_label_));
+    asm_.mov(ebp, dword_ptr(ebp_label_));
+    asm_.mov(esp, dword_ptr(esp_label_));
 
-    asm_.pop(dword_ptr(esp_ptr_label_));
-    asm_.pop(dword_ptr(ebp_ptr_label_));
+    asm_.pop(dword_ptr(esp_label_));
+    asm_.pop(dword_ptr(ebp_label_));
 
     asm_.pop(edi);
     asm_.pop(esi);
@@ -1504,8 +1499,8 @@ void CompilerAsmjit::EmitHaltHelper() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edx); // error code in edx
 
     // Reset stack so we can return right to call().
-    asm_.mov(esp, dword_ptr(reset_esp_ptr_label_));
-    asm_.mov(ebp, dword_ptr(reset_ebp_ptr_label_));
+    asm_.mov(esp, dword_ptr(reset_esp_label_));
+    asm_.mov(ebp, dword_ptr(reset_ebp_label_));
 
     // Pop public arguments as it would otherwise be done by RETN.
     asm_.pop(eax);
@@ -1516,8 +1511,8 @@ void CompilerAsmjit::EmitHaltHelper() {
     asm_.ret();
 }
 
-// void JumpHelper(void *address [edx], void *stackBase [esi],
-//                 void *stackPtr [edi]);
+// void JumpHelper(void *address [edx], void *stack_base [esi],
+//                                      void *stack_ptr [edi]);
 void CompilerAsmjit::EmitJumpHelper() {
   Label invalidAddressLabel = asm_.newLabel();
 
@@ -1547,7 +1542,8 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.ret();
 }
 
-// cell AMXJIT_CDECL SysreqCHelper(int index, void *stackBase, void *stackPtr);
+// cell AMXJIT_CDECL SysreqCHelper(int index, void *stack_base,
+//                                            void *stack_ptr);
 void CompilerAsmjit::EmitSysreqCHelper() {
   Label native_not_found_label = asm_.newLabel();
   Label return_label = asm_.newLabel();
@@ -1584,12 +1580,13 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.jmp(return_label);
 }
 
-// cell AMXJIT_CDECL SysreqDHelper(void *address, void *stackBase, void *stackPtr);
+// cell AMXJIT_CDECL SysreqDHelper(void *address, void *stack_base,
+//                                                void *stack_ptr);
 void CompilerAsmjit::EmitSysreqDHelper() {
   asm_.bind(sysreq_d_helper_label_);
     asm_.mov(eax, dword_ptr(esp, 4));   // address
-    asm_.mov(ebp, dword_ptr(esp, 8));   // stackBase
-    asm_.mov(esp, dword_ptr(esp, 12));  // stackPtr
+    asm_.mov(ebp, dword_ptr(esp, 8));   // stack_base
+    asm_.mov(esp, dword_ptr(esp, 12));  // stack_ptr
     asm_.mov(ecx, esp);                 // params
     asm_.mov(esi, dword_ptr(esp, -16)); // return address
 
@@ -1598,10 +1595,10 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     // Switch to native stack.
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
-    asm_.mov(ebp, dword_ptr(ebp_ptr_label_));
+    asm_.mov(ebp, dword_ptr(ebp_label_));
     asm_.sub(esp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
-    asm_.mov(esp, dword_ptr(esp_ptr_label_));
+    asm_.mov(esp, dword_ptr(esp_label_));
 
     // Call the native function.
     asm_.push(ecx); // params
@@ -1611,10 +1608,10 @@ void CompilerAsmjit::EmitSysreqDHelper() {
 
     // Switch back to AMX stack.
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(ebp_ptr_label_), ebp);
+    asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
     asm_.lea(ebp, dword_ptr(ebx, ecx)); // ebp = data + amx->frm
-    asm_.mov(dword_ptr(esp_ptr_label_), esp);
+    asm_.mov(dword_ptr(esp_label_), esp);
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
     asm_.lea(esp, dword_ptr(ebx, ecx)); // ebp = data + amx->stk
 
