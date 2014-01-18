@@ -200,9 +200,6 @@ class CompilerAsmjit: public Compiler {
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
 
-  void CopyAmxPtr(const AsmJit::GpReg &dest);
-  void CopyAmxDataPtr(const AsmJit::GpReg &dest);
-
  private:
   const AsmJit::Label &GetLabel(cell address);
 
