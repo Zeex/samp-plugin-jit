@@ -1437,19 +1437,9 @@ void CompilerAsmjit::EmitExecHelper() {
     // Store function address in eax.
     asm_.mov(eax, dword_ptr(esp, 4));
 
-    // esi and edi are not saved across function bounds but generally
-    // can be utilized in JIT code (for instance, in MOVS).
+    // These are caller-saved in JIT code.
     asm_.push(esi);
     asm_.push(edi);
-
-    // In JIT code these are caller-saved registers:
-    //  eax - primary register (PRI)
-    //  ecx - alternate register (ALT)
-    //  ebx - data base pointer (DAT + amx->base)
-    //  edx - temporary storage
-    asm_.push(ebx);
-    asm_.push(ecx);
-    asm_.push(edx);
 
     // Store old ebp and esp on the stack.
     asm_.push(dword_ptr(ebp_ptr_label_));
@@ -1466,9 +1456,8 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
     asm_.lea(esp, dword_ptr(ebx, edx)); // esp = data + amx->stk
 
-    // In order to make halt() work we have to be able to return to this
-    // point somehow. The easiest way it to set the stack registers as
-    // if we called the offending instruction directly from here.
+    // In order to make halt() work we have to be able to return
+    // to this point somehow.
     asm_.lea(ecx, dword_ptr(esp, - 4));
     asm_.mov(dword_ptr(reset_esp_ptr_label_), ecx);
     asm_.mov(dword_ptr(reset_ebp_ptr_label_), ebp);
@@ -1495,12 +1484,8 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.pop(dword_ptr(esp_ptr_label_));
     asm_.pop(dword_ptr(ebp_ptr_label_));
 
-    asm_.pop(edx);
-    asm_.pop(ecx);
-    asm_.pop(ebx);
     asm_.pop(edi);
     asm_.pop(esi);
-
     asm_.ret();
 }
 
