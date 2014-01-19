@@ -31,11 +31,7 @@
 #include "cstdint.h"
 #include "disasm.h"
 
-// AsmJit core
 using AsmJit::Label;
-
-// X86-specific
-using AsmJit::X86Assembler;
 using AsmJit::byte_ptr;
 using AsmJit::word_ptr;
 using AsmJit::dword_ptr;
@@ -1610,10 +1606,10 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     asm_.ret();
 }
 
-const AsmJit::Label &CompilerAsmjit::GetLabel(cell address) {
-  AsmJit::Label &label = label_map_[address];
+const Label &CompilerAsmjit::GetLabel(cell address) {
+  Label &label = label_map_[address];
   if (label.getId() == AsmJit::kInvalidValue) {
-    return label = asm_.newLabel();
+    label = asm_.newLabel();
   }
   return label;
 }
