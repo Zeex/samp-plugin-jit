@@ -50,6 +50,7 @@ using AsmJit::edi;
 using AsmJit::ebp;
 using AsmJit::esp;
 using AsmJit::st;
+using AsmJit::xmm0;
 
 namespace amxjit {
 namespace {
@@ -1206,6 +1207,16 @@ void CompilerAsmjit::floatlog() {
   asm_.add(esp, 4);
 }
 
+void CompilerAsmjit::VectorSize() {
+  asm_.movups(xmm0, dword_ptr(esp));
+  asm_.mulps(xmm0, xmm0);
+  asm_.haddps(xmm0, xmm0);
+  asm_.haddps(xmm0, xmm0);
+  asm_.rsqrtss(xmm0, xmm0);
+  asm_.movss(dword_ptr(esp), xmm0);
+  asm_.mov(eax, dword_ptr(esp));
+}
+
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   struct Intrinsic {
     const char         *name;
@@ -1220,7 +1231,8 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"floatmul",    &CompilerAsmjit::floatmul},
     {"floatdiv",    &CompilerAsmjit::floatdiv},
     {"floatsqroot", &CompilerAsmjit::floatsqroot},
-    {"floatlog",    &CompilerAsmjit::floatlog}
+    {"floatlog",    &CompilerAsmjit::floatlog},
+    {"VectorSize",  &CompilerAsmjit::VectorSize}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {

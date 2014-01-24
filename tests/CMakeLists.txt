@@ -33,6 +33,7 @@ test(intrinsics/floatmul)
 test(intrinsics/floatdiv)
 test(intrinsics/floatsqroot)
 test(intrinsics/floatlog)
+test(intrinsics/VectorSize)
 
 test(misc/frame_address)
 test(misc/halt)
