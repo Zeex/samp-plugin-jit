@@ -1208,13 +1208,19 @@ void CompilerAsmjit::floatlog() {
 }
 
 void CompilerAsmjit::VectorSize() {
-  asm_.movups(xmm0, dword_ptr(esp));
-  asm_.mulps(xmm0, xmm0);
-  asm_.haddps(xmm0, xmm0);
-  asm_.haddps(xmm0, xmm0);
-  asm_.rsqrtss(xmm0, xmm0);
-  asm_.movss(dword_ptr(esp), xmm0);
+  asm_.fld(dword_ptr(esp, 4));
+  asm_.fmul(st(0), st(0));
+  asm_.fld(dword_ptr(esp, 8));
+  asm_.fmul(st(0), st(0));
+  asm_.faddp();
+  asm_.fld(dword_ptr(esp, 12));
+  asm_.fmul(st(0), st(0));
+  asm_.faddp();
+  asm_.fsqrt();
+  asm_.sub(esp, 4);
+  asm_.fstp(dword_ptr(esp));
   asm_.mov(eax, dword_ptr(esp));
+  asm_.add(esp, 4);
 }
 
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
