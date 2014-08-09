@@ -132,6 +132,7 @@ int JIT::Exec(cell *retval, int index) {
   if (code_ != 0) {
     amxjit::EntryPoint entry_point = code_->GetEntryPoint();
     return entry_point(index, retval);
+  } else {
+    return amx_Exec(amx(), retval, index);
   }
-  return AMX_ERR_INIT_JIT;
 }

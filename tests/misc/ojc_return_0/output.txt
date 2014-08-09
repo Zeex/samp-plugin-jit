@@ -1,0 +1,3 @@
+OK
+\[jit\] Compilation was disabled
+OK
