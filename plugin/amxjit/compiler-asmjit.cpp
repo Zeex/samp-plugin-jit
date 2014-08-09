@@ -157,8 +157,15 @@ bool CompilerAsmjit::Prepare(AMXPtr amx) {
 
 bool CompilerAsmjit::Process(const Instruction &instr) {
   cell cip = instr.address();
+
+  // Align functions on 16-byte boundary.
+  if (instr.opcode().GetId() == OP_PROC) {
+    asm_.align(16);
+  }
+
   asm_.bind(GetLabel(cip));
   instr_map_[cip] = asm_.getCodeSize();
+
   return true;
 }
 
@@ -525,7 +532,6 @@ void CompilerAsmjit::heap(cell value) {
 
 void CompilerAsmjit::proc() {
   // [STK] = FRM, STK = STK - cell size, FRM = STK
-  asm_.align(16);
   asm_.push(ebp);
   asm_.mov(ebp, esp);
   asm_.sub(dword_ptr(esp), ebx);
