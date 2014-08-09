@@ -113,26 +113,36 @@ amxjit::CompileOutput *Compile(AMX *amx) {
 
 JIT::JIT(AMX *amx):
   AMXService<JIT>(amx),
-  compiled_(false),
-  code_()
+  state_(INIT)
 {
 }
 
 JIT::~JIT() {
-  if (code_ != 0) {
+  if (state_ == COMPILE_SUCCEDED) {
+    assert(code_ != 0);
     code_->Delete();
   }
 }
 
 int JIT::Exec(cell *retval, int index) {
-  if (!compiled_) {
-    code_ = Compile(amx());
-    compiled_ = true;
-  }
-  if (code_ != 0) {
-    amxjit::EntryPoint entry_point = code_->GetEntryPoint();
-    return entry_point(index, retval);
-  } else {
-    return amx_Exec(amx(), retval, index);
+  switch (state_) {
+    case INIT:
+      state_ = COMPILE;
+      if ((code_ = Compile(amx())) != 0) {
+        state_ = COMPILE_SUCCEDED;
+      } else {
+        state_ = COMPILE_FAILED;
+        return AMX_ERR_INIT_JIT;
+      }
+    case COMPILE_SUCCEDED: {
+      amxjit::EntryPoint entry_point = code_->GetEntryPoint();
+      return entry_point(index, retval);
+    }
+    case COMPILE:
+    case COMPILE_FAILED:
+      return AMX_ERR_INIT_JIT;
+    default:
+      assert(0 && "Invalid JIT state");
+      return AMX_ERR_NONE;
   }
 }

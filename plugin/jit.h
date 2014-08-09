@@ -42,7 +42,12 @@ class JIT: public AMXService<JIT> {
   ~JIT();
 
  private:
-  bool compiled_;
+  enum State {
+    INIT,
+    COMPILE,
+    COMPILE_FAILED,
+    COMPILE_SUCCEDED
+  } state_;
   amxjit::CompileOutput *code_;
 };
 

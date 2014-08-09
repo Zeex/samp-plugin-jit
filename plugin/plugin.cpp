@@ -63,7 +63,6 @@ std::string GetFileName(const std::string &path) {
 }
 
 int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-  SubHook::ScopedRemove _(&amx_Exec_hook);
   #ifdef LINUX
     if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
       assert(::opcode_table != 0);
@@ -71,7 +70,12 @@ int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
       return AMX_ERR_NONE;
     }
   #endif
-  return JIT::GetInstance(amx)->Exec(retval, index);
+  int error = JIT::GetInstance(amx)->Exec(retval, index);
+  if (error == AMX_ERR_INIT_JIT) {
+    SubHook::ScopedRemove _(&amx_Exec_hook);
+    return amx_Exec(amx, retval, index);
+  }
+  return error;
 }
 
 } // anonymous namespace
