@@ -42,6 +42,7 @@ class JIT: public AMXService<JIT> {
   ~JIT();
 
  private:
+  bool compiled_;
   amxjit::CompileOutput *code_;
 };
 

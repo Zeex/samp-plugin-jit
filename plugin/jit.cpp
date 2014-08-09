@@ -113,6 +113,7 @@ amxjit::CompileOutput *Compile(AMX *amx) {
 
 JIT::JIT(AMX *amx):
   AMXService<JIT>(amx),
+  compiled_(false),
   code_()
 {
 }
@@ -124,8 +125,9 @@ JIT::~JIT() {
 }
 
 int JIT::Exec(cell *retval, int index) {
-  if (index == AMX_EXEC_MAIN) {
+  if (!compiled_) {
     code_ = Compile(amx());
+    compiled_ = true;
   }
   if (code_ != 0) {
     amxjit::EntryPoint entry_point = code_->GetEntryPoint();
