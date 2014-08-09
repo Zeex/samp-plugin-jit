@@ -1,0 +1,1 @@
+Downloads moved here: https://github.com/Zeex/samp-plugin-jit/releases
