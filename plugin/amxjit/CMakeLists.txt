@@ -36,7 +36,8 @@ endforeach()
 
 add_library(amxjit STATIC ${sources})
 
-set_property(TARGET amxjit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
+set_property(TARGET amxjit APPEND PROPERTY
+             COMPILE_DEFINITIONS $<$<CONFIG:Debug>:DEBUG>)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")

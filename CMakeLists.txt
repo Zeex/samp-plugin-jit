@@ -8,6 +8,8 @@ include(CTest)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+add_subdirectory(deps)
+
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
   string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
@@ -24,8 +26,6 @@ string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc}
 
 set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
-
-add_subdirectory(deps)
 
 add_subdirectory(plugin)
 set_target_properties(plugin PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
