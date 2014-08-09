@@ -63,7 +63,6 @@ std::string GetFileName(const std::string &path) {
 }
 
 int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
-  SubHook::ScopedRemove _(&amx_Exec_hook);
   #ifdef LINUX
     if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
       assert(::opcode_table != 0);
