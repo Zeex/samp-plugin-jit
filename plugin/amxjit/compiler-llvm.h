@@ -42,8 +42,7 @@ class CompilerLLVM: public Compiler {
  protected:
   virtual bool Setup();
   virtual bool Process(const Instruction &instr);
-  virtual void Abort();
-  virtual CompileOutput *Finish();
+  virtual CompileOutput *Finish(bool error);
 
  protected:
   virtual void load_pri(cell address);

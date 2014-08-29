@@ -474,15 +474,11 @@ CompileOutput *Compiler::Compile(AMXPtr amx) {
     }
   }
 
-  if (error) {
-    if (error_handler_ != 0) {
-      error_handler_->Execute(instr);
-    }
-    Abort();
-    return 0;
+  if (error && error_handler_ != 0) {
+    error_handler_->Execute(instr);
   }
 
-  return Finish();
+  return Finish(error);
 }
 
 } // namespace amxjit

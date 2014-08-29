@@ -160,7 +160,6 @@ CompilerAsmjit::CompilerAsmjit():
 }
 
 CompilerAsmjit::~CompilerAsmjit() {
-  delete logger_;
 }
 
 bool CompilerAsmjit::Prepare(AMXPtr amx) { 
@@ -206,32 +205,36 @@ bool CompilerAsmjit::Process(const Instruction &instr) {
   return true;
 }
 
-void CompilerAsmjit::Abort() {
-  // do nothing
-}
+CompileOutput *CompilerAsmjit::Finish(bool error) {
+  CompileOutput *output = 0;
 
-CompileOutput *CompilerAsmjit::Finish() {
-  void *code = asm_.make();
-  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code);
+  if (!error) {
+    void *code = asm_.make();
+    RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code);
 
-  rib->exec += reinterpret_cast<intptr_t>(code);
-  rib->instr_table += reinterpret_cast<intptr_t>(code);
+    rib->exec += reinterpret_cast<intptr_t>(code);
+    rib->instr_table += reinterpret_cast<intptr_t>(code);
 
-  InstrTableEntry *ite = reinterpret_cast<InstrTableEntry*>(rib->instr_table);
-  for (InstrMap::const_iterator it = instr_map_.begin();
-       it != instr_map_.end(); it++) {
-    ite->address = it->first;
-    ite->start = static_cast<unsigned char*>(code) + it->second;
-    ite++;
+    InstrTableEntry *ite =
+      reinterpret_cast<InstrTableEntry*>(rib->instr_table);
+    for (InstrMap::const_iterator it = instr_map_.begin();
+         it != instr_map_.end(); it++) {
+      ite->address = it->first;
+      ite->start = static_cast<unsigned char*>(code) + it->second;
+      ite++;
+    }
+
+    output = new CompileOutputAsmjit(code);
   }
+
+  current_amx_.Reset();
 
   if (asm_.getLogger() != 0) {
     delete logger_;
     asm_.setLogger(0);
   }
 
-  current_amx_.Reset();
-  return new CompileOutputAsmjit(code);
+  return output;
 }
 
 void CompilerAsmjit::load_pri(cell address) {

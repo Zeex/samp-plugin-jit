@@ -45,8 +45,7 @@ class CompilerAsmjit: public Compiler {
  protected:
   virtual bool Prepare(AMXPtr amx);
   virtual bool Process(const Instruction &instr);
-  virtual void Abort();
-  virtual CompileOutput *Finish();
+  virtual CompileOutput *Finish(bool error);
 
  protected:
   virtual void load_pri(cell address);

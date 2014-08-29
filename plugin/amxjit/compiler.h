@@ -89,12 +89,9 @@ class Compiler {
   // Processes a single instruction. Returns false on error.
   virtual bool Process(const Instruction &instr) = 0;
 
-  // This method is called on a fatal error.
-  virtual void Abort() = 0;
-
   // Final compilation step. This method shuld either return a runnable
   // CompilerOutput or null which would indicate a fatal error.
-  virtual CompileOutput *Finish() = 0;
+  virtual CompileOutput *Finish(bool error) = 0;
 
   // Per-opcode methods.
   virtual void load_pri(cell address) = 0;

@@ -48,10 +48,7 @@ bool CompilerLLVM::Process(const Instruction &instr) {
   return true;
 }
 
-void CompilerLLVM::Abort() {
-}
-
-CompileOutput *CompilerLLVM::Finish() {
+CompileOutput *CompilerLLVM::Finish(bool error) {
   return 0;
 }
 
