@@ -448,11 +448,11 @@ void CompilerAsmjit::lctrl(cell index, cell cip) {
       switch (index) {
         case 0:
           asm_.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
-          asm_.mov(eax, dword_ptr(edx, offsetof(AMX_HEADER, cod)));
+          asm_.mov(eax, dword_ptr(eax, offsetof(AMX_HEADER, cod)));
           break;
         case 1:
           asm_.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
-          asm_.mov(eax, dword_ptr(edx, offsetof(AMX_HEADER, dat)));
+          asm_.mov(eax, dword_ptr(eax, offsetof(AMX_HEADER, dat)));
           break;
         case 2:
           asm_.mov(eax, dword_ptr(eax, offsetof(AMX, hea)));
