@@ -198,8 +198,9 @@ bool CompilerAsmjit::Process(const Instruction &instr) {
   instr_map_[cip] = asm_.getCodeSize();
 
   if (logger_ != 0) {
-    logger_->logFormat("; %08x: %s\n", instr.address(),
-                                       instr.ToString().c_str());
+    logger_->logFormat("; +%08x: %08x: %s\n", asm_.getCodeSize(),
+                                              instr.address(),
+                                              instr.ToString().c_str());
   }
 
   return true;
