@@ -24,6 +24,7 @@
 
 #include "compiler.h"
 #include "disasm.h"
+#include "logger.h"
 
 namespace amxjit {
 
@@ -34,14 +35,6 @@ Compiler::Compiler():
 }
 
 Compiler::~Compiler() {
-}
-
-void Compiler::SetLogger(Logger *logger) {
-  logger_ = logger;
-}
-
-void Compiler::SetErrorHandler(CompileErrorHandler *handler) {
-  error_handler_ = handler;
 }
 
 CompileOutput *Compiler::Compile(AMXPtr amx) {

@@ -226,11 +226,13 @@ class CompilerAsmjit: public Compiler {
   typedef std::map<cell, std::ptrdiff_t> InstrMap;
   InstrMap instr_map_;
 
+  AsmJit::Logger *logger_;
+
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
 };
 
-class CompileOutputAsmjit : public CompileOutput {
+class CompileOutputAsmjit: public CompileOutput {
  public:
   CompileOutputAsmjit(void *code);
   virtual ~CompileOutputAsmjit();

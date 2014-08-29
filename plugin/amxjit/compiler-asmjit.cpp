@@ -30,6 +30,7 @@
 #include "compiler-asmjit.h"
 #include "cstdint.h"
 #include "disasm.h"
+#include "logger.h"
 
 using AsmJit::Label;
 using AsmJit::byte_ptr;
@@ -98,6 +99,24 @@ void *AMXJIT_CDECL GetInstrStartPtr(cell address, RuntimeInfoBlock *rib) {
   return 0;
 }
 
+class AsmJitLoggerAdtapter: public AsmJit::Logger {
+ public:
+  AsmJitLoggerAdtapter(amxjit::Logger *logger):
+    logger_(logger) {}
+  virtual void logString(const char* buf,
+                         size_t len = AsmJit::kInvalidSize) {
+    assert(logger_ != 0);
+    if (len == AsmJit::kInvalidSize) {
+      logger_->Write(buf);
+    } else {
+      std::string tmp_buf(buf, len);
+      logger_->Write(tmp_buf.c_str());
+    }
+  }
+ private:
+  amxjit::Logger *logger_;
+};
+
 } // anonymous namespace
 
 CompileOutputAsmjit::CompileOutputAsmjit(void *code):
@@ -135,15 +154,18 @@ CompilerAsmjit::CompilerAsmjit():
   halt_helper_label_(asm_.newLabel()),
   jump_helper_label_(asm_.newLabel()),
   sysreq_c_helper_label_(asm_.newLabel()),
-  sysreq_d_helper_label_(asm_.newLabel())
+  sysreq_d_helper_label_(asm_.newLabel()),
+  logger_()
 {
 }
 
 CompilerAsmjit::~CompilerAsmjit() {
+  delete logger_;
 }
 
 bool CompilerAsmjit::Prepare(AMXPtr amx) { 
   current_amx_ = amx;
+
   EmitRuntimeInfo();
   EmitInstrTable();
   EmitExec();
@@ -152,6 +174,15 @@ bool CompilerAsmjit::Prepare(AMXPtr amx) {
   EmitJumpHelper();
   EmitSysreqCHelper();
   EmitSysreqDHelper();
+
+  if (GetLogger() != 0) {
+    logger_ = new AsmJitLoggerAdtapter(GetLogger());
+    logger_->setInstructionPrefix("\t");
+    logger_->setHexDisplacement(true);
+    logger_->setHexImmediate(true);
+    asm_.setLogger(logger_);
+  }
+
   return true;
 }
 
@@ -165,6 +196,11 @@ bool CompilerAsmjit::Process(const Instruction &instr) {
 
   asm_.bind(GetLabel(cip));
   instr_map_[cip] = asm_.getCodeSize();
+
+  if (logger_ != 0) {
+    logger_->logFormat("; %08x: %s\n", instr.address(),
+                                       instr.ToString().c_str());
+  }
 
   return true;
 }
@@ -186,6 +222,11 @@ CompileOutput *CompilerAsmjit::Finish() {
     ite->address = it->first;
     ite->start = static_cast<unsigned char*>(code) + it->second;
     ite++;
+  }
+
+  if (asm_.getLogger() != 0) {
+    delete logger_;
+    asm_.setLogger(0);
   }
 
   current_amx_.Reset();

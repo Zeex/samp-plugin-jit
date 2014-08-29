@@ -65,10 +65,18 @@ class Compiler {
   virtual ~Compiler();
 
   // Sets the logger to be used by the compiler implementation.
-  void SetLogger(Logger *logger);
+  void SetLogger(Logger *logger) { logger_ = logger; }
+
+  // Returns the current logger or null if the logger was not set.
+  Logger *GetLogger() const { return logger_; }
 
   // Sets the error callback that will be called on error.
-  void SetErrorHandler(CompileErrorHandler *handler);
+  void SetErrorHandler(CompileErrorHandler *error_handler) {
+    error_handler_ = error_handler;
+  }
+
+  // Returns the current error handler or null if the handler was not set.
+  CompileErrorHandler *GetErrorHandler() const { return error_handler_; }
 
   // Compiles the specified AMX script.
   CompileOutput *Compile(AMXPtr amx);
@@ -219,7 +227,7 @@ class Compiler {
   virtual void nop() = 0;
   virtual void break_() = 0;
 
-private:
+ private:
   Logger *logger_;
   CompileErrorHandler *error_handler_;
 };
