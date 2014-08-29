@@ -58,8 +58,8 @@ void Printf(const char *format, ...) {
 class ErrorHandler: public amxjit::CompileErrorHandler {
  public:
   virtual void Execute(const amxjit::Instruction &instr) {
-    Printf("Invalid or unsupported instruction at address %p:",
-              instr.address());
+    Printf("Invalid or unsupported instruction at address %08x:",
+           instr.address());
     Printf("  => %s", instr.ToString().c_str());
   }
 };
