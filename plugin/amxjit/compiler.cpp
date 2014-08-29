@@ -46,7 +46,7 @@ CompileOutput *Compiler::Compile(AMXPtr amx) {
   Instruction instr;
   bool error = false;
 
-  while (disasm.Decode(instr, error)) {
+  while (!error && disasm.Decode(instr, error)) {
     if (!Process(instr)) {
       error = true;
       break;

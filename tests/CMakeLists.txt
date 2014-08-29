@@ -24,6 +24,7 @@ test(bugs/bug21)
 test(bugs/bug24)
 test(bugs/bug30)
 test(bugs/bug36)
+test(bugs/jrel)
 
 test(intrinsics/float)
 test(intrinsics/floatabs)
