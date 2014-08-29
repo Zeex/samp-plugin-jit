@@ -34,6 +34,7 @@ namespace amxjit {
 
 class CaseTable;
 class Instruction;
+class Logger;
 
 typedef int (AMXAPI *EntryPoint)(cell index, cell *retval);
 
@@ -62,6 +63,9 @@ class Compiler {
  public:
   Compiler();
   virtual ~Compiler();
+
+  // Sets the logger to be used by the compiler implementation.
+  void SetLogger(Logger *logger);
 
   // Sets the error callback that will be called on error.
   void SetErrorHandler(CompileErrorHandler *handler);
@@ -216,6 +220,7 @@ class Compiler {
   virtual void break_() = 0;
 
 private:
+  Logger *logger_;
   CompileErrorHandler *error_handler_;
 };
 

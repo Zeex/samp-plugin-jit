@@ -38,6 +38,7 @@
   #include "amxjit/compiler-llvm.h"
 #endif
 #include "amxjit/disasm.h"
+#include "amxjit/logger.h"
 
 #define logprintf Use_Printf_isntead_of_logprintf
 
@@ -80,12 +81,22 @@ amxjit::CompileOutput *Compile(AMX *amx) {
     return 0;
   }
 
+  amxjit::Logger *logger = 0;
   amxjit::Compiler *compiler = 0;
   amxjit::CompileOutput *output = 0;
 
+  ConfigReader server_cfg("server.cfg");
+
+  bool jit_log = false;
+  server_cfg.GetOption("jit_log", jit_log);
+
+  if (jit_log) {
+    logger = new amxjit::FileLogger("plugins/jit.log");
+  }
+
   std::string backend = "asmjit";
-  ConfigReader("server.cfg").GetOption("jit_backend", backend);
-  
+  server_cfg.GetOption("jit_backend", backend);
+
   #if JIT_ASMJIT
     if (backend == "asmjit") {
       compiler = new amxjit::CompilerAsmjit;
@@ -99,12 +110,15 @@ amxjit::CompileOutput *Compile(AMX *amx) {
 
   if (compiler != 0) {
     ErrorHandler error_handler;
+    compiler->SetLogger(logger);
     compiler->SetErrorHandler(&error_handler);
     output = compiler->Compile(amx);
-    delete compiler;
   } else {
     Printf("Unrecognized backend '%s'", backend.c_str());
   }
+
+  delete compiler;
+  delete logger;
 
   return output;
 }

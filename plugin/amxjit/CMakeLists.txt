@@ -25,6 +25,8 @@ set(sources
   cstdint.h
   disasm.cpp
   disasm.h
+  logger.cpp
+  logger.h
   macros.h
   opcode.cpp
   opcode.h

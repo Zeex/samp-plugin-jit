@@ -28,11 +28,16 @@
 namespace amxjit {
 
 Compiler::Compiler():
+  logger_(),
   error_handler_()
 {
 }
 
 Compiler::~Compiler() {
+}
+
+void Compiler::SetLogger(Logger *logger) {
+  logger_ = logger;
 }
 
 void Compiler::SetErrorHandler(CompileErrorHandler *handler) {
