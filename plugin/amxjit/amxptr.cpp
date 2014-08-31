@@ -87,7 +87,7 @@ cell AMXPtr::GetPublicAddress(cell index) const {
     if (hdr->cip > 0) {
       return hdr->cip;
     }
-  } else if (index >= 0 || index < num_publics()) {
+  } else if (index >= 0 && index < num_publics()) {
     return publics()[index].address;
   }
   return 0;
