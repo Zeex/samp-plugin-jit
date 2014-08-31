@@ -129,6 +129,7 @@ JIT::JIT(AMX *amx):
   AMXService<JIT>(amx),
   state_(INIT)
 {
+  amx->sysreq_d = 0;
 }
 
 JIT::~JIT() {
