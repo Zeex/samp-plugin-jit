@@ -1065,7 +1065,7 @@ void CompilerAsmjit::fill(cell num_bytes) {
 void CompilerAsmjit::halt(cell error_code) {
   // Abort execution (exit value in PRI), parameters other than 0
   // have a special meaning.
-  asm_.mov(edx, error_code);
+  asm_.mov(edi, error_code);
   asm_.jmp(halt_helper_label_);
 }
 
@@ -1079,7 +1079,7 @@ void CompilerAsmjit::bounds(cell value) {
     asm_.jl(halt_label);
     asm_.jmp(exit_label);
   asm_.bind(halt_label);
-    asm_.mov(edx, AMX_ERR_BOUNDS);
+    asm_.mov(edi, AMX_ERR_BOUNDS);
     asm_.jmp(halt_helper_label_);
   asm_.bind(exit_label);
 }
@@ -1094,30 +1094,21 @@ void CompilerAsmjit::sysreq_pri() {
 
 void CompilerAsmjit::sysreq_c(cell index, const char *name) {
   // call system service
-  if (name != 0) {
-    if (!EmitIntrinsic(name)) {
-      asm_.push(esp); // stack_ptr
-      asm_.push(ebp); // stack_base
-      #if DEBUG
-        asm_.push(index); // index
-        asm_.call(sysreq_c_helper_label_);
-      #else
-        asm_.push(current_amx_.GetNativeAddress(index)); // address
-        asm_.call(sysreq_d_helper_label_);
-      #endif
-    }
+  if (!EmitIntrinsic(name)) {
+    asm_.push(esp); // stack_ptr
+    asm_.push(ebp); // stack_base
+    asm_.push(index);
+    asm_.call(sysreq_c_helper_label_);
   }
 }
 
 void CompilerAsmjit::sysreq_d(cell address, const char *name) {
   // call system service
-  if (name != 0) {
-    if (!EmitIntrinsic(name)) {
-      asm_.push(esp);     // stack_ptr
-      asm_.push(ebp);     // stack_base
-      asm_.push(address); // address
-      asm_.call(sysreq_d_helper_label_);
-    }
+  if (!EmitIntrinsic(name)) {
+    asm_.push(esp);     // stack_ptr
+    asm_.push(ebp);     // stack_base
+    asm_.push(address); // address
+    asm_.call(sysreq_d_helper_label_);
   }
 }
 
@@ -1529,11 +1520,11 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.ret();
 }
 
-// void HaltHelper(int error [edx]);
+// void HaltHelper(int error [edi]);
 void CompilerAsmjit::EmitHaltHelper() {
   asm_.bind(halt_helper_label_);
     asm_.lea(esi, dword_ptr_abs(current_amx_.raw()));
-    asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edx); // error code in edx
+    asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi); // error code in edi
 
     // Reset stack so we can return right to call().
     asm_.mov(esp, dword_ptr(reset_esp_label_));
@@ -1551,7 +1542,7 @@ void CompilerAsmjit::EmitHaltHelper() {
 // void JumpHelper(void *address [edx], void *stack_base [esi],
 //                                      void *stack_ptr [edi]);
 void CompilerAsmjit::EmitJumpHelper() {
-  Label invalidAddressLabel = asm_.newLabel();
+  Label invalid_address_label = asm_.newLabel();
 
   asm_.bind(jump_helper_label_);
     asm_.push(eax);
@@ -1568,53 +1559,67 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.pop(eax);
 
     asm_.test(edx, edx);
-    asm_.jz(invalidAddressLabel);
+    asm_.jz(invalid_address_label);
 
     asm_.mov(ebp, esi);
     asm_.mov(esp, edi);
     asm_.jmp(edx);
 
   // Continue execution as if no jump was initiated (this is what AMX does).
-  asm_.bind(invalidAddressLabel);
+  asm_.bind(invalid_address_label);
     asm_.ret();
 }
 
 // cell AMXJIT_CDECL SysreqCHelper(int index, void *stack_base,
 //                                            void *stack_ptr);
 void CompilerAsmjit::EmitSysreqCHelper() {
-  Label native_not_found_label = asm_.newLabel();
-  Label return_label = asm_.newLabel();
-
-  int arg_index = 8;
-  int arg_stack_base = 12;
-  int arg_stack_ptr = 16;
-
   asm_.bind(sysreq_c_helper_label_);
-    asm_.push(ebp);
-    asm_.mov(ebp, esp);
+    asm_.mov(eax, dword_ptr(esp, 4));   // index
+    asm_.mov(ebp, dword_ptr(esp, 8));   // stack_base
+    asm_.mov(esp, dword_ptr(esp, 12));  // stack_ptr
+    asm_.mov(ecx, esp);                 // params
+    asm_.mov(esi, dword_ptr(esp, -16)); // return address
 
-    asm_.push(dword_ptr(ebp, arg_index));
-    asm_.lea(eax, dword_ptr_abs(current_amx_.raw()));
-    asm_.push(eax);
-    asm_.call(asmjit_cast<void*>(&GetNativeAddress));
-    asm_.add(esp, 8);
-    asm_.test(eax, eax);
-    asm_.jz(native_not_found_label);
+    asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
 
-    asm_.push(dword_ptr(ebp, arg_stack_ptr));
-    asm_.push(dword_ptr(ebp, arg_stack_base));
-    asm_.push(eax); // address
-    asm_.call(sysreq_d_helper_label_);
-    asm_.add(esp, 12);
+    // Switch to native stack.
+    asm_.sub(ebp, ebx);
+    asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
+    asm_.mov(ebp, dword_ptr(ebp_label_));
+    asm_.sub(esp, ebx);
+    asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
+    asm_.mov(esp, dword_ptr(esp_label_));
 
-  asm_.bind(return_label);
-    asm_.mov(esp, ebp);
-    asm_.pop(ebp);
+    // Call the native function.
+    asm_.push(0);
+    asm_.mov(edi, esp);
+    asm_.push(ecx); // params
+    asm_.push(edi); // result
+    asm_.push(eax); // index
+    asm_.push(edx); // amx
+    asm_.call(dword_ptr(edx, offsetof(AMX, callback)));
+    asm_.add(esp, 20);
+
+    // Get the result.
+    asm_.mov(edi, dword_ptr(esp, -4));
+    asm_.xchg(eax, edi);
+
+    // Switch back to AMX stack.
+    asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(dword_ptr(ebp_label_), ebp);
+    asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
+    asm_.lea(ebp, dword_ptr(ebx, ecx)); // ebp = data + amx->frm
+    asm_.mov(dword_ptr(esp_label_), esp);
+    asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
+    asm_.lea(esp, dword_ptr(ebx, ecx)); // ebp = data + amx->stk
+
+    // Check for errors.
+    asm_.cmp(edi, AMX_ERR_NONE);
+    asm_.jne(halt_helper_label_);
+
+    // Modify the return address so we return next to the sysreq point.
+    asm_.push(esi);
     asm_.ret();
-
-  asm_.bind(native_not_found_label);
-    asm_.mov(eax, AMX_ERR_NOTFOUND);
-    asm_.jmp(return_label);
 }
 
 // cell AMXJIT_CDECL SysreqDHelper(void *address, void *stack_base,

@@ -436,7 +436,7 @@ CompileOutput *Compiler::Compile(AMXPtr amx) {
           error = true;
         } else {
           sysreq_c(instr.operand(), name);
-          }
+        }
         break;
       }
       case OP_SYSREQ_D: {
