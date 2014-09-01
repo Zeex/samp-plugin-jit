@@ -1276,7 +1276,6 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
 }
 
 void CompilerAsmjit::EmitRuntimeInfo() {
-  // This must have the same structure as RuntimeInfoBlock.
   asm_.bind(rib_start_label_);
   asm_.bind(exec_ptr_label_);
     asm_.dd(0); // rib->exec
@@ -1325,7 +1324,6 @@ void CompilerAsmjit::EmitExec() {
   Label finish_label = asm_.newLabel();
   Label return_label = asm_.newLabel();
 
-  // Offsets of exec() arguments relative to ebp.
   int arg_index = 8;
   int arg_retval = 12;
   int var_address = -4;
@@ -1335,12 +1333,14 @@ void CompilerAsmjit::EmitExec() {
   asm_.bind(exec_label_);
     asm_.push(ebp);
     asm_.mov(ebp, esp);
-    asm_.sub(esp, 12); // for locals
+
+    // Allocate space for the local variables.
+    asm_.sub(esp, 12);
 
     asm_.push(esi);
     asm_.lea(esi, dword_ptr_abs(current_amx_.raw()));
 
-    // Set ebx to point to the AMX data segement.
+    // Set ebx to point to the AMX data section.
     asm_.push(ebx);
     asm_.mov(ebx, dword_ptr(esi, offsetof(AMX, data)));
     asm_.test(ebx, ebx);
@@ -1351,26 +1351,25 @@ void CompilerAsmjit::EmitExec() {
 
   asm_.bind(null_data_label);
 
-    // Check for stack/heap collision (stack/heap overflow).
+    // Check for a stack/heap collision (stack/heap overflow).
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
     asm_.mov(edx, dword_ptr(esi, offsetof(AMX, stk)));
     asm_.cmp(ecx, edx);
     asm_.jge(stack_heap_overflow_label);
 
-    // Check for stack underflow.
+    // Check for a stack underflow.
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, stk)));
     asm_.mov(edx, dword_ptr(esi, offsetof(AMX, stp)));
     asm_.cmp(ecx, edx);
     asm_.jg(stack_underflow_label);
 
-    // Check for heap underflow.
+    // Check for a heap underflow.
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, hea)));
     asm_.mov(edx, dword_ptr(esi, offsetof(AMX, hlw)));
     asm_.cmp(ecx, edx);
     asm_.jl(heap_underflow_label);
 
-    // Make sure all natives are registered (the AMX_FLAG_NTVREG flag
-    // must be set).
+    // Make sure that all natives functions have been registered.
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, flags)));
     asm_.test(ecx, AMX_FLAG_NTVREG);
     asm_.jz(native_not_found_label);
@@ -1378,14 +1377,14 @@ void CompilerAsmjit::EmitExec() {
     // Reset the error code.
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), AMX_ERR_NONE);
 
-    // Get address of the public function.
+    // Get the address of the public function.
     asm_.push(dword_ptr(ebp, arg_index));
     asm_.lea(eax, dword_ptr_abs(current_amx_.raw()));
     asm_.push(eax);
     asm_.call(asmjit_cast<void*>(&GetPublicAddress));
     asm_.add(esp, 8);
 
-    // Check whether the function was found (address would be 0).
+    // Check if the function was actually found.
     asm_.test(eax, eax);
     asm_.jz(public_not_found_label);
 
@@ -1397,7 +1396,7 @@ void CompilerAsmjit::EmitExec() {
     asm_.add(esp, 8);
     asm_.mov(dword_ptr(ebp, var_address), eax);
 
-    // Push the number of arguments and reset parameter count.
+    // Push the size of the arguments and reset the parameter count.
     asm_.mov(eax, dword_ptr(esi, offsetof(AMX, paramcount)));
     asm_.imul(eax, eax, sizeof(cell));
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, stk)));
@@ -1406,7 +1405,7 @@ void CompilerAsmjit::EmitExec() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), ecx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, paramcount)), 0);
 
-    // Keep a copy of the old reset_ebp and reset_esp on the stack.
+    // Save the old reset_ebp and reset_esp on the stack.
     asm_.mov(eax, dword_ptr(reset_ebp_label_));
     asm_.mov(dword_ptr(ebp, var_reset_ebp), eax);
     asm_.mov(eax, dword_ptr(reset_esp_label_));
@@ -1417,14 +1416,14 @@ void CompilerAsmjit::EmitExec() {
     asm_.call(exec_helper_label_);
     asm_.add(esp, 4);
 
-    // Copy return value to retval if it's not null.
+    // Copy the return value to retval (if it's not null).
     asm_.mov(ecx, dword_ptr(ebp, arg_retval));
     asm_.test(ecx, ecx);
     asm_.jz(finish_label);
     asm_.mov(dword_ptr(ecx), eax);
 
   asm_.bind(finish_label);
-    // Restore reset_ebp and reset_esp (they are kept in locals).
+    // Restore reset_ebp and reset_esp from the stack.
     asm_.mov(eax, dword_ptr(ebp, var_reset_ebp));
     asm_.mov(dword_ptr(reset_ebp_label_), eax);
     asm_.mov(eax, dword_ptr(ebp, var_reset_esp));
@@ -1468,7 +1467,7 @@ void CompilerAsmjit::EmitExecHelper() {
     // Store the function address in eax.
     asm_.mov(eax, dword_ptr(esp, 4));
 
-    // These are caller-saved in JIT code.
+    // These registers are caller-saved in JIT code.
     asm_.push(esi);
     asm_.push(edi);
 
@@ -1480,15 +1479,14 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(dword_ptr(esp_label_), esp);
 
-    // Switch from native stack to AMX stack.
+    // Switch from the native stack to the AMX stack.
     asm_.lea(ecx, dword_ptr_abs(current_amx_.raw()));
     asm_.mov(edx, dword_ptr(esi, offsetof(AMX, frm)));
     asm_.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + amx->frm
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
     asm_.lea(esp, dword_ptr(ebx, edx)); // esp = data + amx->stk
 
-    // In order to make halt() work we have to be able to return
-    // to this point somehow.
+    // In order to make halt() work we must able to return to this place.
     asm_.lea(ecx, dword_ptr(esp, - 4));
     asm_.mov(dword_ptr(reset_esp_label_), ecx);
     asm_.mov(dword_ptr(reset_ebp_label_), ebp);
@@ -1498,8 +1496,8 @@ void CompilerAsmjit::EmitExecHelper() {
     // in the AMX stack.
     asm_.call(eax);
 
-    // Keep AMX stack registers up-to-date. This wouldn't be necessary if
-    // RETN didn't modify them (it pops all arguments off the stack).
+    // Keep the AMX stack registers up-to-date. This wouldn't be necessary
+    // if RETN didn't modify them (it pops all arguments off the stack).
     asm_.lea(ecx, dword_ptr_abs(current_amx_.raw()));
     asm_.mov(edx, ebp);
     asm_.sub(edx, ebx);
@@ -1508,7 +1506,7 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx); // amx->stk = esp - data
 
-    // Switch back to native stack.
+    // Switch back to the native stack.
     asm_.mov(ebp, dword_ptr(ebp_label_));
     asm_.mov(esp, dword_ptr(esp_label_));
 
@@ -1526,11 +1524,11 @@ void CompilerAsmjit::EmitHaltHelper() {
     asm_.lea(esi, dword_ptr_abs(current_amx_.raw()));
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi); // error code in edi
 
-    // Reset stack so we can return right to call().
+    // Reset the stack so that we return to the instruction next to CALL.
     asm_.mov(esp, dword_ptr(reset_esp_label_));
     asm_.mov(ebp, dword_ptr(reset_ebp_label_));
 
-    // Pop public arguments as it would otherwise be done by RETN.
+    // Pop the public function's arguments as it done by RETN.
     asm_.pop(eax);
     asm_.add(esp, dword_ptr(esp));
     asm_.add(esp, 4);
@@ -1540,7 +1538,7 @@ void CompilerAsmjit::EmitHaltHelper() {
 }
 
 // void JumpHelper(void *address [edx], void *stack_base [esi],
-//                                      void *stack_ptr [edi]);
+//                                      void *stack_ptr  [edi]);
 void CompilerAsmjit::EmitJumpHelper() {
   Label invalid_address_label = asm_.newLabel();
 
@@ -1565,7 +1563,7 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.mov(esp, edi);
     asm_.jmp(edx);
 
-  // Continue execution as if no jump was initiated (this is what AMX does).
+  // Continue execution as if there was no jump at all (this is what AMX does).
   asm_.bind(invalid_address_label);
     asm_.ret();
 }
@@ -1582,7 +1580,7 @@ void CompilerAsmjit::EmitSysreqCHelper() {
 
     asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
 
-    // Switch to native stack.
+    // Switch to the native stack.
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
     asm_.mov(ebp, dword_ptr(ebp_label_));
@@ -1604,7 +1602,7 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.mov(edi, dword_ptr(esp, -4));
     asm_.xchg(eax, edi);
 
-    // Switch back to AMX stack.
+    // Switch back to the AMX stack.
     asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
     asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
@@ -1634,7 +1632,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
 
     asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
 
-    // Switch to native stack.
+    // Switch to the native stack.
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
     asm_.mov(ebp, dword_ptr(ebp_label_));
@@ -1648,7 +1646,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     asm_.call(eax); // address
     asm_.add(esp, 8);
 
-    // Switch back to AMX stack.
+    // Switch back to the AMX stack.
     asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
     asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
