@@ -24,14 +24,12 @@
 
 #include <cassert>
 #include <cstdarg>
-#include <ctime>
 #include <string>
 
 #include "configreader.h"
 #include "jit.h"
 #include "logprintf.h"
 #include "plugin.h"
-#include "version.h"
 
 #if JIT_ASMJIT
   #include "amxjit/compiler-asmjit.h"
@@ -94,7 +92,6 @@ amxjit::CompileOutput *Compile(AMX *amx) {
 
   if (jit_log) {
     logger = new amxjit::FileLogger("plugins/jit.log");
-    logger->Write("; JIT " PROJECT_VERSION_STRING "\n\n");
   }
 
   std::string backend = "asmjit";
@@ -116,15 +113,12 @@ amxjit::CompileOutput *Compile(AMX *amx) {
     compiler->SetLogger(logger);
     compiler->SetErrorHandler(&error_handler);
     output = compiler->Compile(amx);
-    delete compiler;
   } else {
     Printf("Unrecognized backend '%s'", backend.c_str());
   }
 
-  if (logger != 0) {
-    logger->Write("\n");
-    delete logger;
-  }
+  delete compiler;
+  delete logger;
 
   return output;
 }
