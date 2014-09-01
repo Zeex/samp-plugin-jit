@@ -38,7 +38,7 @@ class Logger {
 class FileLogger: public Logger {
  public:
   FileLogger(const char *filename);
-  virtual ~FileLogger() {}
+  virtual ~FileLogger();
 
   virtual void Write(const char *string);
  private:

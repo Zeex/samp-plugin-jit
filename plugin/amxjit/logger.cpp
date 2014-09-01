@@ -27,8 +27,13 @@
 namespace amxjit {
 
 FileLogger::FileLogger(const char *filename)
-  : file_(filename)
+  : file_(filename, std::ofstream::app)
 {
+}
+
+FileLogger::~FileLogger() {
+  file_.flush();
+  file_.close();
 }
 
 void FileLogger::Write(const char *string) {
