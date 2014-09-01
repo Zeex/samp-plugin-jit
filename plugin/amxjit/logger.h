@@ -32,18 +32,16 @@ namespace amxjit {
 
 class Logger {
  public:
+  virtual ~Logger() {}
   virtual void Write(const char *string) = 0;
 };
 
 class FileLogger: public Logger {
  public:
   FileLogger(const char *filename);
-  virtual ~FileLogger();
-
   virtual void Write(const char *string);
  private:
   std::ofstream file_;
-
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(FileLogger);
 };

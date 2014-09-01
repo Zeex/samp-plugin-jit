@@ -31,11 +31,6 @@ FileLogger::FileLogger(const char *filename)
 {
 }
 
-FileLogger::~FileLogger() {
-  file_.flush();
-  file_.close();
-}
-
 void FileLogger::Write(const char *string) {
   file_ << string;
 }
