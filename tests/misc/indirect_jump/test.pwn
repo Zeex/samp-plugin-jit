@@ -16,6 +16,13 @@ test_sctrl_6() {
 	print("OK");
 }
 
+test_sctrl_6_fail() {
+	#emit const.pri 0xffffffff
+	#emit sctrl 6
+
+	print("OK");
+}
+
 test_jump_pri() {
 	#emit lctrl 6
 	#emit add.c 52
@@ -27,9 +34,18 @@ test_jump_pri() {
 	print("OK");
 }
 
+test_jump_pri_fail() {
+	#emit const.pri 0xffffffff
+	#emit jump.pri
+
+	print("OK");
+}
+
 main() {
 	test_sctrl_6();
+	test_sctrl_6_fail();
 	test_jump_pri();
+	test_jump_pri_fail();
 	TestExit();
 }
 
