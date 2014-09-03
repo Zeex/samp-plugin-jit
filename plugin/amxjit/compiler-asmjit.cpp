@@ -495,9 +495,6 @@ void CompilerAsmjit::sctrl(cell index) {
       asm_.lea(ebp, dword_ptr(ebx, eax));
       break;
     case 6:
-      asm_.mov(edi, esp);
-      asm_.mov(esi, ebp);
-      asm_.mov(edx, eax);
       asm_.call(jump_helper_label_);
       break;
   }
@@ -616,9 +613,6 @@ void CompilerAsmjit::call(cell address) {
 
 void CompilerAsmjit::jump_pri() {
   // CIP = PRI (indirect jump)
-  asm_.mov(edi, esp);
-  asm_.mov(esi, ebp);
-  asm_.mov(edx, eax);
   asm_.call(jump_helper_label_);
 }
 
@@ -1530,8 +1524,7 @@ void CompilerAsmjit::EmitHaltHelper() {
     asm_.ret();
 }
 
-// void JumpHelper(void *address [edx], void *stack_base [esi],
-//                                      void *stack_ptr  [edi]);
+// void JumpHelper(void *address [eax]);
 void CompilerAsmjit::EmitJumpHelper() {
   Label invalid_address_label = asm_.newLabel();
 
@@ -1541,7 +1534,7 @@ void CompilerAsmjit::EmitJumpHelper() {
 
     asm_.lea(ecx, dword_ptr(rib_start_label_));
     asm_.push(ecx);
-    asm_.push(edx);
+    asm_.push(eax);
     asm_.call(asmjit_cast<void*>(&GetInstrStartPtr));
     asm_.add(esp, 8);
     asm_.mov(edx, eax); // address
@@ -1552,8 +1545,7 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.test(edx, edx);
     asm_.jz(invalid_address_label);
 
-    asm_.mov(ebp, esi);
-    asm_.mov(esp, edi);
+    asm_.lea(esp, dword_ptr(esp, 4));
     asm_.jmp(edx);
 
   // Continue execution as if there was no jump at all (this is what AMX does).
