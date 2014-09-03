@@ -1086,18 +1086,13 @@ void CompilerAsmjit::bounds(cell value) {
 
 void CompilerAsmjit::sysreq_pri() {
   // call system service, service number in PRI
-  asm_.push(esp); // stack_ptr
-  asm_.push(ebp); // stack_base
-  asm_.push(eax); // index
   asm_.call(sysreq_c_helper_label_);
 }
 
 void CompilerAsmjit::sysreq_c(cell index, const char *name) {
   // call system service
   if (!EmitIntrinsic(name)) {
-    asm_.push(esp); // stack_ptr
-    asm_.push(ebp); // stack_base
-    asm_.push(index);
+    asm_.mov(eax, index);
     asm_.call(sysreq_c_helper_label_);
   }
 }
@@ -1105,9 +1100,7 @@ void CompilerAsmjit::sysreq_c(cell index, const char *name) {
 void CompilerAsmjit::sysreq_d(cell address, const char *name) {
   // call system service
   if (!EmitIntrinsic(name)) {
-    asm_.push(esp);     // stack_ptr
-    asm_.push(ebp);     // stack_base
-    asm_.push(address); // address
+    asm_.mov(eax, address);
     asm_.call(sysreq_d_helper_label_);
   }
 }
@@ -1568,15 +1561,12 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.ret();
 }
 
-// cell AMXJIT_CDECL SysreqCHelper(int index, void *stack_base,
-//                                            void *stack_ptr);
+// cell SysreqCHelper(int index [eax]);
 void CompilerAsmjit::EmitSysreqCHelper() {
   asm_.bind(sysreq_c_helper_label_);
-    asm_.mov(eax, dword_ptr(esp, 4));   // index
-    asm_.mov(ebp, dword_ptr(esp, 8));   // stack_base
-    asm_.mov(esp, dword_ptr(esp, 12));  // stack_ptr
-    asm_.mov(ecx, esp);                 // params
-    asm_.mov(esi, dword_ptr(esp, -16)); // return address
+    asm_.mov(esi, dword_ptr(esp));
+    asm_.lea(esp, dword_ptr(esp, 4));
+    asm_.mov(ecx, esp);
 
     asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
 
@@ -1620,15 +1610,12 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.ret();
 }
 
-// cell AMXJIT_CDECL SysreqDHelper(void *address, void *stack_base,
-//                                                void *stack_ptr);
+// cell SysreqDHelper(void *address [eax]);
 void CompilerAsmjit::EmitSysreqDHelper() {
   asm_.bind(sysreq_d_helper_label_);
-    asm_.mov(eax, dword_ptr(esp, 4));   // address
-    asm_.mov(ebp, dword_ptr(esp, 8));   // stack_base
-    asm_.mov(esp, dword_ptr(esp, 12));  // stack_ptr
-    asm_.mov(ecx, esp);                 // params
-    asm_.mov(esi, dword_ptr(esp, -16)); // return address
+    asm_.mov(esi, dword_ptr(esp));
+    asm_.lea(esp, dword_ptr(esp, 4));
+    asm_.mov(ecx, esp);
 
     asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
 
