@@ -32,31 +32,33 @@
 #include "disasm.h"
 #include "logger.h"
 
-using AsmJit::Label;
-using AsmJit::byte_ptr;
-using AsmJit::word_ptr;
-using AsmJit::dword_ptr;
-using AsmJit::dword_ptr_abs;
-using AsmJit::GpReg;
-using AsmJit::al;
-using AsmJit::ax;
-using AsmJit::eax;
-using AsmJit::cl;
-using AsmJit::cx;
-using AsmJit::ebx;
-using AsmJit::ecx;
-using AsmJit::edx;
-using AsmJit::esi;
-using AsmJit::edi;
-using AsmJit::ebp;
-using AsmJit::esp;
-using AsmJit::st;
+using asmjit::Label;
+using asmjit::x86::byte_ptr;
+using asmjit::x86::word_ptr;
+using asmjit::x86::dword_ptr;
+using asmjit::x86::dword_ptr_abs;
+using asmjit::x86::al;
+using asmjit::x86::cl;
+using asmjit::x86::ax;
+using asmjit::x86::cx;
+using asmjit::x86::eax;
+using asmjit::x86::ebx;
+using asmjit::x86::ecx;
+using asmjit::x86::edx;
+using asmjit::x86::esi;
+using asmjit::x86::edi;
+using asmjit::x86::ebp;
+using asmjit::x86::esp;
+using asmjit::x86::fp1;
 
 namespace amxjit {
 namespace {
 
+asmjit::JitRuntime jit_runtime;
+
 struct RuntimeInfoBlock {
   intptr_t exec;
+  intptr_t amx;
   intptr_t ebp;
   intptr_t esp;
   intptr_t reset_ebp;
@@ -99,14 +101,15 @@ void *AMXJIT_CDECL GetInstrStartPtr(cell address, RuntimeInfoBlock *rib) {
   return 0;
 }
 
-class AsmJitLoggerAdtapter: public AsmJit::Logger {
+class AsmJitLoggerAdtapter: public asmjit::Logger {
  public:
   AsmJitLoggerAdtapter(amxjit::Logger *logger):
     logger_(logger) {}
-  virtual void logString(const char* buf,
-                         size_t len = AsmJit::kInvalidSize) {
+  virtual void logString(uint32_t style,
+                         const char* buf,
+                         size_t len = asmjit::kInvalidIndex) {
     assert(logger_ != 0);
-    if (len == AsmJit::kInvalidSize) {
+    if (len == asmjit::kInvalidIndex) {
       logger_->Write(buf);
     } else {
       std::string tmp_buf(buf, len);
@@ -126,7 +129,7 @@ CompileOutputAsmjit::CompileOutputAsmjit(void *code):
 }
 
 CompileOutputAsmjit::~CompileOutputAsmjit() {
-  AsmJit::MemoryManager::getGlobal()->free(code_);
+  jit_runtime.release(code_);
 }
 
 void *CompileOutputAsmjit::GetCode() const {
@@ -142,9 +145,10 @@ void CompileOutputAsmjit::Delete() {
 }
 
 CompilerAsmjit::CompilerAsmjit():
-  asm_(),
+  asm_(&jit_runtime),
   rib_start_label_(asm_.newLabel()),
   exec_ptr_label_(asm_.newLabel()),
+  amx_ptr_label_(asm_.newLabel()),
   ebp_label_(asm_.newLabel()),
   esp_label_(asm_.newLabel()),
   reset_ebp_label_(asm_.newLabel()),
@@ -176,9 +180,9 @@ bool CompilerAsmjit::Prepare(AMXPtr amx) {
 
   if (GetLogger() != 0) {
     logger_ = new AsmJitLoggerAdtapter(GetLogger());
-    logger_->setInstructionPrefix("\t");
-    logger_->setHexDisplacement(true);
-    logger_->setHexImmediate(true);
+    logger_->setIndentation("\t");
+    logger_->setOption(asmjit::kLoggerOptionHexImmediate, true);
+    logger_->setOption(asmjit::kLoggerOptionHexDisplacement, true);
     asm_.setLogger(logger_);
   }
 
@@ -190,16 +194,19 @@ bool CompilerAsmjit::Process(const Instruction &instr) {
 
   // Align functions on 16-byte boundary.
   if (instr.opcode().GetId() == OP_PROC) {
-    asm_.align(16);
+    asm_.align(asmjit::kAlignCode, 16);
   }
 
   asm_.bind(GetLabel(cip));
   instr_map_[cip] = asm_.getCodeSize();
 
   if (logger_ != 0) {
-    logger_->logFormat("; +%08x: %08x: %s\n", asm_.getCodeSize(),
-                                              instr.address(),
-                                              instr.ToString().c_str());
+    logger_->logFormat(asmjit::kLoggerStyleComment,
+                       "%s; +%08x: %08x: %s\n",
+                       logger_->getIndentation(),
+                       asm_.getCodeSize(),
+                       instr.address(),
+                       instr.ToString().c_str());
   }
 
   return true;
@@ -212,6 +219,7 @@ CompileOutput *CompilerAsmjit::Finish(bool error) {
     void *code = asm_.make();
     RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code);
 
+    rib->amx = reinterpret_cast<intptr_t>(current_amx_.raw());
     rib->exec += reinterpret_cast<intptr_t>(code);
     rib->instr_table += reinterpret_cast<intptr_t>(code);
 
@@ -444,7 +452,7 @@ void CompilerAsmjit::lctrl(cell index, cell cip) {
     case 1:
     case 2:
     case 3:
-      asm_.lea(eax, dword_ptr_abs(current_amx_.raw()));
+      asm_.mov(eax, dword_ptr(amx_ptr_label_));
       switch (index) {
         case 0:
           asm_.mov(eax, dword_ptr(eax, offsetof(AMX, base)));
@@ -485,7 +493,7 @@ void CompilerAsmjit::sctrl(cell index) {
   // 6=CIP
   switch (index) {
     case 2:
-      asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+      asm_.mov(edx, dword_ptr(amx_ptr_label_));
       asm_.mov(dword_ptr(edx, offsetof(AMX, hea)), eax);
       break;
     case 4:
@@ -563,7 +571,7 @@ void CompilerAsmjit::stack(cell value) {
 
 void CompilerAsmjit::heap(cell value) {
   // ALT = HEA, HEA = HEA + value
-  asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+  asm_.mov(edx, dword_ptr(amx_ptr_label_));
   asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, hea)));
   if (value >= 0) {
     asm_.add(dword_ptr(edx, offsetof(AMX, hea)), value);
@@ -1226,7 +1234,7 @@ void CompilerAsmjit::floatlog() {
   asm_.fld(dword_ptr(esp, 8));
   asm_.fyl2x();
   asm_.fld1();
-  asm_.fdivrp(st(1));
+  asm_.fdivrp(fp1);
   asm_.fld(dword_ptr(esp, 4));
   asm_.fyl2x();
   asm_.sub(esp, 4);
@@ -1266,6 +1274,8 @@ void CompilerAsmjit::EmitRuntimeInfo() {
   asm_.bind(rib_start_label_);
   asm_.bind(exec_ptr_label_);
     asm_.dd(0); // rib->exec
+  asm_.bind(amx_ptr_label_);
+    asm_.dd(0); // rib->amx_ptr
   asm_.bind(ebp_label_);
     asm_.dd(0); // rib->ebp
   asm_.bind(esp_label_);
@@ -1287,7 +1297,7 @@ void CompilerAsmjit::EmitInstrTable() {
     num_entries++;
   }
 
-  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(asm_.getCode());
+  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(asm_.getBuffer());
   rib->instr_table = asm_.getCodeSize();
   rib->instr_table_size = num_entries;
 
@@ -1299,7 +1309,7 @@ void CompilerAsmjit::EmitInstrTable() {
 
 // int AMXJIT_CDECL Exec(cell index, cell *retval);
 void CompilerAsmjit::EmitExec() {
-  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(asm_.getCode());
+  RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(asm_.getBuffer());
   rib->exec = asm_.getCodeSize();
 
   Label null_data_label = asm_.newLabel();
@@ -1325,7 +1335,7 @@ void CompilerAsmjit::EmitExec() {
     asm_.sub(esp, 12);
 
     asm_.push(esi);
-    asm_.lea(esi, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(esi, dword_ptr(amx_ptr_label_));
 
     // Set ebx to point to the AMX data section.
     asm_.push(ebx);
@@ -1366,9 +1376,9 @@ void CompilerAsmjit::EmitExec() {
 
     // Get the address of the public function.
     asm_.push(dword_ptr(ebp, arg_index));
-    asm_.lea(eax, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(eax, dword_ptr(amx_ptr_label_));
     asm_.push(eax);
-    asm_.call(asmjit_cast<void*>(&GetPublicAddress));
+    asm_.call(reinterpret_cast<asmjit::Ptr>(&GetPublicAddress));
     asm_.add(esp, 8);
 
     // Check if the function was actually found.
@@ -1379,7 +1389,7 @@ void CompilerAsmjit::EmitExec() {
     asm_.lea(ecx, dword_ptr(rib_start_label_));
     asm_.push(ecx);
     asm_.push(eax);
-    asm_.call(asmjit_cast<void*>(&GetInstrStartPtr));
+    asm_.call(reinterpret_cast<asmjit::Ptr>(&GetInstrStartPtr));
     asm_.add(esp, 8);
     asm_.mov(dword_ptr(ebp, var_address), eax);
 
@@ -1467,7 +1477,7 @@ void CompilerAsmjit::EmitExecHelper() {
     asm_.mov(dword_ptr(esp_label_), esp);
 
     // Switch from the native stack to the AMX stack.
-    asm_.lea(ecx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(ecx, dword_ptr(amx_ptr_label_));
     asm_.mov(edx, dword_ptr(esi, offsetof(AMX, frm)));
     asm_.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + amx->frm
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
@@ -1485,7 +1495,7 @@ void CompilerAsmjit::EmitExecHelper() {
 
     // Keep the AMX stack registers up-to-date. This wouldn't be necessary
     // if RETN didn't modify them (it pops all arguments off the stack).
-    asm_.lea(ecx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(ecx, dword_ptr(amx_ptr_label_));
     asm_.mov(edx, ebp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(ecx, offsetof(AMX, frm)), edx); // amx->frm = ebp - data
@@ -1508,7 +1518,7 @@ void CompilerAsmjit::EmitExecHelper() {
 // void HaltHelper(int error [edi]);
 void CompilerAsmjit::EmitHaltHelper() {
   asm_.bind(halt_helper_label_);
-    asm_.lea(esi, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(esi, dword_ptr(amx_ptr_label_));
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi); // error code in edi
 
     // Reset the stack so that we return to the instruction next to CALL.
@@ -1535,7 +1545,7 @@ void CompilerAsmjit::EmitJumpHelper() {
     asm_.lea(ecx, dword_ptr(rib_start_label_));
     asm_.push(ecx);
     asm_.push(eax);
-    asm_.call(asmjit_cast<void*>(&GetInstrStartPtr));
+    asm_.call(reinterpret_cast<asmjit::Ptr>(&GetInstrStartPtr));
     asm_.add(esp, 8);
     asm_.mov(edx, eax); // address
 
@@ -1560,7 +1570,7 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.lea(esp, dword_ptr(esp, 4));
     asm_.mov(ecx, esp);
 
-    asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(edx, dword_ptr(amx_ptr_label_));
 
     // Switch to the native stack.
     asm_.sub(ebp, ebx);
@@ -1585,7 +1595,7 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.xchg(eax, edi);
 
     // Switch back to the AMX stack.
-    asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(edx, dword_ptr(amx_ptr_label_));
     asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
     asm_.lea(ebp, dword_ptr(ebx, ecx)); // ebp = data + amx->frm
@@ -1609,7 +1619,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     asm_.lea(esp, dword_ptr(esp, 4));
     asm_.mov(ecx, esp);
 
-    asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(edx, dword_ptr(amx_ptr_label_));
 
     // Switch to the native stack.
     asm_.sub(ebp, ebx);
@@ -1626,7 +1636,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     asm_.add(esp, 8);
 
     // Switch back to the AMX stack.
-    asm_.lea(edx, dword_ptr_abs(current_amx_.raw()));
+    asm_.mov(edx, dword_ptr(amx_ptr_label_));
     asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, frm)));
     asm_.lea(ebp, dword_ptr(ebx, ecx)); // ebp = data + amx->frm
@@ -1641,7 +1651,7 @@ void CompilerAsmjit::EmitSysreqDHelper() {
 
 const Label &CompilerAsmjit::GetLabel(cell address) {
   Label &label = label_map_[address];
-  if (label.getId() == AsmJit::kInvalidValue) {
+  if (label.getId() == asmjit::kInvalidValue) {
     label = asm_.newLabel();
   }
   return label;

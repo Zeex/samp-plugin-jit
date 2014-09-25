@@ -37,8 +37,8 @@ std::string GetModuleName(void *address) {
     if (VirtualQuery(address, &mbi, sizeof(mbi)) != 0) {
       DWORD size = filename.size();
       do {
-        size = GetModuleFileName((HMODULE)mbi.AllocationBase,
-                                 &filename[0], filename.size());
+        size = GetModuleFileNameA((HMODULE)mbi.AllocationBase,
+                                  &filename[0], filename.size());
         if (size < filename.size() ||
             GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
           break;

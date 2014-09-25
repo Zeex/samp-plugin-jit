@@ -27,7 +27,7 @@
 
 #include <cstddef>
 #include <map>
-#include <asmjit/core.h>
+#include <asmjit/base.h>
 #include <asmjit/x86.h>
 #include "amxptr.h"
 #include "compiler.h"
@@ -200,32 +200,33 @@ class CompilerAsmjit: public Compiler {
   void EmitSysreqDHelper();
 
  private:
-  const AsmJit::Label &GetLabel(cell address);
+  const asmjit::Label &GetLabel(cell address);
 
  private:
   AMXPtr current_amx_;
 
-  AsmJit::X86Assembler asm_;
-  AsmJit::Label rib_start_label_;
-  AsmJit::Label exec_ptr_label_;
-  AsmJit::Label ebp_label_;
-  AsmJit::Label esp_label_;
-  AsmJit::Label reset_ebp_label_;
-  AsmJit::Label reset_esp_label_;
-  AsmJit::Label exec_label_;
-  AsmJit::Label exec_helper_label_;
-  AsmJit::Label halt_helper_label_;
-  AsmJit::Label jump_helper_label_;
-  AsmJit::Label sysreq_c_helper_label_;
-  AsmJit::Label sysreq_d_helper_label_;
+  asmjit::X86Assembler asm_;
+  asmjit::Label rib_start_label_;
+  asmjit::Label exec_ptr_label_;
+  asmjit::Label amx_ptr_label_;
+  asmjit::Label ebp_label_;
+  asmjit::Label esp_label_;
+  asmjit::Label reset_ebp_label_;
+  asmjit::Label reset_esp_label_;
+  asmjit::Label exec_label_;
+  asmjit::Label exec_helper_label_;
+  asmjit::Label halt_helper_label_;
+  asmjit::Label jump_helper_label_;
+  asmjit::Label sysreq_c_helper_label_;
+  asmjit::Label sysreq_d_helper_label_;
 
-  typedef std::map<cell, AsmJit::Label> LabelMap;
+  typedef std::map<cell, asmjit::Label> LabelMap;
   LabelMap label_map_;
 
   typedef std::map<cell, std::ptrdiff_t> InstrMap;
   InstrMap instr_map_;
 
-  AsmJit::Logger *logger_;
+  asmjit::Logger *logger_;
 
  private:
   AMXJIT_DISALLOW_COPY_AND_ASSIGN(CompilerAsmjit);
