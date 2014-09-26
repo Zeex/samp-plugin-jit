@@ -27,9 +27,11 @@ simply crash your server.
 How it works
 ------------
 
-The code is compiled once and stored in memory for the lifetime of the server,
-or until the script gets unloaded in case of filterscripts. Thus there may be
-a small delay during the server startup.
+It's a pretty simple JIT.
+
+Code is compiled once and stored in memory for the lifetime of the server,
+or until the script gets unloaded in case of filterscripts. Thus there may
+be a small delay during the server startup.
 
 Most of the compilation process is a mere translation of AMX opcodes into
 seuquences of corresponding machine instructions using essentially a giant
@@ -38,9 +40,14 @@ to be a little bit smarter: for instance, it will replace calls to common
 floating-point functions (those found in float.inc) with equivalent code
 using the x87 FPU instruction set.
 
-Code generation is done via [AsmJit][asmjit], a wonderful assembler library
-for x86/x86-64 :+1:. There also was an attempt to use LLVM as an alternative
-backend but it was quickly abandoned...
+Native code generation is done via [AsmJit][asmjit], a wonderful assembler
+library for x86/x86-64 :+1:. There also was an attempt to use LLVM as an
+alternative backend but it was quickly abandoned...
+
+License
+-------
+
+Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 
 [github]: https://github.com/Zeex/samp-plugin-jit
 [donate]: http://pledgie.com/campaigns/26714
