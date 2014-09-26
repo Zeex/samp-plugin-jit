@@ -8,6 +8,22 @@ This is a Just-in-Time (JIT) compiler for AMX 3.x and a plugin for the SA-MP
 server. It compiles AMX bytecode that is produced by the Pawn compiler into
 native x86 code at runtime for increased performance.
 
+Download
+--------
+
+Get latest binaries for Windows and Linux [here][download].
+
+Limitations
+-----------
+
+Everything that doesn't use `#emit` will probably work okay. Otherwise, it
+depends on the code. There are some advanced `#emit` hacks that simply won't
+work with this JIT. Self-modifying code is one example (although in some
+caes it's possible to fix, see [Detecting JIT at runtime][wiki-detecting]).
+
+If you're using [YSI][ysi] this plugin most likely will not work for you and
+simply crash your server.
+
 How it works
 ------------
 
@@ -25,22 +41,6 @@ using the x87 FPU instruction set.
 Code generation is done via [AsmJit][asmjit], a wonderful assembler library
 for x86/x86-64 :+1:. There also was an attempt to use LLVM as an alternative
 backend but it was quickly abandoned...
-
-Limitations
------------
-
-Everything that doesn't use `#emit` will probably work okay. Otherwise, it
-depends on the code. There are some advanced `#emit` hacks that simply won't
-work with this JIT. Self-modifying code is one example (although in some
-caes it's possible to fix, see [Detecting JIT at runtime][wiki-detecting]).
-
-If you're using [YSI][ysi] this plugin most likely will not work for you and
-simply crash your server.
-
-Download
---------
-
-Get latest binaries for Windows and Linux [here][download].
 
 [github]: https://github.com/Zeex/samp-plugin-jit
 [donate]: http://pledgie.com/campaigns/26714
