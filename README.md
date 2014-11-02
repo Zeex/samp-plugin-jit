@@ -1,7 +1,6 @@
 [JIT plugin][github]
 ====================
 
-[![Donate][donate_button]][donate]
 [![Build Status][build_status]][build]
 
 This is a Just-in-Time (JIT) compiler for AMX 3.x and a plugin for the SA-MP
@@ -50,8 +49,6 @@ License
 Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 
 [github]: https://github.com/Zeex/samp-plugin-jit
-[donate]: http://pledgie.com/campaigns/26714
-[donate_button]: http://www.pledgie.com/campaigns/26714.png
 [build]: https://travis-ci.org/Zeex/samp-plugin-jit
 [build_status]: https://travis-ci.org/Zeex/samp-plugin-jit.png?branch=master
 [v8]: https://code.google.com/p/v8/
