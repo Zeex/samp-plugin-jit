@@ -32,29 +32,20 @@
 #include "version.h"
 #include <subhook.h>
 
+typedef int (AMXAPI *AMX_EXEC)(AMX *amx, cell *retval, int index);
+
 extern void *pAMXFunctions;
-
-namespace {
-
-SubHook amx_Exec_hook;
+static SubHook exec_hook;
 
 #ifdef LINUX
-  cell *opcode_table = 0;
+  static cell *opcode_table = 0;
 #endif
 
-void InitLogprintf(void **plugin_data) {
-  logprintf = (logprintf_t)plugin_data[PLUGIN_DATA_LOGPRINTF];
-}
-
-void InitAmxExports(void **plugin_data) {
-  pAMXFunctions = plugin_data[PLUGIN_DATA_AMX_EXPORTS];
-}
-
-void *GetAmxFunction(int index) {
+static void *GetAmxFunction(int index) {
   return static_cast<void**>(pAMXFunctions)[index];
 }
 
-std::string GetFileName(const std::string &path) {
+static std::string GetFileName(const std::string &path) {
   std::string::size_type pos = path.find_last_of("/\\");
   if (pos != std::string::npos) {
     return path.substr(pos + 1);
@@ -62,32 +53,30 @@ std::string GetFileName(const std::string &path) {
   return path;
 }
 
-int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
+static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   #ifdef LINUX
-    if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-      assert(::opcode_table != 0);
-      *retval = reinterpret_cast<cell>(::opcode_table);
-      return AMX_ERR_NONE;
-    }
+  if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
+    assert(::opcode_table != 0);
+    *retval = reinterpret_cast<cell>(::opcode_table);
+    return AMX_ERR_NONE;
+  }
   #endif
   int error = JIT::GetInstance(amx)->Exec(retval, index);
   if (error == AMX_ERR_INIT_JIT) {
-    SubHook::ScopedRemove _(&amx_Exec_hook);
-    return amx_Exec(amx, retval, index);
+    AMX_EXEC exec = (AMX_EXEC)exec_hook.GetTrampoline();
+    return exec(amx, retval, index);
   }
   return error;
 }
-
-} // anonymous namespace
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-  InitLogprintf(ppData);
-  InitAmxExports(ppData);
-  
+  logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
+  pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
+
   void *exec_start = GetAmxFunction(PLUGIN_AMX_EXPORT_Exec);
   void *other_guy = SubHook::ReadDst(exec_start);
 
@@ -108,7 +97,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     amx_Exec(&amx, reinterpret_cast<cell*>(&::opcode_table), 0);
     amx.flags &= ~AMX_FLAG_BROWSE;
   #endif
-  amx_Exec_hook.Install(exec_start, (void*)amx_Exec_JIT);
+  exec_hook.Install(exec_start, (void *)amx_Exec_JIT);
 
   logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
   return true;

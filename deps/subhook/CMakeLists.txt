@@ -1,8 +1,18 @@
-cmake_minimum_required(VERSION 2.8)
 project(subhook)
+cmake_minimum_required(VERSION 2.8)
 
-set(SUBHOOK_HEADERS "subhook.h")
-set(SUBHOOK_SOURCES "subhook.c" "subhook_private.h")
+option(SUBHOOK_STATIC "Build as static library" FALSE)
+
+set(SUBHOOK_VERSION_MAJOR 0)
+set(SUBHOOK_VERSION_MINOR 2)
+set(SUBHOOK_VERSION_PATCH 0)
+
+set(SUBHOOK_VERSION ${SUBHOOK_VERSION_MAJOR})
+set(SUBHOOK_VERSION ${SUBHOOK_VERSION}.${SUBHOOK_VERSION_MINOR})
+set(SUBHOOK_VERSION ${SUBHOOK_VERSION}.${SUBHOOK_VERSION_PATCH})
+
+set(SUBHOOK_HEADERS subhook.h)
+set(SUBHOOK_SOURCES subhook.c subhook_private.h)
 
 add_definitions(-DSUBHOOK_IMPLEMENTATION)
 
@@ -13,40 +23,34 @@ else()
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY INCLUDE_DIRECTORIES
-             ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
+	INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(SUBHOOK_STATIC)
 	add_definitions(-DSUBHOOK_STATIC)
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-	             COMPILE_DEFINITIONS "SUBHOOK_STATIC")
+		COMPILE_DEFINITIONS SUBHOOK_STATIC)
 endif()
 
-set(SUBHOOK_STATIC ${SUBHOOK_STATIC} CACHE BOOL "Build as static library")
-mark_as_advanced(SUBHOOK_STATIC)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(SUBHOOK_INSTALL)
-	install(TARGETS subhook LIBRARY DESTINATION "lib"
-	                        ARCHIVE DESTINATION "lib"
-	                        RUNTIME DESTINATION "bin")
-	install(FILES ${SUBHOOK_HEADERS} DESTINATION "include")
+	install(TARGETS subhook
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+		RUNTIME DESTINATION bin)
+	install(FILES ${SUBHOOK_HEADERS} DESTINATION include)
 endif()
 
-set(SUBHOOK_INSTALL FALSE CACHE BOOL "Create install target")
-mark_as_advanced(SUBHOOK_INSTALL)
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_VERSION_MAJOR ${SUBHOOK_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${SUBHOOK_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${SUBHOOK_VERSION_PATCH})
 
-if(SUBHOOK_PACKAGE)
-	include(CPack)
-endif()
+include(CPack)
+include(CTest)
 
-set(SUBHOOK_PACKAGE FALSE CACHE BOOL "Create package target")
-mark_as_advanced(SUBHOOK_PACKAGE)
-
-if(SUBHOOK_TESTING)
-	include(CTest)
+if(BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(test)
 endif()
-
-set(SUBHOOK_TESTING FALSE CACHE BOOL "Build tests")
-mark_as_advanced(SUBHOOK_TESTING)
