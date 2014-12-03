@@ -13,9 +13,11 @@ if(JIT_LLVM)
   find_package(LLVM REQUIRED)
 endif()
 
-include_directories(.)
-include_directories(amx)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(
+  amx
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 if(JIT_LLVM)
   include_directories(${LLVM_INCLUDE_DIRS})
@@ -24,7 +26,6 @@ endif()
 add_definitions(${LLVM_DEFINITIONS})
 
 if(UNIX)
-  add_definitions(-DLINUX)
   add_definitions(-DAMXJIT_RELOCATE_OPCODES)
 endif()
 
