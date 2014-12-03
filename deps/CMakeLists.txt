@@ -3,6 +3,8 @@ set(ASMJIT_INSTALL FALSE)
 add_subdirectory(asmjit)
 
 set(SUBHOOK_STATIC TRUE)
+set(SUBHOOK_NO_TESTS TRUE)
+set(SUBHOOK_NO_INSTALL TRUE)
 add_subdirectory(subhook)
 
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
