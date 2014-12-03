@@ -35,7 +35,7 @@ endif()
 configure_file(version.h.in version.h @ONLY)
 configure_file(plugin.rc.in plugin.rc @ONLY)
 
-set(PLUGIN_SOURCES
+set(JIT_SOURCES
   amx/amx.h
   amx/getch.h
   amx/sclinux.h
@@ -57,23 +57,23 @@ set(PLUGIN_SOURCES
 )
 
 if(WIN32)
-  list(APPEND PLUGIN_SOURCES os-win32.cpp)
+  list(APPEND JIT_SOURCES os-win32.cpp)
 else()
-  list(APPEND PLUGIN_SOURCES os-unix.cpp)
+  list(APPEND JIT_SOURCES os-unix.cpp)
 endif()
 
-add_plugin(plugin ${PLUGIN_SOURCES})
-set_property(TARGET plugin APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
+add_plugin(jit ${JIT_SOURCES})
+set_property(TARGET jit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")
-    set_property(TARGET plugin APPEND_STRING PROPERTY
+    set_property(TARGET jit APPEND_STRING PROPERTY
                  COMPILE_FLAGS " -Wno-attributes")
   endif()
 endif()
 
 if(MINGW)
-  set_property(TARGET plugin APPEND_STRING PROPERTY
+  set_property(TARGET jit APPEND_STRING PROPERTY
                LINK_FLAGS " -Wl,--enable-stdcall-fixup")
 endif()
 
@@ -84,6 +84,6 @@ endif()
 set(AMXJIT_BUILD_BACKENDS ${JIT_BACKENDS})
 add_subdirectory(amxjit)
 
-target_link_libraries(plugin amxjit subhook)
+target_link_libraries(jit amxjit subhook)
 
-install(TARGETS plugin LIBRARY DESTINATION ".")
+install(TARGETS jit LIBRARY DESTINATION ".")

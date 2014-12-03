@@ -44,8 +44,6 @@ set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
 add_subdirectory(src)
-set_target_properties(plugin PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-
 add_subdirectory(tests)
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})

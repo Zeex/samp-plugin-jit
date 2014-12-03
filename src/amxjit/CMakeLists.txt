@@ -17,7 +17,7 @@ foreach(backend IN LISTS AMXJIT_BUILD_BACKENDS)
   set(AMXJIT_${backend} TRUE)
 endforeach()
 
-set(sources
+set(AMXJIT_SOURCES
   amxptr.cpp
   amxptr.h
   compiler.cpp
@@ -33,12 +33,10 @@ set(sources
 )
 
 foreach(backend IN LISTS AMXJIT_BUILD_BACKENDS)
-  list(APPEND sources compiler-${backend}.cpp compiler-${backend}.h)
+  list(APPEND AMXJIT_SOURCES compiler-${backend}.cpp compiler-${backend}.h)
 endforeach()
 
-add_library(amxjit STATIC ${sources})
-
-set_property(TARGET plugin APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
+add_library(amxjit STATIC ${AMXJIT_SOURCES})
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")
