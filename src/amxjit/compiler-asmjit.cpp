@@ -93,7 +93,7 @@ void *AMXJIT_CDECL GetInstrStartPtr(cell address, RuntimeInfoBlock *rib) {
   InstrTableEntry *instr_table =
     reinterpret_cast<InstrTableEntry*>(rib->instr_table);
   InstrTableEntry target(address);
-  std::pair<InstrTableEntry*, InstrTableEntry*> result = 
+  std::pair<InstrTableEntry*, InstrTableEntry*> result =
     std::equal_range(instr_table, instr_table + rib->instr_table_size, target);
   if (result.first != result.second) {
     return result.first->start;
@@ -166,7 +166,7 @@ CompilerAsmjit::CompilerAsmjit():
 CompilerAsmjit::~CompilerAsmjit() {
 }
 
-bool CompilerAsmjit::Prepare(AMXPtr amx) { 
+bool CompilerAsmjit::Prepare(AMXPtr amx) {
   current_amx_ = amx;
 
   EmitRuntimeInfo();
@@ -746,15 +746,18 @@ void CompilerAsmjit::sdiv() {
   // PRI = PRI / ALT (signed divide), ALT = PRI mod ALT
   asm_.cdq();
   asm_.idiv(ecx);
+  asm_.mov(esi, eax);
+  asm_.lea(eax, dword_ptr(edx, ecx));
+  asm_.cdq();
+  asm_.idiv(ecx);
   asm_.mov(ecx, edx);
+  asm_.mov(eax, esi);
 }
 
 void CompilerAsmjit::sdiv_alt() {
   // PRI = ALT / PRI (signed divide), ALT = ALT mod PRI
   asm_.xchg(eax, ecx);
-  asm_.cdq();
-  asm_.idiv(ecx);
-  asm_.mov(ecx, edx);
+  sdiv();
 }
 
 void CompilerAsmjit::umul() {
@@ -1248,7 +1251,7 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     const char         *name;
     EmitIntrinsicMethod emit;
   };
-  
+
   static const Intrinsic intrinsics[] = {
     {"float",       &CompilerAsmjit::float_},
     {"floatabs",    &CompilerAsmjit::floatabs},
