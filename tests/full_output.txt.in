@@ -13,5 +13,4 @@ Filterscripts
 ---------------.*
   Loaded [0-9]+ filterscripts\.
 
-@TEST_OUTPUT@
-Number of vehicle models: [0-9]+
+@TEST_OUTPUT@Number of vehicle models: [0-9]+
