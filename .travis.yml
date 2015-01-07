@@ -22,6 +22,9 @@ install:
   - wget http://files.sa-mp.com/samp03zsvr_R4.tar.gz
   - tar xvf samp03zsvr_R4.tar.gz
 
+  - wget http://files.sa-mp.com/samp03z_svr_R4_win32.zip
+  - unzip samp03z_svr_R4_win32.zip -d $SAMP_SERVER_ROOT pawno/include/*
+
   - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git
 
 before_script:
