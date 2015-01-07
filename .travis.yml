@@ -7,7 +7,6 @@ env:
   global:
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
     - PATH=$TRAVIS_BUILD_DIR/cli/bin:$PATH
-    - CTEST_OUTPUT_ON_FAILURE=TRUE
 
 install:
   - sudo apt-get update -qq
@@ -36,3 +35,6 @@ script:
   - make
   - make test
   - make package
+
+after_failure:
+  - cat Testing/Temporary/LastTest.log
