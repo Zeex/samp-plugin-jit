@@ -60,7 +60,7 @@ macro(test target name)
     SAMP_SERVER=${SAMPServer_EXECUTABLE}
     PATH=${_path}
   )
-  set_tests_properties(${name} PROPERTIES ENVIRONMENT "${_env}")
+  set_property(TEST ${name} APPEND PROPERTY ENVIRONMENT ${_env})
 endmacro()
 
 macro(tests target)

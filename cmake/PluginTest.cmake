@@ -37,8 +37,10 @@ function(add_plugin_test)
   add_test(NAME ${name} COMMAND ${command} ${args} --output
            --plugin $<TARGET_FILE:${ARG_TARGET}>)
 
-  set(AMX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${name})
-  set_tests_properties(${name} PROPERTIES ENVIRONMENT AMX_PATH=${AMX_PATH})
+  if(ARG_SCRIPT)
+    get_filename_component(AMX_PATH ${ARG_SCRIPT} DIRECTORY)
+    set_tests_properties(${name} PROPERTIES ENVIRONMENT AMX_PATH=${AMX_PATH})
+  endif()
 
   if(ARG_OUTPUT_FILE)
     file(READ ${ARG_OUTPUT_FILE} output)
