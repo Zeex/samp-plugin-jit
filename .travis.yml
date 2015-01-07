@@ -6,6 +6,7 @@ compiler:
 env:
   global:
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
+    - PATH=$TRAVIS_BUILD_DIR/cli/bin:$PATH
     - CTEST_OUTPUT_ON_FAILURE=TRUE
 
 install:
@@ -25,7 +26,7 @@ install:
   - wget http://files.sa-mp.com/samp03z_svr_R4_win32.zip
   - unzip samp03z_svr_R4_win32.zip -d $SAMP_SERVER_ROOT pawno/include/*
 
-  - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git
+  - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git cli
 
 before_script:
   - cmake . -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
