@@ -90,9 +90,11 @@ class InstrTableEntry {
 void *AMXJIT_CDECL GetInstrStartPtr(cell address, RuntimeInfoBlock *rib) {
   assert(rib->instr_table != 0);
   assert(rib->instr_table_size > 0);
+
   InstrTableEntry *instr_table =
     reinterpret_cast<InstrTableEntry*>(rib->instr_table);
   InstrTableEntry target(address);
+
   std::pair<InstrTableEntry*, InstrTableEntry*> result =
     std::equal_range(instr_table, instr_table + rib->instr_table_size, target);
   if (result.first != result.second) {
