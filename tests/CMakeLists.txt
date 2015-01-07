@@ -27,8 +27,8 @@ macro(test target name)
   )
 
   if(UNIX)
-    string(REPLACE "\;" "\\\;" _compile_flags "${_compile_flags}")
-    string(REPLACE "("  "\\("  _compile_flags "${_compile_flags}")
+    string(REPLACE "\;" "\\$<SEMICOLON>" _compile_flags "${_compile_flags}")
+    string(REPLACE "(" "\\(" _compile_flags "${_compile_flags}")
   endif()
 
   add_custom_command(
