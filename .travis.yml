@@ -1,21 +1,32 @@
 language: cpp
+
 compiler:
   - gcc
+
 env:
   global:
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
-    - SAMP_SERVER=$TRAVIS_BUILD_DIR/samp03/samp03svr
     - CTEST_OUTPUT_ON_FAILURE=TRUE
+
 install:
   - sudo apt-get update -qq
   - sudo apt-get install -y gcc-multilib g++-multilib cmake python
+
   - wget http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.sh
   - sudo sh cmake-2.8.12.2-Linux-i386.sh --exclude-subdir --prefix=/usr
-  - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git
+
+  - wget https://github.com/Zeex/pawn/releases/download/pawncc-20141116/pawncc-linux.tar.gz
+  - sudo tar xvf pawncc-linux.tar.gz -C /usr/local/bin pawncc
+  - sudo tar xvf pawncc-linux.tar.gz -C /usr/local/lib libpawnc.so
+
   - wget http://files.sa-mp.com/samp03zsvr_R4.tar.gz
   - tar xvf samp03zsvr_R4.tar.gz
+
+  - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git
+
 before_script:
   - cmake . -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
+
 script:
   - make
   - make test
