@@ -44,7 +44,9 @@ set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
 add_subdirectory(src)
-add_subdirectory(tests)
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 if(WIN32)
