@@ -101,9 +101,9 @@ void *AMXJIT_CDECL GetInstrStartPtr(cell address, RuntimeInfoBlock *rib) {
   return 0;
 }
 
-class AsmJitLoggerAdtapter: public asmjit::Logger {
+class AsmJitLoggerAdapter: public asmjit::Logger {
  public:
-  AsmJitLoggerAdtapter(amxjit::Logger *logger):
+  AsmJitLoggerAdapter(amxjit::Logger *logger):
     logger_(logger) {}
   virtual void logString(uint32_t style,
                          const char* buf,
@@ -179,7 +179,7 @@ bool CompilerAsmjit::Prepare(AMXPtr amx) {
   EmitSysreqDHelper();
 
   if (GetLogger() != 0) {
-    logger_ = new AsmJitLoggerAdtapter(GetLogger());
+    logger_ = new AsmJitLoggerAdapter(GetLogger());
     logger_->setIndentation("\t");
     logger_->setOption(asmjit::kLoggerOptionHexImmediate, true);
     logger_->setOption(asmjit::kLoggerOptionHexDisplacement, true);
