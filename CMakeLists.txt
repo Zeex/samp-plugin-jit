@@ -37,12 +37,12 @@ endif()
 string(REGEX REPLACE "([0-9]+(\\.[0-9]+)+).*" "\\1" version_rc ${version})
 string(REGEX REPLACE "\\." "," version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
-string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc
-      ${version_rc})
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
 set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
+add_subdirectory(include)
 add_subdirectory(src)
 if(BUILD_TESTING)
   add_subdirectory(tests)
