@@ -27,7 +27,7 @@
 
 #include <cassert>
 #include <cstddef>
-#include "amxptr.h"
+#include "amxref.h"
 #include "macros.h"
 
 namespace amxjit {
@@ -79,12 +79,12 @@ class Compiler {
   CompileErrorHandler *GetErrorHandler() const { return error_handler_; }
 
   // Compiles the specified AMX script.
-  CompileOutput *Compile(AMXPtr amx);
+  CompileOutput *Compile(AMXRef amx);
 
  protected:
   // This method is called just before the compilation begins.
   // Returns false on error.
-  virtual bool Prepare(AMXPtr amx) = 0;
+  virtual bool Prepare(AMXRef amx) = 0;
 
   // Processes a single instruction. Returns false on error.
   virtual bool Process(const Instruction &instr) = 0;

@@ -23,65 +23,65 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
-#include "amxptr.h"
+#include "amxref.h"
 
 namespace amxjit {
 
-AMX *AMXPtr::AccessAmx() {
+AMX *AMXRef::AccessAmx() {
   assert(amx_ != 0);
   return amx_;
 }
 
-const AMX *AMXPtr::AccessAmx() const {
+const AMX *AMXRef::AccessAmx() const {
   assert(amx_ != 0);
   return amx_;
 }
 
-void AMXPtr::Reset() {
+void AMXRef::Reset() {
   amx_ = 0;
 }
 
-AMX_HEADER *AMXPtr::header() const {
+AMX_HEADER *AMXRef::header() const {
   return reinterpret_cast<AMX_HEADER*>(AccessAmx()->base);
 }
 
-unsigned char *AMXPtr::code() const {
+unsigned char *AMXRef::code() const {
   return AccessAmx()->base + header()->cod;
 }
 
-std::size_t AMXPtr::code_size() const {
+std::size_t AMXRef::code_size() const {
   return header()->dat - header()->cod;
 }
 
-unsigned char *AMXPtr::data() const {
+unsigned char *AMXRef::data() const {
   return AccessAmx()->data != 0 ? AccessAmx()->data
                                 : AccessAmx()->base + header()->dat;
 }
-std::size_t AMXPtr::data_size() const {
+std::size_t AMXRef::data_size() const {
   return header()->hea - header()->dat;
 }
 
-int AMXPtr::num_publics() const {
+int AMXRef::num_publics() const {
   return (header()->natives - header()->publics)
           / header()->defsize;
 }
 
-int AMXPtr::num_natives() const {
+int AMXRef::num_natives() const {
   return (header()->libraries - header()->natives)
           / header()->defsize;
 }
 
-AMX_FUNCSTUBNT *AMXPtr::publics() const {
+AMX_FUNCSTUBNT *AMXRef::publics() const {
   return reinterpret_cast<AMX_FUNCSTUBNT*>(header()->publics
                                             + AccessAmx()->base);
 }
 
-AMX_FUNCSTUBNT *AMXPtr::natives() const {
+AMX_FUNCSTUBNT *AMXRef::natives() const {
   return reinterpret_cast<AMX_FUNCSTUBNT*>(header()->natives
                                             + AccessAmx()->base);
 }
 
-cell AMXPtr::GetPublicAddress(cell index) const {
+cell AMXRef::GetPublicAddress(cell index) const {
   if (index == AMX_EXEC_MAIN) {
     AMX_HEADER *hdr = header();
     if (hdr->cip > 0) {
@@ -93,14 +93,14 @@ cell AMXPtr::GetPublicAddress(cell index) const {
   return 0;
 }
 
-cell AMXPtr::GetNativeAddress(cell index) const {
+cell AMXRef::GetNativeAddress(cell index) const {
   if (index >= 0 && index < num_natives()) {
     return natives()[index].address;
   }
   return 0;
 }
 
-cell AMXPtr::FindPublic(cell address) const {
+cell AMXRef::FindPublic(cell address) const {
   int n = num_publics();
   AMX_FUNCSTUBNT *publics = this->publics();
   for (int i = 0; i < n; i++) {
@@ -111,7 +111,7 @@ cell AMXPtr::FindPublic(cell address) const {
   return -1;
 }
 
-cell AMXPtr::FindNative(cell address) const {
+cell AMXRef::FindNative(cell address) const {
   int n = num_natives();
   AMX_FUNCSTUBNT *natives = this->natives();
   for (int i = 0; i < n; i++) {
@@ -122,7 +122,7 @@ cell AMXPtr::FindNative(cell address) const {
   return -1;
 }
 
-const char *AMXPtr::GetPublicName(cell index) const {
+const char *AMXRef::GetPublicName(cell index) const {
   if (index >= 0 && index < num_publics()) {
     return reinterpret_cast<char*>(AccessAmx()->base
                                    + publics()[index].nameofs);
@@ -130,7 +130,7 @@ const char *AMXPtr::GetPublicName(cell index) const {
   return 0;
 }
 
-const char *AMXPtr::GetNativeName(cell index) const {
+const char *AMXRef::GetNativeName(cell index) const {
   if (index >= 0 && index < num_natives()) {
     return reinterpret_cast<char*>(AccessAmx()->base
                                    + natives()[index].nameofs);

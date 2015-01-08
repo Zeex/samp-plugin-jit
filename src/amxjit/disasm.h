@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "amxptr.h"
+#include "amxref.h"
 #include "opcode.h"
 
 namespace amxjit {
@@ -93,7 +93,7 @@ class Instruction {
 
 class CaseTable {
  public:
-  CaseTable(AMXPtr amx, cell offset);
+  CaseTable(AMXRef amx, cell offset);
 
   // Returns the total number of records_ in the case table.
   int num_cases() const;
@@ -115,8 +115,8 @@ class CaseTable {
 
 // Decodes a single AMX instruction at the specified address and
 // stored the result in instr. Returns false on error.
-bool DecodeInstruction(AMXPtr amx, cell address);
-bool DecodeInstruction(AMXPtr amx, cell address, Instruction &instr);
+bool DecodeInstruction(AMXRef amx, cell address);
+bool DecodeInstruction(AMXRef amx, cell address, Instruction &instr);
 
 // Disassembler is merely a convenience wrapper around
 // DecodeInstruction. It's well suited for whlie loops
@@ -133,11 +133,11 @@ bool DecodeInstruction(AMXPtr amx, cell address, Instruction &instr);
 // an error (usually means an invalid instruction).
 class Disassembler {
  public:
-  Disassembler(AMXPtr amx): amx_(amx), cur_address_() {}
+  Disassembler(AMXRef amx): amx_(amx), cur_address_() {}
   bool Decode(Instruction &instr);
   bool Decode(Instruction &instr, bool &error);
  private:
-  AMXPtr amx_;
+  AMXRef amx_;
   cell cur_address_;
 };
 

@@ -234,7 +234,7 @@ std::string Instruction::ToString() const {
   return stream.str();
 }
 
-CaseTable::CaseTable(AMXPtr amx_, cell offset) {
+CaseTable::CaseTable(AMXRef amx_, cell offset) {
   struct CaseRecord {
     cell value;    // case value
     cell address;  // address to jump to (absolute)
@@ -289,12 +289,12 @@ cell CaseTable::FindMaxValue() const {
   return *max_value;
 }
 
-bool DecodeInstruction(AMXPtr amx, cell address) {
+bool DecodeInstruction(AMXRef amx, cell address) {
   static Instruction instr;
   return DecodeInstruction(amx, address, instr);
 }
 
-bool DecodeInstruction(AMXPtr amx, cell address, Instruction &instr) {
+bool DecodeInstruction(AMXRef amx, cell address, Instruction &instr) {
   instr.RemoveOperands();
   instr.set_address(address);
 

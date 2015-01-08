@@ -68,11 +68,11 @@ struct RuntimeInfoBlock {
 };
 
 cell AMXJIT_CDECL GetPublicAddress(AMX *amx, int index) {
-  return AMXPtr(amx).GetPublicAddress(index);
+  return AMXRef(amx).GetPublicAddress(index);
 }
 
 cell AMXJIT_CDECL GetNativeAddress(AMX *amx, int index) {
-  return AMXPtr(amx).GetNativeAddress(index);
+  return AMXRef(amx).GetNativeAddress(index);
 }
 
 class InstrTableEntry {
@@ -168,8 +168,8 @@ CompilerAsmjit::CompilerAsmjit():
 CompilerAsmjit::~CompilerAsmjit() {
 }
 
-bool CompilerAsmjit::Prepare(AMXPtr amx) {
-  current_amx_ = amx;
+bool CompilerAsmjit::Prepare(AMXRef amx) {
+  amx_ = amx;
 
   EmitRuntimeInfo();
   EmitInstrTable();
@@ -221,13 +221,13 @@ CompileOutput *CompilerAsmjit::Finish(bool error) {
     void *code = asm_.make();
     RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code);
 
-    rib->amx = reinterpret_cast<intptr_t>(current_amx_.raw());
+    rib->amx = reinterpret_cast<intptr_t>(amx_.raw());
     rib->exec += reinterpret_cast<intptr_t>(code);
     rib->instr_table += reinterpret_cast<intptr_t>(code);
 
     InstrTableEntry *ite =
       reinterpret_cast<InstrTableEntry*>(rib->instr_table);
-    for (InstrMap::const_iterator it = instr_map_.begin();
+    for (std::map<cell, std::ptrdiff_t>::const_iterator it = instr_map_.begin();
          it != instr_map_.end(); it++) {
       ite->address = it->first;
       ite->start = static_cast<unsigned char*>(code) + it->second;
@@ -237,7 +237,7 @@ CompileOutput *CompilerAsmjit::Finish(bool error) {
     output = new CompileOutputAsmjit(code);
   }
 
-  current_amx_.Reset();
+  amx_.Reset();
 
   if (asm_.getLogger() != 0) {
     delete logger_;
@@ -1297,7 +1297,7 @@ void CompilerAsmjit::EmitInstrTable() {
   int num_entries = 0;
 
   Instruction instr;
-  Disassembler disasm(current_amx_);
+  Disassembler disasm(amx_);
   while (disasm.Decode(instr)) {
     num_entries++;
   }

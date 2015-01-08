@@ -29,7 +29,7 @@
 #include <map>
 #include <asmjit/base.h>
 #include <asmjit/x86.h>
-#include "amxptr.h"
+#include "amxref.h"
 #include "compiler.h"
 #include "macros.h"
 
@@ -43,7 +43,7 @@ class CompilerAsmjit: public Compiler {
   virtual ~CompilerAsmjit();
 
  protected:
-  virtual bool Prepare(AMXPtr amx);
+  virtual bool Prepare(AMXRef amx);
   virtual bool Process(const Instruction &instr);
   virtual CompileOutput *Finish(bool error);
 
@@ -203,7 +203,7 @@ class CompilerAsmjit: public Compiler {
   const asmjit::Label &GetLabel(cell address);
 
  private:
-  AMXPtr current_amx_;
+  AMXRef amx_;
 
   asmjit::X86Assembler asm_;
   asmjit::Label rib_start_label_;
@@ -220,11 +220,8 @@ class CompilerAsmjit: public Compiler {
   asmjit::Label sysreq_c_helper_label_;
   asmjit::Label sysreq_d_helper_label_;
 
-  typedef std::map<cell, asmjit::Label> LabelMap;
-  LabelMap label_map_;
-
-  typedef std::map<cell, std::ptrdiff_t> InstrMap;
-  InstrMap instr_map_;
+  std::map<cell, asmjit::Label> label_map_;
+  std::map<cell, std::ptrdiff_t> instr_map_;
 
   asmjit::Logger *logger_;
 

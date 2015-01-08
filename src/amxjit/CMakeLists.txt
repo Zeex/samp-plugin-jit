@@ -18,8 +18,8 @@ foreach(backend IN LISTS AMXJIT_BUILD_BACKENDS)
 endforeach()
 
 set(AMXJIT_SOURCES
-  amxptr.cpp
-  amxptr.h
+  amxref.cpp
+  amxref.h
   compiler.cpp
   compiler.h
   cstdint.h

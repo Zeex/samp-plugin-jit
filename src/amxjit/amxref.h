@@ -30,10 +30,10 @@
 
 namespace amxjit {
 
-class AMXPtr {
+class AMXRef {
  public:
-  AMXPtr(): amx_(0) {}
-  AMXPtr(AMX *amx): amx_(amx) {}
+  AMXRef(): amx_(0) {}
+  AMXRef(AMX *amx): amx_(amx) {}
 
   operator AMX*() { return amx_; }
   operator AMX*() const { return amx_; }

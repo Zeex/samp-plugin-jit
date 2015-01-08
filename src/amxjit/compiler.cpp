@@ -37,7 +37,7 @@ Compiler::Compiler():
 Compiler::~Compiler() {
 }
 
-CompileOutput *Compiler::Compile(AMXPtr amx) {
+CompileOutput *Compiler::Compile(AMXRef amx) {
   Prepare(amx);
 
   Disassembler disasm(amx);
