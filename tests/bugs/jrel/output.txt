@@ -1,2 +1,0 @@
-\[jit\] Invalid or unsupported instruction at address 00000038:
-\[jit\]   => jrel 0

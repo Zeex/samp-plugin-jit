@@ -1,2 +1,0 @@
-main\(\)
-Script\[.*\]: Run time error 1: "Forced exit"

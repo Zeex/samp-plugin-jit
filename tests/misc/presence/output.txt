@@ -1,1 +1,0 @@
-JIT is running: yes
