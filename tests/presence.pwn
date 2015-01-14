@@ -1,13 +1,12 @@
 // OUTPUT: JIT is running: yes
 
+#include <a_samp>
+#include <jit>
 #include "test"
 
 Test() {
-	new jit;
-	#emit zero.pri
-	#emit lctrl 7
-	#emit stor.s.pri jit
-	printf("JIT is running: %s", (jit)? ("yes"): ("no"));
+	new bool:jit = IsJITPresent();
+	printf("JIT is running: %s", (jit) ? ("yes") : ("no"));
 }
 
 main() {

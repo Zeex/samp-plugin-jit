@@ -3,17 +3,10 @@
 // OUTPUT: OK
 
 #include <a_samp>
+#include <jit>
 #include "test"
 
-forward f();
 forward OnJITCompile();
-
-stock bool:IsJITPresent() {
-	#emit zero.pri
-	#emit lctrl 7
-	#emit retn
-	return false; // make compiler happy
-}
 
 main() {
 	printf("%s", IsJITPresent() ? ("FAIL") : ("OK"));
