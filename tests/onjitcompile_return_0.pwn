@@ -3,7 +3,7 @@
 // OUTPUT: OK
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 forward f();
 forward OnJITCompile();

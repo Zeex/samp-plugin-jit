@@ -1,5 +1,5 @@
 #include <a_samp>
-#include <test>
+#include "test"
 
 stock TestMod(n, m, expected) {
 	if (n % m != expected) {

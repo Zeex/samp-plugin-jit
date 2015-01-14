@@ -1,7 +1,7 @@
 // OUTPUT: CallLocalFunction returned
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 #if debug < 1
 	#error Compile this script with run-time checks turned on

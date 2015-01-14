@@ -4,7 +4,7 @@
 // OUTPUT: 4010
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 main() {
 	printf("%x", f());

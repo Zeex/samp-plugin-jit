@@ -1,7 +1,7 @@
 // OUTPUT: 123
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 forward f();
 

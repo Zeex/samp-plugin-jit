@@ -4,7 +4,7 @@
 // OUTPUT: 3: 1
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 enum int_float {
 	if_int,

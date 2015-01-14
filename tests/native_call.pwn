@@ -2,7 +2,7 @@
 // OUTPUT: 4
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 main() {
 	printf("%s%s%s%s", "it", " ", "works", "!");

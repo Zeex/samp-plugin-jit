@@ -11,7 +11,7 @@
 // OUTPUT: default
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 TestSwitch(x) {
 	switch(x) {

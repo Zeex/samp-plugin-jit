@@ -1,7 +1,7 @@
 // OUTPUT: 1 2 3 4
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 main()
 {

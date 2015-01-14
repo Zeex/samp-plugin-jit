@@ -5,7 +5,7 @@
 // OUTPUT: OK
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 #if debug > 0
 	#error This code will not work properly with debug level > 0

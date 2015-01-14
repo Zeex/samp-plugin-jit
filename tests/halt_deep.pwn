@@ -1,7 +1,7 @@
 // OUTPUT: CallLocalFunction returned
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 public do_halt();
 

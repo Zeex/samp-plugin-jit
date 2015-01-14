@@ -3,7 +3,7 @@
 // OUTPUT: 2: 1
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 static Float:test_cases[][3] = {
 	{0.0, 0.0, 0.0},

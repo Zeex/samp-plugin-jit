@@ -1,7 +1,7 @@
 // OUTPUT: OK
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 public f();
 

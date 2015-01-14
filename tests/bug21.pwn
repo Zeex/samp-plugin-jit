@@ -4,7 +4,7 @@
 // OUTPUT: F00D
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 main() {
 	f(0xdead, 0xbeef, 0xf00d);

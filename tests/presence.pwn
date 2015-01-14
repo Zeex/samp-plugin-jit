@@ -1,6 +1,6 @@
 // OUTPUT: JIT is running: yes
 
-#include <test>
+#include "test"
 
 Test() {
 	new jit;

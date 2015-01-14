@@ -5,8 +5,8 @@
 // OUTPUT: 4: 1
 
 #include <a_samp>
-#include <float_const>
-#include <test>
+#include "float_const"
+#include "test"
 
 static Float:test_cases[][3] = {
 	{0.0, 0.0, 0.0},

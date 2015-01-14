@@ -2,7 +2,7 @@
 // OUTPUT: Script\[.*\]: Run time error 1: "Forced exit"
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 public OnGameModeInit() {
 	TestExit();
