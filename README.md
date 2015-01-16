@@ -53,7 +53,7 @@ Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 [version]: http://badge.fury.io/gh/Zeex%2Fsamp-plugin-jit
 [version_badge]: https://badge.fury.io/gh/Zeex%2Fsamp-plugin-jit.svg
 [build]: https://travis-ci.org/Zeex/samp-plugin-jit
-[build_status]: https://travis-ci.org/Zeex/samp-plugin-jit.png?branch=master
+[build_status]: https://travis-ci.org/Zeex/samp-plugin-jit.svg?branch=master
 [v8]: https://code.google.com/p/v8/
 [asmjit]: https://github.com/kobalicek/asmjit
 [wiki-detecting]: https://github.com/Zeex/samp-plugin-jit/wiki/Detecting-JIT-at-runtime
