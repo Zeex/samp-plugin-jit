@@ -1,6 +1,5 @@
 // OUTPUT: CallLocalFunction returned
 
-#include <a_samp>
 #include "test"
 
 #if debug < 1

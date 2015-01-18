@@ -1,19 +1,11 @@
-// OUTPUT: 0: 1
-// OUTPUT: 1: 1
-// OUTPUT: 2: 1
-
-#include <a_samp>
+#include "float_const"
 #include "test"
 
-static Float:test_cases[][3] = {
-	{0.0, 0.0, 0.0},
-	{1.0, 1.0, 0.0},
-	{-1.0, -1.0, 0.0}
-};
-
 main() {
-	for (new i = 0; i < sizeof(test_cases); i++) {
-		printf("%d: %d", i, floatsub(test_cases[i][0], test_cases[i][1]) == test_cases[i][2]);
-	}
+	TEST_TRUE(floatsub(0.0, 0.0) == 0.0);
+	TEST_TRUE(floatsub(1.0, 1.0) == 0.0);
+	TEST_TRUE(floatsub(-1.0, -1.0) == 0.0);
+	TEST_TRUE(floatsub(POS_INF, 1.0) == POS_INF);
+	TEST_TRUE(floatsub(NEG_INF, 1.0) == NEG_INF);
 	TestExit();
 }

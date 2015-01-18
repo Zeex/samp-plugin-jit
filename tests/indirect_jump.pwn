@@ -4,43 +4,42 @@
 // OUTPUT: OK
 // OUTPUT: OK
 
-#include <a_samp>
 #include "test"
 
 #if debug > 0
 	#error This code will not work properly with debug level > 0
 #endif
 
-test_sctrl_6() {
+TestSctrl6() {
 	#emit lctrl 6
 	#emit add.c 56
 	#emit sctrl 6
 
-	print("Shouldn't print this");
+	print("sctrl 6 broken");
 	return;
 
 	print("OK");
 }
 
-test_sctrl_6_fail() {
+TestSctrl6Fail() {
 	#emit const.pri 0xffffffff
 	#emit sctrl 6
 
 	print("OK");
 }
 
-test_jump_pri() {
+TestJumpPri() {
 	#emit lctrl 6
 	#emit add.c 52
 	#emit jump.pri
 
-	print("Shouldn't print this");
+	print("jump.pri broken");
 	return;
 
 	print("OK");
 }
 
-test_jump_pri_fail() {
+TestJumpPriFail() {
 	#emit const.pri 0xffffffff
 	#emit jump.pri
 
@@ -48,9 +47,9 @@ test_jump_pri_fail() {
 }
 
 main() {
-	test_sctrl_6();
-	test_sctrl_6_fail();
-	test_jump_pri();
-	test_jump_pri_fail();
+	TestSctrl6();
+	TestSctrl6Fail();
+	TestJumpPri();
+	TestJumpPriFail();
 	TestExit();
 }

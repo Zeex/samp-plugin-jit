@@ -1,15 +1,13 @@
-// OUTPUT: OK
-
-#include <a_samp>
 #include "test"
 
 public f();
 
 main() {
-	if (CallLocalFunction("f", "") == 133) {
-		print("OK");
-	}
 	TestExit();
+}
+
+stock Test() {
+	TEST_TRUE(CallLocalFunction("f", "") == 133);
 }
 
 public f() {

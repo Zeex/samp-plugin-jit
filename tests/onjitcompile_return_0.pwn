@@ -2,7 +2,6 @@
 // OUTPUT: \[jit\] Compilation was disabled
 // OUTPUT: OK
 
-#include <a_samp>
 #include <jit>
 #include "test"
 

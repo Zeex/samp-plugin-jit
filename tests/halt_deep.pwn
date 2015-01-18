@@ -1,9 +1,8 @@
 // OUTPUT: CallLocalFunction returned
 
-#include <a_samp>
 #include "test"
 
-public do_halt();
+public DoHalt();
 
 main() {
 	CallLocalFunction("do_halt", "");
@@ -12,6 +11,6 @@ main() {
 	TestExit();
 }
 
-public do_halt() {
+public DoHalt() {
 	#emit halt 1
 }

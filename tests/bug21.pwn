@@ -1,9 +1,3 @@
-// OUTPUT: 3
-// OUTPUT: DEAD
-// OUTPUT: BEEF
-// OUTPUT: F00D
-
-#include <a_samp>
 #include "test"
 
 main() {
@@ -11,10 +5,8 @@ main() {
 }
 
 f(...) {
-	printf("%d", numargs());
-	printf("%x", getarg(0));
-	printf("%x", getarg(1));
-	printf("%x", getarg(2));
-
+	TEST_TRUE(numargs() == 3);
+	TEST_TRUE(getarg(0) == 0xdead);
+	TEST_TRUE(getarg(1) == 0xbeef);
 	TestExit();
 }

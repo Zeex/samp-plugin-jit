@@ -1,40 +1,27 @@
-// OUTPUT: default
-// OUTPUT: default
-// OUTPUT: case 1
-// OUTPUT: case 2
-// OUTPUT: case 3
-// OUTPUT: default
-// OUTPUT: case 10
-// OUTPUT: default
-// OUTPUT: case 15
-// OUTPUT: default
-// OUTPUT: default
-
-#include <a_samp>
 #include "test"
 
-TestSwitch(x) {
-	switch(x) {
-		case 1: print("case 1");
-		case 2: print("case 2");
-		case 3: print("case 3");
-		case 10: print("case 10");
-		case 15: print("case 15");
-		default: print("default");
+DoSwitch(x) {
+	switch (x) {
+		case 1:  return 1;
+		case 2:  return 2;
+		case 3:  return 3;
+		case 10: return 10;
+		case 15: return 15;
+		default: return 0;
 	}
 }
 
 main() {
-	TestSwitch(0);
-	TestSwitch(-1);
-	TestSwitch(1);
-	TestSwitch(2);
-	TestSwitch(3);
-	TestSwitch(7);
-	TestSwitch(10);
-	TestSwitch(13);
-	TestSwitch(15);
-	TestSwitch(16);
-	TestSwitch(30);
+	TEST_TRUE(DoSwitch(0) == 0);
+	TEST_TRUE(DoSwitch(-1) == 0);
+	TEST_TRUE(DoSwitch(1) == 1);
+	TEST_TRUE(DoSwitch(2) == 2);
+	TEST_TRUE(DoSwitch(3) == 3);
+	TEST_TRUE(DoSwitch(7) == 0);
+	TEST_TRUE(DoSwitch(10) == 10);
+	TEST_TRUE(DoSwitch(13) == 0);
+	TEST_TRUE(DoSwitch(15) == 15);
+	TEST_TRUE(DoSwitch(16) == 0);
+	TEST_TRUE(DoSwitch(30) == 0);
 	TestExit();
 }

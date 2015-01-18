@@ -12,7 +12,6 @@ floatlog
 floatmul
 floatsqroot
 floatsub
-frame_address
 halt_deep
 halt
 indirect_jump
