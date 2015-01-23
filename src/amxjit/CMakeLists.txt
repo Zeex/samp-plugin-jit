@@ -1,4 +1,4 @@
-include(AmxConfig)
+include(AMXConfig)
 
 set(AMXJIT_ALL_BACKENDS "asmjit;llvm")
 

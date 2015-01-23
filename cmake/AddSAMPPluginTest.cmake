@@ -1,4 +1,4 @@
-# PluginTest - add tests for SA-MP plugins.
+# AddSAMPPluginTest - add tests for SA-MP plugins.
 #
 # This module reuires the samp-server-cli script to be present in PATH in
 # order to be able to run the tests. The script can be downloaded here:
@@ -10,7 +10,7 @@
 
 include(CMakeParseArguments)
 
-function(add_plugin_test)
+function(add_samp_plugin_test)
   set(name "${ARGV0}")
 
   set(options TARGET OUTPUT_FILE SCRIPT TIMEOUT CONFIG WORKING_DIRECTORY)

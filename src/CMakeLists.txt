@@ -1,5 +1,5 @@
-include(AmxConfig)
-include(Plugin)
+include(AMXConfig)
+include(AddSAMPPlugin)
 
 set(JIT_BACKENDS "asmjit" CACHE STRING "List of JIT backends to build")
 
@@ -63,7 +63,7 @@ else()
   list(APPEND JIT_SOURCES os-unix.cpp)
 endif()
 
-add_plugin(jit ${JIT_SOURCES})
+add_samp_plugin(jit ${JIT_SOURCES})
 set_property(TARGET jit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
