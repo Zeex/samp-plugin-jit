@@ -1277,6 +1277,21 @@ void CompilerAsmjit::floatcmp() {
   asm_.bind(exit);
 }
 
+void CompilerAsmjit::floatround() {
+  asmjit::Label exit = asm_.newLabel();
+
+    asm_.fld(dword_ptr(esp, 4));
+    asm_.mov(eax, dword_ptr(esp, 8));
+    asm_.sub(esp, 4);
+
+    asm_.frndint();
+
+  asm_.bind(exit);
+    asm_.fstp(dword_ptr(esp));
+    asm_.mov(eax, dword_ptr(esp));
+    asm_.add(esp, 4);
+}
+
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   struct Intrinsic {
     const char         *name;
@@ -1292,7 +1307,8 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"floatdiv",    &CompilerAsmjit::floatdiv},
     {"floatsqroot", &CompilerAsmjit::floatsqroot},
     {"floatlog",    &CompilerAsmjit::floatlog},
-    {"floatcmp",    &CompilerAsmjit::floatcmp}
+    {"floatcmp",    &CompilerAsmjit::floatcmp},
+    {"floatround",  &CompilerAsmjit::floatround}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {

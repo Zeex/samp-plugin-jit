@@ -189,6 +189,7 @@ class CompilerAsmjit: public Compiler {
   void floatsqroot();
   void floatlog();
   void floatcmp();
+  void floatround();
 
  private:
   void EmitRuntimeInfo();
