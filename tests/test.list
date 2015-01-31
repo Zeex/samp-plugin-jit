@@ -11,6 +11,7 @@ floatcmp
 floatdiv
 floatlog
 floatmul
+floatsin
 floatsqroot
 floatsub
 halt_deep
