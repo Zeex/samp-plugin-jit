@@ -26,21 +26,21 @@ namespace asmjit {
 //! \{
 
 // ============================================================================
-// [asmjit::kInstId]
+// [asmjit::InstId]
 // ============================================================================
 
 //! Instruction codes (stub).
-ASMJIT_ENUM(kInstId) {
+ASMJIT_ENUM(InstId) {
   //! No instruction.
   kInstIdNone = 0
 };
 
 // ============================================================================
-// [asmjit::kInstOptions]
+// [asmjit::InstOptions]
 // ============================================================================
 
-//! Instruction options (stub).
-ASMJIT_ENUM(kInstOptions) {
+//! Instruction options.
+ASMJIT_ENUM(InstOptions) {
   //! No instruction options.
   kInstOptionNone = 0x00000000,
 
@@ -476,19 +476,20 @@ struct ASMJIT_VCLASS Assembler : public CodeGen {
   //! Emit an instruction with integer immediate operand.
   ASMJIT_API Error emit(uint32_t code, int o0);
   //! \overload
-  ASMJIT_API Error emit(uint32_t code, uint64_t o0);
-  //! \overload
   ASMJIT_API Error emit(uint32_t code, const Operand& o0, int o1);
-  //! \overload
-  ASMJIT_API Error emit(uint32_t code, const Operand& o0, uint64_t o1);
   //! \overload
   ASMJIT_API Error emit(uint32_t code, const Operand& o0, const Operand& o1, int o2);
   //! \overload
-  ASMJIT_API Error emit(uint32_t code, const Operand& o0, const Operand& o1, uint64_t o2);
-  //! \overload
   ASMJIT_API Error emit(uint32_t code, const Operand& o0, const Operand& o1, const Operand& o2, int o3);
+
   //! \overload
-  ASMJIT_API Error emit(uint32_t code, const Operand& o0, const Operand& o1, const Operand& o2, uint64_t o3);
+  ASMJIT_API Error emit(uint32_t code, int64_t o0);
+  //! \overload
+  ASMJIT_API Error emit(uint32_t code, const Operand& o0, int64_t o1);
+  //! \overload
+  ASMJIT_API Error emit(uint32_t code, const Operand& o0, const Operand& o1, int64_t o2);
+  //! \overload
+  ASMJIT_API Error emit(uint32_t code, const Operand& o0, const Operand& o1, const Operand& o2, int64_t o3);
 
   //! Emit an instruction (virtual).
   virtual Error _emit(uint32_t code, const Operand& o0, const Operand& o1, const Operand& o2, const Operand& o3) = 0;
