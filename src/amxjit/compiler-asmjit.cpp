@@ -37,6 +37,7 @@ using asmjit::x86::byte_ptr;
 using asmjit::x86::word_ptr;
 using asmjit::x86::dword_ptr;
 using asmjit::x86::dword_ptr_abs;
+using asmjit::x86::ah;
 using asmjit::x86::al;
 using asmjit::x86::cl;
 using asmjit::x86::ax;
@@ -49,6 +50,7 @@ using asmjit::x86::esi;
 using asmjit::x86::edi;
 using asmjit::x86::ebp;
 using asmjit::x86::esp;
+using asmjit::x86::fp0;
 using asmjit::x86::fp1;
 
 namespace amxjit {
@@ -1248,6 +1250,33 @@ void CompilerAsmjit::floatlog() {
   asm_.add(esp, 4);
 }
 
+void CompilerAsmjit::floatcmp() {
+  asmjit::Label less_or_greater = asm_.newLabel();
+  asmjit::Label less = asm_.newLabel();
+  asmjit::Label exit = asm_.newLabel();
+
+    asm_.fld(dword_ptr(esp, 8));
+    asm_.fld(dword_ptr(esp, 4));
+    asm_.fcompp();
+    asm_.fnstsw(ax);
+
+    asm_.test(ah, 0x44); // C2 + C3
+    asm_.jp(less_or_greater);
+    asm_.xor_(eax, eax);
+    asm_.jmp(exit);
+
+  asm_.bind(less_or_greater);
+    asm_.test(ah, 0x01); // C0
+    asm_.jnz(less);
+    asm_.mov(eax, 1);
+    asm_.jmp(exit);
+
+  asm_.bind(less);
+    asm_.mov(eax, -1);
+
+  asm_.bind(exit);
+}
+
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   struct Intrinsic {
     const char         *name;
@@ -1262,7 +1291,8 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"floatmul",    &CompilerAsmjit::floatmul},
     {"floatdiv",    &CompilerAsmjit::floatdiv},
     {"floatsqroot", &CompilerAsmjit::floatsqroot},
-    {"floatlog",    &CompilerAsmjit::floatlog}
+    {"floatlog",    &CompilerAsmjit::floatlog},
+    {"floatcmp",    &CompilerAsmjit::floatcmp}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {

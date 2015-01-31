@@ -11,6 +11,10 @@ main() {
 		floatadd(1.0, 1.0);
 	BENCH_END()
 
+	BENCH_BEGIN(floatcmp, ITERATIONS)
+		floatcmp(1.0, 1.0);
+	BENCH_END()
+
 	BENCH_BEGIN(floatdiv, ITERATIONS)
 		floatdiv(1.0, 1.0);
 	BENCH_END()

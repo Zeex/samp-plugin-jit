@@ -7,6 +7,7 @@ bug42
 float
 floatabs
 floatadd
+floatcmp
 floatdiv
 floatlog
 floatmul
