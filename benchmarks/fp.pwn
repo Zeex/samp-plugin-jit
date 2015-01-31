@@ -27,6 +27,12 @@ main() {
 		floatmul(1.0, 1.0);
 	BENCH_END()
 
+	BENCH_BEGIN(floatsin, ITERATIONS)
+		floatsin(3.14, radian);
+		floatsin(3.14, degrees);
+		floatsin(3.14, grades);
+	BENCH_END()
+
 	BENCH_BEGIN(floatsqroot, ITERATIONS)
 		floatsqroot(1.0);
 	BENCH_END()
