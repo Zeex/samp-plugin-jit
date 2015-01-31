@@ -1278,32 +1278,33 @@ void CompilerAsmjit::floatcmp() {
 }
 
 void CompilerAsmjit::floatsin() {
-  asmjit::Label grades_or_radians = asm_.newLabel();
-  asmjit::Label radians = asm_.newLabel();
+  asmjit::Label degrees = asm_.newLabel();
+  asmjit::Label grades = asm_.newLabel();
   asmjit::Label exit = asm_.newLabel();
 
     asm_.fld(dword_ptr(esp, 4));
     asm_.mov(eax, dword_ptr(esp, 8));
-    asm_.sub(esp, 4);
 
     asm_.cmp(eax, 1);
-    asm_.jne(grades_or_radians);
-    asm_.mov(dword_ptr(esp), 0x3c8efa35); // pi / 180
-    asm_.fld(dword_ptr(esp));
-    asm_.fmulp(fp1);
-    asm_.fsin();
-    asm_.jmp(exit);
-
-  asm_.bind(grades_or_radians);
+    asm_.je(degrees);
     asm_.cmp(eax, 2);
-    asm_.jne(radians);
-    asm_.mov(dword_ptr(esp), 0x3c80adfd); // pi / 200
+    asm_.je(grades);
+
+    asm_.sub(esp, 4);
+    asm_.fsin();
+    asm_.jmp(exit);
+
+  asm_.bind(degrees);
+    asm_.push(0x3c8efa35); // pi / 180
     asm_.fld(dword_ptr(esp));
     asm_.fmulp(fp1);
     asm_.fsin();
     asm_.jmp(exit);
 
-  asm_.bind(radians);
+  asm_.bind(grades);
+    asm_.push(0x3c80adfd); // pi / 200
+    asm_.fld(dword_ptr(esp));
+    asm_.fmulp(fp1);
     asm_.fsin();
 
   asm_.bind(exit);
