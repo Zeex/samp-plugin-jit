@@ -26,11 +26,11 @@ struct X86CpuInfo;
 //! \{
 
 // ============================================================================
-// [asmjit::kX86CpuFeature]
+// [asmjit::X86CpuFeature]
 // ============================================================================
 
 //! X86 CPU features.
-ASMJIT_ENUM(kX86CpuFeature) {
+ASMJIT_ENUM(X86CpuFeature) {
   //! Cpu has Not-Execute-Bit.
   kX86CpuFeatureNX = 0,
   //! Cpu has multithreading.
@@ -178,16 +178,24 @@ union X86CpuId {
 // [asmjit::X86CpuUtil]
 // ============================================================================
 
-#if defined(ASMJIT_HOST_X86) || defined(ASMJIT_HOST_X64)
+#if defined(ASMJIT_ARCH_X86) || defined(ASMJIT_ARCH_X64)
 //! CPU utilities available only if the host processor is X86/X64.
 struct X86CpuUtil {
+  //! \internal
+  //!
+  //! Designed to support VS2008 and less in 64-bit mode, even if this compiler
+  //! doesn't have `__cpuidex` intrinsic.
+  ASMJIT_API static void _docpuid(uint32_t inEcx, uint32_t inEax, X86CpuId* out);
+
   //! Get the result of calling CPUID instruction to `out`.
-  ASMJIT_API static void callCpuId(uint32_t inEax, uint32_t inEcx, X86CpuId* out);
+  static ASMJIT_INLINE void callCpuId(X86CpuId* out, uint32_t inEax, uint32_t inEcx = 0) {
+    return _docpuid(inEcx, inEax, out);
+  }
 
   //! Detect the Host CPU.
   ASMJIT_API static void detect(X86CpuInfo* cpuInfo);
 };
-#endif // ASMJIT_HOST_X86 || ASMJIT_HOST_X64
+#endif // ASMJIT_ARCH_X86 || ASMJIT_ARCH_X64
 
 // ============================================================================
 // [asmjit::X86CpuInfo]
@@ -200,8 +208,7 @@ struct X86CpuInfo : public CpuInfo {
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  ASMJIT_INLINE X86CpuInfo(uint32_t size = sizeof(X86CpuInfo)) :
-    CpuInfo(size) {}
+  ASMJIT_INLINE X86CpuInfo();
 
   // --------------------------------------------------------------------------
   // [Accessors]
@@ -231,12 +238,12 @@ struct X86CpuInfo : public CpuInfo {
   // [Statics]
   // --------------------------------------------------------------------------
 
-#if defined(ASMJIT_HOST_X86) || defined(ASMJIT_HOST_X64)
+#if defined(ASMJIT_ARCH_X86) || defined(ASMJIT_ARCH_X64)
   //! Get global instance of `X86CpuInfo`.
   static ASMJIT_INLINE const X86CpuInfo* getHost() {
     return static_cast<const X86CpuInfo*>(CpuInfo::getHost());
   }
-#endif // ASMJIT_HOST_X86 || ASMJIT_HOST_X64
+#endif // ASMJIT_ARCH_X86 || ASMJIT_ARCH_X64
 
   // --------------------------------------------------------------------------
   // [Members]
@@ -251,6 +258,9 @@ struct X86CpuInfo : public CpuInfo {
   //! Maximum number of addressable IDs for logical processors.
   uint32_t _maxLogicalProcessors;
 };
+
+ASMJIT_INLINE X86CpuInfo::X86CpuInfo() :
+  CpuInfo(sizeof(X86CpuInfo)) {}
 
 //! \}
 

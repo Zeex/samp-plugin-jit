@@ -56,11 +56,11 @@ struct X86ZmmVar;
 //! \{
 
 // ============================================================================
-// [asmjit::kX86RegClass]
+// [asmjit::X86RegClass]
 // ============================================================================
 
 //! X86/X64 variable class.
-ASMJIT_ENUM(kX86RegClass) {
+ASMJIT_ENUM(X86RegClass) {
   // --------------------------------------------------------------------------
   // [Regs & Vars]
   // --------------------------------------------------------------------------
@@ -91,11 +91,11 @@ ASMJIT_ENUM(kX86RegClass) {
 };
 
 // ============================================================================
-// [asmjit::kX86RegType]
+// [asmjit::X86RegType]
 // ============================================================================
 
 //! X86/X64 register type.
-ASMJIT_ENUM(kX86RegType) {
+ASMJIT_ENUM(X86RegType) {
   //! Gpb-lo register (AL, BL, CL, DL, ...).
   kX86RegTypeGpbLo = 0x01,
   //! Gpb-hi register (AH, BH, CH, DH only).
@@ -135,7 +135,7 @@ ASMJIT_ENUM(kX86RegType) {
 };
 
 // ============================================================================
-// [asmjit::kX86RegIndex]
+// [asmjit::X86RegIndex]
 // ============================================================================
 
 //! X86/X64 register indexes.
@@ -143,7 +143,7 @@ ASMJIT_ENUM(kX86RegType) {
 //! \note Register indexes have been reduced to only support general purpose
 //! registers. There is no need to have enumerations with number suffix that
 //! expands to the exactly same value as the suffix value itself.
-ASMJIT_ENUM(kX86RegIndex) {
+ASMJIT_ENUM(X86RegIndex) {
   //! Index of Al/Ah/Ax/Eax/Rax registers.
   kX86RegIndexAx = 0,
   //! Index of Cl/Ch/Cx/Ecx/Rcx registers.
@@ -179,11 +179,11 @@ ASMJIT_ENUM(kX86RegIndex) {
 };
 
 // ============================================================================
-// [asmjit::kX86Seg]
+// [asmjit::X86Seg]
 // ============================================================================
 
 //! X86/X64 segment codes.
-ASMJIT_ENUM(kX86Seg) {
+ASMJIT_ENUM(X86Seg) {
   //! No/Default segment.
   kX86SegDefault = 0,
   //! Es segment.
@@ -210,11 +210,11 @@ ASMJIT_ENUM(kX86Seg) {
 };
 
 // ============================================================================
-// [asmjit::kX86MemVSib]
+// [asmjit::X86MemVSib]
 // ============================================================================
 
 //! X86/X64 index register legacy and AVX2 (VSIB) support.
-ASMJIT_ENUM(kX86MemVSib) {
+ASMJIT_ENUM(X86MemVSib) {
   //! Memory operand uses Gpd/Gpq index (or no index register).
   kX86MemVSibGpz = 0,
   //! Memory operand uses Xmm index (or no index register).
@@ -226,13 +226,13 @@ ASMJIT_ENUM(kX86MemVSib) {
 };
 
 // ============================================================================
-// [asmjit::kX86MemFlags]
+// [asmjit::X86MemFlags]
 // ============================================================================
 
 //! \internal
 //!
 //! X86/X64 specific memory flags.
-ASMJIT_ENUM(kX86MemFlags) {
+ASMJIT_ENUM(X86MemFlags) {
   kX86MemSegBits    = 0x7,
   kX86MemSegIndex   = 0,
   kX86MemSegMask    = kX86MemSegBits << kX86MemSegIndex,
@@ -666,7 +666,7 @@ struct X86Reg : public Reg {
   //! Get whether the register is Gp register.
   ASMJIT_INLINE bool isGp() const { return _vreg.type <= kX86RegTypeGpq; }
   //! Get whether the register is Gp byte (8-bit) register.
-  ASMJIT_INLINE bool isGpb() const { return _vreg.type <= kX86RegTypeGpbHi; }
+  ASMJIT_INLINE bool isGpb() const { return _vreg.type <= _kX86RegTypePatchedGpbHi; }
   //! Get whether the register is Gp lo-byte (8-bit) register.
   ASMJIT_INLINE bool isGpbLo() const { return _vreg.type == kX86RegTypeGpbLo; }
   //! Get whether the register is Gp hi-byte (8-bit) register.
@@ -789,6 +789,24 @@ struct X86GpReg : public X86Reg {
   // --------------------------------------------------------------------------
 
   ASMJIT_REG_OP(X86GpReg)
+
+  // --------------------------------------------------------------------------
+  // [X86GpReg Cast]
+  // --------------------------------------------------------------------------
+
+  //! Cast this register to 8-bit (LO) part.
+  ASMJIT_INLINE X86GpReg r8() const { return X86GpReg(kX86RegTypeGpbLo, getRegIndex(), 1); }
+  //! Cast this register to 8-bit (LO) part.
+  ASMJIT_INLINE X86GpReg r8Lo() const { return X86GpReg(kX86RegTypeGpbLo, getRegIndex(), 1); }
+  //! Cast this register to 8-bit (HI) part.
+  ASMJIT_INLINE X86GpReg r8Hi() const { return X86GpReg(kX86RegTypeGpbHi, getRegIndex(), 1); }
+
+  //! Cast this register to 16-bit.
+  ASMJIT_INLINE X86GpReg r16() const { return X86GpReg(kX86RegTypeGpw, getRegIndex(), 2); }
+  //! Cast this register to 32-bit.
+  ASMJIT_INLINE X86GpReg r32() const { return X86GpReg(kX86RegTypeGpd, getRegIndex(), 4); }
+  //! Cast this register to 64-bit.
+  ASMJIT_INLINE X86GpReg r64() const { return X86GpReg(kX86RegTypeGpq, getRegIndex(), 8); }
 };
 
 // ============================================================================
@@ -979,6 +997,17 @@ struct X86XmmReg : public X86Reg {
   // --------------------------------------------------------------------------
 
   ASMJIT_REG_OP(X86XmmReg)
+
+  // --------------------------------------------------------------------------
+  // [X86XmmReg Cast]
+  // --------------------------------------------------------------------------
+
+  //! Cast this register to Xmm (clone).
+  ASMJIT_INLINE X86XmmReg xmm() const { return X86XmmReg(kX86RegTypeXmm, getRegIndex(), 16); }
+  //! Cast this register to Ymm.
+  ASMJIT_INLINE X86YmmReg ymm() const;
+  //! Cast this register to Zmm.
+  ASMJIT_INLINE X86ZmmReg zmm() const;
 };
 
 // ============================================================================
@@ -1029,7 +1058,20 @@ struct X86YmmReg : public X86Reg {
   // --------------------------------------------------------------------------
 
   ASMJIT_REG_OP(X86YmmReg)
+
+  // --------------------------------------------------------------------------
+  // [X86YmmReg Cast]
+  // --------------------------------------------------------------------------
+
+  //! Cast this register to Xmm.
+  ASMJIT_INLINE X86XmmReg xmm() const { return X86XmmReg(kX86RegTypeXmm, getRegIndex(), 16); }
+  //! Cast this register to Ymm (clone).
+  ASMJIT_INLINE X86YmmReg ymm() const { return X86YmmReg(kX86RegTypeYmm, getRegIndex(), 32); }
+  //! Cast this register to Zmm.
+  ASMJIT_INLINE X86ZmmReg zmm() const;
 };
+
+ASMJIT_INLINE X86YmmReg X86XmmReg::ymm() const { return X86YmmReg(kX86RegTypeYmm, getRegIndex(), 32); }
 
 // ============================================================================
 // [asmjit::X86ZmmReg]
@@ -1057,7 +1099,21 @@ struct X86ZmmReg : public X86Reg {
   // --------------------------------------------------------------------------
 
   ASMJIT_REG_OP(X86ZmmReg)
+
+  // --------------------------------------------------------------------------
+  // [X86ZmmReg Cast]
+  // --------------------------------------------------------------------------
+
+  //! Cast this register to Xmm.
+  ASMJIT_INLINE X86XmmReg xmm() const { return X86XmmReg(kX86RegTypeXmm, getRegIndex(), 16); }
+  //! Cast this register to Ymm.
+  ASMJIT_INLINE X86YmmReg ymm() const { return X86YmmReg(kX86RegTypeYmm, getRegIndex(), 32); }
+  //! Cast this register to Zmm (clone).
+  ASMJIT_INLINE X86ZmmReg zmm() const { return X86ZmmReg(kX86RegTypeZmm, getRegIndex(), 64); }
 };
+
+ASMJIT_INLINE X86ZmmReg X86XmmReg::zmm() const { return X86ZmmReg(kX86RegTypeZmm, getRegIndex(), 64); }
+ASMJIT_INLINE X86ZmmReg X86YmmReg::zmm() const { return X86ZmmReg(kX86RegTypeZmm, getRegIndex(), 64); }
 
 // ============================================================================
 // [asmjit::X86Mem]
@@ -1235,19 +1291,19 @@ struct X86Mem : public BaseMem {
     return (_vmem.flags & kX86MemSegMask) != (kX86SegDefault << kX86MemSegIndex);
   }
 
-  //! Get memory operand segment, see `kX86Seg`.
+  //! Get memory operand segment, see `X86Seg`.
   ASMJIT_INLINE uint32_t getSegment() const {
     return (static_cast<uint32_t>(_vmem.flags) >> kX86MemSegIndex) & kX86MemSegBits;
   }
 
-  //! Set memory operand segment, see `kX86Seg`.
+  //! Set memory operand segment, see `X86Seg`.
   ASMJIT_INLINE X86Mem& setSegment(uint32_t segIndex) {
     _vmem.flags = static_cast<uint8_t>(
       (static_cast<uint32_t>(_vmem.flags) & kX86MemSegMask) + (segIndex << kX86MemSegIndex));
     return *this;
   }
 
-  //! Set memory operand segment, see `kX86Seg`.
+  //! Set memory operand segment, see `X86Seg`.
   ASMJIT_INLINE X86Mem& setSegment(const X86SegReg& seg) {
     return setSegment(seg.getRegIndex());
   }
