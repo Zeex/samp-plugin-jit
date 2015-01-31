@@ -1,6 +1,7 @@
 #if defined BENCH_INC
 	#endinput
 #endif
+#define BENCH_INC
 
 #include <a_samp>
 
