@@ -1279,7 +1279,6 @@ void CompilerAsmjit::floatcmp() {
 
 void CompilerAsmjit::floatround() {
   asmjit::Label mode_ok = asm_.newLabel();
-  asmjit::Label exit = asm_.newLabel();
 
     asm_.fld(dword_ptr(esp, 4));
     asm_.mov(eax, dword_ptr(esp, 8));
@@ -1296,11 +1295,11 @@ void CompilerAsmjit::floatround() {
     asm_.and_(ecx, 0xfffff9ff);
     asm_.or_(ecx, eax);
     asm_.mov(dword_ptr(esp, 4), ecx);
+
     asm_.fldcw(dword_ptr(esp, 4));
     asm_.frndint();
     asm_.fldcw(dword_ptr(esp, 8));
 
-  asm_.bind(exit);
     asm_.fistp(dword_ptr(esp));
     asm_.mov(eax, dword_ptr(esp));
     asm_.add(esp, 12);
