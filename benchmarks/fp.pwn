@@ -19,6 +19,10 @@ main() {
 		floatdiv(1.0, 1.0);
 	BENCH_END()
 
+	BENCH_BEGIN(floatfract, ITERATIONS)
+		floatfract(0.5);
+	BENCH_END()
+
 	BENCH_BEGIN(floatlog, ITERATIONS)
 		floatlog(1.0, 10.0);
 	BENCH_END()
