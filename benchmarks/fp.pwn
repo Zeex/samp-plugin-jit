@@ -27,6 +27,14 @@ main() {
 		floatmul(1.0, 1.0);
 	BENCH_END()
 
+	BENCH_BEGIN(floatround, ITERATIONS)
+		floatround(0.0, floatround_round);
+		floatround(0.0, floatround_floor);
+		floatround(0.0, floatround_ceil);
+		floatround(0.0, floatround_tozero);
+		floatround(0.0, floatround_unbiased);
+	BENCH_END()
+
 	BENCH_BEGIN(floatsqroot, ITERATIONS)
 		floatsqroot(1.0);
 	BENCH_END()
