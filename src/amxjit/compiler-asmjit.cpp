@@ -1291,10 +1291,10 @@ void CompilerAsmjit::floatround() {
   asm_.bind(mode_ok);
     asm_.shl(eax, 10); // RC field is bits 10-11
     asm_.fnstcw(dword_ptr(esp, 8));
-    asm_.mov(ecx, dword_ptr(esp, 8));
-    asm_.and_(ecx, 0xfffff9ff);
-    asm_.or_(ecx, eax);
-    asm_.mov(dword_ptr(esp, 4), ecx);
+    asm_.mov(edx, dword_ptr(esp, 8));
+    asm_.and_(edx, 0xfffff3ff);
+    asm_.or_(edx, eax);
+    asm_.mov(dword_ptr(esp, 4), edx);
 
     asm_.fldcw(dword_ptr(esp, 4));
     asm_.frndint();
@@ -1303,6 +1303,27 @@ void CompilerAsmjit::floatround() {
     asm_.fistp(dword_ptr(esp));
     asm_.mov(eax, dword_ptr(esp));
     asm_.add(esp, 12);
+}
+
+void CompilerAsmjit::floatfract() {
+  asm_.fld(dword_ptr(esp, 4));
+  asm_.fld(fp0);
+  asm_.sub(esp, 12);
+
+  asm_.fnstcw(dword_ptr(esp, 8));
+  asm_.mov(edx, dword_ptr(esp, 8));
+  asm_.and_(edx, 0xfffff3ff);
+  asm_.or_(edx, 0xfffff7ff);
+  asm_.mov(dword_ptr(esp, 4), edx);
+
+  asm_.fldcw(dword_ptr(esp, 4));
+  asm_.frndint();
+  asm_.fldcw(dword_ptr(esp, 8));
+  asm_.fsubp();
+
+  asm_.fstp(dword_ptr(esp));
+  asm_.mov(eax, dword_ptr(esp));
+  asm_.add(esp, 12);
 }
 
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
@@ -1321,7 +1342,8 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"floatsqroot", &CompilerAsmjit::floatsqroot},
     {"floatlog",    &CompilerAsmjit::floatlog},
     {"floatcmp",    &CompilerAsmjit::floatcmp},
-    {"floatround",  &CompilerAsmjit::floatround}
+    {"floatround",  &CompilerAsmjit::floatround},
+    {"floatfract",  &CompilerAsmjit::floatfract}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {

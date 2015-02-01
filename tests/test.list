@@ -9,6 +9,7 @@ floatabs
 floatadd
 floatcmp
 floatdiv
+floatfract
 floatlog
 floatmul
 floatround

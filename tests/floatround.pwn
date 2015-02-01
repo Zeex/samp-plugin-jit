@@ -1,4 +1,3 @@
-#include "float_const"
 #include "test"
 
 main() {
