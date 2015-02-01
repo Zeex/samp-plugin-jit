@@ -1301,7 +1301,7 @@ void CompilerAsmjit::floatround() {
     asm_.fldcw(dword_ptr(esp, 8));
 
   asm_.bind(exit);
-    asm_.fstp(dword_ptr(esp));
+    asm_.fistp(dword_ptr(esp));
     asm_.mov(eax, dword_ptr(esp));
     asm_.add(esp, 12);
 }
