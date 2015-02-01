@@ -1278,18 +1278,32 @@ void CompilerAsmjit::floatcmp() {
 }
 
 void CompilerAsmjit::floatround() {
+  asmjit::Label mode_ok = asm_.newLabel();
   asmjit::Label exit = asm_.newLabel();
 
     asm_.fld(dword_ptr(esp, 4));
     asm_.mov(eax, dword_ptr(esp, 8));
-    asm_.sub(esp, 4);
+    asm_.sub(esp, 12);
 
+    asm_.test(eax, 0xfffffffc);
+    asm_.jz(mode_ok);
+    asm_.xor_(eax, eax);
+
+  asm_.bind(mode_ok);
+    asm_.shl(eax, 10); // RC field is bits 10-11
+    asm_.fnstcw(dword_ptr(esp, 8));
+    asm_.mov(ecx, dword_ptr(esp, 8));
+    asm_.and_(ecx, 0xfffff9ff);
+    asm_.or_(ecx, eax);
+    asm_.mov(dword_ptr(esp, 4), ecx);
+    asm_.fldcw(dword_ptr(esp, 4));
     asm_.frndint();
+    asm_.fldcw(dword_ptr(esp, 8));
 
   asm_.bind(exit);
     asm_.fstp(dword_ptr(esp));
     asm_.mov(eax, dword_ptr(esp));
-    asm_.add(esp, 4);
+    asm_.add(esp, 12);
 }
 
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
