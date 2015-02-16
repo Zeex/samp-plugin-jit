@@ -3,6 +3,7 @@
 
 [![Version][version_badge]][version]
 [![Build Status][build_status]][build]
+[![Build Status - Windows][build_status_win]][build_win]
 
 This is a Just-in-Time (JIT) compiler for AMX 3.x and a plugin for the SA-MP
 server. It compiles AMX bytecode that is produced by the Pawn compiler into
@@ -54,7 +55,8 @@ Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 [version_badge]: https://badge.fury.io/gh/Zeex%2Fsamp-plugin-jit.svg
 [build]: https://travis-ci.org/Zeex/samp-plugin-jit
 [build_status]: https://travis-ci.org/Zeex/samp-plugin-jit.svg?branch=master
-[v8]: https://code.google.com/p/v8/
+[build_win]: https://ci.appveyor.com/project/Zeex/samp-plugin-jit/branch/master
+[build_status_win]: https://ci.appveyor.com/api/projects/status/v1duwc12h7vq4vvu/branch/master?svg=true
 [asmjit]: https://github.com/kobalicek/asmjit
 [wiki-detecting]: https://github.com/Zeex/samp-plugin-jit/wiki/Detecting-JIT-at-runtime
 [ysi]: https://github.com/Y-Less/YSI
