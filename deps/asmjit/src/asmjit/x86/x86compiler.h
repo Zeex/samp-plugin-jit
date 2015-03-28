@@ -100,7 +100,9 @@ ASMJIT_ENUM(X86VarType) {
 //! X86/X64 VarAttr flags.
 ASMJIT_ENUM(X86VarAttr) {
   kX86VarAttrGpbLo = 0x10000000,
-  kX86VarAttrGpbHi = 0x20000000
+  kX86VarAttrGpbHi = 0x20000000,
+  kX86VarAttrFld4  = 0x40000000,
+  kX86VarAttrFld8  = 0x80000000
 };
 
 // ============================================================================
@@ -2081,6 +2083,10 @@ struct ASMJIT_VCLASS X86Compiler : public Compiler {
     return x86::ptr(label, index, shift, disp, _regSize);
   }
   //! \overload
+  ASMJIT_INLINE X86Mem intptr_ptr(const X86RipReg& rip, int32_t disp = 0) const {
+    return x86::ptr(rip, disp, _regSize);
+  }
+  //! \overload
   ASMJIT_INLINE X86Mem intptr_ptr_abs(Ptr pAbs, int32_t disp = 0) const {
     return x86::ptr_abs(pAbs, disp, _regSize);
   }
@@ -2445,6 +2451,12 @@ struct ASMJIT_VCLASS X86Compiler : public Compiler {
   // -------------------------------------------------------------------------
 
   ASMJIT_X86_EMIT_OPTIONS(X86Compiler)
+
+  //! Force the compiler to not follow the conditional or unconditional jump.
+  ASMJIT_INLINE X86Compiler& unfollow() {
+    _instOptions |= kInstOptionUnfollow;
+    return *this;
+  }
 
   // --------------------------------------------------------------------------
   // [Members]

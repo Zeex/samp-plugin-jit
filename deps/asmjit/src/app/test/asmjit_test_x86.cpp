@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <setjmp.h>
 
 using namespace asmjit;
 
@@ -266,6 +267,7 @@ struct X86Test_JumpUnreachable1 : public X86Test {
     c.bind(L_7);
     c.add(v0, v1);
 
+    c.align(kAlignCode, 16);
     c.bind(L_1);
     c.ret();
     c.endFunc();
@@ -749,6 +751,51 @@ struct X86Test_AllocImul2 : public X86Test {
 };
 
 // ============================================================================
+// [X86Test_AllocIdiv1]
+// ============================================================================
+
+struct X86Test_AllocIdiv1 : public X86Test {
+  X86Test_AllocIdiv1() : X86Test("[Alloc] Idiv #1") {}
+
+  static void add(PodVector<X86Test*>& tests) {
+    tests.append(new X86Test_AllocIdiv1());
+  }
+
+  virtual void compile(X86Compiler& c) {
+    c.addFunc(kFuncConvHost, FuncBuilder2<int, int, int>());
+
+    X86GpVar a(c, kVarTypeIntPtr, "a");
+    X86GpVar b(c, kVarTypeIntPtr, "b");
+    X86GpVar dummy(c, kVarTypeInt32, "dummy");
+
+    c.setArg(0, a);
+    c.setArg(1, b);
+
+    c.xor_(dummy, dummy);
+    c.idiv(dummy, a, b);
+
+    c.ret(a);
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expect) {
+    typedef int (*Func)(int, int);
+    Func func = asmjit_cast<Func>(_func);
+
+    int v0 = 2999;
+    int v1 = 245;
+
+    int resultRet = func(v0, v1);
+    int expectRet = 2999 / 245;
+
+    result.setFormat("result=%d", resultRet);
+    expect.setFormat("result=%d", expectRet);
+
+    return resultRet == expectRet;
+  }
+};
+
+// ============================================================================
 // [X86Test_AllocSetz]
 // ============================================================================
 
@@ -1211,6 +1258,44 @@ struct X86Test_AllocIfElse4 : public X86Test {
     result.appendFormat("ret={%d, %d}", 1, 2);
 
     return a == 1 && b == 2;
+  }
+};
+
+// ============================================================================
+// [X86Test_AllocInt8]
+// ============================================================================
+
+struct X86Test_AllocInt8 : public X86Test {
+  X86Test_AllocInt8() : X86Test("[Alloc] Int8") {}
+
+  static void add(PodVector<X86Test*>& tests) {
+    tests.append(new X86Test_AllocInt8());
+  }
+
+  virtual void compile(X86Compiler& c) {
+    X86GpVar x(c, kVarTypeInt8, "x");
+    X86GpVar y(c, kVarTypeInt32, "y");
+
+    c.addFunc(kFuncConvHost, FuncBuilder1<int, char>());
+    c.setArg(0, x);
+
+    c.movsx(y, x);
+
+    c.ret(y);
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expect) {
+    typedef int (*Func)(char);
+    Func func = asmjit_cast<Func>(_func);
+
+    int resultRet = func(-13);
+    int expectRet = -13;
+
+    result.setFormat("ret=%d", resultRet);
+    expect.setFormat("ret=%d", expectRet);
+
+    return resultRet == expectRet;
   }
 };
 
@@ -2414,14 +2499,117 @@ struct X86Test_CallMisc1 : public X86Test {
 };
 
 // ============================================================================
-// [X86Test_ConstPoolBase]
+// [X86Test_CallMisc2]
 // ============================================================================
 
-struct X86Test_ConstPoolBase : public X86Test {
-  X86Test_ConstPoolBase() : X86Test("[ConstPool] Base") {}
+struct X86Test_CallMisc2 : public X86Test {
+  X86Test_CallMisc2() : X86Test("[Call] Misc #2") {}
 
   static void add(PodVector<X86Test*>& tests) {
-    tests.append(new X86Test_ConstPoolBase());
+    tests.append(new X86Test_CallMisc2());
+  }
+
+  virtual void compile(X86Compiler& c) {
+    X86FuncNode* func = c.addFunc(kFuncConvHost, FuncBuilder1<double, const double*>());
+
+    X86GpVar p(c, kVarTypeIntPtr, "p");
+    X86GpVar fn(c, kVarTypeIntPtr, "fn");
+
+    X86XmmVar arg(c, kX86VarTypeXmmSd, "arg");
+    X86XmmVar ret(c, kX86VarTypeXmmSd, "ret");
+
+    c.setArg(0, p);
+    c.movsd(arg, x86::ptr(p));
+    c.mov(fn, imm_ptr((void*)op));
+
+    X86CallNode* call = c.call(fn, kFuncConvHost, FuncBuilder1<double, double>());
+    call->setArg(0, arg);
+    call->setRet(0, ret);
+
+    c.ret(ret);
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expect) {
+    typedef double (*Func)(const double*);
+    Func func = asmjit_cast<Func>(_func);
+
+    double arg = 2;
+
+    double resultRet = func(&arg);
+    double expectRet = op(arg);
+
+    result.setFormat("ret=%g", resultRet);
+    expect.setFormat("ret=%g", expectRet);
+
+    return resultRet == expectRet;
+  }
+
+  static double op(double a) { return a * a; }
+};
+
+// ============================================================================
+// [X86Test_CallMisc3]
+// ============================================================================
+
+struct X86Test_CallMisc3 : public X86Test {
+  X86Test_CallMisc3() : X86Test("[Call] Misc #3") {}
+
+  static void add(PodVector<X86Test*>& tests) {
+    tests.append(new X86Test_CallMisc3());
+  }
+
+  virtual void compile(X86Compiler& c) {
+    X86FuncNode* func = c.addFunc(kFuncConvHost, FuncBuilder1<double, const double*>());
+
+    X86GpVar p(c, kVarTypeIntPtr, "p");
+    X86GpVar fn(c, kVarTypeIntPtr, "fn");
+
+    X86XmmVar arg(c, kX86VarTypeXmmSd, "arg");
+    X86XmmVar ret(c, kX86VarTypeXmmSd, "ret");
+
+    c.setArg(0, p);
+    c.movsd(arg, x86::ptr(p));
+    c.mov(fn, imm_ptr((void*)op));
+
+    X86CallNode* call = c.call(fn, kFuncConvHost, FuncBuilder1<double, double>());
+    call->setArg(0, arg);
+    call->setRet(0, ret);
+
+    c.xorps(arg, arg);
+    c.subsd(arg, ret);
+
+    c.ret(arg);
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expect) {
+    typedef double (*Func)(const double*);
+    Func func = asmjit_cast<Func>(_func);
+
+    double arg = 2;
+
+    double resultRet = func(&arg);
+    double expectRet = -op(arg);
+
+    result.setFormat("ret=%g", resultRet);
+    expect.setFormat("ret=%g", expectRet);
+
+    return resultRet == expectRet;
+  }
+
+  static double op(double a) { return a * a; }
+};
+
+// ============================================================================
+// [X86Test_MiscConstPool]
+// ============================================================================
+
+struct X86Test_MiscConstPool : public X86Test {
+  X86Test_MiscConstPool() : X86Test("[Misc] ConstPool") {}
+
+  static void add(PodVector<X86Test*>& tests) {
+    tests.append(new X86Test_MiscConstPool());
   }
 
   virtual void compile(X86Compiler& c) {
@@ -2456,6 +2644,156 @@ struct X86Test_ConstPoolBase : public X86Test {
 };
 
 // ============================================================================
+// [X86Test_MiscMultiRet]
+// ============================================================================
+
+struct X86Test_MiscMultiRet : public X86Test {
+  X86Test_MiscMultiRet() : X86Test("[Misc] MultiRet") {}
+
+  static void add(PodVector<X86Test*>& tests) {
+    tests.append(new X86Test_MiscMultiRet());
+  }
+
+  virtual void compile(X86Compiler& c) {
+    c.addFunc(kFuncConvHost, FuncBuilder3<int, int, int, int>());
+
+    X86GpVar op(c, kVarTypeInt32, "op");
+    X86GpVar a(c, kVarTypeInt32, "a");
+    X86GpVar b(c, kVarTypeInt32, "b");
+
+    Label L_Zero(c);
+    Label L_Add(c);
+    Label L_Sub(c);
+    Label L_Mul(c);
+    Label L_Div(c);
+
+    c.setArg(0, op);
+    c.setArg(1, a);
+    c.setArg(2, b);
+
+    c.cmp(op, 0);
+    c.jz(L_Add);
+
+    c.cmp(op, 1);
+    c.jz(L_Sub);
+
+    c.cmp(op, 2);
+    c.jz(L_Mul);
+
+    c.cmp(op, 3);
+    c.jz(L_Div);
+
+    c.bind(L_Zero);
+    c.xor_(a, a);
+    c.ret(a);
+
+    c.bind(L_Add);
+    c.add(a, b);
+    c.ret(a);
+
+    c.bind(L_Sub);
+    c.sub(a, b);
+    c.ret(a);
+
+    c.bind(L_Mul);
+    c.imul(a, b);
+    c.ret(a);
+
+    c.bind(L_Div);
+    c.cmp(b, 0);
+    c.jz(L_Zero);
+
+    X86GpVar zero(c, kVarTypeInt32, "zero");
+    c.xor_(zero, zero);
+    c.idiv(zero, a, b);
+    c.ret(a);
+
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expect) {
+    typedef int (*Func)(int, int, int);
+
+    Func func = asmjit_cast<Func>(_func);
+
+    int a = 44;
+    int b = 3;
+
+    int r0 = func(0, a, b);
+    int r1 = func(1, a, b);
+    int r2 = func(2, a, b);
+    int r3 = func(3, a, b);
+    int e0 = a + b;
+    int e1 = a - b;
+    int e2 = a * b;
+    int e3 = a / b;
+
+    result.setFormat("ret={%d %d %d %d}", r0, r1, r2, r3);
+    expect.setFormat("ret={%d %d %d %d}", e0, e1, e2, e3);
+
+    return result.eq(expect);
+}
+};
+
+// ============================================================================
+// [X86Test_MiscUnfollow]
+// ============================================================================
+
+// Global (I didn't find better way to really test this).
+static jmp_buf globalJmpBuf;
+
+struct X86Test_MiscUnfollow : public X86Test {
+  X86Test_MiscUnfollow() : X86Test("[Misc] Unfollow") {}
+
+  static void add(PodVector<X86Test*>& tests) {
+    tests.append(new X86Test_MiscUnfollow());
+  }
+
+  virtual void compile(X86Compiler& c) {
+    c.addFunc(kFuncConvHost, FuncBuilder2<void, int, void*>());
+
+    X86GpVar a(c, kVarTypeInt32);
+    X86GpVar b(c, kVarTypeIntPtr);
+
+    Label tramp(c);
+
+    c.setArg(0, a);
+    c.setArg(1, b);
+
+    c.cmp(a, 0);
+    c.jz(tramp);
+
+    c.ret(a);
+
+    c.bind(tramp);
+    c.unfollow().jmp(b);
+
+    c.endFunc();
+  }
+
+  virtual bool run(void* _func, StringBuilder& result, StringBuilder& expect) {
+    typedef int (*Func)(int, void*);
+
+    Func func = asmjit_cast<Func>(_func);
+
+    int resultRet = 0;
+    int expectRet = 1;
+
+    if (!setjmp(globalJmpBuf))
+      resultRet = func(0, (void*)handler);
+    else
+      resultRet = 1;
+
+    result.setFormat("ret={%d}", resultRet);
+    expect.setFormat("ret={%d}", expectRet);
+
+    return resultRet == expectRet;
+  }
+
+  static void handler() { longjmp(globalJmpBuf, 1); }
+};
+
+// ============================================================================
 // [X86TestSuite]
 // ============================================================================
 
@@ -2480,7 +2818,7 @@ struct X86TestSuite {
   PodVector<X86Test*> tests;
   StringBuilder output;
 
-  int result;
+  int returnCode;
   int binSize;
   bool alwaysPrintLog;
 };
@@ -2489,7 +2827,7 @@ struct X86TestSuite {
   _Class_::add(tests)
 
 X86TestSuite::X86TestSuite() :
-  result(EXIT_SUCCESS),
+  returnCode(0),
   binSize(0),
   alwaysPrintLog(false) {
 
@@ -2509,6 +2847,7 @@ X86TestSuite::X86TestSuite() :
   ADD_TEST(X86Test_AllocMany2);
   ADD_TEST(X86Test_AllocImul1);
   ADD_TEST(X86Test_AllocImul2);
+  ADD_TEST(X86Test_AllocIdiv1);
   ADD_TEST(X86Test_AllocSetz);
   ADD_TEST(X86Test_AllocShlRor);
   ADD_TEST(X86Test_AllocGpLo);
@@ -2517,6 +2856,7 @@ X86TestSuite::X86TestSuite() :
   ADD_TEST(X86Test_AllocIfElse2);
   ADD_TEST(X86Test_AllocIfElse3);
   ADD_TEST(X86Test_AllocIfElse4);
+  ADD_TEST(X86Test_AllocInt8);
   ADD_TEST(X86Test_AllocArgsIntPtr);
   ADD_TEST(X86Test_AllocArgsFloat);
   ADD_TEST(X86Test_AllocArgsDouble);
@@ -2539,7 +2879,13 @@ X86TestSuite::X86TestSuite() :
   ADD_TEST(X86Test_CallMultiple);
   ADD_TEST(X86Test_CallRecursive);
   ADD_TEST(X86Test_CallMisc1);
-  ADD_TEST(X86Test_ConstPoolBase);
+  ADD_TEST(X86Test_CallMisc2);
+  ADD_TEST(X86Test_CallMisc3);
+
+  // Misc.
+  ADD_TEST(X86Test_MiscConstPool);
+  ADD_TEST(X86Test_MiscUnfollow);
+  ADD_TEST(X86Test_MiscMultiRet);
 }
 
 X86TestSuite::~X86TestSuite() {
@@ -2604,6 +2950,8 @@ int X86TestSuite::run() {
         fprintf(file, "Result  : %s\n", result.getData());
         fprintf(file, "Expected: %s\n", expect.getData());
         fprintf(file, "===============================================================================\n");
+
+        returnCode = 1;
       }
 
       runtime.release(func);
@@ -2616,6 +2964,8 @@ int X86TestSuite::run() {
       fprintf(file, "-------------------------------------------------------------------------------\n");
       fprintf(file, "[Failure] %s.\n", test->getName());
       fprintf(file, "===============================================================================\n");
+
+      returnCode = 1;
     }
 
     fflush(file);
@@ -2625,7 +2975,7 @@ int X86TestSuite::run() {
   fputs(output.getData(), file);
   fflush(file);
 
-  return result;
+  return returnCode;
 }
 
 // ============================================================================

@@ -192,24 +192,26 @@ static ASMJIT_INLINE void BaseCompiler_nodeRemoved(Compiler* self, Node* node_) 
     JumpNode* node = static_cast<JumpNode*>(node_);
     TargetNode* target = node->getTarget();
 
-    // Disconnect.
-    JumpNode** pPrev = &target->_from;
-    for (;;) {
-      ASMJIT_ASSERT(*pPrev != NULL);
-      JumpNode* current = *pPrev;
+    if (target != NULL) {
+      // Disconnect.
+      JumpNode** pPrev = &target->_from;
+      for (;;) {
+        ASMJIT_ASSERT(*pPrev != NULL);
+        JumpNode* current = *pPrev;
 
-      if (current == NULL)
-        break;
+        if (current == NULL)
+          break;
 
-      if (current == node) {
-        *pPrev = node->_jumpNext;
-        break;
+        if (current == node) {
+          *pPrev = node->_jumpNext;
+          break;
+        }
+
+        pPrev = &current->_jumpNext;
       }
 
-      pPrev = &current->_jumpNext;
+      target->subNumRefs();
     }
-
-    target->subNumRefs();
   }
 }
 
@@ -416,19 +418,14 @@ CommentNode* Compiler::comment(const char* fmt, ...) {
   char* p = buf;
 
   if (fmt) {
-    *p++ = ';';
-    *p++ = ' ';
-
     va_list ap;
     va_start(ap, fmt);
     p += vsnprintf(p, 254, fmt, ap);
     va_end(ap);
   }
 
-  p[0] = '\n';
-  p[1] = '\0';
-
-  return addComment(fmt);
+  p[0] = '\0';
+  return addComment(buf);
 }
 
 // ============================================================================
