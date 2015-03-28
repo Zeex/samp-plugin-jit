@@ -29,7 +29,6 @@ namespace asmjit {
 // [Constants]
 // ============================================================================
 
-enum { kMaxCommentLength = 80 };
 enum { kX86RexNoRexMask = kX86InstOptionRex | _kX86InstOptionNoRex };
 
 //! \internal
@@ -809,6 +808,15 @@ static void X86Assembler_dumpOperand(StringBuilder& sb, uint32_t arch, const Ope
         isAbsolute = true;
         sb.appendUInt(static_cast<uint32_t>(m->getDisplacement()), 16);
         break;
+
+      case kMemTypeRip:
+        // [rip + displacement]
+        sb.appendString("rip", 3);
+        break;
+
+      default:
+        sb.appendFormat("<invalid %d>", m->getMemType());
+        break;
     }
 
     if (m->hasIndex()) {
@@ -911,56 +919,6 @@ static bool X86Assembler_dumpInstruction(StringBuilder& sb,
   }
 
   return true;
-}
-
-static bool X86Assembler_dumpComment(StringBuilder& sb, size_t len, const uint8_t* binData, size_t binLen, size_t dispLen, size_t imLen, const char* comment) {
-  size_t currentLen = len;
-  size_t commentLen = comment ? StringUtil::nlen(comment, kMaxCommentLength) : 0;
-
-  ASMJIT_ASSERT(binLen >= dispLen);
-
-  if (binLen || commentLen) {
-    size_t align = 36;
-    char sep = ';';
-
-    for (size_t i = (binLen == 0); i < 2; i++) {
-      size_t begin = sb.getLength();
-
-      // Append align.
-      if (currentLen < align) {
-        if (!sb.appendChars(' ', align - currentLen))
-          return false;
-      }
-
-      // Append separator.
-      if (sep) {
-        if (!(sb.appendChar(sep) & sb.appendChar(' ')))
-          return false;
-      }
-
-      // Append binary data or comment.
-      if (i == 0) {
-        if (!sb.appendHex(binData, binLen - dispLen - imLen))
-          return false;
-        if (!sb.appendChars('.', dispLen * 2))
-          return false;
-        if (!sb.appendHex(binData + binLen - imLen, imLen))
-          return false;
-        if (commentLen == 0)
-          break;
-      }
-      else {
-        if (!sb.appendString(comment, commentLen))
-          return false;
-      }
-
-      currentLen += sb.getLength() - begin;
-      align += 22;
-      sep = '|';
-    }
-  }
-
-  return sb.appendChar('\n');
 }
 #endif // !ASMJIT_DISABLE_LOGGER
 
@@ -3696,21 +3654,23 @@ _EmitSib:
       EMIT_BYTE(x86EncodeSib(shift, mIndex, 5));
     }
 
-    if (rmMem->getMemType() == kMemTypeLabel) {
+    if (rmMem->getMemType() == kMemTypeAbsolute) {
+      // [Disp32].
+      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+    }
+    else if (rmMem->getMemType() == kMemTypeLabel) {
       // Relative->Absolute [x86 mode].
       label = self->getLabelData(rmMem->_vmem.base);
       relocId = self->_relocList.getLength();
 
-      {
-        RelocData rd;
-        rd.type = kRelocRelToAbs;
-        rd.size = 4;
-        rd.from = static_cast<Ptr>((uintptr_t)(cursor - self->_buffer));
-        rd.data = static_cast<SignedPtr>(dispOffset);
+      RelocData rd;
+      rd.type = kRelocRelToAbs;
+      rd.size = 4;
+      rd.from = static_cast<Ptr>((uintptr_t)(cursor - self->_buffer));
+      rd.data = static_cast<SignedPtr>(dispOffset);
 
-        if (self->_relocList.append(rd) != kErrorOk)
-          return self->setError(kErrorNoHeapMemory);
-      }
+      if (self->_relocList.append(rd) != kErrorOk)
+        return self->setError(kErrorNoHeapMemory);
 
       if (label->offset != -1) {
         // Bound label.
@@ -3725,12 +3685,39 @@ _EmitSib:
       }
     }
     else {
-      // [Disp32].
-      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+      // RIP->Absolute [x86 mode].
+      relocId = self->_relocList.getLength();
+
+      RelocData rd;
+      rd.type = kRelocRelToAbs;
+      rd.size = 4;
+      rd.from = static_cast<Ptr>((uintptr_t)(cursor - self->_buffer));
+      rd.data = rd.from + static_cast<SignedPtr>(dispOffset);
+
+      if (self->_relocList.append(rd) != kErrorOk)
+        return self->setError(kErrorNoHeapMemory);
+
+      EMIT_DWORD(0);
     }
   }
   else /* if (Arch === kArchX64) */ {
-    if (rmMem->getMemType() == kMemTypeLabel) {
+    if (rmMem->getMemType() == kMemTypeAbsolute) {
+      EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+      if (mIndex >= kInvalidReg) {
+        // [Disp32].
+        EMIT_BYTE(x86EncodeSib(0, 4, 5));
+      }
+      else {
+        // [Disp32 + Index * Scale].
+        mIndex &= 0x7;
+        ASMJIT_ASSERT(mIndex != kX86RegIndexSp);
+
+        uint32_t shift = rmMem->getShift();
+        EMIT_BYTE(x86EncodeSib(shift, mIndex, 5));
+      }
+      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+    }
+    else if (rmMem->getMemType() == kMemTypeLabel) {
       // [RIP + Disp32].
       label = self->getLabelData(rmMem->_vmem.base);
 
@@ -3754,20 +3741,13 @@ _EmitSib:
       }
     }
     else {
-      EMIT_BYTE(x86EncodeMod(0, opReg, 4));
-      if (mIndex >= kInvalidReg) {
-        // [Disp32].
-        EMIT_BYTE(x86EncodeSib(0, 4, 5));
-      }
-      else {
-        // [Disp32 + Index * Scale].
-        mIndex &= 0x7;
-        ASMJIT_ASSERT(mIndex != kX86RegIndexSp);
+      // [RIP + Disp32].
 
-        uint32_t shift = rmMem->getShift();
-        EMIT_BYTE(x86EncodeSib(shift, mIndex, 5));
-      }
+      // Indexing is invalid.
+      if (mIndex < kInvalidReg)
+        goto _IllegalDisp;
 
+      EMIT_BYTE(x86EncodeMod(0, opReg, 5));
       EMIT_DWORD(static_cast<int32_t>(dispOffset));
     }
   }
@@ -4186,9 +4166,9 @@ _EmitDone:
     X86Assembler_dumpInstruction(sb, Arch, code, options, o0, o1, o2, o3, loggerOptions);
 
     if ((loggerOptions & (1 << kLoggerOptionBinaryForm)) != 0)
-      X86Assembler_dumpComment(sb, sb.getLength(), self->_cursor, (intptr_t)(cursor - self->_cursor), dispSize, imLen, self->_comment);
+      LogUtil::formatLine(sb, self->_cursor, (intptr_t)(cursor - self->_cursor), dispSize, imLen, self->_comment);
     else
-      X86Assembler_dumpComment(sb, sb.getLength(), NULL, 0, 0, 0, self->_comment);
+      LogUtil::formatLine(sb, NULL, kInvalidIndex, 0, 0, self->_comment);
 
 # if defined(ASMJIT_DEBUG)
     if (self->_logger)

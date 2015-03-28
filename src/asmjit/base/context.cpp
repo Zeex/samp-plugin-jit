@@ -48,6 +48,7 @@ void Context::reset(bool releaseMemory) {
   _stop = NULL;
 
   _unreachableList.reset();
+  _returningList.reset();
   _jccList.reset();
   _contextVd.reset(releaseMemory);
 
@@ -234,13 +235,13 @@ Error Context::resolveCellOffsets() {
     varCell = varCell->_next;
   }
 
-  // Stack - Allocated according to alignment and width.
+  // Stack - Allocated according to alignment/width.
   while (stackCell != NULL) {
     uint32_t size = stackCell->getSize();
     uint32_t alignment = stackCell->getAlignment();
     uint32_t offset;
 
-    // Try to fill the gap between variables / stack first.
+    // Try to fill the gap between variables/stack first.
     if (size <= gapSize && alignment <= gapAlignment) {
       offset = gapPos;
 
@@ -270,12 +271,14 @@ Error Context::resolveCellOffsets() {
 // ============================================================================
 
 Error Context::removeUnreachableCode() {
+  Compiler* compiler = getCompiler();
+
   PodList<Node*>::Link* link = _unreachableList.getFirst();
   Node* stop = getStop();
 
   while (link != NULL) {
     Node* node = link->getValue();
-    if (node != NULL && node->getPrev() != NULL) {
+    if (node != NULL && node->getPrev() != NULL && node != stop) {
       // Locate all unreachable nodes.
       Node* first = node;
       do {
@@ -284,10 +287,18 @@ Error Context::removeUnreachableCode() {
         node = node->getNext();
       } while (node != stop);
 
-      // Remove.
+      // Remove unreachable nodes that are neither informative nor directives.
       if (node != first) {
-        Node* last = (node != NULL) ? node->getPrev() : getCompiler()->getLastNode();
-        getCompiler()->removeNodes(first, last);
+        Node* end = node;
+        node = first;
+        do {
+          Node* next = node->getNext();
+          if (!node->isInformative() && node->getType() != kNodeTypeAlign) {
+            ASMJIT_TLOG("[%05d] Unreachable\n", node->getFlowId());
+            compiler->removeNode(node);
+          }
+          node = next;
+        } while (node != end);
       }
     }
 
@@ -313,23 +324,27 @@ struct LivenessTarget {
 };
 
 Error Context::livenessAnalysis() {
-  FuncNode* func = getFunc();
-  JumpNode* from = NULL;
-
-  Node* node = func->getEnd();
   uint32_t bLen = static_cast<uint32_t>(
     ((_contextVd.getLength() + VarBits::kEntityBits - 1) / VarBits::kEntityBits));
-
-  LivenessTarget* ltCur = NULL;
-  LivenessTarget* ltUnused = NULL;
-
-  size_t varMapToVaListOffset = _varMapToVaListOffset;
 
   // No variables.
   if (bLen == 0)
     return kErrorOk;
 
+  FuncNode* func = getFunc();
+  JumpNode* from = NULL;
+
+  LivenessTarget* ltCur = NULL;
+  LivenessTarget* ltUnused = NULL;
+
+  PodList<Node*>::Link* retPtr = _returningList.getFirst();
+  ASMJIT_ASSERT(retPtr != NULL);
+
+  Node* node = retPtr->getValue();
+
+  size_t varMapToVaListOffset = _varMapToVaListOffset;
   VarBits* bCur = newBits(bLen);
+
   if (bCur == NULL)
     goto _NoMemory;
 
@@ -483,6 +498,13 @@ _OnDone:
 
     goto _OnJumpNext;
   }
+
+  retPtr = retPtr->getNext();
+  if (retPtr != NULL) {
+    node = retPtr->getValue();
+    goto _OnVisit;
+  }
+
   return kErrorOk;
 
 _NoMemory:
