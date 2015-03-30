@@ -7,8 +7,8 @@ DoSwitch(x) {
 		case 3:  return 3;
 		case 10: return 10;
 		case 15: return 15;
-		default: return 0;
 	}
+	return 0;
 }
 
 main() {
