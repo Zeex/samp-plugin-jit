@@ -38,10 +38,10 @@ If you're building on CentOS, install the following packages:
 yum install gcc gcc-c++ cmake28 make
 ```
 
-Now you're ready to build CrashDetect:
+Now you're ready to build JIT:
 
 ```
-cd crashdetect
+cd jit
 mkdir build && cd build
 cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 make
