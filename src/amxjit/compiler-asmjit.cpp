@@ -737,8 +737,8 @@ void CompilerAsmjit::shr_c_pri(cell value) {
 }
 
 void CompilerAsmjit::shr_c_alt(cell value) {
-  // PRI = PRI >> value (without sign extension)
-  asm_.shl(ecx, static_cast<unsigned char>(value));
+  // ALT = ALT >> value (without sign extension)
+  asm_.shr(ecx, static_cast<unsigned char>(value));
 }
 
 void CompilerAsmjit::smul() {
