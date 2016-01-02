@@ -57,7 +57,7 @@ set(JIT_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/version.h
 )
 
-if(WIN32)
+if(WIN32 OR CYGWIN)
   list(APPEND JIT_SOURCES os-win32.cpp)
 else()
   list(APPEND JIT_SOURCES os-unix.cpp)
