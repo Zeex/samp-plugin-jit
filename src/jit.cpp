@@ -26,7 +26,8 @@
 #include <cstdarg>
 #include <string>
 
-#include "configreader.h"
+#include <configreader.h>
+
 #include "jit.h"
 #include "logprintf.h"
 #include "plugin.h"
@@ -88,14 +89,14 @@ amxjit::CompileOutput *Compile(AMX *amx) {
   ConfigReader server_cfg("server.cfg");
 
   bool jit_log = false;
-  server_cfg.GetOption("jit_log", jit_log);
+  server_cfg.GetValue("jit_log", jit_log);
 
   if (jit_log) {
     logger = new amxjit::FileLogger("plugins/jit.log");
   }
 
   std::string backend = "asmjit";
-  server_cfg.GetOption("jit_backend", backend);
+  server_cfg.GetValue("jit_backend", backend);
 
   #if JIT_ASMJIT
     if (backend == "asmjit") {

@@ -1,20 +1,72 @@
-set(ASMJIT_STATIC TRUE)
-set(ASMJIT_INSTALL FALSE)
-add_subdirectory(asmjit)
+include(ExternalProject)
 
-set(SUBHOOK_STATIC TRUE)
-set(SUBHOOK_NO_TESTS TRUE)
-set(SUBHOOK_NO_INSTALL TRUE)
-add_subdirectory(subhook)
+set(DEPS_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+set(DEPS_INCLUDE_DIR ${DEPS_PREFIX}/include)
+set(DEPS_LIBRARY_DIR ${DEPS_PREFIX}/lib)
+
+set(DEPS_COMMON_CMAKE_ARGS
+  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+  -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+  -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+  -DCMAKE_INSTALL_PREFIX=${DEPS_PREFIX}
+)
+
+macro(get_library_filename library filename)
+  set(_prefix ${CMAKE_STATIC_LIBRARY_PREFIX})
+  set(_suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
+  set(${filename} ${_prefix}${library}${_suffix})
+endmacro()
+
+externalproject_add(asmjit-external
+  PREFIX ${DEPS_PREFIX}
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/asmjit
+  CMAKE_ARGS -DASMJIT_STATIC=ON
+             -DASMJIT_INSTALL=ON
+             ${DEPS_COMMON_CMAKE_ARGS})
+
+add_library(asmjit STATIC IMPORTED GLOBAL)
+add_dependencies(asmjit asmjit-external)
+
+get_library_filename(asmjit ASMJIT_FILENAME)
+set_target_properties(asmjit PROPERTIES
+  IMPORTED_LOCATION ${DEPS_LIBRARY_DIR}/${ASMJIT_FILENAME})
+
+list(APPEND DEPS_DEFINITIONS ASMJIT_STATIC)
+
+externalproject_add(configreader-external
+  PREFIX ${DEPS_PREFIX}
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/configreader
+  CMAKE_ARGS ${DEPS_COMMON_CMAKE_ARGS})
+
+add_library(configreader STATIC IMPORTED GLOBAL)
+add_dependencies(configreader configreader-external)
+
+get_library_filename(configreader CONFIGREADER_FILENAME)
+set_target_properties(configreader PROPERTIES
+  IMPORTED_LOCATION ${DEPS_LIBRARY_DIR}/${CONFIGREADER_FILENAME})
+
+externalproject_add(subhook-external
+  PREFIX ${DEPS_PREFIX}
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/subhook
+  CMAKE_ARGS -DSUBHOOK_STATIC=ON
+             ${DEPS_COMMON_CMAKE_ARGS})
+
+add_library(subhook STATIC IMPORTED GLOBAL)
+add_dependencies(subhook subhook-external)
+
+get_library_filename(subhook SUBHOOK_FILENAME)
+set_target_properties(subhook PROPERTIES
+  IMPORTED_LOCATION ${DEPS_LIBRARY_DIR}/${SUBHOOK_FILENAME})
+
+list(APPEND DEPS_DEFINITIONS SUBHOOK_STATIC)
 
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-             COMPILE_DEFINITIONS ASMJIT_STATIC SUBHOOK_STATIC)
-
+  COMPILE_DEFINITIONS ${DEPS_DEFINITIONS})
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
-             INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src
-                                 ${CMAKE_CURRENT_SOURCE_DIR}/subhook)
+  INCLUDE_DIRECTORIES ${DEPS_INCLUDE_DIR})
 
-file(RELATIVE_PATH this_folder ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-
-set_property(TARGET asmjit PROPERTY FOLDER ${this_folder})
-set_property(TARGET subhook PROPERTY FOLDER ${this_folder})
+foreach(target asmjit-external configreader-external subhook-external)
+  file(RELATIVE_PATH folder ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  set_property(TARGET ${target} PROPERTY FOLDER ${folder})
+endforeach()

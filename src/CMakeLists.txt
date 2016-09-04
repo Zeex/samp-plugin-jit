@@ -42,8 +42,6 @@ set(JIT_SOURCES
   amx/sclinux.h
   amxplugin.cpp
   amxservice.h
-  configreader.cpp
-  configreader.h
   jit.h
   jit.cpp
   logprintf.cpp
@@ -85,6 +83,6 @@ endif()
 set(AMXJIT_BUILD_BACKENDS ${JIT_BACKENDS})
 add_subdirectory(amxjit)
 
-target_link_libraries(jit amxjit subhook)
+target_link_libraries(jit amxjit configreader subhook)
 
 install(TARGETS jit LIBRARY DESTINATION ".")
