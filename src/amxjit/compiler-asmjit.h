@@ -196,6 +196,7 @@ class CompilerAsmjit: public Compiler {
   void EmitExec();
   void EmitExecHelper();
   void EmitHaltHelper();
+  void EmitJumpLookup();
   void EmitJumpHelper();
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
@@ -218,6 +219,7 @@ class CompilerAsmjit: public Compiler {
   asmjit::Label exec_helper_label_;
   asmjit::Label halt_helper_label_;
   asmjit::Label jump_helper_label_;
+  asmjit::Label jump_lookup_label_;
   asmjit::Label sysreq_c_helper_label_;
   asmjit::Label sysreq_d_helper_label_;
 
