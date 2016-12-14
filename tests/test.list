@@ -15,8 +15,10 @@ floatsqroot
 floatsub
 halt_deep
 halt
+has_lctrl8
 indirect_jump
 jrel
+lctrl8
 native_call
 nested_exec
 onjitcompile
