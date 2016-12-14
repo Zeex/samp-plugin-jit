@@ -23,21 +23,98 @@
 #endif
 #define JIT_INC
 
+stock const JIT_ASM_JUMP_CAPABLE = 1;
+stock const JIT_COMPLETION_CAPABLE = 2;
+
+static stock
+	bool:gs_JIT_Present = false,
+	bool:gs_JIT_Enabled = false,
+	bool:gs_JIT_Complete = false,
+	bool:gs_JIT_Failed = false,
+	gs_JIT_Capabilities = 0;
+
+forward OnJITCapabilities(capablities);
+
+public OnJITCapabilities(capablities) {
+	gs_JIT_Capabilities = capablities;
+	#if defined JIT_OnJITCapabilities
+		JIT_OnJITCapabilities(capablities);
+	#endif
+}
+
+#if defined JIT_OnJITCapabilities
+	forward JIT_OnJITCapabilities(capablities);
+#endif
+#if defined _ALS_OnJITCapabilities
+	#error OnJITCapabilities hooked before including <jit>
+#endif
+#define OnJITCapabilities JIT_OnJITCapabilities
+#define _ALS_OnJITCapabilities
+
 forward OnJITCompile();
 
+public OnJITCompile() {
+	gs_JIT_Present = true;
+	#if defined JIT_OnJITCompile
+		if (!JIT_OnJITCompile()) {
+			return 0;
+		}
+	#endif
+	gs_JIT_Enabled = true;
+	return 1;
+}
+
+#if defined JIT_OnJITCompile
+	forward JIT_OnJITCompile();
+#endif
+#if defined _ALS_OnJITCompile
+	#error OnJITCompile hooked before including <jit>
+#endif
+#define OnJITCompile JIT_OnJITCompile
+#define _ALS_OnJITCompile
+
+forward OnJITComplete(success);
+
+public OnJITComplete(success) {
+	gs_JIT_Complete = true;
+	gs_JIT_Failed = !success;
+	#if defined JIT_OnJITComplete
+		JIT_OnJITComplete(success);
+	#endif
+}
+
+#if defined JIT_OnJITComplete
+	forward JIT_OnJITComplete(success);
+#endif
+#if defined _ALS_OnJITComplete
+	#error OnJITComplete hooked before including <jit>
+#endif
+#define OnJITComplete JIT_OnJITComplete
+#define _ALS_OnJITComplete
+
 stock bool:IsJITPresent() {
-	#emit zero.pri
-	#emit lctrl 7
-	#emit retn
-	return false; // make compiler happy
+	// Using "#emit LCTRL 7" doesn't work in "OnJITCompile", which is the time
+	// most likely to require knowledge of the JIT existing.
+	return gs_JIT_Present;
+}
+
+stock bool:IsJITComplete() {
+	return gs_JIT_Complete;
+}
+
+stock bool:IsJITFailed() {
+	return gs_JIT_Failed;
+}
+
+stock bool:IsJITEnabled() {
+	return gs_JIT_Enabled;
 }
 
 stock bool:IsJITASMJumpCapable() {
-	#emit lctrl 6
-	#emit move.alt
-	#emit lctrl 8
-	#emit neq
-	#emit retn
-	return false; // make compiler happy
+	return !!(gs_JIT_Capabilities & JIT_ASM_JUMP_CAPABLE);
+}
+
+stock bool:IsJITCompletionCapable() {
+	return !!(gs_JIT_Capabilities & JIT_COMPLETION_CAPABLE);
 }
 
