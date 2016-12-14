@@ -89,7 +89,7 @@ cell OnJITCompile(AMX *amx) {
 
 cell OnJITComplete(AMX *amx, cell success) {
   int index;
-  if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
+  if (amx_FindPublic(amx, "OnJITComplete", &index) == AMX_ERR_NONE) {
     cell retval;
     amx_Push(amx, success);
     amx_Exec(amx, &retval, index);
