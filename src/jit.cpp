@@ -66,10 +66,32 @@ class ErrorHandler: public amxjit::CompileErrorHandler {
   }
 };
 
+cell OnJITCapabilities(AMX *amx, cell capabilities) {
+  int index;
+  if (amx_FindPublic(amx, "OnJITCapabilities", &index) == AMX_ERR_NONE) {
+    cell retval;
+    amx_Push(amx, capabilities);
+    amx_Exec(amx, &retval, index);
+    return retval;
+  }
+  return 1;
+}
+
 cell OnJITCompile(AMX *amx) {
   int index;
   if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
     cell retval;
+    amx_Exec(amx, &retval, index);
+    return retval;
+  }
+  return 1;
+}
+
+cell OnJITComplete(AMX *amx, cell success) {
+  int index;
+  if (amx_FindPublic(amx, "OnJITCompile", &index) == AMX_ERR_NONE) {
+    cell retval;
+    amx_Push(amx, success);
     amx_Exec(amx, &retval, index);
     return retval;
   }
@@ -144,10 +166,13 @@ int JIT::Exec(cell *retval, int index) {
   switch (state_) {
     case INIT:
       state_ = COMPILE;
+      OnJITCapabilities(3);
       if ((code_ = Compile(amx())) != 0) {
         state_ = COMPILE_SUCCEDED;
+        OnJITComplete(1);
       } else {
         state_ = COMPILE_FAILED;
+        OnJITComplete(0);
         return AMX_ERR_INIT_JIT;
       }
     case COMPILE_SUCCEDED: {
