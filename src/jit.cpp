@@ -166,13 +166,13 @@ int JIT::Exec(cell *retval, int index) {
   switch (state_) {
     case INIT:
       state_ = COMPILE;
-      OnJITCapabilities(amx, 3);
+      OnJITCapabilities(amx(), 3);
       if ((code_ = Compile(amx())) != 0) {
         state_ = COMPILE_SUCCEDED;
-        OnJITComplete(amx, 1);
+        OnJITComplete(amx(), 1);
       } else {
         state_ = COMPILE_FAILED;
-        OnJITComplete(amx, 0);
+        OnJITComplete(amx(), 0);
         return AMX_ERR_INIT_JIT;
       }
     case COMPILE_SUCCEDED: {
