@@ -8,11 +8,11 @@
 forward OnJITCompile();
 
 main() {
-	printf("%s", IsJITPresent() ? ("OK") : ("FAIL"));
+	printf("%s", IsJITEnabled() ? ("OK") : ("FAIL"));
 	TestExit();
 }
 
 public OnJITCompile() {
-	printf("%s", IsJITPresent() ? ("FAIL") : ("OK"));
+	printf("%s", IsJITPresent() ? ("OK") : ("FAIL"));
 	return 1;
 }
