@@ -491,7 +491,7 @@ void CompilerAsmjit::lctrl(cell index, cell cip) {
       asm_.mov(eax, 1);
       break;
     case 8:
-      asm_.jmp(eax);
+      asm_.call(jump_lookup_label_);
       break;
   }
 }
@@ -515,7 +515,7 @@ void CompilerAsmjit::sctrl(cell index) {
       asm_.call(jump_helper_label_);
       break;
     case 8:
-      asm_.call(jump_lookup_label_);
+      asm_.jmp(eax);
       break;
   }
 }
