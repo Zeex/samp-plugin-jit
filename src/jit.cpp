@@ -41,7 +41,7 @@
 #include "amxjit/disasm.h"
 #include "amxjit/logger.h"
 
-#define logprintf Use_Printf_isntead_of_logprintf
+#define logprintf Use_Printf_instead_of_logprintf
 
 namespace {
 

@@ -31,3 +31,13 @@ stock bool:IsJITPresent() {
 	#emit retn
 	return false; // make compiler happy
 }
+
+stock bool:IsJITASMJumpCapable() {
+	#emit lctrl 6
+	#emit move.alt
+	#emit lctrl 8
+	#emit neq
+	#emit retn
+	return false; // make compiler happy
+}
+

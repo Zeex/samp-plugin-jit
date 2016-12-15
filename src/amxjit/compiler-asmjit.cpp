@@ -161,6 +161,7 @@ CompilerAsmjit::CompilerAsmjit():
   exec_helper_label_(asm_.newLabel()),
   halt_helper_label_(asm_.newLabel()),
   jump_helper_label_(asm_.newLabel()),
+  jump_lookup_label_(asm_.newLabel()),
   sysreq_c_helper_label_(asm_.newLabel()),
   sysreq_d_helper_label_(asm_.newLabel()),
   logger_()
@@ -178,6 +179,7 @@ bool CompilerAsmjit::Prepare(AMXRef amx) {
   EmitExec();
   EmitExecHelper();
   EmitHaltHelper();
+  EmitJumpLookup();
   EmitJumpHelper();
   EmitSysreqCHelper();
   EmitSysreqDHelper();
@@ -488,6 +490,9 @@ void CompilerAsmjit::lctrl(cell index, cell cip) {
     case 7:
       asm_.mov(eax, 1);
       break;
+    case 8:
+      asm_.call(jump_lookup_label_);
+      break;
   }
 }
 
@@ -508,6 +513,9 @@ void CompilerAsmjit::sctrl(cell index) {
       break;
     case 6:
       asm_.call(jump_helper_label_);
+      break;
+    case 8:
+      asm_.jmp(eax);
       break;
   }
 }
@@ -1575,16 +1583,8 @@ void CompilerAsmjit::EmitJumpHelper() {
 
   asm_.bind(jump_helper_label_);
     asm_.push(eax);
-    asm_.push(ecx);
-
-    asm_.lea(ecx, dword_ptr(rib_start_label_));
-    asm_.push(ecx);
-    asm_.push(eax);
-    asm_.call(reinterpret_cast<asmjit::Ptr>(&GetInstrStartPtr));
-    asm_.add(esp, 8);
+    asm_.call(jump_lookup_label_);
     asm_.mov(edx, eax); // address
-
-    asm_.pop(ecx);
     asm_.pop(eax);
 
     asm_.test(edx, edx);
@@ -1595,6 +1595,21 @@ void CompilerAsmjit::EmitJumpHelper() {
 
   // Continue execution as if there was no jump at all (this is what AMX does).
   asm_.bind(invalid_address_label);
+    asm_.ret();
+}
+
+// void JumpLookup(void *address [eax]);
+void CompilerAsmjit::EmitJumpLookup() {
+  asm_.bind(jump_lookup_label_);
+    asm_.push(ecx);
+
+    asm_.lea(ecx, dword_ptr(rib_start_label_));
+    asm_.push(ecx);
+    asm_.push(eax);
+    asm_.call(reinterpret_cast<asmjit::Ptr>(&GetInstrStartPtr));
+    asm_.add(esp, 8);
+
+    asm_.pop(ecx);
     asm_.ret();
 }
 
