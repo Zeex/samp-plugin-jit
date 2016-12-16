@@ -1361,7 +1361,7 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"heapspace",   &CompilerAsmjit::heapspace},
     {"numargs",     &CompilerAsmjit::numargs},
     {"min",         &CompilerAsmjit::min},
-    {"max",         &CompilerAsmjit::max},
+    {"max",         &CompilerAsmjit::max}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {
