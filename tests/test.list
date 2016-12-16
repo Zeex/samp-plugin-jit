@@ -4,6 +4,11 @@ bug24
 bug30
 bug36
 bug42
+clamp1
+clamp2
+clamp3
+clamp4
+clamp5
 float
 floatabs
 floatadd
@@ -16,11 +21,14 @@ floatsub
 halt_deep
 halt
 has_lctrl8
+heapspace
 indirect_jump
 jrel
 lctrl8
+minmax
 native_call
 nested_exec
+numargs
 onjitcompile
 onjitcompile_return_0
 presence
