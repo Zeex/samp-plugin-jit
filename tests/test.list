@@ -33,4 +33,5 @@ onjitcompile
 onjitcompile_return_0
 presence
 return_value
+swapchars
 switch

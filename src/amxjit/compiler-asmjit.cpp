@@ -1339,6 +1339,13 @@ void CompilerAsmjit::max() {
   asm_.bind(exit);
 }
 
+void CompilerAsmjit::swapchars() {
+  asm_.mov(eax, dword_ptr(esp, 4));
+  asm_.xchg(ah, al);
+  asm_.ror(eax, 16);
+  asm_.xchg(ah, al);
+}
+
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   struct Intrinsic {
     const char         *name;
@@ -1361,7 +1368,8 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"heapspace",   &CompilerAsmjit::heapspace},
     {"numargs",     &CompilerAsmjit::numargs},
     {"min",         &CompilerAsmjit::min},
-    {"max",         &CompilerAsmjit::max}
+    {"max",         &CompilerAsmjit::max},
+    {"swapchars",   &CompilerAsmjit::swapchars}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {

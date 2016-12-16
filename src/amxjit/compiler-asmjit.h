@@ -195,6 +195,7 @@ class CompilerAsmjit: public Compiler {
   void numargs();
   void min();
   void max();
+  void swapchars();
 
  private:
   void EmitRuntimeInfo();
