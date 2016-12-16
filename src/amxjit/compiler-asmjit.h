@@ -190,6 +190,12 @@ class CompilerAsmjit: public Compiler {
   void floatlog();
   void floatcmp();
 
+  void clamp();
+  void heapspace();
+  void numargs();
+  void min();
+  void max();
+
  private:
   void EmitRuntimeInfo();
   void EmitInstrTable();
