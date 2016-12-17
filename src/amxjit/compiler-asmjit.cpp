@@ -1285,6 +1285,67 @@ void CompilerAsmjit::floatcmp() {
   asm_.bind(exit);
 }
 
+void CompilerAsmjit::heapspace() {
+  // PRI = STL - HEA
+  asm_.mov(edx, dword_ptr(amx_ptr_label_));
+  asm_.mov(edx, dword_ptr(edx, offsetof(AMX, hea)));
+  asm_.mov(eax, esp);
+  asm_.sub(eax, ebx);
+  asm_.sub(eax, edx);
+}
+
+void CompilerAsmjit::clamp() {
+  asmjit::Label exit = asm_.newLabel();
+    // Load the value being compared.
+    asm_.mov(edx, dword_ptr(esp, 4));
+
+    // If it is lower than the lower bound, return the lower bound.
+    asm_.mov(eax, dword_ptr(esp, 8));
+    asm_.cmp(edx, eax);
+    asm_.jle(exit);
+
+    // If it is higher than the higher bound, return the higher bound.
+    asm_.mov(eax, dword_ptr(esp, 12));
+    asm_.cmp(edx, eax);
+    asm_.jge(exit);
+
+    // Otherwise, return the number.
+    asm_.mov(eax, edx);
+  asm_.bind(exit);
+}
+
+void CompilerAsmjit::numargs() {
+  asm_.mov(eax, dword_ptr(ebp, 8));
+  asm_.shr(eax, 2);
+}
+
+void CompilerAsmjit::min() {
+  asmjit::Label exit = asm_.newLabel();
+    asm_.mov(eax, dword_ptr(esp, 4));
+    asm_.mov(edx, dword_ptr(esp, 8));
+    asm_.cmp(edx, eax);
+    asm_.jge(exit);
+    asm_.mov(eax, edx);
+  asm_.bind(exit);
+}
+
+void CompilerAsmjit::max() {
+  asmjit::Label exit = asm_.newLabel();
+    asm_.mov(eax, dword_ptr(esp, 4));
+    asm_.mov(edx, dword_ptr(esp, 8));
+    asm_.cmp(edx, eax);
+    asm_.jle(exit);
+    asm_.mov(eax, edx);
+  asm_.bind(exit);
+}
+
+void CompilerAsmjit::swapchars() {
+  asm_.mov(eax, dword_ptr(esp, 4));
+  asm_.xchg(ah, al);
+  asm_.ror(eax, 16);
+  asm_.xchg(ah, al);
+}
+
 bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   struct Intrinsic {
     const char         *name;
@@ -1292,6 +1353,7 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
   };
 
   static const Intrinsic intrinsics[] = {
+    // Float operations.
     {"float",       &CompilerAsmjit::float_},
     {"floatabs",    &CompilerAsmjit::floatabs},
     {"floatadd",    &CompilerAsmjit::floatadd},
@@ -1300,7 +1362,14 @@ bool CompilerAsmjit::EmitIntrinsic(const char *name) {
     {"floatdiv",    &CompilerAsmjit::floatdiv},
     {"floatsqroot", &CompilerAsmjit::floatsqroot},
     {"floatlog",    &CompilerAsmjit::floatlog},
-    {"floatcmp",    &CompilerAsmjit::floatcmp}
+    {"floatcmp",    &CompilerAsmjit::floatcmp},
+    // Core operations.
+    {"clamp",       &CompilerAsmjit::clamp},
+    {"heapspace",   &CompilerAsmjit::heapspace},
+    {"numargs",     &CompilerAsmjit::numargs},
+    {"min",         &CompilerAsmjit::min},
+    {"max",         &CompilerAsmjit::max},
+    {"swapchars",   &CompilerAsmjit::swapchars}
   };
 
   for (std::size_t i = 0; i < sizeof(intrinsics) / sizeof(*intrinsics); i++) {
