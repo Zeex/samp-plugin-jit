@@ -1,11 +1,15 @@
-// OUTPUT: JIT is running: yes
-
 #include <jit>
 #include "test"
 
 Test() {
-	new bool:jit = IsJITPresent();
-	printf("JIT is running: %s", (jit) ? ("yes") : ("no"));
+	TEST_TRUE(IsJITPresent());
+	TEST_TRUE(__JIT);
+}
+
+public OnJITCompile() {
+	TEST_TRUE(!IsJITPresent());
+	TEST_TRUE(__JIT);
+	return 1;
 }
 
 main() {

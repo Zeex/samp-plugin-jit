@@ -131,6 +131,14 @@ JIT::JIT(AMX *amx):
   state_(INIT)
 {
   amx->sysreq_d = 0;
+
+  cell jit_var_addr;
+  if (amx_FindPubVar(amx, "__JIT", &jit_var_addr) == AMX_ERR_NONE) {
+    cell *jit_var;
+    if (amx_GetAddr(amx, jit_var_addr, &jit_var) == AMX_ERR_NONE) {
+      *jit_var = 1;
+    }
+  }
 }
 
 JIT::~JIT() {

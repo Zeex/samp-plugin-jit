@@ -23,8 +23,21 @@
 #endif
 #define JIT_INC
 
+//
+// This variable will be set to true if the JIT plugin is loaded.
+//
+public const bool:__JIT = false;
+
+//
+// OnJITCompile() is called when the script is about to be compiled by
+// the JIT plugin
+//
 forward OnJITCompile();
 
+//
+// Checks if the script is currently running in JIT mode. This function
+// will return false in OnJITCompile().
+//
 stock bool:IsJITPresent() {
 	#emit zero.pri
 	#emit lctrl 7
@@ -32,6 +45,12 @@ stock bool:IsJITPresent() {
 	return false; // make compiler happy
 }
 
+//
+// Checks if the JIT plugin supports the fast jumps feature that was added
+// in version 2.1.
+//
+// https://github.com/Zeex/samp-plugin-jit/issues/51
+//
 stock bool:IsJITASMJumpCapable() {
 	#emit lctrl 6
 	#emit move.alt
