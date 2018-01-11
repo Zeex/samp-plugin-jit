@@ -99,7 +99,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   #endif
   exec_hook.Install(exec_start, (void *)amx_Exec_JIT);
 
-  logprintf("  JIT plugin v%s is OK.", PROJECT_VERSION_STRING);
+  logprintf("  JIT plugin %s", PROJECT_VERSION_STRING);
   return true;
 }
 
