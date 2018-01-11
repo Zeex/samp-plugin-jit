@@ -35,3 +35,4 @@ presence
 return_value
 swapchars
 switch
+sysreq_preserve_alt

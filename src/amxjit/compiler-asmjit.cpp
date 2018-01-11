@@ -1449,7 +1449,7 @@ void CompilerAsmjit::EmitExec() {
     asm_.push(esi);
     asm_.mov(esi, dword_ptr(amx_ptr_label_));
 
-    // Set ebx to point to the AMX data section.
+    // Set ebx = address of the AMX data section.
     asm_.push(ebx);
     asm_.mov(ebx, dword_ptr(esi, offsetof(AMX, data)));
     asm_.test(ebx, ebx);
@@ -1685,13 +1685,11 @@ void CompilerAsmjit::EmitJumpLookup() {
 // cell SysreqCHelper(int index [eax]);
 void CompilerAsmjit::EmitSysreqCHelper() {
   asm_.bind(sysreq_c_helper_label_);
-    asm_.mov(esi, dword_ptr(esp));
-    asm_.lea(esp, dword_ptr(esp, 4));
-    asm_.mov(ecx, esp);
-
-    asm_.mov(edx, dword_ptr(amx_ptr_label_));
+    asm_.push(ecx);
+    asm_.lea(ecx, dword_ptr(esp, 8));
 
     // Switch to the native stack.
+    asm_.mov(edx, dword_ptr(amx_ptr_label_));
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
     asm_.mov(ebp, dword_ptr(ebp_label_));
@@ -1699,9 +1697,12 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
     asm_.mov(esp, dword_ptr(esp_label_));
 
-    // Call the native function.
+    // Allocate stack space for result. Before this esp was pointing directly
+    // to params, after this params will be esp+4.
     asm_.push(0);
     asm_.mov(edi, esp);
+
+    // Call the native function via amx->callback.
     asm_.push(ecx); // params
     asm_.push(edi); // result
     asm_.push(eax); // index
@@ -1726,21 +1727,19 @@ void CompilerAsmjit::EmitSysreqCHelper() {
     asm_.cmp(edi, AMX_ERR_NONE);
     asm_.jne(halt_helper_label_);
 
-    // Modify the return address so we return next to the sysreq point.
-    asm_.push(esi);
+    // Modify the return address so that we return next to the sysreq point.
+    asm_.pop(ecx);
     asm_.ret();
 }
 
 // cell SysreqDHelper(void *address [eax]);
 void CompilerAsmjit::EmitSysreqDHelper() {
   asm_.bind(sysreq_d_helper_label_);
-    asm_.mov(esi, dword_ptr(esp));
-    asm_.lea(esp, dword_ptr(esp, 4));
-    asm_.mov(ecx, esp);
-
-    asm_.mov(edx, dword_ptr(amx_ptr_label_));
+    asm_.push(ecx);
+    asm_.lea(ecx, dword_ptr(esp, 8));
 
     // Switch to the native stack.
+    asm_.mov(edx, dword_ptr(amx_ptr_label_));
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
     asm_.mov(ebp, dword_ptr(ebp_label_));
@@ -1763,8 +1762,8 @@ void CompilerAsmjit::EmitSysreqDHelper() {
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
     asm_.lea(esp, dword_ptr(ebx, ecx)); // ebp = data + amx->stk
 
-    // Modify the return address so we return next to the sysreq point.
-    asm_.push(esi);
+    // Modify the return address so that we return next to the sysreq point.
+    asm_.pop(ecx);
     asm_.ret();
 }
 
