@@ -35,6 +35,12 @@ public const bool:__JIT = false;
 forward OnJITCompile();
 
 //
+// OnJITError() is called when an error occurs during JIT compilation.
+// See your server log for additional error information.
+//
+forward OnJITError();
+
+//
 // Checks if the script is currently running in JIT mode. This function
 // will return false in OnJITCompile().
 //

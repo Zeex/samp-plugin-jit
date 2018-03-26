@@ -76,6 +76,16 @@ cell OnJITCompile(AMX *amx) {
   return 1;
 }
 
+cell OnJITError(AMX *amx) {
+  int index;
+  if (amx_FindPublic(amx, "OnJITError", &index) == AMX_ERR_NONE) {
+    cell retval;
+    amx_Exec(amx, &retval, index);
+    return retval;
+  }
+  return 0;
+}
+
 amxjit::CompileOutput *Compile(AMX *amx) {
   if (!OnJITCompile(amx)) {
     Printf("Compilation was disabled");
@@ -120,6 +130,11 @@ amxjit::CompileOutput *Compile(AMX *amx) {
 
   delete compiler;
   delete logger;
+
+  if (output == 0) {
+    Printf("Compilation failed");
+    OnJITError(amx);
+  }
 
   return output;
 }
