@@ -39,7 +39,7 @@ after_failure:
 deploy:
   provider: releases
   api_key:
-    secure: Z3wKluTQv4AT61kbY1Dql0cf3Jic1vfuPcuPLcktC45Y3+O40GaDnM/3k9zkhYMwTBCzery2YUGMXcaQO7EahgrDwjXlJ+owC+XD0NOpwIw7zzwyQd+M77s4djHhamSeKX5pqqPgjA0VBa9Q/uIjpY3lpLQ2xcsojRB8PoYWTyw=
+    secure: H3zByVtEfSHCQtNZsbP/5l6uBkpbZ+T5eh3eKRjNYIEUS6OXl3Z9Rwl/ruYR7cCD863yHWf4iuXOYX4+VejzPxBjTGNcCtKmY6py7LyiTRFRn60hYKpBdJEA8Tj0z7EUG7g6gA/DkBkjbjqkY1nUW47e7IGSwhwSlvPxDneZ8Uk=
   file_glob: true
   file:
     - 'jit-*-linux.tar.gz'
