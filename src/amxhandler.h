@@ -22,63 +22,62 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXSERVICE_H
-#define AMXSERVICE_H
+#ifndef AMXHANDLER_H
+#define AMXHANDLER_H
 
 #include <map>
-
 #include <amx/amx.h>
 
 template<typename T>
-class AMXService {
+class AMXHandler {
  public:
-  AMXService(AMX *amx) : amx_(amx) {}
+  AMXHandler(AMX *amx) : amx_(amx) {}
 
   AMX *amx() const { return amx_; }
 
  public:
-  static T *CreateInstance(AMX *amx);
-  static T *GetInstance(AMX *amx);
-  static void DestroyInstance(AMX *amx);
+  static T *CreateHandler(AMX *amx);
+  static T *GetHandler(AMX *amx);
+  static void DestroyHandler(AMX *amx);
 
  private:
   AMX *amx_;
 
  private:
-  typedef std::map<AMX*, T*> ServiceMap;
-  static ServiceMap service_map_;
+  typedef std::map<AMX*, T*> HandlerMap;
+  static HandlerMap handlers_;
 };
 
 template<typename T>
-typename AMXService<T>::ServiceMap AMXService<T>::service_map_;
+typename AMXHandler<T>::HandlerMap AMXHandler<T>::handlers_;
 
 // static
 template<typename T>
-T *AMXService<T>::CreateInstance(AMX *amx) {
-  T *service = new T(amx);
-  service_map_.insert(std::make_pair(amx, service));
-  return service;
+T *AMXHandler<T>::CreateHandler(AMX *amx) {
+  T *handler = new T(amx);
+  handlers_.insert(std::make_pair(amx, handler));
+  return handler;
 }
 
 // static
 template<typename T>
-T *AMXService<T>::GetInstance(AMX *amx) {
-  typename ServiceMap::const_iterator iterator = service_map_.find(amx);
-  if (iterator != service_map_.end()) {
+T *AMXHandler<T>::GetHandler(AMX *amx) {
+  typename HandlerMap::const_iterator iterator = handlers_.find(amx);
+  if (iterator != handlers_.end()) {
     return iterator->second;
   }
-  return CreateInstance(amx);
+  return 0;
 }
 
 // static
 template<typename T>
-void AMXService<T>::DestroyInstance(AMX *amx) {
-  typename ServiceMap::iterator iterator = service_map_.find(amx);
-  if (iterator != service_map_.end()) {
-    T *service = iterator->second;
-    service_map_.erase(iterator);
-    delete service;
+void AMXHandler<T>::DestroyHandler(AMX *amx) {
+  typename HandlerMap::iterator iterator = handlers_.find(amx);
+  if (iterator != handlers_.end()) {
+    T *handler = iterator->second;
+    handlers_.erase(iterator);
+    delete handler;
   }
 }
 
-#endif // !AMXSERVICE_H
+#endif // !AMXHANDLER_H

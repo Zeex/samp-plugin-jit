@@ -25,7 +25,7 @@
 #include <cassert>
 #include <string>
 
-#include "jit.h"
+#include "jithandler.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugin.h"
@@ -61,7 +61,7 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
     return AMX_ERR_NONE;
   }
   #endif
-  int error = JIT::GetInstance(amx)->Exec(retval, index);
+  int error = JITHandler::GetHandler(amx)->Exec(retval, index);
   if (error == AMX_ERR_INIT_JIT) {
     AMX_EXEC exec = (AMX_EXEC)exec_hook.GetTrampoline();
     return exec(amx, retval, index);
@@ -83,7 +83,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   if (other_guy != 0) {
     std::string module = GetFileName(os::GetModuleName(other_guy));
     if (!module.empty()) {
-      logprintf("  JIT must be loaded before '%s'", module.c_str());
+      logprintf("  JIT plugin must be loaded before '%s'", module.c_str());
     } else {
       logprintf("  Sorry, your server is messed up");
     }
@@ -104,11 +104,11 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  JIT::CreateInstance(amx);
+  JITHandler::CreateHandler(amx);
   return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
- JIT::DestroyInstance(amx);
+ JITHandler::DestroyHandler(amx);
  return AMX_ERR_NONE;
 }

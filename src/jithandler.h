@@ -22,24 +22,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JIT_H
-#define JIT_H
+#ifndef JITHANDLER_H
+#define JITHANDLER_H
 
-#include "amxservice.h"
+#include "amxhandler.h"
 
 namespace amxjit {
   class CompileOutput;
 }
 
-class JIT: public AMXService<JIT> {
- friend class AMXService<JIT>;
+class JITHandler: public AMXHandler<JITHandler> {
+ friend class AMXHandler<JITHandler>;
 
  public:
   int Exec(cell *retval, int index);
 
  private:
-  explicit JIT(AMX *amx);
-  ~JIT();
+  explicit JITHandler(AMX *amx);
+  ~JITHandler();
 
  private:
   enum State {
@@ -51,4 +51,4 @@ class JIT: public AMXService<JIT> {
   amxjit::CompileOutput *code_;
 };
 
-#endif // !JIT_H
+#endif // !JITHANDLER_H

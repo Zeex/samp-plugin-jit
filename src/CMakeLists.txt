@@ -40,10 +40,10 @@ set(JIT_SOURCES
   amx/amx.h
   amx/getch.h
   amx/sclinux.h
+  amxhandler.h
   amxplugin.cpp
-  amxservice.h
-  jit.h
-  jit.cpp
+  jithandler.h
+  jithandler.cpp
   logprintf.cpp
   logprintf.h
   os.h

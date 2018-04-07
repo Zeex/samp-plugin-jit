@@ -28,7 +28,7 @@
 
 #include <configreader.h>
 
-#include "jit.h"
+#include "jithandler.h"
 #include "logprintf.h"
 #include "plugin.h"
 
@@ -141,8 +141,8 @@ amxjit::CompileOutput *Compile(AMX *amx) {
 
 } // anonymous namespace
 
-JIT::JIT(AMX *amx):
-  AMXService<JIT>(amx),
+JITHandler::JITHandler(AMX *amx):
+  AMXHandler<JITHandler>(amx),
   state_(INIT)
 {
   amx->sysreq_d = 0;
@@ -156,14 +156,14 @@ JIT::JIT(AMX *amx):
   }
 }
 
-JIT::~JIT() {
+JITHandler::~JITHandler() {
   if (state_ == COMPILE_SUCCEDED) {
     assert(code_ != 0);
     code_->Delete();
   }
 }
 
-int JIT::Exec(cell *retval, int index) {
+int JITHandler::Exec(cell *retval, int index) {
   switch (state_) {
     case INIT:
       state_ = COMPILE;
