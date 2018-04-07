@@ -35,7 +35,7 @@
 typedef int (AMXAPI *AMX_EXEC)(AMX *amx, cell *retval, int index);
 
 extern void *pAMXFunctions;
-static SubHook exec_hook;
+static subhook::Hook exec_hook;
 
 #ifdef LINUX
   static cell *opcode_table = 0;
@@ -78,7 +78,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
 
   void *exec_start = GetAmxFunction(PLUGIN_AMX_EXPORT_Exec);
-  void *other_guy = SubHook::ReadDst(exec_start);
+  void *other_guy = subhook::Hook::ReadDst(exec_start);
 
   if (other_guy != 0) {
     std::string module = GetFileName(os::GetModuleName(other_guy));
