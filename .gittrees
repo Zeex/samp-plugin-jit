@@ -1,8 +1,0 @@
-[subtree "deps/subhook"]
-	url = https://github.com/Zeex/subhook.git
-	path = deps/subhook
-	branch = master
-[subtree "deps/asmjit"]
-	url = https://github.com/kobalicek/asmjit.git
-	path = deps/asmjit
-	branch = master
