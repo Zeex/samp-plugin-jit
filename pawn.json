@@ -1,0 +1,24 @@
+{
+  "user": "Zeex",
+  "repo": "samp-plugin-jit",
+  "include_path": "include",
+  "resources": [
+      {
+          "name": "^jit-(.*)-linux.tar.gz$",
+          "platform": "linux",
+          "archive": true,
+          "includes": ["jit-(.*)-linux"],
+          "plugins": ["jit-(.*)-linux/jit.so"]
+      },
+      {
+          "name": "^jit-(.*)-win32.zip$",
+          "platform": "windows",
+          "archive": true,
+          "includes": ["jit-(.*)-win32"],
+          "plugins": ["jit-(.*)-win32/jit.dll"]
+      }
+  ],
+  "runtime": {
+      "plugins": ["Zeex/samp-plugin-jit"]
+  }
+}
