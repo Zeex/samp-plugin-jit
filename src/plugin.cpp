@@ -24,13 +24,12 @@
 
 #include <cassert>
 #include <string>
-
+#include <subhook.h>
 #include "jithandler.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugin.h"
 #include "version.h"
-#include <subhook.h>
 
 typedef int (AMXAPI *AMX_EXEC)(AMX *amx, cell *retval, int index);
 

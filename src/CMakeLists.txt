@@ -1,29 +1,11 @@
 include(AMXConfig)
 include(AddSAMPPlugin)
 
-set(JIT_BACKENDS "asmjit" CACHE STRING "List of JIT backends to build")
-
-foreach(backend IN LISTS JIT_BACKENDS)
-  string(TOUPPER ${backend} backend)
-  set(JIT_${backend} TRUE)
-  add_definitions(-DJIT_${backend})
-endforeach()
-
-if(JIT_LLVM)
-  find_package(LLVM REQUIRED)
-endif()
-
 include_directories(
   amx
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
 )
-
-if(JIT_LLVM)
-  include_directories(${LLVM_INCLUDE_DIRS})
-endif()
-
-add_definitions(${LLVM_DEFINITIONS})
 
 if(UNIX)
   add_definitions(-DAMXJIT_RELOCATE_OPCODES)
@@ -62,7 +44,6 @@ else()
 endif()
 
 add_samp_plugin(jit ${JIT_SOURCES})
-set_property(TARGET jit APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0")
@@ -76,13 +57,7 @@ if(MINGW)
                LINK_FLAGS " -Wl,--enable-stdcall-fixup")
 endif()
 
-if(JIT_LLVM)
-  link_directories(${LLVM_LIBRARY_DIRS})
-endif()
-
-set(AMXJIT_BUILD_BACKENDS ${JIT_BACKENDS})
 add_subdirectory(amxjit)
-
 target_link_libraries(jit amxjit configreader subhook)
 
 install(TARGETS jit LIBRARY DESTINATION ".")

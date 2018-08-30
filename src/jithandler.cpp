@@ -25,19 +25,11 @@
 #include <cassert>
 #include <cstdarg>
 #include <string>
-
 #include <configreader.h>
-
 #include "jithandler.h"
 #include "logprintf.h"
 #include "plugin.h"
-
-#if JIT_ASMJIT
-  #include "amxjit/compiler-asmjit.h"
-#endif
-#if JIT_LLVM
-  #include "amxjit/compiler-llvm.h"
-#endif
+#include "amxjit/compiler.h"
 #include "amxjit/disasm.h"
 #include "amxjit/logger.h"
 
@@ -86,57 +78,34 @@ cell OnJITError(AMX *amx) {
   return 0;
 }
 
-amxjit::CompileOutput *Compile(AMX *amx) {
+amxjit::CodeBuffer *Compile(AMX *amx) {
   if (!OnJITCompile(amx)) {
     Printf("Compilation was disabled");
     return 0;
   }
-
-  amxjit::Logger *logger = 0;
-  amxjit::Compiler *compiler = 0;
-  amxjit::CompileOutput *output = 0;
 
   ConfigReader server_cfg("server.cfg");
 
   bool jit_log = false;
   server_cfg.GetValue("jit_log", jit_log);
 
+  amxjit::Logger *logger = 0;
   if (jit_log) {
     logger = new amxjit::FileLogger("plugins/jit.log");
   }
 
-  std::string backend = "asmjit";
-  server_cfg.GetValue("jit_backend", backend);
-
-  #if JIT_ASMJIT
-    if (backend == "asmjit") {
-      compiler = new amxjit::CompilerAsmjit;
-    }
-  #endif
-  #if JIT_LLVM
-    if (backend == "llvm") {
-      compiler = new amxjit::CompilerLLVM;
-    }
-  #endif
-
-  if (compiler != 0) {
-    ErrorHandler error_handler;
-    compiler->SetLogger(logger);
-    compiler->SetErrorHandler(&error_handler);
-    output = compiler->Compile(amx);
-  } else {
-    Printf("Unrecognized backend '%s'", backend.c_str());
-  }
-
-  delete compiler;
+  amxjit::Compiler compiler;
+  ErrorHandler error_handler;
+  compiler.SetLogger(logger);
+  compiler.SetErrorHandler(&error_handler);
+  amxjit::CodeBuffer *code = compiler.Compile(amx);
   delete logger;
 
-  if (output == 0) {
+  if (code == 0) {
     Printf("Compilation failed");
     OnJITError(amx);
   }
-
-  return output;
+  return code;
 }
 
 } // anonymous namespace
@@ -174,7 +143,7 @@ int JITHandler::Exec(cell *retval, int index) {
         return AMX_ERR_INIT_JIT;
       }
     case COMPILE_SUCCEDED: {
-      amxjit::EntryPoint entry_point = code_->GetEntryPoint();
+      amxjit::CodeEntryPoint entry_point = code_->GetEntryPoint();
       return entry_point(index, retval);
     }
     case COMPILE:

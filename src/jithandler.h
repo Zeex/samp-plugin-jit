@@ -28,7 +28,7 @@
 #include "amxhandler.h"
 
 namespace amxjit {
-  class CompileOutput;
+  class CodeBuffer;
 }
 
 class JITHandler: public AMXHandler<JITHandler> {
@@ -48,7 +48,7 @@ class JITHandler: public AMXHandler<JITHandler> {
     COMPILE_FAILED,
     COMPILE_SUCCEDED
   } state_;
-  amxjit::CompileOutput *code_;
+  amxjit::CodeBuffer *code_;
 };
 
 #endif // !JITHANDLER_H
