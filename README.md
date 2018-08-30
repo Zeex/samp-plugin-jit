@@ -80,10 +80,11 @@ and go to menu -> Build -> Build Solution (or just press F7).
 Limitations
 -----------
 
-Everything that doesn't use `#emit` will probably work okay. Otherwise, it
-depends on the code. There are some advanced `#emit` hacks that simply won't
-work with this JIT. Self-modifying code is one example (although in some
-caes it's possible to fix, see [Detecting JIT at runtime][wiki-detecting]).
+Anything that doesn't use `#emit` will probably work perfectly fine. 
+Otherwise, it depends on the code. There are some advanced `#emit` hacks 
+that simply won't work with this JIT. Self-modifying code is one example 
+(although in some caes it's possible to fix, see 
+[Detecting JIT at runtime][wiki-detecting]).
 
 If you're using [YSI][ysi] this plugin most likely will not work for you and
 will simply crash your server. However, with the recent versions of YSI this
