@@ -9,36 +9,43 @@ This is a Just-in-Time (JIT) compiler for AMX 3.x and a plugin for the SA-MP
 server. It compiles AMX bytecode that is produced by the Pawn compiler into
 native x86 code at runtime for increased performance.
 
-Installing
-----------
+Installation
+------------
 
 1. Download a compiled plugin form the [Releases][download] page on Github or
-build it yourself from source code (see below).
+   build it yourself from source code (see
+   [Build instructions](#build-instructions)).
 2. Extract/copy `jit.so` or `jit.dll` to `<sever>/plugins/`.
 3. Add `jit` (Windows) or `jit.so` (Linux) to the `plugins` line of your server.cfg.
 
-Building on Linux
------------------
+Build instructions
+------------------
 
-Install gcc and g++, make and cmake. On Ubuntu you would do that with:
+If you want to compile JIT from source code, e.g. to fix a bug and
+submit a pull request, simply follow the steps below.
+
+### Linux
+
+Install gcc and g++, make and cmake. On Ubuntu you would do that like so:
 
 ```
 sudo apt-get install gcc g++ make cmake
 ```
 
-If you're building on a 64-bit system you'll need multilib packages for gcc and g++:
+If you're on a 64-bit system you'll need additional packages for compiling
+for 32-bit:
 
 ```
 sudo apt-get install gcc-multilib g++-multilib
 ```
 
-If you're building on CentOS, install the following packages:
+For CentOS:
 
 ```
 yum install gcc gcc-c++ cmake28 make
 ```
 
-Now you're ready to build JIT:
+Now you're ready to build the plugin:
 
 ```
 cd jit
@@ -47,8 +54,7 @@ cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 make
 ```
 
-Building on Windows
--------------------
+### Windows
 
 You'll need to install CMake and Visual Studio (Express edition will suffice).
 After that, either run cmake from the command line:
@@ -68,8 +74,8 @@ To build the project:
 path/to/cmake.exe --build . --config Release
 ```
 
-You can also build it from within Visual Studio: open build/jit.sln and
-go to menu -> Build -> Build Solution (or just press F7).
+You can also build it from within Visual Studio: open build/jit.sln
+and go to menu -> Build -> Build Solution (or just press F7).
 
 Limitations
 -----------
@@ -80,13 +86,15 @@ work with this JIT. Self-modifying code is one example (although in some
 caes it's possible to fix, see [Detecting JIT at runtime][wiki-detecting]).
 
 If you're using [YSI][ysi] this plugin most likely will not work for you and
-simply crash your server.
+will simply crash your server. However, with the recent versions of YSI this
+this may be no longer true. Just try it out, maybe everything will work
+for you!
 
 How it works
 ------------
 
 It's a pretty simple JIT. Code is compiled once and stored in memory for
-the lifetime of the server, or until the script gets unloaded in case of 
+the lifetime of the server, or until the script gets unloaded in case of
 filterscripts. Thus there may be a small delay during the server startup.
 
 Most of the compilation process is a mere translation of AMX opcodes into
@@ -103,7 +111,7 @@ alternative backend but it was quickly abandoned...
 License
 -------
 
-Licensed under the 2-clause BSD license. See the LICENSE.txt file.
+Licensed under the 2-clause BSD license. See [LICENSE.txt](LICENSE.txt).
 
 [github]: https://github.com/Zeex/samp-plugin-jit
 [version]: http://badge.fury.io/gh/Zeex%2Fsamp-plugin-jit
