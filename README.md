@@ -16,7 +16,27 @@ Installation
    build it yourself from source code (see
    [Build instructions](#build-instructions)).
 2. Extract/copy `jit.so` or `jit.dll` to `<sever>/plugins/`.
-3. Add `jit` (Windows) or `jit.so` (Linux) to the `plugins` line of your server.cfg.
+3. Add `jit` (Windows) or `jit.so` (Linux) to the `plugins` line of your 
+   server.cfg.
+
+Usage
+-----
+
+Apart from installing the plugin you don't have to configure anything else.
+If it gets loaded and you don't see any errors then it means that you code 
+has been JIT-ed successfully and you should observe a performance boost in
+places where you perform heavy computations.
+
+If you see an error about an invalid instructions, check if you are using
+YSI or other advanced libraries that use `#emit` (their code may be
+incompatible with JIT). If using YSI try to update to the latest version
+first. If that doesn't help you are out of luck, sorry. See
+[Limitations](#limitations).
+
+Keep in mind that using JIT usually helps with computation-intenstive tasks,
+i.e. CPU bound code. If will not improve performance of those parts of code
+that spend time on I/O operations such as reading from a database or the 
+file system.
 
 Build instructions
 ------------------
