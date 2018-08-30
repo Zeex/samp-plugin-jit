@@ -14,7 +14,7 @@ Installation
 
 1. Download a binary package form the [Releases][download] page on Github 
    or build it yourself from source code (see
-   [Build instructions](#build-instructions)).
+   [Building from source code](#building-from-source-code)).
 2. Extract/copy `jit.so` or `jit.dll` to `<sever>/plugins/`.
 3. Add `jit` (Windows) or `jit.so` (Linux) to the `plugins` line of your 
    server.cfg.
