@@ -41,11 +41,12 @@ i.e. CPU bound code. It will not improve performance of those parts of code
 that spend time on I/O operations such as reading from a database or the 
 file system.
 
-Build instructions
-------------------
+Building from source code
+-------------------------
 
-If you want to compile JIT from source code, e.g. to fix a bug and
-submit a pull request, simply follow the steps below.
+If you want to build JIT from source code, e.g. to fix a bug and submit a 
+pull request, simply follow the steps below. You will need a C++ compiler
+and CMake.
 
 ### Linux
 
