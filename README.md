@@ -5,9 +5,13 @@
 [![Build Status][build_status]][build]
 [![Build Status - Windows][build_status_win]][build_win]
 
-This is a Just-in-Time (JIT) compiler for AMX 3.x and a plugin for the SA-MP
-server. It compiles AMX bytecode that is produced by the Pawn compiler into
-native x86 code at runtime for increased performance.
+This plugin is an implementation of a just-in-time (JIT) compiler for Pawn.
+It compiles AMX bytecode into native x86 code on the fly and hooks into the
+AMX API called by the SA-MP server to replace the VM's interpreter.
+
+Although this is a SA-MP plugin the code is organized into a library called
+amxjit which theoretically could be reused in other host programs, although 
+I don't know of such applications.
 
 Installation
 ------------
@@ -112,26 +116,30 @@ that simply won't work with this JIT. Self-modifying code is one example
 
 If you're using [YSI][ysi] this plugin most likely will not work for you and
 will simply crash your server. However, with the recent versions of YSI this
-this may be no longer true. Just try it out, maybe everything will work
-for you!
+may be no longer true. Just try it for yourself and see if it works.
+
+Plugins that hook `amx_Exec()`, for example [CrashDetect][crashdetect], can't 
+be used together with this plugin. If such hook is detected you will get an 
+error at startup and your code will run through the default interpreter as 
+usual.
 
 How it works
 ------------
 
-It's a pretty simple JIT. Code is compiled once and stored in memory for
-the lifetime of the server, or until the script gets unloaded in case of
-filterscripts. Thus there may be a small delay during the server startup.
+This is a pretty simple JIT. Code is compiled once and stored in memory until
+the corresponding AMX is unloaded. Because of this there is a small delay
+during script loading/initialization.
 
-Most of the compilation process is a mere translation of AMX opcodes into
-seuquences of corresponding machine instructions using essentially a giant
-`switch` statement. There are some places though where the compiler tries
-to be a little bit smarter: for instance, it will replace calls to common
-floating-point functions (those found in float.inc) with equivalent code
-using the x87 FPU instruction set.
+Majority of the compilation process is a direct translation of AMX opcodes 
+into sequences of corresponding machine instructions using essentially a giant
+`switch` statement. But there are some places where the JIT compiler tries to 
+be a little bit smarter: for instance, it will replace calls to common 
+floating-point functions (those found in float.inc) with equivalent FP
+instructions built into the CPU to avoid the overhead of native function calls.
 
-Native code generation is done via [AsmJit][asmjit], a wonderful assembler
-library for x86/x86-64 :+1:. There also was an attempt to use LLVM as an
-alternative backend but it was quickly abandoned...
+Code generation is done via [AsmJit][asmjit], a great assembler library for 
+x86/x86-64 :thumbsup:. There also was an attempt to use LLVM as an alternative 
+backend but it was abandoned...
 
 License
 -------
@@ -149,3 +157,4 @@ Licensed under the 2-clause BSD license. See [LICENSE.txt](LICENSE.txt).
 [asmjit]: https://github.com/kobalicek/asmjit
 [wiki-detecting]: https://github.com/Zeex/samp-plugin-jit/wiki/Detecting-JIT-at-runtime
 [ysi]: https://github.com/Y-Less/YSI
+[crashdetect]: https://github.com/Zeex/samp-plugin-crashdetect
