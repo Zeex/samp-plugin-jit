@@ -1100,6 +1100,7 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
 }
 
 void CompilerImpl::float_() {
+  // Float:float(value)
   asm_.fild(dword_ptr(esp, 4));
   asm_.sub(esp, 4);
   asm_.fstp(dword_ptr(esp));
@@ -1108,6 +1109,7 @@ void CompilerImpl::float_() {
 }
 
 void CompilerImpl::floatabs() {
+  // Float:floatabs(Float:value)
   asm_.fld(dword_ptr(esp, 4));
   asm_.fabs();
   asm_.sub(esp, 4);
@@ -1117,6 +1119,7 @@ void CompilerImpl::floatabs() {
 }
 
 void CompilerImpl::floatadd() {
+  // Float:floatadd(Float:oper1, Float:oper2)
   asm_.fld(dword_ptr(esp, 4));
   asm_.fadd(dword_ptr(esp, 8));
   asm_.sub(esp, 4);
@@ -1126,6 +1129,7 @@ void CompilerImpl::floatadd() {
 }
 
 void CompilerImpl::floatsub() {
+  // Float:floatsub(Float:oper1, Float:oper2)
   asm_.fld(dword_ptr(esp, 4));
   asm_.fsub(dword_ptr(esp, 8));
   asm_.sub(esp, 4);
@@ -1135,6 +1139,7 @@ void CompilerImpl::floatsub() {
 }
 
 void CompilerImpl::floatmul() {
+  // Float:floatmul(Float:oper1, Float:oper2)
   asm_.fld(dword_ptr(esp, 4));
   asm_.fmul(dword_ptr(esp, 8));
   asm_.sub(esp, 4);
@@ -1144,6 +1149,7 @@ void CompilerImpl::floatmul() {
 }
 
 void CompilerImpl::floatdiv() {
+  // Float:floatdiv(Float:dividend, Float:divisor)
   asm_.fld(dword_ptr(esp, 4));
   asm_.fdiv(dword_ptr(esp, 8));
   asm_.sub(esp, 4);
@@ -1153,6 +1159,7 @@ void CompilerImpl::floatdiv() {
 }
 
 void CompilerImpl::floatsqroot() {
+  // Float:floatsqroot(Float:value)
   asm_.fld(dword_ptr(esp, 4));
   asm_.fsqrt();
   asm_.sub(esp, 4);
@@ -1162,6 +1169,7 @@ void CompilerImpl::floatsqroot() {
 }
 
 void CompilerImpl::floatlog() {
+  // Float:floatlog(Float:value, Float:base=10.0)
   asm_.fld1();
   asm_.fld(dword_ptr(esp, 8));
   asm_.fyl2x();
@@ -1176,6 +1184,7 @@ void CompilerImpl::floatlog() {
 }
 
 void CompilerImpl::floatcmp() {
+  // floatcmp(Float:oper1, Float:oper2)
   asmjit::Label less_or_greater = asm_.newLabel();
   asmjit::Label less = asm_.newLabel();
   asmjit::Label exit = asm_.newLabel();
@@ -1272,7 +1281,7 @@ bool CompilerImpl::EmitIntrinsic(const char *name) {
   };
 
   static const Intrinsic intrinsics[] = {
-    // Float operations.
+    // Floating-point operations.
     {"float",       &CompilerImpl::float_},
     {"floatabs",    &CompilerImpl::floatabs},
     {"floatadd",    &CompilerImpl::floatadd},
