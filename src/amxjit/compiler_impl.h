@@ -51,9 +51,6 @@ class CompilerImpl {
   }
 
   CodeBuffer *Compile(AMXRef amx);
-  bool Prepare(AMXRef amx);
-  bool Process(const Instruction &instr);
-  CodeBuffer *Finish(bool error);
 
  private:
   bool EmitIntrinsic(const char *name);

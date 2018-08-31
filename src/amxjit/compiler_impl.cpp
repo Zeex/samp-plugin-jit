@@ -165,7 +165,7 @@ CompilerImpl::CompilerImpl():
 {
 }
 
-bool CompilerImpl::Prepare(AMXRef amx) {
+CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
   amx_ = amx;
 
   EmitRuntimeInfo();
@@ -186,74 +186,28 @@ bool CompilerImpl::Prepare(AMXRef amx) {
     asm_.setLogger(asmjit_logger_);
   }
 
-  return true;
-}
-
-bool CompilerImpl::Process(const Instruction &instr) {
-  cell cip = instr.address();
-
-  // Align functions on 16-byte boundary.
-  if (instr.opcode().GetId() == OP_PROC) {
-    asm_.align(asmjit::kAlignCode, 16);
-  }
-
-  asm_.bind(GetLabel(cip));
-  instr_map_[cip] = asm_.getCodeSize();
-
-  if (asmjit_logger_ != 0) {
-    asmjit_logger_->logFormat(asmjit::kLoggerStyleComment,
-                              "%s; +%08x: %08x: %s\n",
-                              asmjit_logger_->getIndentation(),
-                              asm_.getCodeSize(),
-                              instr.address(),
-                              instr.ToString().c_str());
-  }
-
-  return true;
-}
-
-CodeBuffer *CompilerImpl::Finish(bool error) {
-  CodeBuffer *code_buffer = 0;
-
-  if (!error) {
-    void *code_blob = asm_.make();
-    code_buffer = new CodeBuffer(code_blob);
-
-    RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code_blob);
-    rib->amx = reinterpret_cast<intptr_t>(amx_.raw());
-    rib->exec += reinterpret_cast<intptr_t>(code_blob);
-    rib->instr_table += reinterpret_cast<intptr_t>(code_blob);
-
-    InstrTableEntry *ite =
-      reinterpret_cast<InstrTableEntry*>(rib->instr_table);
-    for (std::map<cell, std::ptrdiff_t>::const_iterator it = instr_map_.begin();
-         it != instr_map_.end(); it++) {
-      ite->address = it->first;
-      ite->start = static_cast<unsigned char*>(code_blob) + it->second;
-      ite++;
-    }
-  }
-
-  amx_.Reset();
-  if (asm_.getLogger() != 0) {
-    delete logger_;
-    asm_.setLogger(0);
-  }
-
-  return code_buffer;
-}
-
-CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
-  Prepare(amx);
-
   Disassembler disasm(amx);
   Instruction instr;
   bool error = false;
 
   while (!error && disasm.Decode(instr, error)) {
-    if (!Process(instr)) {
-      error = true;
-      break;
+    cell cip = instr.address();
+
+    // Align functions on 16-byte boundary.
+    if (instr.opcode().GetId() == OP_PROC) {
+      asm_.align(asmjit::kAlignCode, 16);
+    }
+
+    asm_.bind(GetLabel(cip));
+    instr_map_[cip] = asm_.getCodeSize();
+
+    if (asmjit_logger_ != 0) {
+      asmjit_logger_->logFormat(asmjit::kLoggerStyleComment,
+                                "%s; +%08x: %08x: %s\n",
+                                asmjit_logger_->getIndentation(),
+                                asm_.getCodeSize(),
+                                instr.address(),
+                                instr.ToString().c_str());
     }
 
     switch (instr.opcode().GetId()) {
@@ -1115,7 +1069,34 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
     error_handler_->Execute(instr);
   }
 
-  return Finish(error);
+  CodeBuffer *code_buffer = 0;
+
+  if (!error) {
+    void *code_blob = asm_.make();
+    code_buffer = new CodeBuffer(code_blob);
+
+    RuntimeInfoBlock *rib = reinterpret_cast<RuntimeInfoBlock*>(code_blob);
+    rib->amx = reinterpret_cast<intptr_t>(amx_.raw());
+    rib->exec += reinterpret_cast<intptr_t>(code_blob);
+    rib->instr_table += reinterpret_cast<intptr_t>(code_blob);
+
+    InstrTableEntry *ite =
+      reinterpret_cast<InstrTableEntry*>(rib->instr_table);
+    for (std::map<cell, std::ptrdiff_t>::const_iterator it = instr_map_.begin();
+         it != instr_map_.end(); it++) {
+      ite->address = it->first;
+      ite->start = static_cast<unsigned char*>(code_blob) + it->second;
+      ite++;
+    }
+  }
+
+  amx_.Reset();
+  if (asm_.getLogger() != 0) {
+    delete logger_;
+    asm_.setLogger(0);
+  }
+
+  return code_buffer;
 }
 
 void CompilerImpl::float_() {
