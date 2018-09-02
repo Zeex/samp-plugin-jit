@@ -1289,7 +1289,6 @@ bool CompilerImpl::EmitIntrinsic(const char *name) {
     {"floatmul",    &CompilerImpl::floatmul},
     {"floatdiv",    &CompilerImpl::floatdiv},
     {"floatsqroot", &CompilerImpl::floatsqroot},
-    {"floatlog",    &CompilerImpl::floatlog},
     {"floatcmp",    &CompilerImpl::floatcmp},
     // Core operations.
     {"clamp",       &CompilerImpl::clamp},

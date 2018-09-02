@@ -19,10 +19,6 @@ main() {
 		floatdiv(1.0, 1.0);
 	BENCH_END()
 
-	BENCH_BEGIN(floatlog, ITERATIONS)
-		floatlog(1.0, 10.0);
-	BENCH_END()
-
 	BENCH_BEGIN(floatmul, ITERATIONS)
 		floatmul(1.0, 1.0);
 	BENCH_END()
