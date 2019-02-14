@@ -1033,7 +1033,7 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
         }
 
         // No match found - go for default case.
-        asm_.jmp(GetLabel(case_table.GetDefaultAddress()));
+        asm_.jmp(instr.operand() - reinterpret_cast<cell>(amx.code()));
         break;
       }
       case OP_CASETBL:
