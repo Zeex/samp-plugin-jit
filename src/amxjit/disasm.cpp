@@ -234,7 +234,7 @@ std::string Instruction::ToString() const {
   return stream.str();
 }
 
-CaseTable::CaseTable(AMXRef amx_, cell offset) {
+CaseTable::CaseTable(AMXRef amx, cell offset) {
   struct CaseRecord {
     cell value;    // case value
     cell address;  // address to jump to (absolute)
@@ -244,7 +244,7 @@ CaseTable::CaseTable(AMXRef amx_, cell offset) {
   int numRecords = *(reinterpret_cast<cell*>(offset) + 1);
 
   for (int i = 0; i <= numRecords; i++) {
-    cell dest = case_table[i].address - reinterpret_cast<cell>(amx_.code());
+    cell dest = case_table[i].address - reinterpret_cast<cell>(amx.code());
     records_.push_back(std::make_pair(case_table[i].value, dest));
   }
 }

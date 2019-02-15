@@ -1091,9 +1091,10 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
   }
 
   amx_.Reset();
-  if (asm_.getLogger() != 0) {
-    delete logger_;
+
+  if (asmjit_logger_ != 0) {
     asm_.setLogger(0);
+    delete asmjit_logger_;
   }
 
   return code_buffer;
