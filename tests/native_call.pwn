@@ -6,5 +6,4 @@
 main() {
 	printf("%s%s%s%s", "it", " ", "works", "!");
 	printf("%d", strlen("test")); // should output 4
-	TestExit();
 }

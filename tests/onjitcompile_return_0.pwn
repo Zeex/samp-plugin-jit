@@ -9,7 +9,6 @@ forward OnJITCompile();
 
 main() {
 	printf("%s", IsJITPresent() ? ("FAIL") : ("OK"));
-	TestExit();
 }
 
 public OnJITCompile() {

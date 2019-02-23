@@ -51,5 +51,4 @@ main() {
 	TestSctrl6Fail();
 	TestJumpPri();
 	TestJumpPriFail();
-	TestExit();
 }

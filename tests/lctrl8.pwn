@@ -23,16 +23,11 @@ public Test1();
 public Test2();
 public Test3();
 
-public OnGameModeInit()
+main()
 {
 	CallLocalFunction("Test1", "");
 	CallLocalFunction("Test2", "");
 	CallLocalFunction("Test3", "");
-}
-
-main()
-{
-	TestExit();
 }
 
 public Test1()

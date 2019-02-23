@@ -9,6 +9,5 @@ main() {
 	TEST_TRUE(clamp(-10, 0, 100) == 0);
 	TEST_TRUE(clamp(100, 0, 100) == 100);
 	TEST_TRUE(clamp(1000, 0, 100) == 100);
-	TestExit();
 }
 

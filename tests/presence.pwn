@@ -14,5 +14,4 @@ public OnJITCompile() {
 
 main() {
 	Test();
-	TestExit();
 }

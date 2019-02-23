@@ -13,7 +13,3 @@ main() {
 	#emit stack 8
 	TEST_TRUE(x == 0xdeadbeef);
 }
-
-public OnGameModeInit() {
-	TestExit();
-}

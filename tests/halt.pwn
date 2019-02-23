@@ -1,11 +1,7 @@
 // OUTPUT: main\(\)
-// OUTPUT: Script\[.*\]: Run time error 1: "Forced exit"
+// OUTPUT: Error while executing main: Forced exit \(1\)
 
 #include "test"
-
-public OnGameModeInit() {
-	TestExit();
-}
 
 f() {
 	#emit halt 1

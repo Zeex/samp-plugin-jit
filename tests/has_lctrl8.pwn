@@ -3,14 +3,9 @@
 
 public Test();
 
-public OnGameModeInit()
-{
-	CallLocalFunction("Test", "");
-}
-
 main()
 {
-	TestExit();
+	CallLocalFunction("Test", "");
 }
 
 public Test()

@@ -10,5 +10,4 @@ main() {
 	TEST_TRUE(mod(5, -10) == -5);
 	TEST_TRUE(mod(-5, -10) == -5);
 	TEST_TRUE(mod(5, 10) == 5);
-	TestExit();
 }

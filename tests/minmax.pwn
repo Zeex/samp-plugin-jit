@@ -13,6 +13,5 @@ main() {
 	TEST_TRUE(max(cellmin, 0) == 0);
 	TEST_TRUE(min(cellmin, cellmax) == cellmin);
 	TEST_TRUE(max(cellmin, cellmax) == cellmax);
-	TestExit();
 }
 

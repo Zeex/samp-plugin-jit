@@ -3,10 +3,6 @@
 public f();
 
 main() {
-	TestExit();
-}
-
-stock Test() {
 	TEST_TRUE(CallLocalFunction("f", "") == 133);
 }
 

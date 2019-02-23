@@ -8,13 +8,9 @@
 
 public Test();
 
-public OnGameModeInit() {
+main() {
 	CallLocalFunction("Test", "");
 	printf("CallLocalFunction returned");
-}
-
-main() {
-	TestExit();
 }
 
 public Test()

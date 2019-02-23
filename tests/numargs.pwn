@@ -12,6 +12,5 @@ main() {
 	TEST_TRUE(retNumargs(1, 2, 3) == 3);
 	TEST_TRUE(retNumargs(1, 2, 3, 4) == 4);
 	TEST_TRUE(retNumargs(1, 2, 3, 4, 5) == 5);
-	TestExit();
 }
 

@@ -1,4 +1,10 @@
-#include <a_samp>
+#include <core>
+#include <console>
+#include <float>
+#include <file>
+#include <string>
+
+native CallLocalFunction(const function[], const format[], {Float,_}:...);
 
 stock bool:test_false = false;
 stock test_id = 0;
@@ -31,8 +37,4 @@ stock TestFailed(id, line, const reason[]) {
      } else {
           printf("Test #%d failed: %s", id, reason);
      }
-}
-
-stock TestExit() {
-     SendRconCommand("exit");
 }

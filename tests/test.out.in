@@ -1,16 +1,3 @@
-Server Plugins
---------------.*
- Loading plugin: .*jit.*
-  JIT plugin .*
-  Loaded\..*
- Loaded [1-9]+ plugins.
-
-
-Started server on port: [0-9]+, with maxplayers: [0-9]+ lanmode is (ON|OFF)\.
-
-
-Filterscripts
----------------.*
-  Loaded [0-9]+ filterscripts\.
-
-@TEST_OUTPUT@Number of vehicle models: [0-9]+
+Loaded plugin: .*jit\.(dll|so)
+Loaded script: .*
+@TEST_OUTPUT@

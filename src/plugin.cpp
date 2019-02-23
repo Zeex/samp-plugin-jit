@@ -54,11 +54,11 @@ static std::string GetFileName(const std::string &path) {
 
 static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   #ifdef LINUX
-  if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
-    assert(::opcode_table != 0);
-    *retval = reinterpret_cast<cell>(::opcode_table);
-    return AMX_ERR_NONE;
-  }
+    if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
+      assert(::opcode_table != 0);
+      *retval = reinterpret_cast<cell>(::opcode_table);
+      return AMX_ERR_NONE;
+    }
   #endif
   int error = JITHandler::GetHandler(amx)->Exec(retval, index);
   if (error == AMX_ERR_INIT_JIT) {

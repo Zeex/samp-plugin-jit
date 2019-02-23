@@ -1,11 +1,10 @@
 // OUTPUT: .*OnJITError\(\) called.*
 
-#include <a_samp>
 #include <jit>
 #include "test"
 
 main() {
-	TestExit();
+	return 0;
 }
 
 public OnJITError() {
