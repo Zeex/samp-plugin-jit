@@ -1,3 +1,0 @@
-Loaded plugin: .*jit\.(dll|so)
-Loaded script: .*
-@TEST_OUTPUT@
