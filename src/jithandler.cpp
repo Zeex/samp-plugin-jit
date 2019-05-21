@@ -112,7 +112,8 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
 
 JITHandler::JITHandler(AMX *amx):
   AMXHandler<JITHandler>(amx),
-  state_(INIT)
+  state_(INIT),
+  code_()
 {
   amx->sysreq_d = 0;
 

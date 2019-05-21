@@ -161,7 +161,9 @@ CompilerImpl::CompilerImpl():
   jump_helper_label_(asm_.newLabel()),
   jump_lookup_label_(asm_.newLabel()),
   sysreq_c_helper_label_(asm_.newLabel()),
-  sysreq_d_helper_label_(asm_.newLabel())
+  sysreq_d_helper_label_(asm_.newLabel()),
+  logger_(),
+  error_handler_()
 {
 }
 
