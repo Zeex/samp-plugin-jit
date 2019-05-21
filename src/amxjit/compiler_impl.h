@@ -49,6 +49,9 @@ class CompilerImpl {
   void SetErrorHandler(CompileErrorHandler *error_handler) {
     error_handler_ = error_handler;
   }
+  void SetSysreqDEnabled(bool is_enabled) {
+    enable_sysreq_d_ = is_enabled;
+  }
 
   CodeBuffer *Compile(AMXRef amx);
 
@@ -110,6 +113,7 @@ class CompilerImpl {
   asmjit::Logger *asmjit_logger_;
   Logger *logger_;
   CompileErrorHandler *error_handler_;
+  bool enable_sysreq_d_;
 };
 
 }  // namespace amxjit

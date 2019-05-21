@@ -163,7 +163,8 @@ CompilerImpl::CompilerImpl():
   sysreq_c_helper_label_(asm_.newLabel()),
   sysreq_d_helper_label_(asm_.newLabel()),
   logger_(),
-  error_handler_()
+  error_handler_(),
+  enable_sysreq_d_(false)
 {
 }
 
@@ -988,8 +989,14 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
           error = true;
         } else {
           if (!EmitIntrinsic(name)) {
-            asm_.mov(eax, instr.operand());
-            asm_.call(sysreq_c_helper_label_);
+            if (amx->sysreq_d && enable_sysreq_d_) {
+              cell address = amx.GetNativeAddress(instr.operand());
+              asm_.mov(eax, address);
+              asm_.call(sysreq_d_helper_label_);
+            } else {
+              asm_.mov(eax, instr.operand());
+              asm_.call(sysreq_c_helper_label_);
+            }
           }
         }
         break;

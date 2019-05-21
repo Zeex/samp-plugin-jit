@@ -64,6 +64,8 @@ class Compiler {
 
   void SetLogger(Logger *logger);
   void SetErrorHandler(CompileErrorHandler *error_handler);
+  void SetSysreqDEnabled(bool is_enabled);
+
   CodeBuffer *Compile(AMXRef amx);
 
  private:

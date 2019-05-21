@@ -86,11 +86,14 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
 
   ConfigReader server_cfg("server.cfg");
 
-  bool jit_log = false;
-  server_cfg.GetValue("jit_log", jit_log);
+  bool enable_log = false;
+  server_cfg.GetValue("jit_log", enable_log);
+
+  bool enable_sysreq_d = true;
+  server_cfg.GetValue("jit_sysreq_d", enable_sysreq_d);
 
   amxjit::Logger *logger = 0;
-  if (jit_log) {
+  if (enable_log) {
     logger = new amxjit::FileLogger("plugins/jit.log");
   }
 
@@ -98,6 +101,7 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
   ErrorHandler error_handler;
   compiler.SetLogger(logger);
   compiler.SetErrorHandler(&error_handler);
+  compiler.SetSysreqDEnabled(enable_sysreq_d);
   amxjit::CodeBuffer *code = compiler.Compile(amx);
   delete logger;
 
@@ -115,8 +119,6 @@ JITHandler::JITHandler(AMX *amx):
   state_(INIT),
   code_()
 {
-  amx->sysreq_d = 0;
-
   cell jit_var_addr;
   if (amx_FindPubVar(amx, "__JIT", &jit_var_addr) == AMX_ERR_NONE) {
     cell *jit_var;

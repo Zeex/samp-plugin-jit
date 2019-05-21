@@ -45,6 +45,10 @@ void Compiler::SetErrorHandler(CompileErrorHandler *error_handler) {
   impl_->SetErrorHandler(error_handler);
 }
 
+void Compiler::SetSysreqDEnabled(bool is_enabled) {
+  impl_->SetSysreqDEnabled(is_enabled);
+}
+
 CodeBuffer *Compiler::Compile(AMXRef amx) {
   return impl_->Compile(amx);
 }
