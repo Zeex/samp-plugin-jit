@@ -988,15 +988,22 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
         if (name == 0) {
           error = true;
         } else {
-          if (!EmitIntrinsic(name)) {
-            if (amx->sysreq_d && enable_sysreq_d_) {
-              cell address = amx.GetNativeAddress(instr.operand());
+          bool handled = EmitIntrinsic(name);
+          if (!handled && amx->sysreq_d && enable_sysreq_d_) {
+            // Optimization: if we already know the address we can call this
+            // native function directly.
+            cell address = amx.GetNativeAddress(instr.operand());
+            if (address != 0) {
+              // Sometimes the address can be 0: for example, when a function
+              // is registered _after_ JIT compilation (could be a plugin).
               asm_.mov(eax, address);
               asm_.call(sysreq_d_helper_label_);
-            } else {
-              asm_.mov(eax, instr.operand());
-              asm_.call(sysreq_c_helper_label_);
+              handled = true;
             }
+          }
+          if (!handled) {
+            asm_.mov(eax, instr.operand());
+            asm_.call(sysreq_c_helper_label_);
           }
         }
         break;
