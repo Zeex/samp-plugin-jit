@@ -27,6 +27,7 @@ jrel
 lctrl8
 minmax
 native_call
+native_error
 nested_exec
 numargs
 onjitcompile

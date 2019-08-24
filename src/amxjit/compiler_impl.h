@@ -84,6 +84,7 @@ class CompilerImpl {
   void EmitJumpHelper();
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
+  void EmitDebugPrint(const char *message);
 
  private:
   const asmjit::Label &GetLabel(cell address);

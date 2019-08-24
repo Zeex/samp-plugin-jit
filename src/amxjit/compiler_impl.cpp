@@ -33,6 +33,8 @@
 #include "disasm.h"
 #include "logger.h"
 
+// #define AMXJIT_DEBUG 1
+
 using asmjit::Label;
 using asmjit::x86::byte_ptr;
 using asmjit::x86::word_ptr;
@@ -1520,7 +1522,10 @@ void CompilerImpl::EmitExecHelper() {
     // Store the function address in eax.
     asm_.mov(eax, dword_ptr(esp, 4));
 
-    // These registers are caller-saved in JIT code.
+    // We must preserve these registers because they are callee-saved in x86
+    // code (cdecl).
+    //
+    // https://en.wikipedia.org/wiki/X86_calling_conventions#Caller_clean-up
     asm_.push(esi);
     asm_.push(edi);
 
@@ -1577,11 +1582,12 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(esi, dword_ptr(amx_ptr_label_));
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi); // error code in edi
 
-    // Reset the stack so that we return to the instruction next to CALL.
+    // Reset the stack so that we jump back to the code follwing the call
+    // instruction inside ExecHelper().
     asm_.mov(esp, dword_ptr(reset_esp_label_));
     asm_.mov(ebp, dword_ptr(reset_ebp_label_));
 
-    // Pop the public function's arguments as it done by RETN.
+    // Pop the arguments of the current public function (as done by RETN).
     asm_.pop(eax);
     asm_.add(esp, dword_ptr(esp));
     asm_.add(esp, 4);
@@ -1629,6 +1635,8 @@ void CompilerImpl::EmitJumpLookup() {
 // cell SysreqCHelper(int index [eax]);
 void CompilerImpl::EmitSysreqCHelper() {
   asm_.bind(sysreq_c_helper_label_);
+    EmitDebugPrint("sysreq.c");
+
     asm_.push(ecx);
     asm_.lea(ecx, dword_ptr(esp, 8));
 
@@ -1653,8 +1661,9 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.push(edx); // amx
     asm_.call(dword_ptr(edx, offsetof(AMX, callback)));
     asm_.add(esp, 20);
+    // At this point the return value is stored at [esp - 4].
 
-    // Get the result.
+    // Copy return value into eeax.
     asm_.mov(edi, dword_ptr(esp, -4));
     asm_.xchg(eax, edi);
 
@@ -1667,7 +1676,7 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
     asm_.lea(esp, dword_ptr(ebx, ecx)); // ebp = data + amx->stk
 
-    // Check for errors.
+    // Check return value for errors.
     asm_.cmp(edi, AMX_ERR_NONE);
     asm_.jne(halt_helper_label_);
 
@@ -1679,6 +1688,8 @@ void CompilerImpl::EmitSysreqCHelper() {
 // cell SysreqDHelper(void *address [eax]);
 void CompilerImpl::EmitSysreqDHelper() {
   asm_.bind(sysreq_d_helper_label_);
+    EmitDebugPrint("sysreq.d");
+
     asm_.push(ecx);
     asm_.lea(ecx, dword_ptr(esp, 8));
 
@@ -1696,6 +1707,7 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.push(edx); // amx
     asm_.call(eax); // address
     asm_.add(esp, 8);
+    // At this point the return value is stored in eax.
 
     // Switch back to the AMX stack.
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
@@ -1706,9 +1718,28 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, stk)));
     asm_.lea(esp, dword_ptr(ebx, ecx)); // ebp = data + amx->stk
 
+    // Check amx->error for errors (native functions can set this field).
+    asm_.mov(edi, dword_ptr(edx, offsetof(AMX, error)));
+    asm_.cmp(edi, AMX_ERR_NONE);
+    asm_.jne(halt_helper_label_);
+
     // Modify the return address so that we return next to the sysreq point.
     asm_.pop(ecx);
     asm_.ret();
+}
+
+void CompilerImpl::EmitDebugPrint(const char *message) {
+  #ifdef AMXJIT_DEBUG
+    asm_.push(eax);
+    asm_.push(edx);
+    asm_.push(ecx);
+    asm_.push((intptr_t)message);
+    asm_.call((intptr_t)puts);
+    asm_.add(esp, 4);
+    asm_.pop(ecx);
+    asm_.pop(edx);
+    asm_.pop(eax);
+  #endif
 }
 
 const Label &CompilerImpl::GetLabel(cell address) {
