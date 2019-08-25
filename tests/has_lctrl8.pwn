@@ -1,5 +1,5 @@
-#include "test"
 #include <jit>
+#include "test"
 
 public Test();
 
@@ -13,5 +13,3 @@ public Test()
 	TEST_TRUE(IsJITPresent());
 	TEST_TRUE(IsJITASMJumpCapable());
 }
-
-

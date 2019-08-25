@@ -79,8 +79,10 @@ class CompilerImpl {
   void EmitInstrTable();
   void EmitExec();
   void EmitExecHelper();
+  void EmitExecContHelper();
   void EmitHaltHelper();
   void EmitJumpLookup();
+  void EmitReverseJumpLookup();
   void EmitJumpHelper();
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
@@ -102,9 +104,13 @@ class CompilerImpl {
   asmjit::Label reset_esp_label_;
   asmjit::Label exec_label_;
   asmjit::Label exec_helper_label_;
+  asmjit::Label exec_return_label_;
+  asmjit::Label exec_cont_helper_label_;
   asmjit::Label halt_helper_label_;
+  asmjit::Label halt_helper_label_inner_;
   asmjit::Label jump_helper_label_;
   asmjit::Label jump_lookup_label_;
+  asmjit::Label reverse_jump_lookup_label_;
   asmjit::Label sysreq_c_helper_label_;
   asmjit::Label sysreq_d_helper_label_;
 

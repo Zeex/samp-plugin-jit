@@ -1,0 +1,6 @@
+EXPORTS
+	Supports
+	Load
+	AmxLoad
+	AmxUnload
+	ProcessTick

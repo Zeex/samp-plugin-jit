@@ -70,6 +70,7 @@ Loaded script: .*<TEST_OUTPUT>"
 
   set(_env
     PATH=${_path}
+    JIT_TEST=1
   )
   set_property(TEST ${name} APPEND PROPERTY ENVIRONMENT ${_env})
 endmacro()

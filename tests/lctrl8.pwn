@@ -163,5 +163,3 @@ public Test3()
 	#emit STOR.S.pri ret
 	TEST_TRUE(ret == 70);
 }
-
-

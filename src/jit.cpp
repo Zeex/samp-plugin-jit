@@ -23,6 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #include <subhook.h>
 #include "jithandler.h"
@@ -37,14 +38,16 @@ extern void *pAMXFunctions;
 static subhook::Hook exec_hook;
 
 #ifdef LINUX
-  static cell *opcode_table = 0;
+  static cell *opcode_table = NULL;
 #endif
 
-static void *GetAmxFunction(int index) {
+namespace {
+
+void *GetAmxFunction(int index) {
   return static_cast<void**>(pAMXFunctions)[index];
 }
 
-static std::string GetFileName(const std::string &path) {
+std::string GetFileName(const std::string &path) {
   std::string::size_type pos = path.find_last_of("/\\");
   if (pos != std::string::npos) {
     return path.substr(pos + 1);
@@ -52,7 +55,7 @@ static std::string GetFileName(const std::string &path) {
   return path;
 }
 
-static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
+int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   #ifdef LINUX
     if ((amx->flags & AMX_FLAG_BROWSE) == AMX_FLAG_BROWSE) {
       assert(::opcode_table != 0);
@@ -67,6 +70,13 @@ static int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   }
   return error;
 }
+
+cell AMX_NATIVE_CALL n_JITSleep(AMX *amx, cell *params) {
+  amx->error = AMX_ERR_SLEEP;
+  return 0;
+}
+
+} // anonymous namespace
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
@@ -103,6 +113,12 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
+  if (std::getenv("JIT_TEST") != NULL) {
+    const AMX_NATIVE_INFO natives[] = {
+      {"JITSleep", n_JITSleep}
+    };
+    amx_Register(amx, natives, sizeof(natives) / sizeof(natives[0]));
+  }
   JITHandler::CreateHandler(amx);
   return AMX_ERR_NONE;
 }
