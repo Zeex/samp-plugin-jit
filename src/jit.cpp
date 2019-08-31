@@ -119,7 +119,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     };
     amx_Register(amx, natives, sizeof(natives) / sizeof(natives[0]));
   }
-  JITHandler::CreateHandler(amx);
   return AMX_ERR_NONE;
 }
 

@@ -1717,6 +1717,10 @@ void CompilerImpl::EmitHaltHelper() {
   asm_.bind(halt_helper_label_);
     EmitDebugPrint("HaltHelper()");
 
+    #ifdef AMXJIT_DEBUG
+      asm_.int3();
+    #endif
+
     asm_.mov(esi, dword_ptr(amx_ptr_label_));
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi); // error code in edi
 
@@ -1797,11 +1801,6 @@ void CompilerImpl::EmitSysreqCHelper() {
     // ALT shall not be modified during native calls, so save it somewhere.
     asm_.mov(esi, ecx);
 
-    // PRI is actually allowed to be clobbered by natives, but we save it for
-    // sleep purposes here. In case of sleep PRI is supposed to be copied to
-    // amx->pri prior to exit.
-    asm_.mov(edi, eax);
-
     // Save CIP to amx->cip (needed for sleep to work).
     asm_.mov(eax, dword_ptr(esp));  // return address
     asm_.call(reverse_jump_lookup_label_);
@@ -1819,9 +1818,8 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
     asm_.mov(esp, dword_ptr(esp_label_));
 
-    // Push PRI and ALT to the stack (not enough registers to keep them around).
+    // Push ALT to the stack (not enough registers to keep it around).
     asm_.push(esi); // ALT
-    asm_.push(edi); // PRI
 
     // Allocate space for the result parameter of amx_Callback().
     asm_.push(0);
@@ -1836,12 +1834,9 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.add(esp, 20);
     // At this point the return value is stored at [esp - 4].
 
-    asm_.pop(edi); // PRI
+    asm_.mov(edi, eax);
+    asm_.mov(eax, dword_ptr(esi));
     asm_.pop(esi); // ALT
-
-    // After this eax = *result, edi = callback return value (error code).
-    asm_.mov(ecx, dword_ptr(esp, -4));
-    asm_.xchg(eax, ecx);
 
     // Switch back to the AMX stack.
     asm_.mov(dword_ptr(ebp_label_), ebp);
@@ -1854,15 +1849,14 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.lea(esp, dword_ptr(ebx, edx)); // ebp = data + amx->stk
 
     // Check return value for errors and leave.
-    asm_.cmp(ecx, AMX_ERR_SLEEP);
+    asm_.cmp(edi, AMX_ERR_SLEEP);
     asm_.je(sleep_error_label);
-    asm_.cmp(ecx, AMX_ERR_NONE);
+    asm_.cmp(edi, AMX_ERR_NONE);
     asm_.jne(error_label);
     asm_.mov(ecx, esi); // ecx = ALT
     asm_.ret(4);
 
   asm_.bind(error_label);
-    asm_.mov(edi, ecx);
     asm_.jmp(halt_helper_label_);
 
   asm_.bind(sleep_error_label);
@@ -1876,15 +1870,11 @@ void CompilerImpl::EmitSysreqCHelper() {
     // amx->alt = alt;
     // amx->reset_stk = reset_stk;
     // amx->reset_hea = reset_hea;
-
     EmitDebugPrint("AMX_ERR_SLEEP");
 
-    // Save PRI and ALT into amx->pri and amx->alt respectively.
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), edi);
+    asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), eax);
     asm_.mov(dword_ptr(edx, offsetof(AMX, alt)), esi);
-
-    asm_.mov(edi, ecx);
     asm_.jmp(exec_return_label_);
 }
 
@@ -1898,11 +1888,6 @@ void CompilerImpl::EmitSysreqDHelper() {
 
     // ALT shall not be modified during native calls, so save it somewhere.
     asm_.mov(esi, ecx);
-
-    // PRI is actually allowed to be clobbered by natives, but we save it for
-    // sleep purposes here. In case of sleep PRI is supposed to be copied to
-    // amx->pri prior to exit.
-    asm_.mov(edi, eax);
 
     // Save CIP to amx->cip (needed for sleep to work).
     asm_.mov(eax, dword_ptr(esp));  // return address
@@ -1921,9 +1906,8 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
     asm_.mov(esp, dword_ptr(esp_label_));
 
-    // Push PRI and ALT to the stack (not enough registers to keep them around).
+    // Push ALT to the stack (not enough registers to keep it around).
     asm_.push(esi); // ALT
-    asm_.push(edi); // PRI
 
     // Call the native function.
     asm_.push(ecx); // params
@@ -1932,7 +1916,6 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.add(esp, 8);
     // At this point the return value is stored in eax.
 
-    asm_.pop(edi); // PRI
     asm_.pop(esi); // ALT
 
     // Switch back to the AMX stack.
@@ -1945,16 +1928,15 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.lea(esp, dword_ptr(ebx, ecx)); // ebp = data + amx->stk
 
     // Check for errors and leave.
-    asm_.mov(ecx, dword_ptr(edx, offsetof(AMX, error)));
-    asm_.cmp(ecx, AMX_ERR_SLEEP);
+    asm_.mov(edi, dword_ptr(edx, offsetof(AMX, error)));
+    asm_.cmp(edi, AMX_ERR_SLEEP);
     asm_.je(sleep_error_label);
-    asm_.cmp(ecx, AMX_ERR_NONE);
+    asm_.cmp(edi, AMX_ERR_NONE);
     asm_.jne(error_label);
     asm_.mov(ecx, esi); // ecx = ALT
     asm_.ret(4);
 
   asm_.bind(error_label);
-    asm_.mov(edi, ecx);
     asm_.jmp(halt_helper_label_);
 
     // Modify the return address so that we return next to the sysreq point.
@@ -1973,15 +1955,11 @@ void CompilerImpl::EmitSysreqDHelper() {
     // amx->alt = alt;
     // amx->reset_stk = reset_stk;
     // amx->reset_hea = reset_hea;
-
     EmitDebugPrint("AMX_ERR_SLEEP");
 
-    // Save PRI and ALT into amx->pri and amx->alt respectively.
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), edi);
+    asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), eax);
     asm_.mov(dword_ptr(edx, offsetof(AMX, alt)), esi);
-
-    asm_.mov(edi, ecx);
     asm_.jmp(exec_return_label_);
 }
 

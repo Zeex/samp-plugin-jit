@@ -65,8 +65,9 @@ T *AMXHandler<T>::GetHandler(AMX *amx) {
   typename HandlerMap::const_iterator iterator = handlers_.find(amx);
   if (iterator != handlers_.end()) {
     return iterator->second;
+  } else {
+    return CreateHandler(amx);
   }
-  return 0;
 }
 
 // static

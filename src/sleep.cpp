@@ -1,5 +1,7 @@
 #include <chrono>
 #include <cstdlib>
+#include <functional>
+#include <memory>
 #include <vector>
 #include "plugin.h"
 
@@ -14,7 +16,6 @@ forward sleep_callback();
 
 main() {
 	print("main");
-	SetTimer("sleep_callback", 1000, false);
 }
 
 public sleep_callback() {
@@ -33,27 +34,48 @@ public sleep_callback() {
 
 typedef void (*logprintf_t)(const char *format, ...);
 
-static logprintf_t logprintf;
 extern void *pAMXFunctions;
+static logprintf_t logprintf;
+static std::chrono::system_clock::time_point pluginLoadTime;
 
 namespace sleep {
-  using std::chrono::system_clock;
-  using std::chrono::milliseconds;
-
-  class ContinueTimer
+  class Timer
   {
   public:
-    ContinueTimer(AMX *amx, cell numMilliseconds):
+    Timer(AMX *amx, long numMilliseconds):
       amx_(amx),
-      scheduledTime_(system_clock::now() + milliseconds(numMilliseconds)),
+      scheduledTime_(std::chrono::system_clock::now()
+        + std::chrono::milliseconds(numMilliseconds)),
       didExecute_(false)
-    {}
+    {
+    }
 
-    system_clock::time_point GetScheduledTime() const {
+    std::chrono::system_clock::time_point GetScheduledTime() const {
       return scheduledTime_;
     }
 
-    int Execute() {
+    bool DidExecute() const {
+      return didExecute_;
+    }
+
+    virtual void Execute() = 0;
+
+  protected:
+    AMX *amx_;
+    std::chrono::system_clock::time_point scheduledTime_;
+    bool didExecute_;
+  };
+
+  class ContinueTimer : public Timer
+  {
+  public:
+    ContinueTimer(AMX *amx, long numMilliseconds):
+      Timer(amx, numMilliseconds)
+    {
+    }
+
+    void Execute() override {
+      didExecute_ = true;
       logprintf("[sleep] Continuing execution");
       logprintf("[sleep] CIP = %x", amx_->cip);
       logprintf("[sleep] PRI = %x", amx_->pri);
@@ -61,31 +83,71 @@ namespace sleep {
       logprintf("[sleep] FRM = %x", amx_->frm);
       logprintf("[sleep] STK = %x", amx_->stk);
       logprintf("[sleep] HEA = %x", amx_->hea);
-      didExecute_ = true;
-      return amx_Exec(amx_, nullptr, AMX_EXEC_CONT);
+      amx_Exec(amx_, nullptr, AMX_EXEC_CONT);
+    }
+  };
+
+  class SimpleTimer : public Timer
+  {
+  public:
+    SimpleTimer(
+      AMX *amx,
+      long numMilliseconds,
+      std::function<void(AMX *amx)> func
+    ):
+      Timer(amx, numMilliseconds),
+      func_(func)
+    {
     }
 
-    bool DidExecute() const {
-      return didExecute_;
+    void Execute() override {
+      didExecute_ = true;
+      func_(amx_);
     }
 
   private:
-    AMX *amx_;
-    system_clock::time_point scheduledTime_;
-    bool didExecute_;
+    std::function<void(AMX *amx)> func_;
   };
 
-  std::vector<sleep::ContinueTimer> continueTimers;
+  std::vector<std::shared_ptr<sleep::Timer>> continueTimers;
 
-  void AddTimer(AMX *amx, cell numMilliseconds) {
-    continueTimers.push_back(ContinueTimer(amx, numMilliseconds));
+  void ExecuteSleepCallback(AMX *amx) {
+    logprintf("[sleep] Executing sleep_callback");
+
+    int index;
+    int error = amx_FindPublic(amx, "sleep_callback", &index);
+    if (error != AMX_ERR_NONE) {
+      logprintf("[sleep] Error: sleep_callback does not exist");
+      return;
+    }
+
+    cell retval = 0;
+    error = amx_Exec(amx, &retval, index);
+    if (error != AMX_ERR_SLEEP) {
+      logprintf("[sleep] Error: sleep_callback did not enter sleeep mode");
+      return;
+    }
+    if (amx->pri != 0xc0ffee) {
+      logprintf("[sleep] Error: PRI was not saved");
+      return;
+    }
+  }
+
+  void AddContinueTimer(AMX *amx, cell numMilliseconds) {
+    continueTimers.push_back(
+      std::make_shared<ContinueTimer>(amx, numMilliseconds));
+  }
+
+  void AddSimpleTimer(AMX *amx, cell numMilliseconds, std::function<void(AMX *amx)> func) {
+    continueTimers.push_back(
+      std::make_shared<SimpleTimer>(amx, numMilliseconds, func));
   }
 
   void ProcessTimers() {
-    auto now = system_clock::now();
+    auto now = std::chrono::system_clock::now();
     for (auto &timer : continueTimers) {
-      if (!timer.DidExecute() && now >= timer.GetScheduledTime()) {
-        timer.Execute();
+      if (!timer->DidExecute() && now >= timer->GetScheduledTime()) {
+        timer->Execute();
       }
     }
   }
@@ -98,7 +160,7 @@ static cell AMX_NATIVE_CALL n_do_sleep(AMX *amx, cell *params) {
   logprintf("[sleep] STK = %x", amx->stk);
   logprintf("[sleep] HEA = %x", amx->hea);
   amx->error = AMX_ERR_SLEEP;
-  return 0;
+  return 0xc0ffee;
 }
 
 static cell AMX_NATIVE_CALL n_schedule_continue(AMX *amx, cell *params) {
@@ -110,7 +172,7 @@ static cell AMX_NATIVE_CALL n_schedule_continue(AMX *amx, cell *params) {
     logprintf("[sleep] Invalid parameter: %d", numMilliseconds);
     return 0;
   }
-  sleep::AddTimer(amx, numMilliseconds);
+  sleep::AddContinueTimer(amx, numMilliseconds);
   logprintf("[sleep] Scheduled continuation at +%d ms", numMilliseconds);
   return 1;
 }
@@ -135,24 +197,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     logprintf("[sleep] Error: Could not register natives: %d", error);
     return error;
   }
-
-#if 0
-  int index;
-  error = amx_FindPublic(amx, "sleep_callback", &index);
-  if (error != AMX_ERR_NONE) {
-    logprintf("[sleep] Error: sleep_callback does not exist");
-    return error;
-  }
-
-  logprintf("[sleep] Executing sleep_callback");
-  cell retval = 0;
-  error = amx_Exec(amx, &retval, index);
-  if (error != AMX_ERR_SLEEP) {
-    logprintf("[sleep] Error: sleep_callback did not enter sleeep mode");
-    return AMX_ERR_FORMAT;
-  }
-#endif
-
+  sleep::AddSimpleTimer(amx, 1000, sleep::ExecuteSleepCallback);
   return AMX_ERR_NONE;
 }
 
