@@ -1654,6 +1654,15 @@ void CompilerImpl::EmitExecHelper() {
     asm_.call(eax);
 
   asm_.bind(exec_return_label_);
+    // Keep the AMX stack registers up-to-date.
+    asm_.mov(ecx, dword_ptr(amx_ptr_label_));
+    asm_.mov(edx, ebp);
+    asm_.sub(edx, ebx);
+    asm_.mov(dword_ptr(ecx, offsetof(AMX, frm)), edx); // amx->frm = ebp - data
+    asm_.mov(edx, esp);
+    asm_.sub(edx, ebx);
+    asm_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx); // amx->stk = esp - data
+
     // Switch back to the native stack.
     asm_.mov(ebp, dword_ptr(ebp_label_));
     asm_.mov(esp, dword_ptr(esp_label_));
@@ -1907,7 +1916,7 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.ret();
 
   asm_.bind(error_label);
-    asm_.jmp(exec_return_label_);
+    asm_.call(halt_helper_label_);
 
   asm_.bind(sleep_error_label);
     // Enter sleep mode (return value = AMX_ERR_SLEEP).
@@ -1997,7 +2006,7 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.ret();
 
   asm_.bind(error_label);
-    asm_.jmp(exec_return_label_);
+    asm_.call(halt_helper_label_);
 
   asm_.bind(sleep_error_label);
     // Enter sleep mode (amx->error = AMX_ERR_SLEEP).

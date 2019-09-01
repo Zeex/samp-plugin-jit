@@ -131,7 +131,13 @@ namespace sleep {
     }
 
     cell retval = 0;
+    logprintf("[sleep] before exec: frm = %x", amx->frm);
+    logprintf("[sleep] before exec: stk = %x", amx->stk);
+    logprintf("[sleep] before exec: hea = %x", amx->hea);
     error = amx_Exec(amx, &retval, index);
+    logprintf("[sleep] after exec: frm = %x", amx->frm);
+    logprintf("[sleep] after exec: stk = %x", amx->stk);
+    logprintf("[sleep] after exec: hea = %x", amx->hea);
     if (error != AMX_ERR_SLEEP) {
       logprintf("[sleep] Error: sleep_callback did not return AMX_ERR_SLEEP");
       return;
