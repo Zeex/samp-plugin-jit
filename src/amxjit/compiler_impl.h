@@ -102,6 +102,8 @@ class CompilerImpl {
   asmjit::Label esp_label_;
   asmjit::Label reset_ebp_label_;
   asmjit::Label reset_esp_label_;
+  asmjit::Label reset_stk_label_;
+  asmjit::Label reset_hea_label_;
   asmjit::Label exec_label_;
   asmjit::Label exec_helper_label_;
   asmjit::Label exec_return_label_;

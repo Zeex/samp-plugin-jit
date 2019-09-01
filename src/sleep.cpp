@@ -77,12 +77,14 @@ namespace sleep {
     void Execute() override {
       didExecute_ = true;
       logprintf("[sleep] Continuing execution");
-      logprintf("[sleep] CIP = %x", amx_->cip);
-      logprintf("[sleep] PRI = %x", amx_->pri);
-      logprintf("[sleep] ALT = %x", amx_->alt);
-      logprintf("[sleep] FRM = %x", amx_->frm);
-      logprintf("[sleep] STK = %x", amx_->stk);
-      logprintf("[sleep] HEA = %x", amx_->hea);
+      logprintf("[sleep] cip = %x", amx_->cip);
+      logprintf("[sleep] pri = %x", amx_->pri);
+      logprintf("[sleep] alt = %x", amx_->alt);
+      logprintf("[sleep] frm = %x", amx_->frm);
+      logprintf("[sleep] stk = %x", amx_->stk);
+      logprintf("[sleep] hea = %x", amx_->hea);
+      logprintf("[sleep] reset_stk = %x", amx_->reset_stk);
+      logprintf("[sleep] reset_hea = %x", amx_->reset_hea);
       amx_Exec(amx_, nullptr, AMX_EXEC_CONT);
     }
   };
@@ -111,6 +113,12 @@ namespace sleep {
 
   std::vector<std::shared_ptr<sleep::Timer>> continueTimers;
 
+  cell *GetData(AMX *amx) {
+    return amx->data != 0
+      ? reinterpret_cast<cell *>(amx->data)
+      : reinterpret_cast<cell *>(amx->base + ((AMX_HEADER *)amx->base)->dat);
+  }
+
   void ExecuteSleepCallback(AMX *amx) {
     logprintf("[sleep] Executing sleep_callback");
 
@@ -124,11 +132,11 @@ namespace sleep {
     cell retval = 0;
     error = amx_Exec(amx, &retval, index);
     if (error != AMX_ERR_SLEEP) {
-      logprintf("[sleep] Error: sleep_callback did not enter sleeep mode");
+      logprintf("[sleep] Error: sleep_callback did not return AMX_ERR_SLEEP");
       return;
     }
     if (amx->pri != 0xc0ffee) {
-      logprintf("[sleep] Error: PRI was not saved");
+      logprintf("[sleep] Error: PRI was not saved to amx->pri");
       return;
     }
   }
@@ -154,11 +162,13 @@ namespace sleep {
 }
 
 static cell AMX_NATIVE_CALL n_do_sleep(AMX *amx, cell *params) {
-  logprintf("[sleep] Sleep!");
-  logprintf("[sleep] CIP = %x", amx->cip);
-  logprintf("[sleep] FRM = %x", amx->frm);
-  logprintf("[sleep] STK = %x", amx->stk);
-  logprintf("[sleep] HEA = %x", amx->hea);
+  logprintf("[sleep] Entering sleep!");
+  logprintf("[sleep] cip = %x", amx->cip);
+  logprintf("[sleep] frm = %x", amx->frm);
+  logprintf("[sleep] stk = %x", amx->stk);
+  logprintf("[sleep] hea = %x", amx->hea);
+  logprintf("[sleep] reset_stk = %x", amx->reset_stk);
+  logprintf("[sleep] reset_hea = %x", amx->reset_hea);
   amx->error = AMX_ERR_SLEEP;
   return 0xc0ffee;
 }
