@@ -67,8 +67,8 @@ struct RuntimeInfoBlock {
   intptr_t esp;
   intptr_t reset_ebp;
   intptr_t reset_esp;
-  intptr_t reset_stk;
-  intptr_t reset_hea;
+  cell reset_stk;
+  cell reset_hea;
   intptr_t instr_table;
   intptr_t instr_table_size;
 };
@@ -1354,7 +1354,7 @@ bool CompilerImpl::EmitIntrinsic(const char *name) {
   };
 
   static const Intrinsic intrinsics[] = {
-    // Floating-point operations.
+    // float.inc
     {"float",       &CompilerImpl::float_},
     {"floatabs",    &CompilerImpl::floatabs},
     {"floatadd",    &CompilerImpl::floatadd},
@@ -1363,7 +1363,7 @@ bool CompilerImpl::EmitIntrinsic(const char *name) {
     {"floatdiv",    &CompilerImpl::floatdiv},
     {"floatsqroot", &CompilerImpl::floatsqroot},
     {"floatcmp",    &CompilerImpl::floatcmp},
-    // Core operations.
+    // core.inc
     {"clamp",       &CompilerImpl::clamp},
     {"heapspace",   &CompilerImpl::heapspace},
     {"numargs",     &CompilerImpl::numargs},
