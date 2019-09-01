@@ -87,6 +87,7 @@ class CompilerImpl {
   void EmitSysreqCHelper();
   void EmitSysreqDHelper();
   void EmitDebugPrint(const char *message);
+  void EmitDebugBreakpoint();
 
  private:
   const asmjit::Label &GetLabel(cell address);
@@ -109,7 +110,6 @@ class CompilerImpl {
   asmjit::Label exec_return_label_;
   asmjit::Label exec_cont_helper_label_;
   asmjit::Label halt_helper_label_;
-  asmjit::Label halt_helper_label_inner_;
   asmjit::Label jump_helper_label_;
   asmjit::Label jump_lookup_label_;
   asmjit::Label reverse_jump_lookup_label_;

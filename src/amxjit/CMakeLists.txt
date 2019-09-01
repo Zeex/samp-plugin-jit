@@ -15,6 +15,8 @@ set(AMXJIT_SOURCES
   macros.h
   opcode.cpp
   opcode.h
+  platform.cpp
+  platform.h
 )
 
 add_library(amxjit STATIC ${AMXJIT_SOURCES})

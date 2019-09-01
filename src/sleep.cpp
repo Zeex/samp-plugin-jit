@@ -19,11 +19,12 @@ main() {
 }
 
 public sleep_callback() {
-	new x = 123;
+	new x = 0xc0ffee;
 
 	schedule_continue(1000);
 	#emit break
-	do_sleep();
+	// do_sleep();
+	sleep x;
 	#emit break
 
 	printf("Hello! x = %d", x);
