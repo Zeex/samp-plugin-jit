@@ -49,6 +49,10 @@ void Compiler::SetSysreqDEnabled(bool is_enabled) {
   impl_->SetSysreqDEnabled(is_enabled);
 }
 
+void Compiler::SetDebugFlags(unsigned int flags) {
+  impl_->SetDebugFlags(flags);
+}
+
 CodeBuffer *Compiler::Compile(AMXRef amx) {
   return impl_->Compile(amx);
 }

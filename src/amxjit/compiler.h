@@ -36,6 +36,11 @@ class Logger;
 
 typedef int (AMXAPI *CodeEntryPoint)(cell index, cell *retval);
 
+enum DebugFlags {
+  DEBUG_LOGGING = 1,
+  DEBUG_BREAKPOINTS = 2
+};
+
 class CompileErrorHandler {
  public:
   virtual ~CompileErrorHandler() {}
@@ -65,6 +70,7 @@ class Compiler {
   void SetLogger(Logger *logger);
   void SetErrorHandler(CompileErrorHandler *error_handler);
   void SetSysreqDEnabled(bool is_enabled);
+  void SetDebugFlags(unsigned int flags);
 
   CodeBuffer *Compile(AMXRef amx);
 

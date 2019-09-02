@@ -34,8 +34,6 @@
 #include "logger.h"
 #include "platform.h"
 
-// #define AMXJIT_DEBUG
-
 using asmjit::Label;
 using asmjit::x86::byte_ptr;
 using asmjit::x86::word_ptr;
@@ -2033,7 +2031,7 @@ void CompilerImpl::EmitSysreqDHelper() {
 }
 
 void CompilerImpl::EmitDebugPrint(const char *message) {
-  #ifdef AMXJIT_DEBUG
+  if (debug_flags_ & DEBUG_LOGGING) {
     asm_.push(eax);
     asm_.push(edx);
     asm_.push(ecx);
@@ -2043,11 +2041,11 @@ void CompilerImpl::EmitDebugPrint(const char *message) {
     asm_.pop(ecx);
     asm_.pop(edx);
     asm_.pop(eax);
-  #endif
+  }
 }
 
 void CompilerImpl::EmitDebugBreakpoint() {
-  if (IsDebuggerPresent()) {
+  if ((debug_flags_ & DEBUG_BREAKPOINTS) && IsDebuggerPresent()) {
     asm_.int3();
   }
 }

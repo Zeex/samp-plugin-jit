@@ -92,6 +92,9 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
   bool enable_sysreq_d = true;
   server_cfg.GetValue("jit_sysreq_d", enable_sysreq_d);
 
+  unsigned int debug_flags = 0;
+  server_cfg.GetValue("jit_debug", debug_flags);
+
   amxjit::Logger *logger = 0;
   if (enable_log) {
     logger = new amxjit::FileLogger("plugins/jit.log");
@@ -102,6 +105,7 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
   compiler.SetLogger(logger);
   compiler.SetErrorHandler(&error_handler);
   compiler.SetSysreqDEnabled(enable_sysreq_d);
+  compiler.SetDebugFlags(debug_flags);
   amxjit::CodeBuffer *code = compiler.Compile(amx);
   delete logger;
 
