@@ -208,7 +208,8 @@ CompilerImpl::CompilerImpl():
   sysreq_d_helper_label_(asm_.newLabel()),
   logger_(),
   error_handler_(),
-  enable_sysreq_d_(false)
+  enable_sysreq_d_(false),
+  debug_flags_(0)
 {
 }
 
