@@ -23,11 +23,11 @@ public sleep_callback() {
 
 	schedule_continue(1000);
 	#emit break
-	// do_sleep();
-	sleep x;
+	do_sleep();
+	// sleep x;
 	#emit break
 
-	printf("Hello! x = %d", x);
+	printf("Hello! x = %x", x);
 	print("Right?");
 }
 
