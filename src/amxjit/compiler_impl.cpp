@@ -1630,36 +1630,32 @@ void CompilerImpl::EmitExecHelper() {
     //
     // cell new_stk = amx->stk - sizeof(cell);
     // *(data + new_stk) = amx->paramcount * sizeof(cell);
-    // amx->stk = new_stk;
     // amx->paramcount = 0;
     // reset_stk += amx->paramcount * sizeof(cell);
+    // reset_hea = amx->hea;
     //
     asm_.mov(ecx, dword_ptr(amx_ptr_label_));
+    asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, hea)));
+    asm_.mov(dword_ptr(reset_hea_label_), edx);
     asm_.mov(esi, dword_ptr(ecx, offsetof(AMX, paramcount)));
     asm_.imul(esi, esi, sizeof(cell));
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
+    asm_.lea(edi, dword_ptr(edx, esi));
+    asm_.mov(dword_ptr(reset_stk_label_), edi);
     asm_.sub(edx, sizeof(cell));
     asm_.mov(dword_ptr(ebx, edx), esi);
-    asm_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx);
-    asm_.mov(dword_ptr(reset_stk_label_), esi);
     asm_.mov(dword_ptr(ecx, offsetof(AMX, paramcount)), 0);
 
-    // We must maintain reset_stk and reset_hea for "sleep" support.
-    asm_.mov(dword_ptr(reset_stk_label_), edx);
-    asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, hea)));
-    asm_.mov(dword_ptr(reset_hea_label_), edx);
-
     // Switch to the AMX stack.
+    asm_.mov(dword_ptr(esp_label_), esp);
+    asm_.add(edx, ebx);
+    asm_.mov(dword_ptr(amx_esp_label_), edx);
+    asm_.mov(esp, edx); // esp = data + new_stk
     asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, frm)));
     asm_.add(edx, ebx);
     asm_.mov(dword_ptr(amx_ebp_label_), edx);
     asm_.mov(ebp, edx); // ebp = data + amx->frm
-    asm_.mov(dword_ptr(esp_label_), esp);
-    asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
-    asm_.add(edx, ebx);
-    asm_.mov(dword_ptr(amx_esp_label_), edx);
-    asm_.mov(esp, edx); // esp = data + amx->stk
 
     // To make "halt" work we must be able to return here later.
     // Subtract 4 bytes to keep the return address on the stack after return.
@@ -1734,7 +1730,6 @@ void CompilerImpl::EmitExecContHelper() {
     asm_.add(edx, ebx);
     asm_.mov(dword_ptr(amx_esp_label_), edx);
     asm_.mov(esp, edx); // esp = data + amx->stk
-    EmitDebugBreakpoint();
 
     // To make "halt" work we must be able to return here later.
     // Subtract 4 bytes to keep the return address on the stack after return.
