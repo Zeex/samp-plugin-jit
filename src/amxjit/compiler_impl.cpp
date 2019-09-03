@@ -1653,6 +1653,7 @@ void CompilerImpl::EmitExecHelper() {
     asm_.call(eax);
 
   asm_.bind(exec_return_label_);
+#if 0
     // Keep the AMX stack registers up-to-date.
     asm_.mov(ecx, dword_ptr(amx_ptr_label_));
     asm_.mov(edx, ebp);
@@ -1661,6 +1662,7 @@ void CompilerImpl::EmitExecHelper() {
     asm_.mov(edx, esp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx); // amx->stk = esp - data
+#endif
 
     // Switch back to the native stack.
     asm_.mov(ebp, dword_ptr(ebp_label_));
