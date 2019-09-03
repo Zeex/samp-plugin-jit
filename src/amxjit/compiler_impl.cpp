@@ -63,6 +63,8 @@ struct RuntimeInfoBlock {
   intptr_t amx;
   intptr_t ebp;
   intptr_t esp;
+  intptr_t amx_ebp;
+  intptr_t amx_esp;
   intptr_t reset_ebp;
   intptr_t reset_esp;
   cell reset_stk;
@@ -192,6 +194,8 @@ CompilerImpl::CompilerImpl():
   amx_ptr_label_(asm_.newLabel()),
   ebp_label_(asm_.newLabel()),
   esp_label_(asm_.newLabel()),
+  amx_ebp_label_(asm_.newLabel()),
+  amx_esp_label_(asm_.newLabel()),
   reset_ebp_label_(asm_.newLabel()),
   reset_esp_label_(asm_.newLabel()),
   reset_stk_label_(asm_.newLabel()),
@@ -587,8 +591,14 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
         asm_.add(ebp, ebx);
         asm_.pop(edx);
         asm_.add(esp, dword_ptr(esp));
+        asm_.add(esp, 4);
+        asm_.mov(esi, dword_ptr(amx_ptr_label_));
+        asm_.mov(edi, esp);
+        asm_.sub(edi, ebx);
+        asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), edi);
         asm_.push(edx);
-        asm_.ret(4);
+        asm_.xor_(edi, edi);
+        asm_.ret();
         break;
       case OP_JUMP_PRI:
         // CIP = PRI (indirect jump)
@@ -1026,6 +1036,7 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
           asm_.jl(halt_label);
           asm_.jmp(exit_label);
         asm_.bind(halt_label);
+          EmitDebugBreakpoint();
           asm_.mov(edi, AMX_ERR_BOUNDS);
           asm_.call(halt_helper_label_);
         asm_.bind(exit_label);
@@ -1391,6 +1402,10 @@ void CompilerImpl::EmitRuntimeInfo() {
     asm_.dd(0); // rib->ebp
   asm_.bind(esp_label_);
     asm_.dd(0); // rib->esp
+  asm_.bind(amx_ebp_label_);
+    asm_.dd(0); // rib->amx_ebp
+  asm_.bind(amx_esp_label_);
+    asm_.dd(0); // rib->amx_esp
   asm_.bind(reset_ebp_label_);
     asm_.dd(0); // rib->reset_ebp
   asm_.bind(reset_esp_label_);
@@ -1605,13 +1620,11 @@ void CompilerImpl::EmitExecHelper() {
     asm_.push(esi);
     asm_.push(edi);
 
-    // Store the old ebp and esp on the stack.
+    // Save current stack pointers on the stack.
     asm_.push(dword_ptr(ebp_label_));
     asm_.push(dword_ptr(esp_label_));
-
-    // The most recent ebp and esp are stored in the RIB.
-    asm_.mov(dword_ptr(ebp_label_), ebp);
-    asm_.mov(dword_ptr(esp_label_), esp);
+    asm_.push(dword_ptr(amx_ebp_label_));
+    asm_.push(dword_ptr(amx_esp_label_));
 
     // Push parameters size to the AMX stack and reset the parameter count.
     //
@@ -1636,11 +1649,17 @@ void CompilerImpl::EmitExecHelper() {
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, hea)));
     asm_.mov(dword_ptr(reset_hea_label_), edx);
 
-    // Switch from the native stack to the AMX stack.
+    // Switch to the AMX stack.
+    asm_.mov(dword_ptr(ebp_label_), ebp);
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, frm)));
-    asm_.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + amx->frm
+    asm_.add(edx, ebx);
+    asm_.mov(dword_ptr(amx_ebp_label_), edx);
+    asm_.mov(ebp, edx); // ebp = data + amx->frm
+    asm_.mov(dword_ptr(esp_label_), esp);
     asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
-    asm_.lea(esp, dword_ptr(ebx, edx)); // esp = data + amx->stk
+    asm_.add(edx, ebx);
+    asm_.mov(dword_ptr(amx_esp_label_), edx);
+    asm_.mov(esp, edx); // esp = data + amx->stk
 
     // To make "halt" work we must be able to return here later.
     // Subtract 4 bytes to keep the return address on the stack after return.
@@ -1650,24 +1669,21 @@ void CompilerImpl::EmitExecHelper() {
 
     // Call the function. Prior to this point ebx should point to the data
     // section and both stack pointers should point somewhere on the AMX stack.
-    asm_.call(eax);
+    asm_.lea(ecx, dword_ptr(halt_helper_label_));
+    asm_.push(ecx);
+    asm_.jmp(eax);
 
   asm_.bind(exec_return_label_);
-#if 0
-    // Keep the AMX stack registers up-to-date.
-    asm_.mov(ecx, dword_ptr(amx_ptr_label_));
-    asm_.mov(edx, ebp);
-    asm_.sub(edx, ebx);
-    asm_.mov(dword_ptr(ecx, offsetof(AMX, frm)), edx); // amx->frm = ebp - data
-    asm_.mov(edx, esp);
-    asm_.sub(edx, ebx);
-    asm_.mov(dword_ptr(ecx, offsetof(AMX, stk)), edx); // amx->stk = esp - data
-#endif
+    asm_.mov(eax, edi);
 
     // Switch back to the native stack.
+    asm_.mov(dword_ptr(amx_ebp_label_), ebp);
     asm_.mov(ebp, dword_ptr(ebp_label_));
+    asm_.mov(dword_ptr(amx_esp_label_), esp);
     asm_.mov(esp, dword_ptr(esp_label_));
 
+    asm_.pop(dword_ptr(amx_esp_label_));
+    asm_.pop(dword_ptr(amx_ebp_label_));
     asm_.pop(dword_ptr(esp_label_));
     asm_.pop(dword_ptr(ebp_label_));
 
@@ -1700,20 +1716,25 @@ void CompilerImpl::EmitExecContHelper() {
     asm_.push(esi);
     asm_.push(edi);
 
-    // Store the old ebp and esp on the stack.
+    // Save current stack pointers on the stack.
     asm_.push(dword_ptr(ebp_label_));
     asm_.push(dword_ptr(esp_label_));
+    asm_.push(dword_ptr(amx_ebp_label_));
+    asm_.push(dword_ptr(amx_esp_label_));
 
-    // The most recent ebp and esp are stored in the RIB.
+    // Switch to the AMX stack.
+    asm_.mov(ecx, dword_ptr(amx_ptr_label_));
     asm_.mov(dword_ptr(ebp_label_), ebp);
+    asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, frm)));
+    asm_.add(edx, ebx);
+    asm_.mov(dword_ptr(amx_ebp_label_), edx);
+    asm_.mov(ebp, edx); // ebp = data + amx->frm
     asm_.mov(dword_ptr(esp_label_), esp);
-
-    // Switch from the native stack to the AMX stack.
-    asm_.mov(esi, dword_ptr(amx_ptr_label_));
-    asm_.mov(edx, dword_ptr(esi, offsetof(AMX, frm)));
-    asm_.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + amx->frm
-    asm_.mov(edx, dword_ptr(esi, offsetof(AMX, stk)));
-    asm_.lea(esp, dword_ptr(ebx, edx)); // esp = data + amx->stk
+    asm_.mov(edx, dword_ptr(ecx, offsetof(AMX, stk)));
+    asm_.add(edx, ebx);
+    asm_.mov(dword_ptr(amx_esp_label_), edx);
+    asm_.mov(esp, edx); // esp = data + amx->stk
+    EmitDebugBreakpoint();
 
     // To make "halt" work we must be able to return here later.
     // Subtract 4 bytes to keep the return address on the stack after return.
@@ -1735,18 +1756,6 @@ void CompilerImpl::EmitExecContHelper() {
     asm_.mov(eax, dword_ptr(esi, offsetof(AMX, pri)));
     asm_.mov(ecx, dword_ptr(esi, offsetof(AMX, alt)));
     asm_.jmp(edx);
-    EmitDebugPrint("Returned from entry point (AMX_EXEC_CONT)");
-
-    // Switch back to the native stack.
-    asm_.mov(ebp, dword_ptr(ebp_label_));
-    asm_.mov(esp, dword_ptr(esp_label_));
-
-    asm_.pop(dword_ptr(esp_label_));
-    asm_.pop(dword_ptr(ebp_label_));
-
-    asm_.pop(edi);
-    asm_.pop(esi);
-    asm_.ret();
 }
 
 // void HaltHelper(int error [edi]);
@@ -1755,7 +1764,6 @@ void CompilerImpl::EmitHaltHelper() {
 
   asm_.bind(halt_helper_label_);
     EmitDebugPrint("HaltHelper()");
-    EmitDebugBreakpoint();
 
     // amx->error = error (edi);
     // amx->pri = pri;
@@ -1766,13 +1774,13 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi);
     asm_.mov(dword_ptr(esi, offsetof(AMX, pri)), eax);
     asm_.mov(dword_ptr(esi, offsetof(AMX, alt)), ecx);
-    asm_.pop(eax); // return address
     asm_.mov(edx, ebp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, frm)), edx);
     asm_.mov(edx, esp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), edx);
+    // hea is already in sync
 
     // Handle error == AMX_ERR_SLEEP case.
     asm_.cmp(edi, AMX_ERR_SLEEP);
@@ -1792,7 +1800,7 @@ void CompilerImpl::EmitHaltHelper() {
     // Reset the stack and return back to ExecHelper().
     asm_.mov(esp, dword_ptr(reset_esp_label_));
     asm_.mov(ebp, dword_ptr(reset_ebp_label_));
-    asm_.ret();
+    asm_.jmp(exec_return_label_);
 }
 
 // void JumpHelper(void *address [eax]);
@@ -1868,17 +1876,16 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.lea(edi, dword_ptr(esp)); // params
 
     // Switch to the native stack.
+    asm_.mov(dword_ptr(amx_ebp_label_), ebp);
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
     asm_.mov(ebp, dword_ptr(ebp_label_));
+    asm_.mov(dword_ptr(amx_esp_label_), esp);
     asm_.sub(esp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
     asm_.mov(esp, dword_ptr(esp_label_));
-
-    // Push FRM and STK to the native stack. We must save save these registers
-    // because of the possibility of nested exec calls (CallLocalFunction, etc).
-    asm_.push(dword_ptr(edx, offsetof(AMX, stk)));
-    asm_.push(dword_ptr(edx, offsetof(AMX, frm)));
+    asm_.push(dword_ptr(amx_esp_label_));
+    asm_.push(dword_ptr(amx_ebp_label_));
 
     // Push ALT to the stack (not enough registers to keep it around).
     asm_.push(ecx);
@@ -1900,13 +1907,10 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.pop(ecx); // ALT
 
     // Switch back to the AMX stack.
-    asm_.mov(dword_ptr(ebp_label_), ebp);
-    asm_.pop(edx); // FRM
-    asm_.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + FRM
-    asm_.lea(edx, dword_ptr(esp, 4));
-    asm_.mov(dword_ptr(esp_label_), edx);
-    asm_.pop(edx); // STK
-    asm_.lea(esp, dword_ptr(ebx, edx)); // ebp = data + STK
+    asm_.pop(edx);
+    asm_.mov(ebp, edx);
+    asm_.pop(edx);
+    asm_.mov(esp, edx);
 
     // Check return value for errors and leave.
     asm_.cmp(edi, AMX_ERR_SLEEP);
@@ -1962,17 +1966,16 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.lea(edi, dword_ptr(esp)); // params
 
     // Switch to the native stack.
+    asm_.mov(dword_ptr(amx_ebp_label_), ebp);
     asm_.sub(ebp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, frm)), ebp); // amx->frm = ebp - data
     asm_.mov(ebp, dword_ptr(ebp_label_));
+    asm_.mov(dword_ptr(amx_esp_label_), esp);
     asm_.sub(esp, ebx);
     asm_.mov(dword_ptr(edx, offsetof(AMX, stk)), esp); // amx->stk = esp - data
     asm_.mov(esp, dword_ptr(esp_label_));
-
-    // Push FRM and STK to the native stack. We must save save these registers
-    // because of the possibility of nested exec calls (CallLocalFunction, etc).
-    asm_.push(dword_ptr(edx, offsetof(AMX, stk)));
-    asm_.push(dword_ptr(edx, offsetof(AMX, frm)));
+    asm_.push(dword_ptr(amx_esp_label_));
+    asm_.push(dword_ptr(amx_ebp_label_));
 
     // Push ALT to the stack (not enough registers to keep it around).
     asm_.push(ecx); // ALT
@@ -1987,13 +1990,10 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.pop(ecx); // ALT
 
     // Switch back to the AMX stack.
-    asm_.mov(dword_ptr(ebp_label_), ebp);
-    asm_.pop(edx); // FRM
-    asm_.lea(ebp, dword_ptr(ebx, edx)); // ebp = data + FRM
-    asm_.lea(edx, dword_ptr(esp, 4));
-    asm_.mov(dword_ptr(esp_label_), edx);
-    asm_.pop(edx); // STK
-    asm_.lea(esp, dword_ptr(ebx, edx)); // ebp = data + STK
+    asm_.pop(edx);
+    asm_.mov(ebp, edx);
+    asm_.pop(edx);
+    asm_.mov(esp, edx);
 
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
     asm_.mov(edi, dword_ptr(edx, offsetof(AMX, error)));

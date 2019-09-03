@@ -139,7 +139,7 @@ namespace sleep {
     logprintf("[sleep] after exec: stk = %x", amx->stk);
     logprintf("[sleep] after exec: hea = %x", amx->hea);
     if (error != AMX_ERR_SLEEP) {
-      logprintf("[sleep] Error: sleep_callback did not return AMX_ERR_SLEEP");
+      logprintf("[sleep] Error: sleep_callback returned %d instead of AMX_ERR_SLEEP", error);
       return;
     }
     if (amx->pri != 0xc0ffee) {
