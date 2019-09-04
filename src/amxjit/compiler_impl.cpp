@@ -202,7 +202,7 @@ CompilerImpl::CompilerImpl():
   reset_hea_label_(asm_.newLabel()),
   exec_label_(asm_.newLabel()),
   exec_helper_label_(asm_.newLabel()),
-  exec_return_label_(asm_.newLabel()),
+  exec_exit_label_(asm_.newLabel()),
   exec_cont_helper_label_(asm_.newLabel()),
   halt_helper_label_(asm_.newLabel()),
   jump_helper_label_(asm_.newLabel()),
@@ -597,7 +597,6 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
         asm_.sub(edi, ebx);
         asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), edi);
         asm_.push(edx);
-        asm_.xor_(edi, edi);
         asm_.ret();
         break;
       case OP_JUMP_PRI:
@@ -1607,6 +1606,8 @@ void CompilerImpl::EmitExec() {
 
 // cell AMXJIT_CDECL ExecHelper(void *address);
 void CompilerImpl::EmitExecHelper() {
+  Label call_return_label = asm_.newLabel();
+
   asm_.bind(exec_helper_label_);
     EmitDebugPrint("ExecHelper()");
 
@@ -1665,11 +1666,30 @@ void CompilerImpl::EmitExecHelper() {
 
     // Call the function. Prior to this point ebx should point to the data
     // section and both stack pointers should point somewhere on the AMX stack.
-    asm_.lea(ecx, dword_ptr(halt_helper_label_));
-    asm_.push(ecx);
-    asm_.jmp(eax);
+    // asm_.lea(ecx, dword_ptr(halt_helper_label_));
+    // asm_.push(ecx);
+    asm_.call(eax);
 
-  asm_.bind(exec_return_label_);
+  asm_.bind(call_return_label);
+
+    asm_.mov(esi, dword_ptr(amx_ptr_label_));
+    asm_.mov(edi, dword_ptr(esi, offsetof(AMX, error)));
+    asm_.cmp(edi, AMX_ERR_SLEEP);
+    asm_.jnz(exec_exit_label_);
+
+    // Sync AMX registers on successful exit. If there was an error, they have
+    // been already synced by HaltHelper.
+    asm_.mov(dword_ptr(esi, offsetof(AMX, pri)), eax);
+    asm_.mov(dword_ptr(esi, offsetof(AMX, alt)), ecx);
+    asm_.mov(edx, ebp);
+    asm_.sub(edx, ebx);
+    asm_.mov(dword_ptr(esi, offsetof(AMX, frm)), edx);
+    asm_.mov(edx, esp);
+    asm_.sub(edx, ebx);
+    asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), edx);
+    // HEA is already in sync.
+
+  asm_.bind(exec_exit_label_);
     asm_.mov(eax, edi);
 
     // Switch back to the native stack.
@@ -1755,6 +1775,7 @@ void CompilerImpl::EmitExecContHelper() {
 
 // void HaltHelper(int error [edi]);
 void CompilerImpl::EmitHaltHelper() {
+  Label sleep_label = asm_.newLabel();
   Label exit_label = asm_.newLabel();
 
   asm_.bind(halt_helper_label_);
@@ -1769,18 +1790,26 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi);
     asm_.mov(dword_ptr(esi, offsetof(AMX, pri)), eax);
     asm_.mov(dword_ptr(esi, offsetof(AMX, alt)), ecx);
+    asm_.pop(eax); // return address
     asm_.mov(edx, ebp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, frm)), edx);
     asm_.mov(edx, esp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), edx);
-    // hea is already in sync
+    // HEA is already in sync.
 
     // Handle error == AMX_ERR_SLEEP case.
     asm_.cmp(edi, AMX_ERR_SLEEP);
-    asm_.jne(exit_label);
+    asm_.je(sleep_label);
 
+  asm_.bind(exit_label);
+    // Reset the stack and return back to ExecHelper().
+    asm_.mov(esp, dword_ptr(reset_esp_label_));
+    asm_.mov(ebp, dword_ptr(reset_ebp_label_));
+    asm_.jmp(exec_exit_label_);
+
+  asm_.bind(sleep_label);
     // amx->cip = ReverseJumpLookup(return_address);
     // amx->reset_stk = reset_stk;
     // amx->reset_hea = reset_hea;
@@ -1790,12 +1819,7 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, reset_stk)), edx);
     asm_.mov(edx, dword_ptr(reset_hea_label_));
     asm_.mov(dword_ptr(esi, offsetof(AMX, reset_hea)), edx);
-    
-  asm_.bind(exit_label);
-    // Reset the stack and return back to ExecHelper().
-    asm_.mov(esp, dword_ptr(reset_esp_label_));
-    asm_.mov(ebp, dword_ptr(reset_ebp_label_));
-    asm_.jmp(exec_return_label_);
+    asm_.jmp(exit_label);
 }
 
 // void JumpHelper(void *address [eax]);
@@ -1939,7 +1963,7 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.mov(ecx, dword_ptr(reset_hea_label_));
     asm_.mov(dword_ptr(edx, offsetof(AMX, reset_hea)), ecx);
 
-    asm_.jmp(exec_return_label_);
+    asm_.jmp(exec_exit_label_);
 }
 
 // cell AMXJIT_STDCALL SysreqDHelper(void *address);
@@ -2025,7 +2049,7 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.mov(ecx, dword_ptr(reset_hea_label_));
     asm_.mov(dword_ptr(edx, offsetof(AMX, reset_hea)), ecx);
 
-    asm_.jmp(exec_return_label_);
+    asm_.jmp(exec_exit_label_);
 }
 
 void CompilerImpl::EmitDebugPrint(const char *message) {

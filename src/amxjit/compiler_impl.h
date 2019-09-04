@@ -112,7 +112,7 @@ class CompilerImpl {
   asmjit::Label reset_hea_label_;
   asmjit::Label exec_label_;
   asmjit::Label exec_helper_label_;
-  asmjit::Label exec_return_label_;
+  asmjit::Label exec_exit_label_;
   asmjit::Label exec_cont_helper_label_;
   asmjit::Label halt_helper_label_;
   asmjit::Label jump_helper_label_;
