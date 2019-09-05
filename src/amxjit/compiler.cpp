@@ -45,8 +45,12 @@ void Compiler::SetErrorHandler(CompileErrorHandler *error_handler) {
   impl_->SetErrorHandler(error_handler);
 }
 
-void Compiler::SetSysreqDEnabled(bool is_enabled) {
-  impl_->SetSysreqDEnabled(is_enabled);
+void Compiler::SetSysreqDEnabled(bool flag) {
+  impl_->SetSysreqDEnabled(flag);
+}
+
+void Compiler::SetSleepEnabled(bool flag) {
+  impl_->SetSleepEnabled(flag);
 }
 
 void Compiler::SetDebugFlags(unsigned int flags) {

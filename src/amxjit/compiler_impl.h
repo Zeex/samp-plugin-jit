@@ -49,8 +49,11 @@ class CompilerImpl {
   void SetErrorHandler(CompileErrorHandler *error_handler) {
     error_handler_ = error_handler;
   }
-  void SetSysreqDEnabled(bool enable) {
-    enable_sysreq_d_ = enable;
+  void SetSysreqDEnabled(bool flag) {
+    enable_sysreq_d_ = flag;
+  }
+  void SetSleepEnabled(bool flag) {
+    enable_sleep_ = flag;
   }
   void SetDebugFlags(unsigned int flags) {
     debug_flags_ = flags;
@@ -128,6 +131,7 @@ class CompilerImpl {
   Logger *logger_;
   CompileErrorHandler *error_handler_;
   bool enable_sysreq_d_;
+  bool enable_sleep_;
   unsigned int debug_flags_;
 };
 

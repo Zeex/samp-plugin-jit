@@ -224,7 +224,9 @@ CodeBuffer *CompilerImpl::Compile(AMXRef amx) {
   EmitInstrTable();
   EmitExec();
   EmitExecHelper();
-  EmitExecContHelper();
+  if (enable_sleep_) {
+    EmitExecContHelper();
+  }
   EmitHaltHelper();
   EmitJumpLookup();
   EmitReverseJumpLookup();
@@ -1506,11 +1508,13 @@ void CompilerImpl::EmitExec() {
     // Reset the error code.
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), AMX_ERR_NONE);
 
-    // Handle AMX_EXEC_CONT case.
-    asm_.mov(ecx, dword_ptr(ebp, arg_index));
-    asm_.mov(edx, AMX_EXEC_CONT);
-    asm_.cmp(ecx, edx);
-    asm_.je(continue_from_sleep_label);
+    if (enable_sleep_) {
+      // Handle AMX_EXEC_CONT case.
+      asm_.mov(ecx, dword_ptr(ebp, arg_index));
+      asm_.mov(edx, AMX_EXEC_CONT);
+      asm_.cmp(ecx, edx);
+      asm_.je(continue_from_sleep_label);
+    }
 
     // Get the address of the public function.
     asm_.push(dword_ptr(ebp, arg_index));
@@ -1599,9 +1603,11 @@ void CompilerImpl::EmitExec() {
     asm_.mov(eax, AMX_ERR_INDEX);
     asm_.jmp(return_label);
 
-  asm_.bind(continue_from_sleep_label);
-    asm_.call(exec_cont_helper_label_);
-    asm_.jmp(after_call_label_);
+    if (enable_sleep_) {
+    asm_.bind(continue_from_sleep_label);
+      asm_.call(exec_cont_helper_label_);
+      asm_.jmp(after_call_label_);
+    }
 }
 
 // cell AMXJIT_CDECL ExecHelper(void *address);
@@ -1671,11 +1677,13 @@ void CompilerImpl::EmitExecHelper() {
     asm_.call(eax);
 
   asm_.bind(call_return_label);
-
     asm_.mov(esi, dword_ptr(amx_ptr_label_));
     asm_.mov(edi, dword_ptr(esi, offsetof(AMX, error)));
-    asm_.cmp(edi, AMX_ERR_SLEEP);
-    asm_.jnz(exec_exit_label_);
+
+    if (enable_sleep_) {
+      asm_.cmp(edi, AMX_ERR_SLEEP);
+      asm_.jnz(exec_exit_label_);
+    }
 
     // Sync AMX registers on successful exit. If there was an error, they have
     // been already synced by HaltHelper.
@@ -1799,9 +1807,11 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, stk)), edx);
     // HEA is already in sync.
 
-    // Handle error == AMX_ERR_SLEEP case.
-    asm_.cmp(edi, AMX_ERR_SLEEP);
-    asm_.je(sleep_label);
+    if (enable_sleep_) {
+      // Handle error == AMX_ERR_SLEEP case.
+      asm_.cmp(edi, AMX_ERR_SLEEP);
+      asm_.je(sleep_label);
+    }
 
   asm_.bind(exit_label);
     // Reset the stack and return back to ExecHelper().
@@ -1809,17 +1819,19 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(ebp, dword_ptr(reset_ebp_label_));
     asm_.jmp(exec_exit_label_);
 
-  asm_.bind(sleep_label);
-    // amx->cip = ReverseJumpLookup(return_address);
-    // amx->reset_stk = reset_stk;
-    // amx->reset_hea = reset_hea;
-    asm_.call(reverse_jump_lookup_label_);
-    asm_.mov(dword_ptr(esi, offsetof(AMX, cip)), eax);
-    asm_.mov(edx, dword_ptr(reset_stk_label_));
-    asm_.mov(dword_ptr(esi, offsetof(AMX, reset_stk)), edx);
-    asm_.mov(edx, dword_ptr(reset_hea_label_));
-    asm_.mov(dword_ptr(esi, offsetof(AMX, reset_hea)), edx);
-    asm_.jmp(exit_label);
+    if (enable_sleep_) {
+    asm_.bind(sleep_label);
+      // amx->cip = ReverseJumpLookup(return_address);
+      // amx->reset_stk = reset_stk;
+      // amx->reset_hea = reset_hea;
+      asm_.call(reverse_jump_lookup_label_);
+      asm_.mov(dword_ptr(esi, offsetof(AMX, cip)), eax);
+      asm_.mov(edx, dword_ptr(reset_stk_label_));
+      asm_.mov(dword_ptr(esi, offsetof(AMX, reset_stk)), edx);
+      asm_.mov(edx, dword_ptr(reset_hea_label_));
+      asm_.mov(dword_ptr(esi, offsetof(AMX, reset_hea)), edx);
+      asm_.jmp(exit_label);
+    }
 }
 
 // void JumpHelper(void *address [eax]);
@@ -1884,11 +1896,14 @@ void CompilerImpl::EmitSysreqCHelper() {
   asm_.bind(sysreq_c_helper_label_);
     EmitDebugPrint("sysreq.c");
 
-    // Copy CIP to amx->cip (needed for "sleep" to work).
-    asm_.mov(eax, dword_ptr(esp));  // return address
-    asm_.call(reverse_jump_lookup_label_);
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, cip)), eax);
+
+    if (enable_sleep_) {
+      // Copy CIP to amx->cip (needed for "sleep" to work).
+      asm_.mov(eax, dword_ptr(esp));  // return address
+      asm_.call(reverse_jump_lookup_label_);
+      asm_.mov(dword_ptr(edx, offsetof(AMX, cip)), eax);
+    }
 
     asm_.pop(esi); // return address
     asm_.pop(eax); // index
@@ -1932,8 +1947,10 @@ void CompilerImpl::EmitSysreqCHelper() {
     asm_.mov(esp, edx);
 
     // Check return value for errors and leave.
-    asm_.cmp(edi, AMX_ERR_SLEEP);
-    asm_.je(sleep_error_label);
+    if (enable_sleep_) {
+      asm_.cmp(edi, AMX_ERR_SLEEP);
+      asm_.je(sleep_error_label);
+    }
     asm_.cmp(edi, AMX_ERR_NONE);
     asm_.jne(error_label);
     asm_.push(esi); // return address
@@ -1942,28 +1959,30 @@ void CompilerImpl::EmitSysreqCHelper() {
   asm_.bind(error_label);
     asm_.call(halt_helper_label_);
 
-  asm_.bind(sleep_error_label);
-    // Enter sleep mode (return value = AMX_ERR_SLEEP).
-    //
-    // amx->cip = (cell)((unsigned char *)cip-code);
-    // amx->hea = hea;
-    // amx->frm = frm;
-    // amx->stk = stk;
-    // amx->pri = pri;
-    // amx->alt = alt;
-    // amx->reset_stk = reset_stk;
-    // amx->reset_hea = reset_hea;
-    EmitDebugPrint("AMX_ERR_SLEEP");
+    if (enable_sleep_) {
+    asm_.bind(sleep_error_label);
+      // Enter sleep mode (return value = AMX_ERR_SLEEP).
+      //
+      // amx->cip = (cell)((unsigned char *)cip-code);
+      // amx->hea = hea;
+      // amx->frm = frm;
+      // amx->stk = stk;
+      // amx->pri = pri;
+      // amx->alt = alt;
+      // amx->reset_stk = reset_stk;
+      // amx->reset_hea = reset_hea;
+      EmitDebugPrint("AMX_ERR_SLEEP");
 
-    asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), eax);
-    asm_.mov(dword_ptr(edx, offsetof(AMX, alt)), ecx);
-    asm_.mov(ecx, dword_ptr(reset_stk_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, reset_stk)), ecx);
-    asm_.mov(ecx, dword_ptr(reset_hea_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, reset_hea)), ecx);
+      asm_.mov(edx, dword_ptr(amx_ptr_label_));
+      asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), eax);
+      asm_.mov(dword_ptr(edx, offsetof(AMX, alt)), ecx);
+      asm_.mov(ecx, dword_ptr(reset_stk_label_));
+      asm_.mov(dword_ptr(edx, offsetof(AMX, reset_stk)), ecx);
+      asm_.mov(ecx, dword_ptr(reset_hea_label_));
+      asm_.mov(dword_ptr(edx, offsetof(AMX, reset_hea)), ecx);
 
-    asm_.jmp(exec_exit_label_);
+      asm_.jmp(exec_exit_label_);
+    }
 }
 
 // cell AMXJIT_STDCALL SysreqDHelper(void *address);
@@ -1974,11 +1993,14 @@ void CompilerImpl::EmitSysreqDHelper() {
   asm_.bind(sysreq_d_helper_label_);
     EmitDebugPrint("sysreq.d");
 
-    // Save CIP to amx->cip (needed for sleep to work).
-    asm_.mov(eax, dword_ptr(esp));  // return address
-    asm_.call(reverse_jump_lookup_label_);
     asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, cip)), eax);
+
+    if (enable_sleep_) {
+      // Save CIP to amx->cip (needed for sleep to work).
+      asm_.mov(eax, dword_ptr(esp));  // return address
+      asm_.call(reverse_jump_lookup_label_);
+      asm_.mov(dword_ptr(edx, offsetof(AMX, cip)), eax);
+    }
 
     asm_.pop(esi); // return address
     asm_.pop(eax); // address
@@ -2018,8 +2040,10 @@ void CompilerImpl::EmitSysreqDHelper() {
     asm_.mov(edi, dword_ptr(edx, offsetof(AMX, error)));
 
     // Check for errors and leave.
-    asm_.cmp(edi, AMX_ERR_SLEEP);
-    asm_.je(sleep_error_label);
+    if (enable_sleep_) {
+      asm_.cmp(edi, AMX_ERR_SLEEP);
+      asm_.je(sleep_error_label);
+    }
     asm_.cmp(edi, AMX_ERR_NONE);
     asm_.jne(error_label);
     asm_.push(esi); // return address
@@ -2028,28 +2052,30 @@ void CompilerImpl::EmitSysreqDHelper() {
   asm_.bind(error_label);
     asm_.call(halt_helper_label_);
 
-  asm_.bind(sleep_error_label);
-    // Enter sleep mode (amx->error = AMX_ERR_SLEEP).
-    //
-    // amx->cip = (cell)((unsigned char *)cip-code);
-    // amx->hea = hea;
-    // amx->frm = frm;
-    // amx->stk = stk;
-    // amx->pri = pri;
-    // amx->alt = alt;
-    // amx->reset_stk = reset_stk;
-    // amx->reset_hea = reset_hea;
-    EmitDebugPrint("AMX_ERR_SLEEP");
+    if (enable_sleep_) {
+    asm_.bind(sleep_error_label);
+      // Enter sleep mode (amx->error = AMX_ERR_SLEEP).
+      //
+      // amx->cip = (cell)((unsigned char *)cip-code);
+      // amx->hea = hea;
+      // amx->frm = frm;
+      // amx->stk = stk;
+      // amx->pri = pri;
+      // amx->alt = alt;
+      // amx->reset_stk = reset_stk;
+      // amx->reset_hea = reset_hea;
+      EmitDebugPrint("AMX_ERR_SLEEP");
 
-    asm_.mov(edx, dword_ptr(amx_ptr_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), eax);
-    asm_.mov(dword_ptr(edx, offsetof(AMX, alt)), ecx);
-    asm_.mov(ecx, dword_ptr(reset_stk_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, reset_stk)), ecx);
-    asm_.mov(ecx, dword_ptr(reset_hea_label_));
-    asm_.mov(dword_ptr(edx, offsetof(AMX, reset_hea)), ecx);
+      asm_.mov(edx, dword_ptr(amx_ptr_label_));
+      asm_.mov(dword_ptr(edx, offsetof(AMX, pri)), eax);
+      asm_.mov(dword_ptr(edx, offsetof(AMX, alt)), ecx);
+      asm_.mov(ecx, dword_ptr(reset_stk_label_));
+      asm_.mov(dword_ptr(edx, offsetof(AMX, reset_stk)), ecx);
+      asm_.mov(ecx, dword_ptr(reset_hea_label_));
+      asm_.mov(dword_ptr(edx, offsetof(AMX, reset_hea)), ecx);
 
-    asm_.jmp(exec_exit_label_);
+      asm_.jmp(exec_exit_label_);
+    }
 }
 
 void CompilerImpl::EmitDebugPrint(const char *message) {

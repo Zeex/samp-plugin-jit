@@ -69,7 +69,8 @@ class Compiler {
 
   void SetLogger(Logger *logger);
   void SetErrorHandler(CompileErrorHandler *error_handler);
-  void SetSysreqDEnabled(bool is_enabled);
+  void SetSysreqDEnabled(bool flag);
+  void SetSleepEnabled(bool flag);
   void SetDebugFlags(unsigned int flags);
 
   CodeBuffer *Compile(AMXRef amx);
