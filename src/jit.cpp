@@ -27,10 +27,10 @@
 #include <string>
 #include <subhook.h>
 #include "jithandler.h"
-#include "jit_version.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugin.h"
+#include "version.h"
 
 typedef int (AMXAPI *AMX_EXEC)(AMX *amx, cell *retval, int index);
 

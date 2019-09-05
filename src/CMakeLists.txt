@@ -16,7 +16,7 @@ if(MSVC)
 endif()
 
 configure_file(jit.rc.in jit.rc @ONLY)
-configure_file(jit_version.h.in jit_version.h @ONLY)
+configure_file(version.h.in version.h @ONLY)
 
 set(JIT_SOURCES
   amx/amx.h
@@ -34,7 +34,7 @@ set(JIT_SOURCES
   plugin.h
   plugincommon.h
   ${CMAKE_CURRENT_BINARY_DIR}/jit.rc
-  ${CMAKE_CURRENT_BINARY_DIR}/jit_version.h
+  ${CMAKE_CURRENT_BINARY_DIR}/version.h
 )
 
 if(WIN32 OR CYGWIN)
@@ -46,15 +46,15 @@ endif()
 add_samp_plugin(jit ${JIT_SOURCES})
 
 if(BUILD_SLEEP_PLUGIN)
-  add_samp_plugin(sleep
+  add_samp_plugin(jit-sleep
     amx/amx.h
     amx/getch.h
     amx/sclinux.h
     amxplugin.cpp
+    jit-sleep.cpp
+    jit-sleep.def
     plugin.h
     plugincommon.h
-    sleep.cpp
-    sleep.def
   )
 endif()
 
