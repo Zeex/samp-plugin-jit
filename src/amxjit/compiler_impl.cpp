@@ -1859,6 +1859,7 @@ void CompilerImpl::EmitJumpHelper() {
 void CompilerImpl::EmitJumpLookup() {
   asm_.bind(jump_lookup_label_);
     asm_.push(ecx);
+    asm_.push(edx);
 
     asm_.lea(ecx, dword_ptr(rib_start_label_));
     asm_.push(ecx);
@@ -1866,6 +1867,7 @@ void CompilerImpl::EmitJumpLookup() {
     asm_.call(reinterpret_cast<asmjit::Ptr>(&GetJITInstrPtr));
     asm_.add(esp, 8);
 
+    asm_.pop(edx);
     asm_.pop(ecx);
     asm_.ret();
 }
@@ -1874,6 +1876,7 @@ void CompilerImpl::EmitJumpLookup() {
 void CompilerImpl::EmitReverseJumpLookup() {
   asm_.bind(reverse_jump_lookup_label_);
     asm_.push(ecx);
+    asm_.push(edx);
 
     asm_.lea(ecx, dword_ptr(rib_start_label_));
     asm_.push(ecx);
@@ -1881,6 +1884,7 @@ void CompilerImpl::EmitReverseJumpLookup() {
     asm_.call(reinterpret_cast<asmjit::Ptr>(&GetANXAddressByJITInstrPtr));
     asm_.add(esp, 8);
 
+    asm_.pop(edx);
     asm_.pop(ecx);
     asm_.ret();
 }
