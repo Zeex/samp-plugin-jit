@@ -31,10 +31,15 @@ stock test_id = 0;
           } \
      } while (test_false)
 
+stock TestExit() {
+     print("All tests passed");
+}
+
 stock TestFailed(id, line, const reason[]) {
      if (line > 0) {
           printf("Test #%d at line %d failed: %s", id, line, reason);
      } else {
           printf("Test #%d failed: %s", id, reason);
      }
+     #emit halt 1
 }

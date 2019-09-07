@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include "test"
 
 main() {
@@ -9,5 +11,6 @@ main() {
 	TEST_TRUE(clamp(10, -50, 100) == 10);
 	TEST_TRUE(clamp(-100, -50, 100) == -50);
 	TEST_TRUE(clamp(-1000, -50, 100) == -50);
+	TestExit();
 }
 

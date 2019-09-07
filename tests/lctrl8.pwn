@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include "test"
 
 func1()
@@ -28,6 +30,7 @@ main()
 	CallLocalFunction("Test1", "");
 	CallLocalFunction("Test2", "");
 	CallLocalFunction("Test3", "");
+	TestExit();
 }
 
 public Test1()

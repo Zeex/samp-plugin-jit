@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include <jit>
 #include "test"
 
@@ -14,4 +16,5 @@ public OnJITCompile() {
 
 main() {
 	Test();
+	TestExit();
 }

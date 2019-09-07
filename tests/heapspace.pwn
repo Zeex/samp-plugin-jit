@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include "test"
 
 main() {
@@ -24,5 +26,6 @@ main() {
 	hs = heapspace();
 	TEST_TRUE(got - 12 == hs);
 	#emit HEAP 0xFFFFFFF4
+	TestExit();
 }
 

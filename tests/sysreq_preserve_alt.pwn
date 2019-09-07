@@ -1,4 +1,5 @@
 // OUTPUT: should print this
+// OUTPUT: All tests passed
 
 #include "test"
 
@@ -12,4 +13,5 @@ main() {
 	#emit stor.s.alt x
 	#emit stack 8
 	TEST_TRUE(x == 0xdeadbeef);
+	TestExit();
 }

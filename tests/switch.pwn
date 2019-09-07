@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include "test"
 
 DoSwitch(x) {
@@ -23,4 +25,5 @@ main() {
 	TEST_TRUE(DoSwitch(15) == 15);
 	TEST_TRUE(DoSwitch(16) == 0);
 	TEST_TRUE(DoSwitch(30) == 0);
+	TestExit();
 }

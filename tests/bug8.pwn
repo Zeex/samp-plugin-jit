@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include "test"
 
 main()
@@ -12,4 +14,5 @@ main()
 	TEST_TRUE(a{1} == 2);
 	TEST_TRUE(a{2} == 3);
 	TEST_TRUE(a{3} == 4);
+	TestExit();
 }

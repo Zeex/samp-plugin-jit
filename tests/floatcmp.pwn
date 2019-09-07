@@ -1,3 +1,5 @@
+// OUTPUT: All tests passed
+
 #include "float_const"
 #include "test"
 
@@ -17,4 +19,6 @@ main() {
 
 	TEST_TRUE(floatcmp(0.0, POS_INF) == -1);
 	TEST_TRUE(floatcmp(POS_INF, 0.0) == 1);
+
+	TestExit();
 }

@@ -1,15 +1,16 @@
+// OUTPUT: All tests passed
+
 #include <jit>
 #include "test"
 
 public Test();
 
-main()
-{
+main() {
 	CallLocalFunction("Test", "");
 }
 
-public Test()
-{
+public Test() {
 	TEST_TRUE(IsJITPresent());
 	TEST_TRUE(IsJITASMJumpCapable());
+	TestExit();
 }
