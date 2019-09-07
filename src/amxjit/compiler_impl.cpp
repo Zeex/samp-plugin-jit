@@ -1698,8 +1698,6 @@ void CompilerImpl::EmitExecHelper() {
     // HEA is already in sync.
 
   asm_.bind(exec_exit_label_);
-    asm_.mov(eax, edi);
-
     // Switch back to the native stack.
     asm_.mov(dword_ptr(amx_ebp_label_), ebp);
     asm_.mov(ebp, dword_ptr(ebp_label_));
@@ -1798,7 +1796,7 @@ void CompilerImpl::EmitHaltHelper() {
     asm_.mov(dword_ptr(esi, offsetof(AMX, error)), edi);
     asm_.mov(dword_ptr(esi, offsetof(AMX, pri)), eax);
     asm_.mov(dword_ptr(esi, offsetof(AMX, alt)), ecx);
-    asm_.pop(eax); // return address
+    asm_.pop(ecx); // return address
     asm_.mov(edx, ebp);
     asm_.sub(edx, ebx);
     asm_.mov(dword_ptr(esi, offsetof(AMX, frm)), edx);
@@ -1825,7 +1823,7 @@ void CompilerImpl::EmitHaltHelper() {
       // amx->reset_stk = reset_stk;
       // amx->reset_hea = reset_hea;
       asm_.call(reverse_jump_lookup_label_);
-      asm_.mov(dword_ptr(esi, offsetof(AMX, cip)), eax);
+      asm_.mov(dword_ptr(esi, offsetof(AMX, cip)), ecx);
       asm_.mov(edx, dword_ptr(reset_stk_label_));
       asm_.mov(dword_ptr(esi, offsetof(AMX, reset_stk)), edx);
       asm_.mov(edx, dword_ptr(reset_hea_label_));
