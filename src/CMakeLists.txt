@@ -48,13 +48,11 @@ endif()
 
 add_samp_plugin(jit ${JIT_SOURCES})
 
-if(BUILD_SLEEP_PLUGIN OR BUILD_TESTING)
-  add_samp_plugin(jit_sleep
-    ${SAMP_SDK_SOURCES}
-    jit_sleep.cpp
-    jit_sleep.def
-  )
-endif()
+add_samp_plugin(jit_sleep
+  ${SAMP_SDK_SOURCES}
+  jit_sleep.cpp
+  jit_sleep.def
+)
 
 add_subdirectory(amxjit)
 target_link_libraries(jit amxjit configreader subhook)

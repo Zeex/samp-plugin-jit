@@ -1,9 +1,13 @@
-#include <chrono>
+#include <cassert>
 #include <cstdlib>
-#include <functional>
 #include <memory>
 #include <vector>
 #include "plugin.h"
+#ifdef _WIN32
+  #include <windows.h>
+#else
+  #include <sys/time.h>
+#endif
 
 /******************************************************************************
 
@@ -37,21 +41,32 @@ typedef void (*logprintf_t)(const char *format, ...);
 
 extern void *pAMXFunctions;
 static logprintf_t logprintf;
-static std::chrono::system_clock::time_point pluginLoadTime;
+static long pluginLoadTime;
 
-namespace sleep {
+namespace {
+  typedef void (*TimerFunc)(AMX *amx);
+
+  long GetTime() {
+    #ifdef _WIN32
+      return GetTickCount();
+    #else
+      timeval t;
+      gettimeofday(&t, NULL);
+      return t.tv_sec * t.tv_usec / 1000;
+    #endif
+  }
+
   class Timer
   {
   public:
     Timer(AMX *amx, long numMilliseconds):
       amx_(amx),
-      scheduledTime_(std::chrono::system_clock::now()
-        + std::chrono::milliseconds(numMilliseconds)),
+      scheduledTime_(GetTime() + numMilliseconds),
       didExecute_(false)
     {
     }
 
-    std::chrono::system_clock::time_point GetScheduledTime() const {
+    long GetScheduledTime() const {
       return scheduledTime_;
     }
 
@@ -63,7 +78,7 @@ namespace sleep {
 
   protected:
     AMX *amx_;
-    std::chrono::system_clock::time_point scheduledTime_;
+    long scheduledTime_;
     bool didExecute_;
   };
 
@@ -86,7 +101,7 @@ namespace sleep {
       logprintf("[sleep] hea = %x", amx_->hea);
       logprintf("[sleep] reset_stk = %x", amx_->reset_stk);
       logprintf("[sleep] reset_hea = %x", amx_->reset_hea);
-      amx_Exec(amx_, nullptr, AMX_EXEC_CONT);
+      amx_Exec(amx_, NULL, AMX_EXEC_CONT);
     }
   };
 
@@ -96,11 +111,12 @@ namespace sleep {
     SimpleTimer(
       AMX *amx,
       long numMilliseconds,
-      std::function<void(AMX *amx)> func
+      TimerFunc func
     ):
       Timer(amx, numMilliseconds),
       func_(func)
     {
+      assert(func_ != NULL);
     }
 
     void Execute() override {
@@ -109,15 +125,15 @@ namespace sleep {
     }
 
   private:
-    std::function<void(AMX *amx)> func_;
+    TimerFunc func_;
   };
 
-  std::vector<std::shared_ptr<sleep::Timer>> continueTimers;
+  std::vector<Timer *> timers;
 
   cell *GetData(AMX *amx) {
     return amx->data != 0
-      ? reinterpret_cast<cell *>(amx->data)
-      : reinterpret_cast<cell *>(amx->base + ((AMX_HEADER *)amx->base)->dat);
+      ? reinterpret_cast<cell*>(amx->data)
+      : reinterpret_cast<cell*>(amx->base + ((AMX_HEADER *)amx->base)->dat);
   }
 
   void ExecuteSleepCallback(AMX *amx) {
@@ -149,18 +165,19 @@ namespace sleep {
   }
 
   void AddContinueTimer(AMX *amx, cell numMilliseconds) {
-    continueTimers.push_back(
-      std::make_shared<ContinueTimer>(amx, numMilliseconds));
+    timers.push_back(new ContinueTimer(amx, numMilliseconds));
   }
 
-  void AddSimpleTimer(AMX *amx, cell numMilliseconds, std::function<void(AMX *amx)> func) {
-    continueTimers.push_back(
-      std::make_shared<SimpleTimer>(amx, numMilliseconds, func));
+  void AddSimpleTimer(AMX *amx, 
+                      cell numMilliseconds, 
+                      TimerFunc func) {
+    timers.push_back(new SimpleTimer(amx, numMilliseconds, func));
   }
 
   void ProcessTimers() {
-    auto now = std::chrono::system_clock::now();
-    for (auto &timer : continueTimers) {
+    long now = GetTime();
+    for (std::size_t i = 0; i < timers.size(); i++) {
+      Timer *timer = timers[i];
       if (!timer->DidExecute() && now >= timer->GetScheduledTime()) {
         timer->Execute();
       }
@@ -189,7 +206,7 @@ static cell AMX_NATIVE_CALL n_schedule_continue(AMX *amx, cell *params) {
     logprintf("[sleep] Invalid parameter: %d", numMilliseconds);
     return 0;
   }
-  sleep::AddContinueTimer(amx, numMilliseconds);
+  AddContinueTimer(amx, numMilliseconds);
   logprintf("[sleep] Scheduled continuation at +%d ms", numMilliseconds);
   return 1;
 }
@@ -204,6 +221,14 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   return true;
 }
 
+PLUGIN_EXPORT void PLUGIN_CALL Unload() {
+  for (std::vector<Timer*>::iterator it = timers.begin();
+        it != timers.end(); ++it) {
+    delete *it;
+  }
+  timers.erase(timers.begin(), timers.end());
+}
+
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
   const AMX_NATIVE_INFO natives[] = {
     {"do_sleep", n_do_sleep},
@@ -214,7 +239,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     logprintf("[sleep] Error: Could not register natives: %d", error);
     return error;
   }
-  sleep::AddSimpleTimer(amx, 1000, sleep::ExecuteSleepCallback);
+  AddSimpleTimer(amx, 500, ExecuteSleepCallback);
   return AMX_ERR_NONE;
 }
 
@@ -223,5 +248,5 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
-  sleep::ProcessTimers();
+  ProcessTimers();
 }
