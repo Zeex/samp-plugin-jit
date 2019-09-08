@@ -71,11 +71,6 @@ int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
   return error;
 }
 
-cell AMX_NATIVE_CALL n_JITSleep(AMX *amx, cell *params) {
-  amx->error = AMX_ERR_SLEEP;
-  return 0;
-}
-
 } // anonymous namespace
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
@@ -113,12 +108,6 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  if (std::getenv("JIT_TEST") != NULL) {
-    const AMX_NATIVE_INFO natives[] = {
-      {"JITSleep", n_JITSleep}
-    };
-    amx_Register(amx, natives, sizeof(natives) / sizeof(natives[0]));
-  }
   return AMX_ERR_NONE;
 }
 
