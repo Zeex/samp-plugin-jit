@@ -34,7 +34,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: isvcGTZ1IAHEQ2gNE1k0tiuSbjAxcOVuXswEiIE
-  artifact: /jist-.*-win32\.zip/
+  artifact: /jit-.*-win32\.zip/
   draft: true
   on:
     appveyor_repo_tag: true
