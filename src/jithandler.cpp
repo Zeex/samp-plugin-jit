@@ -24,6 +24,7 @@
 
 #include <cassert>
 #include <cstdarg>
+#include <cstdlib>
 #include <string>
 #include <configreader.h>
 #include "jithandler.h"
@@ -33,11 +34,11 @@
 #include "amxjit/disasm.h"
 #include "amxjit/logger.h"
 
-#define logprintf Use_Printf_instead_of_logprintf
+#define logprintf Use_jit_printf_instead_of_logprintf
 
 namespace {
 
-void Printf(const char *format, ...) {
+void jit_printf(const char *format, ...) {
   std::va_list va;
   va_start(va, format);
 
@@ -52,9 +53,9 @@ void Printf(const char *format, ...) {
 class ErrorHandler: public amxjit::CompileErrorHandler {
  public:
   virtual void Execute(const amxjit::Instruction &instr) {
-    Printf("Invalid or unsupported instruction at address %08x:",
-           instr.address());
-    Printf("  => %s", instr.ToString().c_str());
+    jit_printf("Invalid or unsupported instruction at address %08x:",
+               instr.address());
+    jit_printf("  => %s", instr.ToString().c_str());
   }
 };
 
@@ -80,7 +81,7 @@ cell OnJITError(AMX *amx) {
 
 amxjit::CodeBuffer *Compile(AMX *amx) {
   if (!OnJITCompile(amx)) {
-    Printf("Compilation was disabled");
+    jit_printf("Compilation was disabled");
     return 0;
   }
 
@@ -94,7 +95,7 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
   unsigned int debug_flags = 0;
   server_cfg.GetValue("jit_debug", debug_flags);
 
-  if (getenv("JIT_SLEEP") != 0) {
+  if (std::getenv("JIT_SLEEP") != 0) {
     enable_sleep_support = true;
   }
 
@@ -114,7 +115,7 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
   delete logger;
 
   if (code == 0) {
-    Printf("Compilation failed");
+    jit_printf("Compilation failed");
     OnJITError(amx);
   }
   return code;
