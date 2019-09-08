@@ -35,16 +35,9 @@ set(JIT_SOURCES
   jithandler.cpp
   logprintf.cpp
   logprintf.h
-  os.h
   ${CMAKE_CURRENT_BINARY_DIR}/jit.rc
   ${CMAKE_CURRENT_BINARY_DIR}/version.h
 )
-
-if(WIN32 OR CYGWIN)
-  list(APPEND JIT_SOURCES os-win32.cpp)
-else()
-  list(APPEND JIT_SOURCES os-unix.cpp)
-endif()
 
 add_samp_plugin(jit ${JIT_SOURCES})
 

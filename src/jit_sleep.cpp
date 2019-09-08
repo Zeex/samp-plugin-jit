@@ -46,7 +46,7 @@ static long pluginLoadTime;
 namespace {
   typedef void (*TimerFunc)(AMX *amx);
 
-  long GetTime() {
+  long GetTimeMilliseconds() {
     #ifdef _WIN32
       return GetTickCount();
     #else
@@ -61,7 +61,7 @@ namespace {
   public:
     Timer(AMX *amx, long numMilliseconds):
       amx_(amx),
-      scheduledTime_(GetTime() + numMilliseconds),
+      scheduledTime_(GetTimeMilliseconds() + numMilliseconds),
       didExecute_(false)
     {
     }
@@ -175,7 +175,7 @@ namespace {
   }
 
   void ProcessTimers() {
-    long now = GetTime();
+    long now = GetTimeMilliseconds();
     for (std::size_t i = 0; i < timers.size(); i++) {
       Timer *timer = timers[i];
       if (!timer->DidExecute() && now >= timer->GetScheduledTime()) {

@@ -26,11 +26,17 @@
 #include <cstdlib>
 #include <string>
 #include <subhook.h>
+#include <vector>
 #include "jithandler.h"
 #include "logprintf.h"
-#include "os.h"
 #include "plugin.h"
 #include "version.h"
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+#else
+  #include <dlfcn.h>
+#endif
 
 typedef int (AMXAPI *AMX_EXEC)(AMX *amx, cell *retval, int index);
 
@@ -43,16 +49,52 @@ static subhook::Hook exec_hook;
 
 namespace {
 
-void *GetAmxFunction(int index) {
-  return static_cast<void**>(pAMXFunctions)[index];
-}
-
 std::string GetFileName(const std::string &path) {
   std::string::size_type pos = path.find_last_of("/\\");
   if (pos != std::string::npos) {
     return path.substr(pos + 1);
   }
   return path;
+}
+
+#ifdef _WIN32
+
+std::string GetModuleName(void *address) {
+  std::vector<char> filename(MAX_PATH);
+  if (address != 0) {
+    MEMORY_BASIC_INFORMATION mbi;
+    if (VirtualQuery(address, &mbi, sizeof(mbi)) != 0) {
+      DWORD size = filename.size();
+      do {
+        size = GetModuleFileNameA((HMODULE)mbi.AllocationBase,
+                                  &filename[0], filename.size());
+        if (size < filename.size() ||
+            GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+          break;
+        }
+        filename.resize(size *= 2);
+      } while (true);
+    }
+  }
+  return std::string(&filename[0]);
+}
+
+#else // _WIN32
+
+std::string GetModuleName(void *address) {
+  std::string filename;
+  if (address != 0) {
+    Dl_info info;
+    dladdr(address, &info);
+    filename.assign(info.dli_fname);
+  }
+  return filename;
+}
+
+#endif // _WIN32
+
+void *GetAMXFunction(int index) {
+  return static_cast<void**>(pAMXFunctions)[index];
 }
 
 int AMXAPI amx_Exec_JIT(AMX *amx, cell *retval, int index) {
@@ -81,11 +123,11 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
   pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
 
-  void *exec_start = GetAmxFunction(PLUGIN_AMX_EXPORT_Exec);
-  void *other_guy = subhook::Hook::ReadDst(exec_start);
+  void *exec_start = GetAMXFunction(PLUGIN_AMX_EXPORT_Exec);
+  void *exec_hook_dst = subhook::Hook::ReadDst(exec_start);
 
-  if (other_guy != 0) {
-    std::string module = GetFileName(os::GetModuleName(other_guy));
+  if (exec_hook_dst != 0) {
+    std::string module = GetFileName(GetModuleName(exec_hook_dst));
     if (!module.empty()) {
       logprintf("  JIT plugin must be loaded before '%s'", module.c_str());
     } else {
