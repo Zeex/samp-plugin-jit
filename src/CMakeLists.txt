@@ -18,12 +18,17 @@ endif()
 configure_file(jit.rc.in jit.rc @ONLY)
 configure_file(version.h.in version.h @ONLY)
 
-set(JIT_SOURCES
+set(SAMP_SDK_SOURCES
   amx/amx.h
   amx/getch.h
   amx/sclinux.h
-  amxhandler.h
   amxplugin.cpp
+  plugin.h
+  plugincommon.h
+)
+
+set(JIT_SOURCES
+  ${SAMP_SDK_SOURCES}
   jit.cpp
   jit.def
   jithandler.h
@@ -31,8 +36,6 @@ set(JIT_SOURCES
   logprintf.cpp
   logprintf.h
   os.h
-  plugin.h
-  plugincommon.h
   ${CMAKE_CURRENT_BINARY_DIR}/jit.rc
   ${CMAKE_CURRENT_BINARY_DIR}/version.h
 )
@@ -45,16 +48,11 @@ endif()
 
 add_samp_plugin(jit ${JIT_SOURCES})
 
-if(BUILD_SLEEP_PLUGIN)
-  add_samp_plugin(jit-sleep
-    amx/amx.h
-    amx/getch.h
-    amx/sclinux.h
-    amxplugin.cpp
-    jit-sleep.cpp
-    jit-sleep.def
-    plugin.h
-    plugincommon.h
+if(BUILD_SLEEP_PLUGIN OR BUILD_TESTING)
+  add_samp_plugin(jit_sleep
+    ${SAMP_SDK_SOURCES}
+    jit_sleep.cpp
+    jit_sleep.def
   )
 endif()
 

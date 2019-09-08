@@ -1,4 +1,6 @@
 /build
 /tests/*.amx
+/tests/*.asm
+/tests/*.lst
 /server.cfg
 /server_log.txt

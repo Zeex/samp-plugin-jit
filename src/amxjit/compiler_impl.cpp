@@ -1822,8 +1822,9 @@ void CompilerImpl::EmitHaltHelper() {
       // amx->cip = ReverseJumpLookup(return_address);
       // amx->reset_stk = reset_stk;
       // amx->reset_hea = reset_hea;
+      asm_.mov(eax, ecx);
       asm_.call(reverse_jump_lookup_label_);
-      asm_.mov(dword_ptr(esi, offsetof(AMX, cip)), ecx);
+      asm_.mov(dword_ptr(esi, offsetof(AMX, cip)), eax);
       asm_.mov(edx, dword_ptr(reset_stk_label_));
       asm_.mov(dword_ptr(esi, offsetof(AMX, reset_stk)), edx);
       asm_.mov(edx, dword_ptr(reset_hea_label_));

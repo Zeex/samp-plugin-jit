@@ -36,6 +36,8 @@ onjitcompile_return_0
 onjiterror
 presence
 return_value
+sleep_halt
+sleep_sysreq
 swapchars
 switch
 sysreq_preserve_alt

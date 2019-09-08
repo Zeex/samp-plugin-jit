@@ -4,10 +4,12 @@
 #include <file>
 #include <string>
 
+native ExitProcess(status = 0);
 native CallLocalFunction(const function[], const format[], {Float,_}:...);
 
 stock bool:test_false = false;
 stock test_id = 0;
+stock failed_test_count = 0;
 
 #if __Pawn == 0x030A
 	#define TEST_LINE __line
@@ -32,10 +34,14 @@ stock test_id = 0;
      } while (test_false)
 
 stock TestExit() {
-     print("All tests passed");
+     if (failed_test_count == 0) {
+          print("All tests passed");
+     }
+     ExitProcess();
 }
 
 stock TestFailed(id, line, const reason[]) {
+     failed_test_count++;
      if (line > 0) {
           printf("Test #%d at line %d failed: %s", id, line, reason);
      } else {

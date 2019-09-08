@@ -85,18 +85,18 @@ amxjit::CodeBuffer *Compile(AMX *amx) {
   }
 
   ConfigReader server_cfg("server.cfg");
-
   bool enable_log = false;
   server_cfg.GetValue("jit_log", enable_log);
-
   bool enable_sysreq_d = true;
   server_cfg.GetValue("jit_sysreq_d", enable_sysreq_d);
-
   bool enable_sleep_support = false;
   server_cfg.GetValue("jit_sleep", enable_sleep_support);
-
   unsigned int debug_flags = 0;
   server_cfg.GetValue("jit_debug", debug_flags);
+
+  if (getenv("JIT_SLEEP") != 0) {
+    enable_sleep_support = true;
+  }
 
   amxjit::Logger *logger = 0;
   if (enable_log) {
