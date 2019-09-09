@@ -16,10 +16,10 @@
 # cd $SAMP_SERVER_ROOT
 # ./samp03svr
 
-FROM ubuntu
+FROM ubuntu:bionic
 
 RUN apt-get update -q && \
-    apt-get install -y wget vim gcc g++ gcc-multilib g++-multilib make cmake
+    apt-get install -y wget vim gcc g++ gcc-multilib g++-multilib make cmake gdb
 
 RUN wget http://files.sa-mp.com/samp037svr_R2-2-1.tar.gz
 RUN tar xvzf samp037svr_R2-2-1.tar.gz -C /usr/local/
@@ -37,14 +37,14 @@ RUN rm pawnc-3.10.9-linux.tar.gz
 RUN ldconfig
 ENV PAWNCC_FLAGS="-i$SAMP_SERVER_ROOT/include -(+ -;+"
 
-RUN wget https://github.com/Zeex/plugin-runner/releases/download/v1.1.2/plugin-runner-1.1.2-linux.tar.gz
+RUN wget https://github.com/Zeex/plugin-runner/releases/download/v1.2/plugin-runner-1.2-linux.tar.gz
 RUN mkdir /usr/local/plugin-runner
-RUN tar xvf plugin-runner-1.1.2-linux.tar.gz \
+RUN tar xvf plugin-runner-1.2-linux.tar.gz \
     --strip-components 1 \
     -C /usr/local/plugin-runner \
-    plugin-runner-1.1.2-linux/plugin-runner \
-    plugin-runner-1.1.2-linux/include
-RUN rm plugin-runner-1.1.2-linux.tar.gz
+    plugin-runner-1.2-linux/plugin-runner \
+    plugin-runner-1.2-linux/include
+RUN rm plugin-runner-1.2-linux.tar.gz
 ENV PATH=$PATH:/usr/local/plugin-runner
 
 WORKDIR $SAMP_SERVER_ROOT/plugins/jit
