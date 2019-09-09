@@ -52,7 +52,7 @@ namespace {
     #else
       timeval t;
       gettimeofday(&t, NULL);
-      return t.tv_sec * t.tv_usec / 1000;
+      return t.tv_sec * 1000 + t.tv_usec / 1000;
     #endif
   }
 
@@ -168,8 +168,8 @@ namespace {
     timers.push_back(new ContinueTimer(amx, numMilliseconds));
   }
 
-  void AddSimpleTimer(AMX *amx, 
-                      cell numMilliseconds, 
+  void AddSimpleTimer(AMX *amx,
+                      cell numMilliseconds,
                       TimerFunc func) {
     timers.push_back(new SimpleTimer(amx, numMilliseconds, func));
   }
