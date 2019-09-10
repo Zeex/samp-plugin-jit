@@ -5,7 +5,14 @@ find_package(PluginRunner REQUIRED)
 
 set(_amx_files "")
 
-macro(add_test_script name)
+if(WIN32)
+  set(_path "${PluginRunner_DIR};$ENV{Path}")
+  string(REPLACE ";" "\\$<SEMICOLON>" _path "${_path}")
+else()
+  set(_path "${PluginRunner_DIR}:$ENV{PATH}")
+endif()
+
+macro(add_pawn_script name)
   set(_compile_flags "")
   foreach(line ${_test_code})
     string(REGEX MATCHALL "FLAGS: .*" flags ${line})
@@ -61,7 +68,7 @@ Loaded script: .*${name}.*<TEST_OUTPUT>"
   )
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${name}.out" ${_full_test_output})
 
-  add_test_script(${name})
+  add_pawn_script(${name})
 
   set(_targets jit)
   set(_env PATH=${_path})
@@ -78,13 +85,6 @@ Loaded script: .*${name}.*<TEST_OUTPUT>"
     TIMEOUT            3
     WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}
   )
-
-  if(WIN32)
-    set(_path "${PluginRunner_DIR};$ENV{Path}")
-    string(REPLACE ";" "\\$<SEMICOLON>" _path "${_path}")
-  else()
-    set(_path "${PluginRunner_DIR}:$ENV{PATH}")
-  endif()
 
   set_property(TEST ${name} APPEND PROPERTY ENVIRONMENT ${_env})
 endforeach()
