@@ -3,7 +3,8 @@ compiler: gcc
 
 env:
   global:
-    - PATH=$PATH:$TRAVIS_BUILD_DIR/plugin-runner-1.2-linux
+    - PATH=$PATH:$TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR/plugin-runner-1.2-linux
+    - secure: "WRffGxdEZPHxs3pVmJHMKR7FY4IV1PqieTJhCkZJtGci89TDyRXTW8aj4/2SZ67Yq3qwjvhpfg0FwjMmRqg+tfhQ5f7r7h6H51zDuCHje3RIlUca8H+raliWbQGBuUVyt1uQiO1ufZ2epgcMiVorhUb8INjoq5BCXOfV7eRU39k="
 
 install:
   - sudo apt-get update -qq
@@ -16,6 +17,9 @@ install:
   - wget https://github.com/Zeex/plugin-runner/releases/download/v1.2/plugin-runner-1.2-linux.tar.gz
   - tar xvf plugin-runner-1.2-linux.tar.gz
 
+  - wget https://www.dropbox.com/s/iuzb74xugjgdzkg/artifact-uploader-linux.tar.gz?dl=1 -O artifact-uploader-linux.tar.gz
+  - tar xvf artifact-uploader-linux.tar.gz
+
 before_script:
   - cmake . -DCMAKE_BUILD_TYPE=Release
 
@@ -23,6 +27,9 @@ script:
   - make
   - make test
   - make package
+
+after_script:
+  - artifact-uploader $DROPBOX_TOKEN ./jit-*-linux.tar.gz
 
 after_failure:
   - cat Testing/Temporary/LastTest.log
