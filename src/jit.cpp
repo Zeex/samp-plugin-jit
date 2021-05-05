@@ -124,7 +124,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
 
   void *exec_start = GetAMXFunction(PLUGIN_AMX_EXPORT_Exec);
-  void *exec_hook_dst = subhook::Hook::ReadDst(exec_start);
+  void *exec_hook_dst = subhook::ReadHookDst(exec_start);
 
   if (exec_hook_dst != 0) {
     std::string module = GetFileName(GetModuleName(exec_hook_dst));
