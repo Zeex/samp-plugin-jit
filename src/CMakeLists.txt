@@ -16,7 +16,7 @@ if(MSVC)
 endif()
 
 configure_file(jit.rc.in jit.rc @ONLY)
-configure_file(version.h.in version.h @ONLY)
+configure_file(pluginversion.h.in pluginversion.h @ONLY)
 
 set(SAMP_SDK_SOURCES
   amx/amx.h
@@ -36,7 +36,7 @@ set(JIT_SOURCES
   logprintf.cpp
   logprintf.h
   ${CMAKE_CURRENT_BINARY_DIR}/jit.rc
-  ${CMAKE_CURRENT_BINARY_DIR}/version.h
+  ${CMAKE_CURRENT_BINARY_DIR}/pluginversion.h
 )
 
 add_samp_plugin(jit ${JIT_SOURCES})

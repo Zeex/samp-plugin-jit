@@ -30,7 +30,7 @@
 #include "jithandler.h"
 #include "logprintf.h"
 #include "plugin.h"
-#include "version.h"
+#include "pluginversion.h"
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
   #include <windows.h>
@@ -91,7 +91,7 @@ std::string GetModuleName(void *address) {
   return filename;
 }
 
-#endif // _WIN32
+#endif // !_WIN32
 
 void *GetAMXFunction(int index) {
   return static_cast<void**>(pAMXFunctions)[index];
@@ -145,7 +145,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   #endif
   exec_hook.Install(exec_start, (void *)amx_Exec_JIT);
 
-  logprintf("  JIT plugin %s", PROJECT_VERSION_STRING);
+  logprintf("  JIT plugin %s", PLUGIN_VERSION_STRING);
   return true;
 }
 
@@ -154,6 +154,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
- JITHandler::DestroyHandler(amx);
- return AMX_ERR_NONE;
+  JITHandler::DestroyHandler(amx);
+  return AMX_ERR_NONE;
 }
