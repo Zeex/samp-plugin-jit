@@ -37,14 +37,14 @@ RUN rm pawnc-3.10.9-linux.tar.gz
 RUN ldconfig
 ENV PAWNCC_FLAGS="-i$SAMP_SERVER_ROOT/include -(+ -;+"
 
-RUN wget https://github.com/Zeex/plugin-runner/releases/download/v1.2/plugin-runner-1.2-linux.tar.gz
+RUN wget https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-linux.tar.gz
 RUN mkdir /usr/local/plugin-runner
-RUN tar xvf plugin-runner-1.2-linux.tar.gz \
+RUN tar xvf plugin-runner-1.3-linux.tar.gz \
     --strip-components 1 \
     -C /usr/local/plugin-runner \
-    plugin-runner-1.2-linux/plugin-runner \
-    plugin-runner-1.2-linux/include
-RUN rm plugin-runner-1.2-linux.tar.gz
+    plugin-runner-1.3-linux/plugin-runner \
+    plugin-runner-1.3-linux/include
+RUN rm plugin-runner-1.3-linux.tar.gz
 ENV PATH=$PATH:/usr/local/plugin-runner
 
 WORKDIR $SAMP_SERVER_ROOT/plugins/jit
